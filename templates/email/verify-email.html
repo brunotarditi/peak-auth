@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Verificá tu correo</title>
+    <style>
+        .body{
+            margin:0;
+            padding:0;
+            background-color:#f4f4f4;
+            font-family:Arial,sans-serif;
+        }
+        .container{
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff; 
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1)
+        }
+        .title{
+            color: #333;
+            margin-top: 0
+        }
+
+        .text{
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .link{
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #576CBC;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .warning{
+            color: #999;
+            font-size: 14px;
+        }
+
+        .footer{
+            text-align: center;
+            color: #aaa;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body class="body">
+    <div class="container">
+        <h2 class="title">Hola {{.Username}},</h2>
+        <p>    
+            ¡Gracias por registrarte en <strong>Librería Mariela</strong>! Para completar tu registro, necesitamos que
+            verifiques tu dirección de correo electrónico.
+        </p>
+
+        <div class="text">
+            <a href="{{.VerifyURL}}"
+                class="link">
+                Verificar correo
+            </a>
+        </div>
+
+        <p class="warning">
+            Si no te registraste en nuestra plataforma, podés ignorar este mensaje.
+        </p>
+    </div>
+
+    <p class="footer">
+        © 2025 Librería Mariela · Todos los derechos reservados
+    </p>
+</body>
+
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ver Aplicación - Peak Auth</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <main class="container mx-auto mt-10 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h2 class="text-2xl font-bold mb-4 text-indigo-600">{{.App.Name}}</h2>
+            <p class="text-gray-600 mb-2">{{.App.Description}}</p>
+            <p class="text-sm text-gray-500">AppID público: <span class="font-mono">{{.App.AppID}}</span></p>
+            <div class="mt-4 flex gap-2">
+                <a href="/admin/apps/{{.App.ID}}/users" class="bg-blue-500 text-white px-3 py-1 rounded">Usuarios</a>
+                <a href="/admin/apps/{{.App.ID}}/rules" class="bg-green-500 text-white px-3 py-1 rounded">Reglas</a>
+                <a href="/admin" class="text-indigo-500">Volver</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
