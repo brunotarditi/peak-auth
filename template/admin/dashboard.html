@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Peak Auth - Panel de Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50">
+    <nav class="bg-indigo-700 p-4 text-white flex justify-between items-center shadow-md">
+        <h1 class="font-bold text-xl">Dashboard - Peak Auth</h1>
+        <div class="flex items-center gap-4">
+            <span class="text-indigo-100 text-sm">Usuario: {{.UserEmail}}</span>
+            <form action="/admin/logout" method="POST" class="inline">
+                <button type="submit" class="bg-indigo-800 hover:bg-indigo-900 px-3 py-1 rounded text-sm transition">
+                    Cerrar Sesión
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-10 p-4">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-800">Tus Aplicaciones</h2>
+            <a href="/admin/apps/new" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                + Nueva aplicación
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {{range .Applications}}
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-bold text-indigo-600">{{.Name}}</h3>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                        {{.AppID}}
+                    </span>
+                </div>
+                <p class="text-gray-600 text-sm mb-4">{{.Description}}</p>
+                <div class="border-t pt-4">
+                    <p class="text-sm font-medium text-gray-500">Usuarios activos:
+                        <span class="text-gray-900 font-bold">{{.UserCount}}</span>
+                    </p>
+                </div>
+                <div class="mt-4 flex gap-4">
+                    <a href="/admin/apps/{{.AppID}}"
+                        class="text-indigo-600 text-sm font-semibold hover:text-indigo-800">
+                        Configurar
+                    </a>
+                    <a href="/admin/apps/{{.AppID}}/users"
+                        class="text-indigo-600 text-sm font-semibold hover:text-indigo-800">
+                        Ver Usuarios
+                    </a>
+                </div>
+            </div>
+            {{else}}
+            <div class="col-span-full text-center py-10 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                <p class="text-gray-500">No hay aplicaciones registradas todavía.</p>
+            </div>
+            {{end}}
+        </div>
+    </main>
+</body>
+
+</html>

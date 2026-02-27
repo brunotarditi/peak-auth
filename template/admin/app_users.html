@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Usuarios - {{.App.Name}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50">
+    <nav class="bg-indigo-700 p-4 text-white flex justify-between items-center shadow-md">
+        <div class="flex items-center gap-4">
+            <a href="/admin" class="font-bold text-xl hover:text-indigo-200 transition">Peak Auth</a>
+            <span class="text-indigo-300">/</span>
+            <span class="text-sm">Usuarios de {{.App.Name}}</span>
+        </div>
+        <form action="/admin/logout" method="POST">
+            <button type="submit" class="text-sm bg-indigo-800 hover:bg-indigo-900 px-3 py-1 rounded transition">
+                Cerrar Sesión
+            </button>
+        </form>
+    </nav>
+
+    <main class="container mx-auto mt-10 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Añadir Usuario a la aplicación</h2>
+                <button onclick="document.getElementById('roleModal').classList.remove('hidden')"
+                    class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded transition">
+                    + Gestionar Roles
+                </button>
+            </div>
+            <form action="/admin/apps/{{.App.AppID}}/users" method="POST"
+                class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Email del usuario</label>
+                    <input type="email" name="email" placeholder="ejemplo@correo.com" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-semibold mb-2">Rol en la App</label>
+                    <select name="role" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+                        <option value="" disabled selected>Selecciona un rol</option>
+                        {{range .Roles}}
+                        <option value="{{.Name}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <button type="submit"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition h-10">
+                    + Asignar Usuario
+                </button>
+            </form>
+        </div>
+
+        <div id="roleModal"
+            class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-80">
+                <h3 class="text-lg font-bold mb-4">Nuevo Rol Global</h3>
+                <form id="roleForm" onsubmit="createRole(event)">
+                    <input type="text" id="roleName" name="name" placeholder="Nombre del rol (ej. EDITOR)" required
+                        class="w-full px-3 py-2 border rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="closeRoleModal()"
+                            class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
+                        <button type="submit" id="submitRoleBtn"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                            Crear
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-700">Listado de Usuarios</h3>
+                <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total: {{len .Users}}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-600 uppercase text-xs">
+                            <th class="px-6 py-3 font-semibold">Usuario</th>
+                            <th class="px-6 py-3 font-semibold">Estado</th>
+                            <th class="px-6 py-3 font-semibold text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {{range .Users}}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900">{{.Email}}</div>
+                                <div class="text-xs text-gray-500">{{.FirstName}} {{.LastName}}</div>
+                                <div class="text-xs text-indigo-500 font-bold mt-1">{{.RoleName}}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                {{if .IsVerified}}
+                                <span
+                                    class="px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full">Verificado</span>
+                                {{else}}
+                                <span
+                                    class="px-2 py-1 text-xs font-bold text-yellow-700 bg-yellow-100 rounded-full">Pendiente</span>
+                                {{end}}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {{if ne .RoleName "ROOT"}}
+                                <button onclick="revokeAccess('{{$.App.AppID}}', '{{.ID}}')"
+                                    class="text-red-500 hover:text-red-700 text-sm font-medium">
+                                    Quitar Acceso
+                                </button>
+                                {{else}}
+                                <span class="text-gray-400 text-xs italic">Protegido</span>
+                                {{end}}
+                            </td>
+                        </tr>
+                        {{else}}
+                        <tr>
+                            <td colspan="3" class="px-6 py-10 text-center text-gray-500 italic">
+                                No hay usuarios vinculados a esta aplicación todavía.
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <a href="/admin" class="text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                ← Volver al Dashboard
+            </a>
+        </div>
+    </main>
+</body>
+<script>
+    function closeRoleModal() {
+        document.getElementById('roleModal').classList.add('hidden');
+        document.getElementById('roleForm').reset();
+    }
+
+    async function createRole(event) {
+        event.preventDefault();
+        const btn = document.getElementById('submitRoleBtn');
+        const roleName = document.getElementById('roleName').value.toUpperCase(); // Normalizamos a mayúsculas
+
+        btn.disabled = true;
+        btn.innerText = 'Cargando...';
+
+        try {
+            const response = await fetch('/admin/roles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: roleName })
+            });
+
+            if (response.ok) {
+                // 1. Agregar el nuevo rol al selector
+                const select = document.querySelector('select[name="role"]');
+                const option = new Option(roleName, roleName);
+                select.add(option);
+                select.value = roleName; // Lo dejamos seleccionado
+
+                // 2. Cerrar el modal
+                closeRoleModal();
+                alert('Rol creado y seleccionado correctamente');
+            } else {
+                const data = await response.json();
+                alert('Error: ' + (data.error || 'No se pudo crear el rol'));
+            }
+        } catch (err) {
+            alert('Error de conexión con el servidor');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Crear';
+        }
+    }
+</script>
+
+</html>
