@@ -19,7 +19,7 @@ type JWTManager struct {
 // CustomClaims define qué info viajará en el token
 type CustomClaims struct {
 	Username string `json:"username"`
-	AppID    string `json:"app_id"` // Para tu lógica multi-app
+	AppID    string `json:"app_id"`
 	jwt.RegisteredClaims
 }
 
@@ -80,20 +80,31 @@ func (m *JWTManager) GenerateToken(userID uint, username string, appID string, d
 
 // VerifyToken comprueba la validez de un token y devuelve sus claims si es correcto.
 func (m *JWTManager) VerifyToken(tokenString string) (*CustomClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+	if m.publicKey == nil {
+		return nil, fmt.Errorf("la clave pública no está cargada en el manager")
+	}
+	// 1. Instanciamos el struct antes de parsear
+	claims := &CustomClaims{}
+
+	// 2. Pasamos 'claims' (el puntero) directamente aquí
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("método de firma inesperado: %v", token.Header["alg"])
 		}
 		return m.publicKey, nil
 	})
 
+	// 3. Si hay error de parseo (expirado, firma mal, etc.), lo devolvemos
 	if err != nil {
-		return nil, fmt.Errorf("token inválido: %w", err)
+		return nil, err
 	}
 
-	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
-		return claims, nil
+	// 4. Validamos que el token sea formalmente válido
+	if !token.Valid {
+		return nil, fmt.Errorf("token inválido")
 	}
 
-	return nil, fmt.Errorf("token inválido")
+	// Como pasamos el puntero 'claims' al inicio, si token.Valid es true,
+	// 'claims' ya tiene los datos cargados. No hace falta casting.
+	return claims, nil
 }

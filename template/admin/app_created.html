@@ -1,0 +1,40 @@
+<main class="container mx-auto mt-10 p-4">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg border-t-4 border-green-500">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">¡Reino "{{.App.Name}}" Creado!</h2>
+        <p class="text-gray-600 mb-6">Copia las credenciales de acceso para tu aplicación. Por seguridad, no volveremos
+            a mostrar el Secret Key.</p>
+
+        <div class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label class="block text-xs font-bold text-gray-500 uppercase">App ID (Público)</label>
+                <code class="text-indigo-700 font-mono text-lg">{{.App.AppID}}</code>
+            </div>
+
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <label class="block text-xs font-bold text-yellow-600 uppercase">Secret Key (Privado)</label>
+                <div class="flex items-center gap-2">
+                    <code id="secretKey" class="text-gray-800 font-mono text-lg break-all">{{.PlainSecret}}</code>
+                    <button onclick="copySecret()"
+                        class="bg-yellow-600 text-white px-3 py-1 rounded text-xs hover:bg-yellow-700">Copiar</button>
+                </div>
+                <p class="text-[10px] text-yellow-700 mt-2">⚠️ Si pierdes este secreto, deberás generar uno nuevo desde
+                    la configuración.</p>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <a href="/admin"
+                class="block w-full text-center bg-gray-800 text-white py-3 rounded-lg font-bold hover:bg-gray-900 transition">
+                Ir al Dashboard
+            </a>
+        </div>
+    </div>
+</main>
+
+<script>
+    function copySecret() {
+        const secret = document.getElementById('secretKey').innerText;
+        navigator.clipboard.writeText(secret);
+        alert('¡Secret Key copiado!');
+    }
+</script>

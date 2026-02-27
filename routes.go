@@ -2,8 +2,8 @@ package main
 
 import (
 	"peak-auth/app"
-	"peak-auth/controllers"
-	"peak-auth/middlewares"
+	"peak-auth/controller"
+	"peak-auth/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,18 +11,20 @@ import (
 // SetupRoutes registra las rutas del servidor en el router Gin proporcionado.
 func SetupRoutes(r *gin.Engine, app *app.App) {
 
-	userCtrl := &controllers.UserController{
+	userCtrl := &controller.UserController{
 		UserService: app.UserService,
 	}
 
-	setupCtrl := &controllers.SetupController{
+	setupCtrl := &controller.SetupController{
 		SetupService: app.SetupService,
+		TokenManager: app.TokenManager,
 	}
 
-	adminCtrl := &controllers.AdminController{
+	adminCtrl := &controller.AdminController{
 		AppService:  app.AppService,
 		UserService: app.UserService,
 		RuleService: app.RuleService,
+		RoleService: app.RoleService,
 	}
 
 	// --- SETUP ---
@@ -36,20 +38,39 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 		api.POST("/register", userCtrl.Register)
 	}
 
-	// --- ADMIN DASHBOARD ---
-	admin := r.Group("/admin")
-	admin.Use(middlewares.AuthMiddleware(app.TokenManager))
+	// --- RUTAS PÚBLICAS DE ADMINISTRACIÓN ---
+	adminPublic := r.Group("/admin")
 	{
-		admin.GET("/", adminCtrl.Dashboard)
-		admin.GET("/login", adminCtrl.GetLoginForm)
-		admin.POST("/login", adminCtrl.PostLoginForm)
-		admin.POST("/logout", adminCtrl.PostLogout)
-		admin.GET("/apps/new", adminCtrl.GetFormApp)
-		admin.POST("/apps", middlewares.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostFormApp)
-		admin.GET("/apps/:id/users", adminCtrl.GetAppUsers)
-		admin.POST("/apps/:id/users", middlewares.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostUsersInApp)
-		admin.GET("/apps/:id/rules", adminCtrl.GetAppRules)
-		admin.POST("/apps/:id/rules", middlewares.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostDefaultRules)
+		adminPublic.GET("/login", adminCtrl.GetLoginForm)
+		adminPublic.POST("/login", adminCtrl.PostLoginForm)
+
+		// El setup también es "público" porque se autoprotege con su propio token efímero
+		adminPublic.GET("/setup", setupCtrl.ShowSetup)
+		adminPublic.POST("/setup", setupCtrl.ProcessSetup)
+	}
+
+	// --- RUTAS PROTEGIDAS DE ADMINISTRACIÓN ---
+	adminPrivate := r.Group("/admin")
+	adminPrivate.Use(middleware.AuthMiddleware(app.TokenManager))
+	{
+		adminPrivate.GET("/", adminCtrl.Dashboard)
+		adminPrivate.POST("/logout", adminCtrl.PostLogout)
+
+		// Gestión de Apps
+		adminPrivate.GET("/apps/new", adminCtrl.GetFormApp)
+		adminPrivate.POST("/apps", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostFormApp)
+
+		// Gestión de Roles
+		adminPrivate.POST("/roles", adminCtrl.PostRole)
+
+		// Gestión de Usuarios por App
+		apps := adminPrivate.Group("/apps/:id")
+		{
+			apps.GET("/users", adminCtrl.GetAppUsers)
+			apps.POST("/users", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostUsersInApp)
+			apps.GET("/rules", adminCtrl.GetAppRules)
+			apps.POST("/rules", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostDefaultRules)
+		}
 	}
 
 }

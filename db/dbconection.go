@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"peak-auth/models"
+	"peak-auth/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -45,15 +45,15 @@ func AutoMigrate() {
 		log.Fatal("La base de datos no está inicializada")
 	}
 	postgresqlDB.AutoMigrate(
-		&models.Application{},
-		&models.Role{},
-		&models.User{},
-		&models.Profile{},
-		&models.UserApplicationRole{},
-		&models.EmailVerification{},
-		&models.PasswordReset{},
-		&models.RefreshToken{},
-		&models.ApplicationRules{},
+		&model.Application{},
+		&model.Role{},
+		&model.User{},
+		&model.Profile{},
+		&model.UserApplicationRole{},
+		&model.EmailVerification{},
+		&model.PasswordReset{},
+		&model.RefreshToken{},
+		&model.ApplicationRules{},
 	)
 }
 

@@ -3,41 +3,44 @@ package app
 import (
 	"os"
 	"peak-auth/auth"
-	"peak-auth/repositories"
-	"peak-auth/services"
+	"peak-auth/repository"
+	"peak-auth/service"
 
 	"gorm.io/gorm"
 )
 
 type App struct {
 	DB           *gorm.DB
-	UserService  services.UserService
-	AppService   services.ApplicationService
-	SetupService services.SetupService
-	RuleService  services.ApplicationRuleService
-	UarRepo      repositories.UserApplicationRoleRepository
+	UserService  service.UserService
+	AppService   service.ApplicationService
+	SetupService service.SetupService
+	RuleService  service.ApplicationRuleService
+	UarRepo      repository.UserApplicationRoleRepository
 	TokenManager *auth.JWTManager
+	RoleService  service.RoleService
 }
 
 func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	// Setup service para primer bootstrap (token y servicio se inicializarán después)
 	setupToken := os.Getenv("SETUP_TOKEN")
 	// 1. Inicializar Repositorios
-	userRepo := repositories.NewUserRepositoryRepository(db)
-	roleRepo := repositories.NewRoleRepositoryRepository(db)
-	uarRepo := repositories.NewUserApplicationRoleRepository(db)
-	appRepo := repositories.NewApplicationRepository(db)
-	ruleRepo := repositories.NewApplicationRuleRepository(db)
-	emailRepo := repositories.NewEmailVerificationRepositoryRepository(db)
-	passRepo := repositories.NewPasswordResetRepository(db)
-	setupRepo := repositories.NewSetupRepository(db)
+	userRepo := repository.NewUserRepositoryRepository(db)
+	roleRepo := repository.NewRoleRepositoryRepository(db)
+	uarRepo := repository.NewUserApplicationRoleRepository(db)
+	appRepo := repository.NewApplicationRepository(db)
+	ruleRepo := repository.NewApplicationRuleRepository(db)
+	emailRepo := repository.NewEmailVerificationRepositoryRepository(db)
+	passRepo := repository.NewPasswordResetRepository(db)
+	setupRepo := repository.NewSetupRepository(db)
+	txManager := repository.NewTransactionManager(db)
 
 	// 2. Inicializar Servicios inyectando los repos
-	ruleService := services.NewApplicationRuleService(ruleRepo, uarRepo, roleRepo)
+	ruleService := service.NewApplicationRuleService(ruleRepo, uarRepo, roleRepo)
 
-	appService := services.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo)
-	userService := services.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo)
-	setupService := services.NewSetupService(userRepo, appRepo, roleRepo, uarRepo, setupRepo, setupToken)
+	appService := service.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager)
+	userService := service.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo)
+	setupService := service.NewSetupService(setupRepo, setupToken, txManager)
+	roleService := service.NewRoleService(roleRepo)
 
 	return &App{
 		DB:           db,
@@ -45,5 +48,8 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 		AppService:   appService,
 		SetupService: setupService,
 		RuleService:  ruleService,
+		TokenManager: jwtManager,
+		UarRepo:      uarRepo,
+		RoleService:  roleService,
 	}
 }
