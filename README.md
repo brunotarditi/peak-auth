@@ -42,7 +42,7 @@
 1. **Clonar el repositorio:**
 
    ```bash
-   git clone https://github.com/yourusername/peak-auth.git
+   git clone https://github.com/brunotarditi/peak-auth.git
    cd peak-auth
    ```
 
