@@ -3,79 +3,114 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Verificá tu correo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        .body{
-            margin:0;
-            padding:0;
-            background-color:#f4f4f4;
-            font-family:Arial,sans-serif;
-        }
-        .container{
-            max-width: 600px;
-            margin: 30px auto;
-            background-color: #ffffff; 
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1)
-        }
-        .title{
-            color: #333;
-            margin-top: 0
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            color: #1e293b;
         }
 
-        .text{
+        .wrapper {
+            padding: 40px 20px;
             text-align: center;
-            margin: 30px 0;
         }
 
-        .link{
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #576CBC;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 6px;
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #f1f5f9;
+        }
+
+        .logo {
+            background-color: #4f46e5;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            margin: 0 auto 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
             font-weight: bold;
+            font-size: 24px;
+            line-height: 48px;
         }
 
-        .warning{
-            color: #999;
-            font-size: 14px;
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0 0 16px;
+            color: #0f172a;
+            letter-spacing: -0.025em;
         }
 
-        .footer{
-            text-align: center;
-            color: #aaa;
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #64748b;
+            margin: 0 0 32px;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #4f46e5;
+            color: #ffffff !important;
+            font-weight: 700;
+            font-size: 16px;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 14px;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+            transition: all 0.2s;
+        }
+
+        .footer {
+            margin-top: 32px;
             font-size: 12px;
-            margin-top: 20px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: #f1f5f9;
+            margin: 32px 0;
+        }
+
+        .support {
+            font-size: 13px;
+            color: #94a3b8;
         }
     </style>
 </head>
 
-<body class="body">
-    <div class="container">
-        <h2 class="title">Hola {{.Username}},</h2>
-        <p>    
-            ¡Gracias por registrarte en <strong>Librería Mariela</strong>! Para completar tu registro, necesitamos que
-            verifiques tu dirección de correo electrónico.
-        </p>
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <div class="logo">P</div>
+            <h1>Verifica tu cuenta</h1>
+            <p>Hola <strong>{{.Username}}</strong>,<br>Estás a un paso de comenzar. Haz clic en el botón de abajo para
+                verificar tu correo electrónico y activar tu cuenta.</p>
 
-        <div class="text">
-            <a href="{{.VerifyURL}}"
-                class="link">
-                Verificar correo
-            </a>
+            <a href="{{.VerifyURL}}" class="btn">Confirmar Correo</a>
+
+            <div class="divider"></div>
+
+            <p class="support">¿No has solicitado esto? Puedes ignorar este mensaje con seguridad.</p>
         </div>
-
-        <p class="warning">
-            Si no te registraste en nuestra plataforma, podés ignorar este mensaje.
-        </p>
+        <div class="footer">
+            &copy; {{ now.Year }} Peak Auth &bull; Gestión de Identidades
+        </div>
     </div>
-
-    <p class="footer">
-        © 2025 Librería Mariela · Todos los derechos reservados
-    </p>
 </body>
 
 </html>

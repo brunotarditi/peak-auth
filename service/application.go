@@ -9,6 +9,8 @@ import (
 
 type ApplicationService interface {
 	CreateApp(name, description string, isActive bool) (model.Application, string, error)
+	UpdateApp(appID string, name, description string, isActive bool) error
+	RegenerateSecret(appID string) (string, error)
 	RegisterUserInApp(userEmail, appID, roleName string) error
 	GetAppDetails(appID string) (model.Application, error)
 	GetDashboardStats() ([]response.AppStatsResponse, error)
@@ -97,6 +99,44 @@ func (s *applicationService) RegisterUserInApp(userEmail, publicAppID, roleName 
 
 func (s *applicationService) GetAppDetails(publicAppID string) (model.Application, error) {
 	return s.repo.FindByAppID(publicAppID)
+}
+
+func (s *applicationService) UpdateApp(appID string, name, description string, isActive bool) error {
+	app, err := s.repo.FindByAppID(appID)
+	if err != nil {
+		return err
+	}
+
+	app.Name = name
+	app.Description = description
+	app.IsActive = isActive
+
+	return s.repo.Update(&app)
+}
+
+func (s *applicationService) RegenerateSecret(appID string) (string, error) {
+	app, err := s.repo.FindByAppID(appID)
+	if err != nil {
+		return "", err
+	}
+
+	plainSecret, _, err := utils.GenerateToken(32)
+	if err != nil {
+		return "", err
+	}
+
+	hashedSecret, err := utils.HashPassword(plainSecret)
+	if err != nil {
+		return "", err
+	}
+
+	app.SecretKey = hashedSecret
+	err = s.repo.Update(&app)
+	if err != nil {
+		return "", err
+	}
+
+	return plainSecret, nil
 }
 
 func (s *applicationService) GetDashboardStats() ([]response.AppStatsResponse, error) {

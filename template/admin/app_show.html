@@ -1,22 +1,263 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Ver Aplicación - Peak Auth</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50">
-    <main class="container mx-auto mt-10 p-4">
-        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h2 class="text-2xl font-bold mb-4 text-indigo-600">{{.App.Name}}</h2>
-            <p class="text-gray-600 mb-2">{{.App.Description}}</p>
-            <p class="text-sm text-gray-500">AppID público: <span class="font-mono">{{.App.AppID}}</span></p>
-            <div class="mt-4 flex gap-2">
-                <a href="/admin/apps/{{.App.ID}}/users" class="bg-blue-500 text-white px-3 py-1 rounded">Usuarios</a>
-                <a href="/admin/apps/{{.App.ID}}/rules" class="bg-green-500 text-white px-3 py-1 rounded">Reglas</a>
-                <a href="/admin" class="text-indigo-500">Volver</a>
+{{ template "admin/header" . }}
+
+<div class="flex flex-col gap-8">
+    <!-- Top Bar -->
+    <div class="flex items-center justify-between">
+        <a href="/admin"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 rounded-xl font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition border border-slate-200 dark:border-slate-700 group">
+            <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Volver al Panel
+        </a>
+        <div class="flex items-center gap-3">
+            <a href="/admin/apps/{{.App.AppID}}/users"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition border border-indigo-100 dark:border-indigo-800">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Gestionar Usuarios ({{ .UserCount }})
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 flex flex-col gap-8">
+
+            <!-- App Card -->
+            <div
+                class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800">
+                <div class="flex justify-between items-start mb-8">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">{{ .App.Name
+                            }}</h2>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium">{{ .App.Description }}</p>
+                    </div>
+                    {{ if .App.IsActive }}
+                    <span
+                        class="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-100 dark:border-emerald-800">Activa</span>
+                    {{ else }}
+                    <span
+                        class="px-3 py-1 bg-slate-50 dark:bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-100 dark:border-slate-800">Inactiva</span>
+                    {{ end }}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Application
+                            ID</label>
+                        <div class="flex items-center gap-2">
+                            <code
+                                class="flex-grow px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl font-mono text-xs text-slate-600 dark:text-slate-300 truncate">{{ .App.AppID }}</code>
+                            <button onclick="copyToClipboard('{{ .App.AppID }}', this)"
+                                class="p-3 text-slate-400 hover:text-indigo-600 transition hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Client
+                            Secret</label>
+                        <div class="flex items-center gap-2">
+                            <div class="relative flex-grow">
+                                <input type="password" readonly value="********************************"
+                                    class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl font-mono text-xs text-slate-400 dark:text-slate-500 outline-none">
+                            </div>
+                            <button onclick="openRevokeModal()"
+                                class="p-3 text-slate-400 hover:text-rose-600 transition hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl"
+                                title="Revocar Secreto">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules Card -->
+            <div
+                class="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+                <div
+                    class="p-8 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/20 dark:bg-slate-800/20">
+                    <div>
+                        <h3 class="font-bold text-slate-900 dark:text-white text-lg">Políticas de Aplicación</h3>
+                        <p
+                            class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-widest font-black">
+                            Control de comportamiento del sistema</p>
+                    </div>
+                    {{ if not .Rules }}
+                    <form action="/admin/apps/{{.App.AppID}}/rules" method="POST">
+                        <button type="submit"
+                            class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition font-bold text-sm shadow-xl shadow-indigo-100 dark:shadow-none">
+                            Generar Reglas
+                        </button>
+                    </form>
+                    {{ end }}
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr
+                                class="text-slate-400 dark:text-slate-500 uppercase text-[10px] font-black tracking-widest border-b border-slate-50 dark:border-slate-800">
+                                <th class="px-8 py-5">Código de Regla</th>
+                                <th class="px-8 py-5">Configuración (JSON)</th>
+                                <th class="px-8 py-5 text-right">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+                            {{ range .Rules }}
+                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                <td class="px-8 py-5">
+                                    <span
+                                        class="font-bold text-xs text-indigo-600 dark:text-indigo-400 tracking-tight">{{
+                                        .Code }}</span>
+                                </td>
+                                <td class="px-8 py-5">
+                                    <code
+                                        class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-md">{{ printf "%s" .Value }}</code>
+                                </td>
+                                <td class="px-8 py-5 text-right">
+                                    {{ if .IsActive }}
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/40 rounded-full border border-emerald-100 dark:border-emerald-800 uppercase tracking-widest">Activo</span>
+                                    {{ else }}
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-black text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/40 rounded-full border border-rose-100 dark:border-rose-800 uppercase tracking-widest">Inactivo</span>
+                                    {{ end }}
+                                </td>
+                            </tr>
+                            {{ else }}
+                            <tr>
+                                <td colspan="3" class="px-8 py-24 text-center">
+                                    <div class="text-slate-200 dark:text-slate-800 mb-6 flex justify-center">
+                                        <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <p class="text-slate-400 dark:text-slate-600 font-bold text-lg mb-2">No hay reglas
+                                        definidas</p>
+                                    <p class="text-slate-400 dark:text-slate-500 text-sm max-w-xs mx-auto">Configura las
+                                        reglas RBAC para autorizar los accesos a los recursos de esta app.</p>
+                                </td>
+                            </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </main>
-</body>
-</html>
+
+        <!-- Sidebar -->
+        <div class="flex flex-col gap-8">
+            <!-- App Configuration -->
+            <div
+                class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800">
+                <h3 class="font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest text-[10px] mb-8">
+                    Preferencias</h3>
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <div class="text-sm font-bold text-slate-800 dark:text-slate-200">Auto-Registro</div>
+                            <div class="text-[10px] text-slate-400">Nuevos usuarios vía API</div>
+                        </div>
+                        <div
+                            class="w-10 h-6 bg-indigo-600 rounded-full flex items-center justify-end px-1 cursor-pointer">
+                            <div class="w-4 h-4 bg-white rounded-full shadow-sm"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between opacity-40">
+                        <div class="space-y-0.5">
+                            <div class="text-sm font-bold text-slate-800 dark:text-slate-200">2FA Obligatorio</div>
+                            <div class="text-[10px] text-slate-400">Verificación de dos pasos</div>
+                        </div>
+                        <div
+                            class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-start px-1 cursor-not-allowed">
+                            <div class="w-4 h-4 bg-white dark:bg-slate-500 rounded-full shadow-sm"></div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-50 dark:border-slate-800">
+                        <a href="/admin/apps/{{.App.AppID}}/edit"
+                            class="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-2xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Editar Aplicación
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div
+                class="p-8 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-[2.5rem]">
+                <h3 class="text-[10px] font-black uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-4">Zona
+                    de Peligro</h3>
+                <p class="text-[11px] text-rose-600/60 dark:text-rose-400/60 mb-8 leading-relaxed font-medium">La
+                    eliminación es permanente e irreversible. Todos los datos asociados se perderán.</p>
+                <button
+                    class="w-full py-4 bg-rose-600 text-white text-xs font-bold rounded-2xl hover:bg-rose-700 transition shadow-xl shadow-rose-100 dark:shadow-none">
+                    Eliminar Aplicación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revoke Secret Modal -->
+<div id="revokeModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onclick="closeRevokeModal()">
+    </div>
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div
+            class="relative bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 animate-slide-in-right">
+            <div
+                class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white mb-3">¿Regenerar Secreto?</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8">Esta acción invalidará el secreto
+                actual **de inmediato**. Cualquier aplicación que use las credenciales antiguas dejará de autenticarse.
+            </p>
+
+            <div class="flex flex-col gap-3">
+                <form action="/admin/apps/{{.App.AppID}}/secret" method="POST">
+                    <button type="submit"
+                        class="w-full py-4 bg-rose-600 text-white font-bold rounded-2xl hover:bg-rose-700 transition shadow-xl shadow-rose-100 dark:shadow-none">
+                        Sí, Regenerar Ahora
+                    </button>
+                </form>
+                <button onclick="closeRevokeModal()"
+                    class="w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openRevokeModal() {
+        document.getElementById('revokeModal').classList.remove('hidden');
+    }
+    function closeRevokeModal() {
+        document.getElementById('revokeModal').classList.add('hidden');
+    }
+</script>
+
+{{ template "admin/footer" . }}

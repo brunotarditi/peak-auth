@@ -6,31 +6,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Setup Inicial</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { bg: '#0f172a', card: '#1e293b', border: '#334155' }
+                    }
+                }
+            }
+        }
+        if (localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/admin/css/admin.css?v=1.1">
 </head>
 
-<body class="bg-gray-100 h-screen flex items-center justify-center">
-    <div class="bg-white p-8 rounded-lg shadow-md w-96">
-        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Crear Usuario Root</h2>
-        <p class="text-sm text-gray-600 mb-6 text-center">Este usuario tendrá control total sobre todos los reinos y
-            aplicaciones.</p>
+<body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900">
+    <div class="max-w-md w-full animate-slide-in-right">
+        <div class="text-center mb-10">
+            <div
+                class="bg-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-200 dark:shadow-none">
+                <svg class="w-8 h-8 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Setup <span
+                    class="text-indigo-600">Peak Auth</span></h1>
+            <p class="text-slate-400 mt-2 font-medium uppercase tracking-[0.2em] text-[10px]">Paso Final de Instalación
+            </p>
+        </div>
 
-        <form action="/setup" method="POST">
-            <input type="hidden" name="token" value="{{.SetupToken}}">
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
-                <input type="email" name="email" required
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <div
+            class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800">
+            <div class="mb-8">
+                <h2 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Usuario Maestro</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">Crea la cuenta de
+                    administrador con control total sobre todos los recursos.</p>
             </div>
-            <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-bold mb-2">Contraseña</label>
-                <input type="password" name="password" required
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <button type="submit"
-                class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">
-                Finalizar Configuración
-            </button>
-        </form>
+
+            <form action="/setup" method="POST" class="space-y-6">
+                <input type="hidden" name="token" value="{{.SetupToken}}">
+
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Email del
+                        Root</label>
+                    <input type="email" name="email" required placeholder="admin@proyectopeak.com"
+                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Contraseña
+                        Maestra</label>
+                    <input type="password" name="password" required placeholder="••••••••"
+                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                    <div
+                        class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl flex items-start gap-3">
+                        <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <p class="text-[10px] text-amber-700 dark:text-amber-500 font-bold leading-tight">
+                            Guarda esta contraseña en un lugar seguro. Es la llave maestra de tu infraestructura.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit"
+                        class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 group">
+                        <span>Finalizar Instalación</span>
+                        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="mt-10 flex items-center justify-center gap-6">
+            <div class="h-px bg-slate-200 dark:bg-slate-800 w-12"></div>
+            <p class="text-[10px] text-slate-400 dark:text-slate-600 font-black uppercase tracking-widest">Paso 1 de 1
+            </p>
+            <div class="h-px bg-slate-200 dark:bg-slate-800 w-12"></div>
+        </div>
     </div>
 </body>
 
