@@ -1,8 +1,10 @@
 package main
 
 import (
+	"html/template"
 	"log"
 	"os"
+	"time"
 
 	"peak-auth/app"
 	"peak-auth/auth"
@@ -39,13 +41,19 @@ func main() {
 	// 3) Creamos la instancia de la aplicación con sus servicios
 	appInstance := app.NewApp(dbInstance, jwtManager)
 
-	// 4) Inicializar sistema
-	//setupInitializer(setupToken, port, systemRepo)
-
-	// 5) Gin router (templates se cargan ahora; rutas se registran tras crear setupSvc)
+	// 5) Gin router
 	router := gin.New()
+
+	// Registrar funciones globales para templates ANTES de cargar glob
+	router.SetFuncMap(template.FuncMap{
+		"now": func() time.Time {
+			return time.Now()
+		},
+	})
+
 	// Cargar plantillas HTML
-	router.LoadHTMLGlob("templates/**/*.html")
+	router.LoadHTMLGlob("template/email/*.html")
+	router.LoadHTMLGlob("template/admin/*.html")
 
 	SetupRoutes(router, appInstance)
 

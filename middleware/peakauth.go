@@ -40,6 +40,7 @@ func AuthMiddleware(manager *auth.JWTManager) gin.HandlerFunc {
 		var userID uint
 		fmt.Sscanf(jsonToken.Subject, "%d", &userID)
 		c.Set("user_id", userID)
+		c.Set("user_email", jsonToken.Username)
 		c.Next()
 	}
 }

@@ -10,6 +10,8 @@ import (
 
 // SetupRoutes registra las rutas del servidor en el router Gin proporcionado.
 func SetupRoutes(r *gin.Engine, app *app.App) {
+	// --- ESTÁTICOS ---
+	r.Static("/static", "./static")
 
 	userCtrl := &controller.UserController{
 		UserService: app.UserService,
@@ -59,6 +61,9 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 		// Gestión de Apps
 		adminPrivate.GET("/apps/new", adminCtrl.GetFormApp)
 		adminPrivate.POST("/apps", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostFormApp)
+		adminPrivate.GET("/apps/:id", adminCtrl.GetApp)
+		adminPrivate.GET("/apps/:id/edit", adminCtrl.GetEditApp)
+		adminPrivate.POST("/apps/:id", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostUpdateApp)
 
 		// Gestión de Roles
 		adminPrivate.POST("/roles", adminCtrl.PostRole)
@@ -70,6 +75,7 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 			apps.POST("/users", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostUsersInApp)
 			apps.GET("/rules", adminCtrl.GetAppRules)
 			apps.POST("/rules", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostDefaultRules)
+			apps.POST("/secret", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostRegenerateSecret)
 		}
 	}
 

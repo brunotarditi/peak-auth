@@ -1,0 +1,128 @@
+{{ define "admin/header" }}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peak Auth - {{ .Title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/admin/css/admin.css?v=1.1">
+    <script>
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', isDark);
+            if (typeof updateThemeIcons === 'function') updateThemeIcons(isDark);
+        }
+        (function () {
+            const savedTheme = localStorage.getItem('darkMode');
+            if (savedTheme === 'true' || (savedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script src="/static/admin/js/common.js?v=1.1"></script>
+</head>
+
+<body class="bg-pattern flex flex-col min-h-screen text-slate-900">
+    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-6">
+                    <a href="/admin" class="group flex items-center gap-2">
+                        <div class="bg-indigo-600 text-white p-1.5 rounded-lg group-hover:bg-indigo-700 transition">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <span class="font-bold text-xl tracking-tight text-slate-800">Peak Auth</span>
+                    </a>
+                    <div class="hidden md:flex items-center gap-2 text-slate-400">
+                        {{ range .Breadcrumbs }}
+                        <span class="text-indigo-300">/</span>
+                        {{ if .URL }}
+                        <a href="{{ .URL }}" class="text-xs hover:text-indigo-200 transition font-medium">{{ .Label
+                            }}</a>
+                        {{ else }}
+                        <span class="text-sm font-medium text-slate-600">{{ .Label }}</span>
+                        {{ end }}
+                        {{ end }}
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()"
+                        class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+                        title="Alternar Modo Oscuro">
+                        <svg id="moon-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <svg id="sun-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M14.5 12a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                    </button>
+
+                    {{ if .UserEmail }}
+                    <div class="hidden sm:flex flex-col items-end mr-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Administrador</span>
+                        <span class="text-sm font-medium text-slate-700">{{ .UserEmail }}</span>
+                    </div>
+                    {{ end }}
+                    <form action="/admin/logout" method="POST" class="inline">
+                        <button type="submit"
+                            class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                            title="Cerrar Sesión">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main class="container mx-auto py-10 px-4 flex-grow">
+        {{ end }}
+
+        {{ define "admin/footer" }}
+    </main>
+    <footer class="bg-white/50 border-t border-slate-200 py-8 mt-auto">
+        <div
+            class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-sm">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-600">Peak Auth</span>
+                <span>&bull;</span>
+                <p>&copy; {{ now.Year }} Gestión de Identidades en la Nube.</p>
+            </div>
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-indigo-600 transition">Documentación</a>
+                <a href="#" class="hover:text-indigo-600 transition">Soporte</a>
+                <a href="#" class="hover:text-indigo-600 transition">API</a>
+            </div>
+        </div>
+    </footer>
+</body>
+
+</html>
+{{ end }}
