@@ -1,14 +1,13 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"peak-auth/repository"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RoleMiddleware(uarRepo repository.UserApplicationRoleRepository, requiredRoles ...string) gin.HandlerFunc {
+func RoleMiddleware(uarRepo repository.UserApplicationRoleRepository, appRepo repository.ApplicationRepository, requiredRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if len(requiredRoles) == 0 {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "se requiere al menos un rol"})
@@ -20,32 +19,44 @@ func RoleMiddleware(uarRepo repository.UserApplicationRoleRepository, requiredRo
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "usuario no autenticado"})
 			return
 		}
-		userID, ok := valUser.(uint)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "ID de usuario inválido"})
+		userID := valUser.(uint)
+
+		// 1. Identificar la APP de destino
+		// Si la URL tiene :id (slug), buscamos el ID numérico
+		appSlug := c.Param("id")
+		var targetAppID uint = 1 // Por defecto Peak Auth Admin
+		if appSlug != "" {
+			app, err := appRepo.FindByAppID(appSlug)
+			if err == nil {
+				targetAppID = app.ID
+			}
+		}
+
+		// 2. ¿Es ROOT Global? (Check en App Maestra)
+		masterApp, err := appRepo.FindByAppID("peak-auth-raiz")
+		isRoot := false
+		if err == nil {
+			globalRoles, _ := uarRepo.GetUserRolesInApp(userID, masterApp.ID)
+			for _, r := range globalRoles {
+				if r == "ROOT" {
+					isRoot = true
+					c.Set("user_roles", globalRoles)
+					break
+				}
+			}
+		}
+
+		// Si es ROOT, pasa directo (bypass)
+		if isRoot {
+			c.Set("is_root", true)
+			c.Next()
 			return
 		}
 
-		valApp, exists := c.Get("current_app_id")
-		if !exists || valApp == nil {
-			c.Set("current_app_id", uint(1))
-			valApp = uint(1)
-		}
-		appID, ok := valApp.(uint)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "ID de aplicación inválido"})
-			return
-		}
-
-		roles, err := uarRepo.GetUserRolesInApp(userID, appID)
+		// 3. Si no es ROOT, validamos roles en la APP destino
+		roles, err := uarRepo.GetUserRolesInApp(userID, targetAppID)
 		if err != nil {
-			log.Printf("error obteniendo roles para usuario %d en app %d: %v", userID, appID, err)
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "error al verificar permisos"})
-			return
-		}
-
-		if len(roles) == 0 {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "no tienes roles asignados en esta aplicación"})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "no tienes permisos en esta aplicación"})
 			return
 		}
 
@@ -53,7 +64,9 @@ func RoleMiddleware(uarRepo repository.UserApplicationRoleRepository, requiredRo
 		for _, r := range roles {
 			roleSet[r] = true
 		}
+		c.Set("user_roles", roles)
 
+		// Verificar si tiene rol requerido
 		for _, rr := range requiredRoles {
 			if roleSet[rr] {
 				c.Next()
@@ -61,12 +74,12 @@ func RoleMiddleware(uarRepo repository.UserApplicationRoleRepository, requiredRo
 			}
 		}
 
-		adminRole := "admin"
-		if roleSet[adminRole] {
+		// Fallback: Si es ADMIN de la app destino, también le dejamos pasar
+		if roleSet["ADMIN"] || roleSet["admin"] {
 			c.Next()
 			return
 		}
 
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "no tienes los permisos necesarios para esta acción"})
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "no tienes los privilegios necesarios"})
 	}
 }

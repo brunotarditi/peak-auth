@@ -38,6 +38,11 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 	{
 		api.POST("/login", userCtrl.Login)
 		api.POST("/register", userCtrl.Register)
+
+		// Verificación y Recuperación (activación)
+		api.GET("/verify", userCtrl.GetVerifyEmail)
+		api.GET("/reset-password", userCtrl.GetResetPassword)
+		api.POST("/reset-password", userCtrl.PostResetPassword)
 	}
 
 	// --- RUTAS PÚBLICAS DE ADMINISTRACIÓN ---
@@ -53,17 +58,18 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 
 	// --- RUTAS PROTEGIDAS DE ADMINISTRACIÓN ---
 	adminPrivate := r.Group("/admin")
+	adminPrivate.Use(middleware.SecurityHeaderMiddleware()) // Prevenir caché y añadir seguridad
 	adminPrivate.Use(middleware.AuthMiddleware(app.TokenManager))
 	{
-		adminPrivate.GET("/", adminCtrl.Dashboard)
+		adminPrivate.GET("/", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.Dashboard)
 		adminPrivate.POST("/logout", adminCtrl.PostLogout)
 
 		// Gestión de Apps
 		adminPrivate.GET("/apps/new", adminCtrl.GetFormApp)
-		adminPrivate.POST("/apps", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostFormApp)
-		adminPrivate.GET("/apps/:id", adminCtrl.GetApp)
+		adminPrivate.POST("/apps", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostFormApp)
+		adminPrivate.GET("/apps/:id", adminCtrl.GetAppDetails)
 		adminPrivate.GET("/apps/:id/edit", adminCtrl.GetEditApp)
-		adminPrivate.POST("/apps/:id", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostUpdateApp)
+		adminPrivate.POST("/apps/:id", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.UpdateFormApp)
 
 		// Gestión de Roles
 		adminPrivate.POST("/roles", adminCtrl.PostRole)
@@ -72,10 +78,10 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 		apps := adminPrivate.Group("/apps/:id")
 		{
 			apps.GET("/users", adminCtrl.GetAppUsers)
-			apps.POST("/users", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostUsersInApp)
+			apps.POST("/users", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostUsersInApp)
 			apps.GET("/rules", adminCtrl.GetAppRules)
-			apps.POST("/rules", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostDefaultRules)
-			apps.POST("/secret", middleware.RoleMiddleware(app.UarRepo, "ROOT", "ADMIN"), adminCtrl.PostRegenerateSecret)
+			apps.POST("/rules", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostDefaultRules)
+			apps.POST("/secret", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostRegenerateSecret)
 		}
 	}
 

@@ -44,7 +44,7 @@
                         id="is_active"
                         class="h-5 w-5 text-indigo-600 border-slate-300 rounded-md focus:ring-indigo-500 transition cursor-pointer">
                     <label for="is_active" class="ml-3 text-sm text-indigo-900 font-bold cursor-pointer">
-                        Activar inmediatamente
+                        {{ if .App }}Estado de la Aplicación (Activa){{ else }}Activar inmediatamente{{ end }}
                     </label>
                 </div>
                 <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

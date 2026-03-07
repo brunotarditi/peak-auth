@@ -61,3 +61,52 @@ func (c *UserController) Register(ctx *gin.Context) {
 
 	ctx.JSON(201, gin.H{"message": "Usuario creado, verifique su email", "id": user.ID})
 }
+
+// GetVerifyEmail maneja la verificación de email vía GET
+func (c *UserController) GetVerifyEmail(ctx *gin.Context) {
+	token := ctx.Query("token")
+	if token == "" {
+		ctx.String(400, "Token requerido")
+		return
+	}
+
+	if err := c.UserService.VerifyEmail(token); err != nil {
+		ctx.String(400, "Error verificando email: %v", err)
+		return
+	}
+
+	ctx.HTML(200, "verify_email.html", gin.H{})
+}
+
+// GetResetPassword muestra el formulario de cambio de contraseña
+func (c *UserController) GetResetPassword(ctx *gin.Context) {
+	token := ctx.Query("token")
+	if token == "" {
+		ctx.String(400, "Token requerido")
+		return
+	}
+
+	// Renderizamos el template de reset-password
+	ctx.HTML(200, "reset_password.html", gin.H{
+		"token": token,
+	})
+}
+
+// PostResetPassword procesa el cambio de contraseña
+func (c *UserController) PostResetPassword(ctx *gin.Context) {
+	token := ctx.PostForm("token")
+	password := ctx.PostForm("password")
+	confirm := ctx.PostForm("confirm_password")
+
+	if password != confirm {
+		ctx.String(400, "Las contraseñas no coinciden")
+		return
+	}
+
+	if err := c.UserService.ResetPassword(token, password); err != nil {
+		ctx.String(400, "Error restableciendo contraseña: %v", err)
+		return
+	}
+
+	ctx.String(200, "Contraseña actualizada. Ya puedes iniciar sesión en tu aplicación.")
+}

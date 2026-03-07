@@ -1,24 +1,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
+    /* Brand Colors */
     --primary: #4f46e5;
     --primary-hover: #4338ca;
+    --success: #10b981;
+    --danger: #f43f5e;
+    --warning: #f59e0b;
+
+    /* Surface Colors - Light */
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --border-main: #f1f5f9;
+
+    /* Surface Colors - Dark */
+    --bg-main-dark: #0f172a;
+    --bg-card-dark: #1e293b;
+    --border-main-dark: #334155;
+
+    --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+    background-color: var(--bg-main);
+    color: #1e293b;
+}
+
+.dark body {
+    background-color: var(--bg-main-dark);
+    color: #f8fafc;
 }
 
 .bg-pattern {
-    background-color: #f8fafc;
     background-image: radial-gradient(#e2e8f0 0.5px, transparent 0.5px);
     background-size: 24px 24px;
 }
 
 .dark .bg-pattern {
-    background-color: #0f172a;
     background-image: radial-gradient(#1e293b 0.5px, transparent 0.5px);
 }
 
@@ -26,7 +47,112 @@ body {
     color-scheme: dark;
 }
 
-/* Animations */
+/* --- Toast System --- */
+#toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-end;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-main);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    pointer-events: auto;
+    min-width: 320px;
+    transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .toast {
+    background: var(--bg-card-dark);
+    border-color: var(--border-main-dark);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.toast-icon {
+    flex-shrink: 0;
+}
+
+.toast-message {
+    font-size: 0.875rem;
+    font-weight: 700;
+    flex-grow: 1;
+    margin-right: 0.5rem;
+}
+
+.toast-close {
+    color: #94a3b8;
+    transition: color 200ms;
+}
+
+.toast-close:hover {
+    color: #64748b;
+}
+
+.toast-success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.toast-error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.toast-warning {
+    background: #fffbeb;
+    border-color: #fef3c7;
+    color: #92400e;
+}
+
+.dark .toast-success {
+    background: #064e3b;
+    border-color: #065f46;
+    color: #ecfdf5;
+}
+
+.dark .toast-error {
+    background: #7f1d1d;
+    border-color: #991b1b;
+    color: #fef2f2;
+}
+
+.dark .toast-warning {
+    background: #78350f;
+    border-color: #92400e;
+    color: #fffbeb;
+}
+
+.toast-success .toast-icon {
+    color: #22c55e;
+}
+
+.toast-error .toast-icon {
+    color: #ef4444;
+}
+
+.toast-warning .toast-icon {
+    color: #f59e0b;
+}
+
+.toast-warning .toast-icon {
+    color: var(--warning);
+}
+
+/* --- Animations --- */
 @keyframes slide-in-right {
     from {
         transform: translateX(100%);
@@ -43,7 +169,7 @@ body {
     animation: slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Select Styling */
+/* --- Custom UI --- */
 .custom-select {
     appearance: none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -53,33 +179,36 @@ body {
     padding-right: 2.5rem;
 }
 
-/* Toasts Container */
-#toast-container {
-    pointer-events: none;
-}
-
 /* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
-    border-radius: 4px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+    background-clip: content-box;
 }
 
-/* Dark Mode Overrides */
+.dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+    background-clip: content-box;
+}
+
+/* Dark Mode Utilities */
 .dark .bg-white {
-    background-color: #1e293b !important;
-    border-color: #334155 !important;
+    background-color: var(--bg-card-dark) !important;
+    border-color: var(--border-main-dark) !important;
 }
 
 .dark .text-slate-900,
@@ -96,55 +225,36 @@ body {
 .dark .border-slate-100,
 .dark .border-slate-50,
 .dark .border-gray-200 {
-    border-color: #334155 !important;
+    border-color: var(--border-main-dark) !important;
 }
 
 .dark .bg-slate-50,
 .dark .bg-slate-50\/30 {
-    background-color: #0f172a !important;
+    background-color: var(--bg-main-dark) !important;
 }
 
 .dark input,
 .dark textarea,
 .dark select {
-    background-color: #0f172a !important;
-    border-color: #334155 !important;
+    background-color: var(--bg-main-dark) !important;
+    border-color: var(--border-main-dark) !important;
     color: #f8fafc !important;
 }
 
 .dark nav {
     background-color: rgba(15, 23, 42, 0.8) !important;
-    border-color: #1e293b !important;
+    border-color: var(--bg-card-dark) !important;
 }
 
 .dark footer {
-    background-color: #0f172a !important;
-    border-color: #1e293b !important;
+    background-color: var(--bg-main-dark) !important;
+    border-color: var(--bg-card-dark) !important;
 }
 
-.dark .bg-emerald-50 {
-    background-color: #064e3b !important;
-    color: #34d399 !important;
-}
-
-.dark .bg-indigo-50 {
-    background-color: #1e1b4b !important;
-    color: #818cf8 !important;
-}
-
-.dark .border-indigo-100 {
-    border-color: #312e81 !important;
-}
-
-/* Fix glowing shadows in dark mode */
 .dark .shadow-indigo-200,
 .dark .shadow-indigo-100,
 .dark .shadow-xl,
 .dark .shadow-lg,
 .dark .shadow-sm {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3) !important;
-}
-
-.dark .hover\:shadow-indigo-50:hover {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.4) !important;
 }
