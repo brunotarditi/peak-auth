@@ -5,6 +5,7 @@ import (
 	"peak-auth/repository"
 	"peak-auth/response"
 	"peak-auth/utils"
+	"time"
 )
 
 type ApplicationService interface {
@@ -13,19 +14,23 @@ type ApplicationService interface {
 	RegenerateSecret(appID string) (string, error)
 	RegisterUserInApp(userEmail, appID, roleName string) error
 	GetAppDetails(appID string) (model.Application, error)
+	DeleteApp(appID string) error
 	GetDashboardStats() ([]response.AppStatsResponse, error)
+	GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error)
 }
 
 type applicationService struct {
-	repo      repository.ApplicationRepository
-	userRepo  repository.UserRepository
-	roleRepo  repository.RoleRepository
-	uarRepo   repository.UserApplicationRoleRepository
-	txManager repository.TransactionManager
+	repo         repository.ApplicationRepository
+	userRepo     repository.UserRepository
+	roleRepo     repository.RoleRepository
+	uarRepo      repository.UserApplicationRoleRepository
+	txManager    repository.TransactionManager
+	emailService *EmailService
+	passRepo     repository.PasswordResetRepository
 }
 
-func NewApplicationService(repo repository.ApplicationRepository, userRepo repository.UserRepository, roleRepo repository.RoleRepository, uarRepo repository.UserApplicationRoleRepository, txManager repository.TransactionManager) ApplicationService {
-	return &applicationService{repo: repo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager}
+func NewApplicationService(repo repository.ApplicationRepository, userRepo repository.UserRepository, roleRepo repository.RoleRepository, uarRepo repository.UserApplicationRoleRepository, txManager repository.TransactionManager, emailService *EmailService, passRepo repository.PasswordResetRepository) ApplicationService {
+	return &applicationService{repo: repo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo}
 }
 
 func (s *applicationService) CreateApp(name, description string, isActive bool) (model.Application, string, error) {
@@ -70,18 +75,24 @@ func (s *applicationService) RegisterUserInApp(userEmail, publicAppID, roleName 
 
 	return s.txManager.WithinTransaction(func(tx repository.TxRepository) error {
 		user, err := tx.Users().FindByEmail(userEmail)
+		isNewUser := false
 
 		if err != nil {
-			tempPass, _, _ := utils.GenerateToken(16)
-			hashedPass, _ := utils.HashPassword(tempPass)
+			// ESCENARIO 1: Usuario NO existe globalmente. Lo creamos.
+			isNewUser = true
+
+			// Generamos un password aleatorio temporal.
+			// Útil para que la fila en DB sea válida y la cuenta esté 'cerrada'
+			// hasta que el usuario use el link de activación (reset password).
+			placeholderPass, _, _ := utils.GenerateToken(16)
+			hashedPass, _ := utils.HashPassword(placeholderPass)
 
 			user = model.User{
 				Email:      userEmail,
 				Password:   hashedPass,
-				IsVerified: false, // Bloqueado hasta que valide mail
+				IsVerified: false,
 			}
 
-			// Perfil inicial genérico
 			profile := model.Profile{
 				FirstName: "Usuario",
 				LastName:  "Invitado",
@@ -92,8 +103,29 @@ func (s *applicationService) RegisterUserInApp(userEmail, publicAppID, roleName 
 			}
 		}
 
-		// Asignación del rol en la app específica
-		return tx.UAR().AssignRole(user.ID, app.ID, role.ID)
+		// ESCENARIO 2: Usuario ya existe o acaba de ser creado.
+		// Vinculamos el rol en la APP actual.
+		if err := tx.UAR().AssignRole(user.ID, app.ID, role.ID); err != nil {
+			return err
+		}
+
+		// ACTIVACIÓN: Si es nuevo o nunca verificó su cuenta, disparamos onboarding.
+		if isNewUser || !user.IsVerified {
+			plainToken, hashedToken, _ := utils.GenerateToken(32)
+			reset := model.PasswordReset{
+				UserID:        user.ID,
+				ApplicationID: app.ID,
+				TokenHash:     hashedToken,
+				ExpiresAt:     time.Now().Add(24 * time.Hour),
+			}
+			if err := tx.PasswordResets().CreatePasswordReset(&reset); err != nil {
+				return err
+			}
+			// Envío asíncrono para no demorar la respuesta del panel
+			go s.emailService.SendVerificationEmail(user.Email, plainToken)
+		}
+
+		return nil
 	})
 }
 
@@ -139,6 +171,18 @@ func (s *applicationService) RegenerateSecret(appID string) (string, error) {
 	return plainSecret, nil
 }
 
+func (s *applicationService) DeleteApp(appID string) error {
+	app, err := s.repo.FindByAppID(appID)
+	if err != nil {
+		return err
+	}
+	return s.repo.Delete(app.ID)
+}
+
 func (s *applicationService) GetDashboardStats() ([]response.AppStatsResponse, error) {
 	return s.repo.GetAppsWithUserCount()
+}
+
+func (s *applicationService) GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error) {
+	return s.repo.GetAppsForUser(userID)
 }

@@ -4,7 +4,7 @@
     <!-- Top Bar -->
     <div class="flex items-center justify-between">
         <a href="/admin"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 rounded-xl font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition border border-slate-200 dark:border-slate-700 group">
+            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-100 transition shadow-sm group border border-indigo-100">
             <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -251,13 +251,6 @@
     </div>
 </div>
 
-<script>
-    function openRevokeModal() {
-        document.getElementById('revokeModal').classList.remove('hidden');
-    }
-    function closeRevokeModal() {
-        document.getElementById('revokeModal').classList.add('hidden');
-    }
-</script>
+<script src="/static/admin/js/admin.js"></script>
 
 {{ template "admin/footer" . }}

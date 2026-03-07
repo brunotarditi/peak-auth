@@ -51,9 +51,8 @@ func main() {
 		},
 	})
 
-	// Cargar plantillas HTML
-	router.LoadHTMLGlob("template/email/*.html")
-	router.LoadHTMLGlob("template/admin/*.html")
+	// Cargar plantillas HTML de forma recursiva (todas las subcarpetas)
+	router.LoadHTMLGlob("templates/*/*.html")
 
 	SetupRoutes(router, appInstance)
 

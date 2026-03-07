@@ -1,8 +1,10 @@
+// Cerrar el modal de roles
 function closeRoleModal() {
     document.getElementById('roleModal').classList.add('hidden');
     document.getElementById('roleForm').reset();
 }
 
+// Crear un nuevo rol
 async function createRole(event) {
     event.preventDefault();
     const btn = document.getElementById('submitRoleBtn');
@@ -38,6 +40,7 @@ async function createRole(event) {
     }
 }
 
+// Revocar acceso a un usuario
 async function revokeAccess(appID, userID) {
     if (!confirm('¿Seguro que quieres revocar el acceso a este usuario?')) return;
     showToast('Funcionalidad de revocación pendiente de backend', 'error');

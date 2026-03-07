@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peak Auth - Email Verificado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { bg: '#0f172a', card: '#1e293b', border: '#334155' }
+                    }
+                }
+            }
+        }
+        if (localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/admin/css/admin.css?v=1.1">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900 bg-slate-50 dark:bg-dark-bg">
+    <div class="max-w-md w-full animate-slide-in-bottom">
+        <div
+            class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 text-center">
+            <div
+                class="bg-emerald-500 text-white w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-100 dark:shadow-none">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+
+            <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-4">¡Email <span
+                    class="text-emerald-500">Verificado!</span></h1>
+            <p class="text-slate-400 font-medium leading-relaxed mb-10">Tu dirección de correo electrónico ha sido
+                confirmada con éxito. Ya puedes acceder a todas las funciones de tu aplicación.</p>
+
+            <button onclick="window.close()"
+                class="w-full bg-slate-900 dark:bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 dark:hover:bg-indigo-700 transition shadow-xl shadow-slate-100 dark:shadow-none flex items-center justify-center gap-3 group">
+                <span>Cerrar Ventana</span>
+                <svg class="w-5 h-5 opacity-50 group-hover:scale-110 transition-transform" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <p
+            class="text-center text-slate-400 dark:text-slate-600 text-[10px] mt-10 font-black uppercase tracking-widest">
+            Peak Auth Security Protocol Verified
+        </p>
+    </div>
+</body>
+
+</html>

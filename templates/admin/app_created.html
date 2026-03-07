@@ -15,10 +15,13 @@
         <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 group relative">
             <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">App ID
                 (Público)</label>
-            <div class="flex items-center justify-between">
-                <code class="text-indigo-600 font-mono text-lg font-bold">{{.App.AppID}}</code>
-                <button onclick="copyToClipboard('{{.App.AppID}}', this)"
-                    class="text-slate-300 hover:text-indigo-600 transition p-2 hover:bg-white rounded-xl">
+            <div class="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-100/50">
+                <div class="flex-grow min-w-0">
+                    <code class="text-indigo-600 font-mono text-base font-bold break-all block">{{.App.AppID}}</code>
+                </div>
+                <button type="button" data-text="{{.App.AppID}}"
+                    onclick="copyToClipboard(this.getAttribute('data-text'), this)"
+                    class="shrink-0 w-11 h-11 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition hover:bg-slate-50 rounded-xl border border-transparent hover:border-slate-100">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
@@ -37,12 +40,15 @@
             </div>
             <label class="block text-[10px] font-black text-amber-600 uppercase tracking-widest mb-3">Secret Key
                 (Privado)</label>
-            <div class="flex items-center gap-4">
-                <code id="secretKey"
-                    class="text-amber-900 font-mono text-lg break-all flex-grow font-bold tracking-tight">{{.PlainSecret}}</code>
-                <button onclick="copyToClipboard('{{.PlainSecret}}', this)"
-                    class="bg-amber-600 text-white p-3 rounded-xl hover:bg-amber-700 transition shadow-lg shadow-amber-200 shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-4 bg-white/60 p-3 rounded-xl border border-amber-100/50">
+                <div class="flex-grow min-w-0">
+                    <code
+                        class="text-amber-900 font-mono text-base break-all font-bold tracking-tight block">{{.PlainSecret}}</code>
+                </div>
+                <button type="button" data-text="{{.PlainSecret}}"
+                    onclick="copyToClipboard(this.getAttribute('data-text'), this)"
+                    class="shrink-0 w-12 h-12 flex items-center justify-center bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition shadow-lg shadow-amber-200 active:scale-95">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                     </svg>

@@ -2,11 +2,14 @@ package controller
 
 import (
 	"net/http"
+	"os"
+	"peak-auth/response"
 	"peak-auth/service"
 
 	"github.com/gin-gonic/gin"
 )
 
+// AdminController struct
 type AdminController struct {
 	UserService service.UserService
 	AppService  service.ApplicationService
@@ -14,28 +17,29 @@ type AdminController struct {
 	RoleService service.RoleService
 }
 
-func (ctrl *AdminController) renderAdmin(c *gin.Context, templateName string, data gin.H) {
-	if data == nil {
-		data = gin.H{}
-	}
-	// Obtener el email del contexto (puesto por el middleware)
-	if email, exists := c.Get("user_email"); exists {
-		data["UserEmail"] = email
-	}
-
-	if data["Title"] == nil {
-		data["Title"] = "Panel"
-	}
-
-	c.HTML(http.StatusOK, templateName, data)
-}
-
+// Dashboard renderiza el dashboard
 func (ctrl *AdminController) Dashboard(c *gin.Context) {
-	stats, err := ctrl.AppService.GetDashboardStats()
+	isRoot, _ := c.Get("is_root")
+	rootStatus, _ := isRoot.(bool)
+	valUser, _ := c.Get("user_id")
+	userID, _ := valUser.(uint)
+
+	var stats []response.AppStatsResponse
+	var err error
+
+	if rootStatus {
+		// ROOT ve todo
+		stats, err = ctrl.AppService.GetDashboardStats()
+	} else {
+		// Admin local solo ve sus apps
+		stats, err = ctrl.AppService.GetDashboardStatsForUser(userID)
+	}
+
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": err.Error()})
 		return
 	}
+
 	ctrl.renderAdmin(c, "dashboard.html", gin.H{
 		"Applications": stats,
 		"Breadcrumbs":  nil,
@@ -43,13 +47,15 @@ func (ctrl *AdminController) Dashboard(c *gin.Context) {
 	})
 }
 
+// GetFormApp renderiza el formulario de creación de aplicación
 func (ctrl *AdminController) GetFormApp(c *gin.Context) {
-	ctrl.renderAdmin(c, "apps_new.html", gin.H{
+	ctrl.renderAdmin(c, "app_new.html", gin.H{
 		"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva Aplicación"}},
 		"Title":       "Nueva Aplicación",
 	})
 }
 
+// GetEditApp renderiza el formulario de edición de aplicación
 func (ctrl *AdminController) GetEditApp(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
@@ -57,13 +63,14 @@ func (ctrl *AdminController) GetEditApp(c *gin.Context) {
 		c.String(http.StatusNotFound, "App no encontrada")
 		return
 	}
-	ctrl.renderAdmin(c, "apps_new.html", gin.H{
+	ctrl.renderAdmin(c, "app_new.html", gin.H{
 		"App":         app,
 		"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": app.Name, "URL": "/admin/apps/" + app.AppID}, {"Label": "Editar"}},
 		"Title":       "Editar " + app.Name,
 	})
 }
 
+// PostFormApp crea una nueva aplicación
 func (ctrl *AdminController) PostFormApp(c *gin.Context) {
 	name := c.PostForm("name")
 	description := c.PostForm("description")
@@ -87,14 +94,48 @@ func (ctrl *AdminController) PostFormApp(c *gin.Context) {
 	})
 }
 
-func (ctrl *AdminController) PostUpdateApp(c *gin.Context) {
+// UpdateFormApp actualiza una aplicación
+func (ctrl *AdminController) UpdateFormApp(c *gin.Context) {
 	id := c.Param("id")
 	name := c.PostForm("name")
 	description := c.PostForm("description")
 	isActive := c.PostForm("is_active") == "on"
 
 	if name == "" {
-		c.String(http.StatusBadRequest, "name requerido")
+		c.String(http.StatusBadRequest, "Nombre requerido")
+		return
+	}
+
+	// Lógica de eliminación si desactivan el check
+	if !isActive {
+		// No permitimos borrar la App Maestra
+		if id == "peak-auth-raiz" {
+			c.String(http.StatusBadRequest, "La aplicación principal (Peak Auth Raíz) no puede ser eliminada ni desactivada")
+			return
+		}
+
+		// Solo ROOT puede eliminar
+		roles, _ := c.Get("user_roles")
+		isRoot := false
+		if rList, ok := roles.([]string); ok {
+			for _, r := range rList {
+				if r == "ROOT" {
+					isRoot = true
+					break
+				}
+			}
+		}
+
+		if !isRoot {
+			c.String(http.StatusForbidden, "Se requiere rol ROOT para eliminar aplicaciones")
+			return
+		}
+
+		if err := ctrl.AppService.DeleteApp(id); err != nil {
+			c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
+			return
+		}
+		c.Redirect(http.StatusSeeOther, "/admin")
 		return
 	}
 
@@ -106,10 +147,12 @@ func (ctrl *AdminController) PostUpdateApp(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id)
 }
 
+// GetLoginForm renderiza el formulario de login
 func (ctrl *AdminController) GetLoginForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "login.html", nil)
 }
 
+// PostLoginForm procesa el login
 func (ctrl *AdminController) PostLoginForm(c *gin.Context) {
 	email := c.PostForm("email")
 	password := c.PostForm("password")
@@ -120,17 +163,23 @@ func (ctrl *AdminController) PostLoginForm(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("admin_token", token, 12*3600, "/", "", false, true)
-	c.Redirect(http.StatusSeeOther, "/admin")
+	// Configuración de cookie segura
+	c.SetSameSite(http.SameSiteLaxMode)
+	isSecure := os.Getenv("ENV") == "production"
 
+	c.SetCookie("admin_token", token, 12*3600, "/", "", isSecure, true)
+	c.Redirect(http.StatusSeeOther, "/admin")
 }
 
+// PostLogout cierra la sesión
 func (ctrl *AdminController) PostLogout(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("admin_token", "", -1, "/", "", false, true)
 	c.Redirect(http.StatusSeeOther, "/admin/login")
 }
 
-func (ctrl *AdminController) GetApp(c *gin.Context) {
+// GetAppDetails muestra los detalles de una aplicación
+func (ctrl *AdminController) GetAppDetails(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
 	if err != nil {
@@ -152,6 +201,7 @@ func (ctrl *AdminController) GetApp(c *gin.Context) {
 	})
 }
 
+// GetAppUsers muestra los usuarios de una aplicación
 func (ctrl *AdminController) GetAppUsers(c *gin.Context) {
 	appIDParam := c.Param("id")
 
@@ -185,6 +235,7 @@ func (ctrl *AdminController) GetAppUsers(c *gin.Context) {
 	})
 }
 
+// PostUsersInApp registra un usuario en una aplicación
 func (ctrl *AdminController) PostUsersInApp(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
@@ -205,11 +256,13 @@ func (ctrl *AdminController) PostUsersInApp(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/admin/apps/"+c.Param("id")+"/users")
 }
 
+// GetAppRules redirige a los detalles de la aplicación
 func (ctrl *AdminController) GetAppRules(c *gin.Context) {
 	id := c.Param("id")
 	c.Redirect(http.StatusMovedPermanently, "/admin/apps/"+id)
 }
 
+// PostDefaultRules crea las reglas por defecto para una aplicación
 func (ctrl *AdminController) PostDefaultRules(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
@@ -226,6 +279,7 @@ func (ctrl *AdminController) PostDefaultRules(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id)
 }
 
+// PostRegenerateSecret regenera el secreto de una aplicación
 func (ctrl *AdminController) PostRegenerateSecret(c *gin.Context) {
 	id := c.Param("id")
 	plainSecret, err := ctrl.AppService.RegenerateSecret(id)
@@ -248,6 +302,7 @@ func (ctrl *AdminController) PostRegenerateSecret(c *gin.Context) {
 	})
 }
 
+// PostRole crea un nuevo rol
 func (ctrl *AdminController) PostRole(c *gin.Context) {
 	var req struct {
 		Name string `json:"name" binding:"required"`
@@ -266,4 +321,20 @@ func (ctrl *AdminController) PostRole(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Rol creado con éxito"})
+}
+
+// renderAdmin renderiza la plantilla de administración
+func (ctrl *AdminController) renderAdmin(c *gin.Context, templateName string, data gin.H) {
+	if data == nil {
+		data = gin.H{}
+	}
+	if email, exists := c.Get("user_email"); exists {
+		data["UserEmail"] = email
+	}
+
+	if data["Title"] == nil {
+		data["Title"] = "Panel"
+	}
+
+	c.HTML(http.StatusOK, templateName, data)
 }

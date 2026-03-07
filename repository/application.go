@@ -3,6 +3,7 @@ package repository
 import (
 	"peak-auth/model"
 	"peak-auth/response"
+	"time"
 
 	"peak-auth/utils"
 
@@ -16,7 +17,9 @@ type ApplicationRepository interface {
 	ValidateSecret(appID string, secret string) (model.Application, error)
 	FindAll() ([]model.Application, error)
 	Update(app *model.Application) error
+	Delete(id uint) error
 	GetAppsWithUserCount() ([]response.AppStatsResponse, error)
+	GetAppsForUser(userID uint) ([]response.AppStatsResponse, error)
 }
 
 type applicationRepository struct {
@@ -36,7 +39,7 @@ func (r *applicationRepository) Create(app *model.Application) error {
 // FindByID devuelve una aplicación por su ID numérico.
 func (r *applicationRepository) FindByAppID(appID string) (model.Application, error) {
 	var app model.Application
-	err := r.db.Where("app_id = ? AND is_active = ?", appID, true).First(&app).Error
+	err := r.db.Where("app_id = ?", appID).First(&app).Error
 	return app, err
 }
 
@@ -73,13 +76,33 @@ func (r *applicationRepository) Update(app *model.Application) error {
 	return r.db.Save(app).Error
 }
 
+// Delete elimina de forma lógica una aplicación.
+func (r *applicationRepository) Delete(id uint) error {
+	return r.db.Model(&model.Application{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"deleted_at": time.Now(),
+		"is_active":  false,
+	}).Error
+}
+
 // Agrupamos por aplicación y contamos usuarios únicos en UserApplicationRole
 func (r *applicationRepository) GetAppsWithUserCount() ([]response.AppStatsResponse, error) {
 	var stats []response.AppStatsResponse
 	err := r.db.Table("applications").
 		Select("applications.id, applications.name, applications.app_id, applications.description, COUNT(DISTINCT uar.user_id) as user_count").
 		Joins("LEFT JOIN user_application_roles uar ON uar.application_id = applications.id").
-		Where("applications.deleted_at IS NULL"). // Importante si usas gorm.Model (Soft Delete)
+		Where("applications.deleted_at IS NULL").
+		Group("applications.id, applications.name, applications.app_id, applications.description").
+		Scan(&stats).Error
+	return stats, err
+}
+
+// GetAppsForUser devuelve solo las apps donde el usuario tiene roles asignados.
+func (r *applicationRepository) GetAppsForUser(userID uint) ([]response.AppStatsResponse, error) {
+	var stats []response.AppStatsResponse
+	err := r.db.Table("applications").
+		Select("applications.id, applications.name, applications.app_id, applications.description, (SELECT COUNT(DISTINCT u2.user_id) FROM user_application_roles u2 WHERE u2.application_id = applications.id) as user_count").
+		Joins("JOIN user_application_roles uar ON uar.application_id = applications.id").
+		Where("uar.user_id = ? AND applications.deleted_at IS NULL", userID).
 		Group("applications.id, applications.name, applications.app_id, applications.description").
 		Scan(&stats).Error
 	return stats, err

@@ -37,11 +37,12 @@ type userService struct {
 	tokenManager          *auth.JWTManager
 	emailVerificationRepo repository.EmailVerificationRepository
 	passwordResetRepo     repository.PasswordResetRepository
+	emailService          *EmailService
 }
 
 // NewUserService crea una instancia de UserService con las dependencias necesarias.
-func NewUserService(userRepo repository.UserRepository, roleRepo repository.RoleRepository, uarRepo repository.UserApplicationRoleRepository, appRepo repository.ApplicationRepository, ruleService ApplicationRuleService, tokenManager *auth.JWTManager, emailVerificationRepo repository.EmailVerificationRepository, passwordResetRepo repository.PasswordResetRepository) UserService {
-	return &userService{userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, appRepo: appRepo, ruleService: ruleService, tokenManager: tokenManager, emailVerificationRepo: emailVerificationRepo, passwordResetRepo: passwordResetRepo}
+func NewUserService(userRepo repository.UserRepository, roleRepo repository.RoleRepository, uarRepo repository.UserApplicationRoleRepository, appRepo repository.ApplicationRepository, ruleService ApplicationRuleService, tokenManager *auth.JWTManager, emailVerificationRepo repository.EmailVerificationRepository, passwordResetRepo repository.PasswordResetRepository, emailService *EmailService) UserService {
+	return &userService{userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, appRepo: appRepo, ruleService: ruleService, tokenManager: tokenManager, emailVerificationRepo: emailVerificationRepo, passwordResetRepo: passwordResetRepo, emailService: emailService}
 }
 
 // Login valida credenciales, comprueba estado del usuario y genera un token JWT.
@@ -162,7 +163,7 @@ func (s *userService) Register(req request.RegisterRequest) (model.User, error) 
 		return model.User{}, fmt.Errorf("error al renderizar email: %w", err)
 	}
 
-	if err := sendVerificationEmail("Verificá tu email", user.Email, htmlBody); err != nil {
+	if err := s.emailService.Provider.Send("Verificá tu email", user.Email, htmlBody); err != nil {
 		return model.User{}, fmt.Errorf("error enviando email: %v", err)
 	}
 
@@ -235,7 +236,7 @@ func (s *userService) SendResetEmail(user *model.User) error {
 		return fmt.Errorf("error al renderizar email: %w", err)
 	}
 
-	if err := sendVerificationEmail("Restablecer contraseña", user.Email, htmlBody); err != nil {
+	if err := s.emailService.Provider.Send("Restablecer contraseña", user.Email, htmlBody); err != nil {
 		return fmt.Errorf("error enviando email: %v", err)
 	}
 	return nil
@@ -285,10 +286,12 @@ func (s *userService) AdminLogin(email, password string) (string, error) {
 		return "", fmt.Errorf("error de configuración del sistema")
 	}
 
-	hasRoot, err := s.uarRepo.HasRole(user.ID, "ROOT")
+	// Puede entrar si es ROOT global o ADMIN en cualquier app
+	hasRoot, _ := s.uarRepo.HasRole(user.ID, "ROOT")
+	hasAdmin, _ := s.uarRepo.HasRole(user.ID, "ADMIN")
 
-	if err != nil || !hasRoot {
-		return "", fmt.Errorf("no autorizados")
+	if !hasRoot && !hasAdmin {
+		return "", fmt.Errorf("acceso denegado: se requieren privilegios de administración")
 	}
 
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, 12*time.Hour)

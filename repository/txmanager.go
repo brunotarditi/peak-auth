@@ -7,6 +7,7 @@ type TxRepository interface {
 	Apps() ApplicationRepository
 	Roles() RoleRepository
 	UAR() UserApplicationRoleRepository
+	PasswordResets() PasswordResetRepository
 }
 
 type TransactionManager interface {
@@ -22,11 +23,24 @@ type unitOfWork struct {
 	db *gorm.DB
 }
 
-func (u *unitOfWork) Users() UserRepository       { return NewUserRepositoryRepository(u.db) }
-func (u *unitOfWork) Apps() ApplicationRepository { return NewApplicationRepository(u.db) }
-func (u *unitOfWork) Roles() RoleRepository       { return NewRoleRepositoryRepository(u.db) }
+func (u *unitOfWork) Users() UserRepository {
+	return NewUserRepositoryRepository(u.db)
+}
+
+func (u *unitOfWork) Apps() ApplicationRepository {
+	return NewApplicationRepository(u.db)
+}
+
+func (u *unitOfWork) Roles() RoleRepository {
+	return NewRoleRepositoryRepository(u.db)
+}
+
 func (u *unitOfWork) UAR() UserApplicationRoleRepository {
 	return NewUserApplicationRoleRepository(u.db)
+}
+
+func (u *unitOfWork) PasswordResets() PasswordResetRepository {
+	return NewPasswordResetRepository(u.db)
 }
 
 type transactionManager struct {

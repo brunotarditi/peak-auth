@@ -5,40 +5,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peak Auth - {{ .Title }}</title>
+    <title>{{ .Title }} | Peak Auth</title>
+
+    <!-- Fuentes y CSS -->
+    <link rel="stylesheet" href="/static/admin/css/admin.css?v={{ now.Unix }}">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: {
-                            bg: '#0f172a',
-                            card: '#1e293b',
-                            border: '#334155'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/admin/css/admin.css?v=1.1">
-    <script>
-        function toggleDarkMode() {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('darkMode', isDark);
-            if (typeof updateThemeIcons === 'function') updateThemeIcons(isDark);
-        }
-        (function () {
-            const savedTheme = localStorage.getItem('darkMode');
-            if (savedTheme === 'true' || (savedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
-    <script src="/static/admin/js/common.js?v=1.1"></script>
+
+    <!-- Configuración y Lógica (Separada) -->
+    <script src="/static/admin/js/config.js?v={{ now.Unix }}"></script>
+    <script src="/static/admin/js/common.js?v={{ now.Unix }}"></script>
 </head>
 
 <body class="bg-pattern flex flex-col min-h-screen text-slate-900">
