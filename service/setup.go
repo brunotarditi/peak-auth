@@ -50,6 +50,12 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 		if err := tx.Apps().Create(&rootApp); err != nil {
 			return err
 		}
+
+		// Crear las políticas para la app Raíz
+		if err := tx.Rules().CreateDefaultRules(rootApp.ID); err != nil {
+			return err
+		}
+
 		if err := tx.Roles().Create(&rootRole); err != nil {
 			return err
 		}

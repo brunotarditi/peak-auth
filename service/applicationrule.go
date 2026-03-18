@@ -1,13 +1,11 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"peak-auth/model"
 	"peak-auth/repository"
 	"peak-auth/request"
 	"peak-auth/utils"
-	"strings"
 )
 
 type ApplicationRuleService interface {
@@ -15,6 +13,9 @@ type ApplicationRuleService interface {
 	ValidateLogin(appID uint, userID uint) error
 	FindRulesByAppID(appID uint) ([]model.ApplicationRules, error)
 	CreateDefaultRules(appID uint) error
+	CreateRule(appID uint, code string, value []byte) error
+	UpdateRuleValue(appID uint, code string, value []byte) error
+	DeleteRule(appID uint, code string) error
 }
 
 type applicationRuleService struct {
@@ -38,27 +39,22 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 	var defaultRole string
 	for _, rule := range rules {
 		switch rule.Code {
-		case "PWD_STRENGTH":
-			if err := utils.ValidatePasswordStrength(rule.Value, req.Password); err != nil {
+		case "PWD_POLICY":
+			if err := utils.ValidatePasswordPolicy(rule.Value, req.Password); err != nil {
 				return "", err
 			}
-		case "SELF_REGISTER":
-			// Si la regla existe y dice 'false', tiramos error inmediatamente
-			if err := utils.ValidateSelfRegister(rule.Value); err != nil {
-				return "", fmt.Errorf("el registro público está deshabilitado para esta aplicación")
+		case "REGISTRATION_POLICY":
+			regRule, err := utils.ValidateRegistrationPolicy(rule.Value)
+			if err != nil {
+				return "", err
 			}
-		case "DEFAULT_ROLE":
-			if r, err := utils.ParseDefaultRole(rule.Value); err == nil {
-				defaultRole = r
-			}
+			defaultRole = regRule.DefaultRole
 		}
 	}
 
 	// Validación crítica de seguridad:
 	if defaultRole == "" {
-		// Podrías devolver un rol quemado como "USER" o fallar.
-		// Fallar es más seguro: obliga al admin a configurar la app en Peak.
-		return "", fmt.Errorf("configuración incompleta: la aplicación no tiene un rol por defecto")
+		return "", fmt.Errorf("configuración incompleta: la aplicación no tiene un rol por defecto configurado en REGISTRATION_POLICY")
 	}
 
 	return defaultRole, nil
@@ -74,25 +70,18 @@ func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 
 	for _, rule := range rules {
 		switch rule.Code {
-		case "ADMIN_ONLY":
-			// Parse rule
-			var ar utils.AdminOnlyRule
-			if err := json.Unmarshal(rule.Value, &ar); err != nil {
-				return fmt.Errorf("invalid ADMIN_ONLY rule: %w", err)
+		case "AUTHZ_POLICY":
+			authzRule, err := utils.ParseAuthzPolicy(rule.Value)
+			if err != nil {
+				return fmt.Errorf("invalid AUTHZ_POLICY rule: %w", err)
 			}
-			if ar.Enabled {
-				// comprobar roles del usuario en la app
-				roles, err := s.uarRepo.FindRolesByUserAndApp(userID, appID)
-				if err != nil {
-					return fmt.Errorf("error comprobando roles: %w", err)
-				}
-				for _, r := range roles {
-					if strings.ToUpper(r.Name) == "ADMIN" || strings.ToUpper(r.Name) == "ROOT" {
-						return nil
-					}
-				}
-				return fmt.Errorf("login restringido a administradores")
+			// Future: Enforce roles strictly if enabled
+			if authzRule.EnableRoles {
+				// By default any logged in user who belongs to the app should be allowed,
+				// specific endpoint roles are checked by RoleMiddleware. 
+				// The actual logic verifying they belong to the app is handled inside Login.
 			}
+			// (Session policy max_failed_logins could also be validated here)
 		}
 	}
 	return nil
@@ -104,4 +93,16 @@ func (s *applicationRuleService) FindRulesByAppID(appID uint) ([]model.Applicati
 
 func (s *applicationRuleService) CreateDefaultRules(appID uint) error {
 	return s.ruleRepo.CreateDefaultRules(appID)
+}
+
+func (s *applicationRuleService) CreateRule(appID uint, code string, value []byte) error {
+	return s.ruleRepo.CreateRule(appID, code, value)
+}
+
+func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value []byte) error {
+	return s.ruleRepo.UpdateRuleValue(appID, code, value)
+}
+
+func (s *applicationRuleService) DeleteRule(appID uint, code string) error {
+	return s.ruleRepo.DeleteRule(appID, code)
 }
