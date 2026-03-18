@@ -70,6 +70,7 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 		adminPrivate.GET("/apps/:id", adminCtrl.GetAppDetails)
 		adminPrivate.GET("/apps/:id/edit", adminCtrl.GetEditApp)
 		adminPrivate.POST("/apps/:id", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.UpdateFormApp)
+		adminPrivate.POST("/apps/:id/delete", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT"), adminCtrl.PostDeleteApp)
 
 		// Gestión de Roles
 		adminPrivate.POST("/roles", adminCtrl.PostRole)
@@ -81,6 +82,9 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 			apps.POST("/users", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostUsersInApp)
 			apps.GET("/rules", adminCtrl.GetAppRules)
 			apps.POST("/rules", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostDefaultRules)
+			apps.POST("/rules/:code", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostAppRule)
+			apps.PUT("/rules/:code", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PutAppRule)
+			apps.DELETE("/rules/:code", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.DeleteAppRule)
 			apps.POST("/secret", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostRegenerateSecret)
 		}
 	}

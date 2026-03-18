@@ -6,59 +6,73 @@ import (
 	"regexp"
 )
 
-type SelfRegisterRule struct {
-	Allow bool `json:"allow"`
+type RegistrationPolicy struct {
+	Mode                     string `json:"mode"` // Can be: "public", "admin_only"
+	RequireEmailVerification bool   `json:"require_email_verification"`
+	DefaultRole              string `json:"default_role"`
 }
 
-type PwdStrengthRule struct {
-	Min     int  `json:"min"`
-	Upper   bool `json:"upper"`
-	Digits  bool `json:"digits"`
-	Symbols bool `json:"symbols"`
+type PasswordPolicy struct {
+	MinLength        int  `json:"min_length"`
+	RequireUppercase bool `json:"require_uppercase"`
+	RequireNumbers   bool `json:"require_numbers"`
+	RequireSymbols   bool `json:"require_symbols"`
 }
 
-type DefaultRoleRule struct {
-	Role string `json:"role"`
+type SessionPolicy struct {
+	TokenExpirationMinutes int `json:"token_expiration_minutes"`
+	MaxFailedLogins        int `json:"max_failed_logins"`
 }
 
-type AdminOnlyRule struct {
-	Enabled bool `json:"enabled"`
+type AuthzPolicy struct {
+	EnableRoles bool `json:"enable_roles"`
 }
 
-// ValidateSelfRegister checks SELF_REGISTER rule bytes and returns error if not allowed
-func ValidateSelfRegister(raw []byte) error {
-	var r SelfRegisterRule
+// ValidateRegistrationPolicy parses the policy and validates whether self register is allowed.
+// Returns the parsed policy to allow retrieving the DefaultRole or Verification rule.
+func ValidateRegistrationPolicy(raw []byte) (*RegistrationPolicy, error) {
+	var r RegistrationPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return fmt.Errorf("invalid SELF_REGISTER rule: %w", err)
+		return nil, fmt.Errorf("invalid REGISTRATION_POLICY rule: %w", err)
 	}
-	if !r.Allow {
-		return fmt.Errorf("registro público deshabilitado por la regla SELF_REGISTER")
+	if r.Mode != "public" {
+		return nil, fmt.Errorf("el registro público está deshabilitado para esta aplicación")
 	}
-	return nil
+	return &r, nil
 }
 
-// ValidatePasswordStrength validates password against PwdStrengthRule
-func ValidatePasswordStrength(raw []byte, password string) error {
-	var r PwdStrengthRule
+// ParseRegistrationPolicy simply returns the policy struct without enforcing logic (used merely for reading).
+func ParseRegistrationPolicy(raw []byte) (*RegistrationPolicy, error) {
+	var r RegistrationPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return fmt.Errorf("invalid PWD_STRENGTH rule: %w", err)
+		return nil, fmt.Errorf("invalid REGISTRATION_POLICY rule: %w", err)
 	}
-	if r.Min > 0 && len(password) < r.Min {
-		return fmt.Errorf("la contraseña debe tener al menos %d caracteres", r.Min)
+	return &r, nil
+}
+
+// ValidatePasswordPolicy checks if a plaintext password satisfies the configured constraints.
+func ValidatePasswordPolicy(raw []byte, password string) error {
+	var r PasswordPolicy
+	if err := json.Unmarshal(raw, &r); err != nil {
+		return fmt.Errorf("invalid PWD_POLICY rule: %w", err)
 	}
-	if r.Upper {
+	
+	if r.MinLength > 0 && len(password) < r.MinLength {
+		return fmt.Errorf("la contraseña debe tener al menos %d caracteres", r.MinLength)
+	}
+	if r.RequireUppercase {
 		matched, _ := regexp.MatchString("[A-Z]", password)
 		if !matched {
 			return fmt.Errorf("la contraseña debe contener al menos una letra mayúscula")
 		}
 	}
-	if r.Digits {
+	if r.RequireNumbers {
 		matched, _ := regexp.MatchString("[0-9]", password)
 		if !matched {
 			return fmt.Errorf("la contraseña debe contener al menos un dígito")
 		}
 	}
-	if r.Symbols {
+	if r.RequireSymbols {
 		matched, _ := regexp.MatchString("[^A-Za-z0-9]", password)
 		if !matched {
 			return fmt.Errorf("la contraseña debe contener al menos un símbolo")
@@ -67,23 +81,20 @@ func ValidatePasswordStrength(raw []byte, password string) error {
 	return nil
 }
 
-// ParseDefaultRole extracts role from DEFAULT_ROLE rule
-func ParseDefaultRole(raw []byte) (string, error) {
-	var r DefaultRoleRule
+// ParseSessionPolicy extracts session configuration rules such as token expiration
+func ParseSessionPolicy(raw []byte) (*SessionPolicy, error) {
+	var r SessionPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return "", fmt.Errorf("invalid DEFAULT_ROLE rule: %w", err)
+		return nil, fmt.Errorf("invalid SESSION_POLICY rule: %w", err)
 	}
-	return r.Role, nil
+	return &r, nil
 }
 
-// ValidateAdminOnly simply returns error if enabled (actual enforcement should check caller role)
-func ValidateAdminOnly(raw []byte) error {
-	var r AdminOnlyRule
+// ParseAuthzPolicy extracts authorization constraints
+func ParseAuthzPolicy(raw []byte) (*AuthzPolicy, error) {
+	var r AuthzPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return fmt.Errorf("invalid ADMIN_ONLY rule: %w", err)
+		return nil, fmt.Errorf("invalid AUTHZ_POLICY rule: %w", err)
 	}
-	if r.Enabled {
-		return fmt.Errorf("acción restringida a administradores (ADMIN_ONLY)")
-	}
-	return nil
+	return &r, nil
 }

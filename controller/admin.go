@@ -1,10 +1,12 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"peak-auth/response"
 	"peak-auth/service"
+	"peak-auth/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -86,6 +88,14 @@ func (ctrl *AdminController) PostFormApp(c *gin.Context) {
 		c.String(500, "Error creando app: %v", err)
 		return
 	}
+
+	// Crear las reglas por defecto (Starter Pack) para la app recién nacida
+	if err := ctrl.RuleService.CreateDefaultRules(app.ID); err != nil {
+		// Log error pero continuamos
+		c.String(500, "App creada pero error generando políticas base: %v", err)
+		return
+	}
+
 	ctrl.renderAdmin(c, "app_created.html", gin.H{
 		"App":         app,
 		"PlainSecret": plainSecret,
@@ -106,36 +116,9 @@ func (ctrl *AdminController) UpdateFormApp(c *gin.Context) {
 		return
 	}
 
-	// Lógica de eliminación si desactivan el check
-	if !isActive {
-		// No permitimos borrar la App Maestra
-		if id == "peak-auth-raiz" {
-			c.String(http.StatusBadRequest, "La aplicación principal (Peak Auth Raíz) no puede ser eliminada ni desactivada")
-			return
-		}
-
-		// Solo ROOT puede eliminar
-		roles, _ := c.Get("user_roles")
-		isRoot := false
-		if rList, ok := roles.([]string); ok {
-			for _, r := range rList {
-				if r == "ROOT" {
-					isRoot = true
-					break
-				}
-			}
-		}
-
-		if !isRoot {
-			c.String(http.StatusForbidden, "Se requiere rol ROOT para eliminar aplicaciones")
-			return
-		}
-
-		if err := ctrl.AppService.DeleteApp(id); err != nil {
-			c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
-			return
-		}
-		c.Redirect(http.StatusSeeOther, "/admin")
+	// Si desactivan el check de la raíz, no lo permitimos
+	if !isActive && id == "peak-auth-raiz" {
+		c.String(http.StatusBadRequest, "La aplicación principal (Peak Auth Raíz) no puede ser desactivada")
 		return
 	}
 
@@ -146,6 +129,43 @@ func (ctrl *AdminController) UpdateFormApp(c *gin.Context) {
 	}
 	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id)
 }
+
+// PostDeleteApp maneja la eliminación real (lógica) de una aplicación desde la zona de peligro
+func (ctrl *AdminController) PostDeleteApp(c *gin.Context) {
+	id := c.Param("id")
+
+	// No permitimos borrar la App Maestra
+	if id == "peak-auth-raiz" {
+		c.String(http.StatusBadRequest, "La aplicación principal (Peak Auth Raíz) no puede ser eliminada")
+		return
+	}
+
+	// Solo ROOT puede eliminar (capa extra de seguridad por si acaso a pesar del middleware)
+	roles, _ := c.Get("user_roles")
+	isRoot := false
+	if rList, ok := roles.([]string); ok {
+		for _, r := range rList {
+			if r == "ROOT" {
+				isRoot = true
+				break
+			}
+		}
+	}
+
+	if !isRoot {
+		c.String(http.StatusForbidden, "Se requiere rol ROOT para eliminar aplicaciones de manera permanente de la vista")
+		return
+	}
+
+	if err := ctrl.AppService.DeleteApp(id); err != nil {
+		c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
+		return
+	}
+	
+	// Redirigir al dashboard principal porque la app ya no existe a la vista
+	c.Redirect(http.StatusSeeOther, "/admin")
+}
+
 
 // GetLoginForm renderiza el formulario de login
 func (ctrl *AdminController) GetLoginForm(c *gin.Context) {
@@ -188,11 +208,39 @@ func (ctrl *AdminController) GetAppDetails(c *gin.Context) {
 	}
 	rules, _ := ctrl.RuleService.FindRulesByAppID(app.ID)
 	users, _ := ctrl.UserService.FindUserByAppID(id)
+	roles, _ := ctrl.RoleService.FindAll()
+
+	// Pre-procesar reglas para la vista
+	var regPolicy *utils.RegistrationPolicy
+	var pwdPolicy *utils.PasswordPolicy
+	var sessionPolicy *utils.SessionPolicy
+	var authzPolicy *utils.AuthzPolicy
+
+	for _, r := range rules {
+		switch r.Code {
+		case "REGISTRATION_POLICY":
+			regPolicy, _ = utils.ParseRegistrationPolicy(r.Value)
+		case "PWD_POLICY":
+			var p utils.PasswordPolicy
+			if err := json.Unmarshal(r.Value, &p); err == nil {
+				pwdPolicy = &p
+			}
+		case "SESSION_POLICY":
+			sessionPolicy, _ = utils.ParseSessionPolicy(r.Value)
+		case "AUTHZ_POLICY":
+			authzPolicy, _ = utils.ParseAuthzPolicy(r.Value)
+		}
+	}
 
 	ctrl.renderAdmin(c, "app_show.html", gin.H{
-		"App":       app,
-		"Rules":     rules,
-		"UserCount": len(users),
+		"App":            app,
+		"Rules":          rules,
+		"RegPolicy":      regPolicy,
+		"PwdPolicy":      pwdPolicy,
+		"SessionPolicy":  sessionPolicy,
+		"AuthzPolicy":    authzPolicy,
+		"UserCount":      len(users),
+		"Roles":          roles,
 		"Breadcrumbs": []gin.H{
 			{"Label": "Apps", "URL": "/admin"},
 			{"Label": app.Name},
@@ -200,6 +248,7 @@ func (ctrl *AdminController) GetAppDetails(c *gin.Context) {
 		"Title": app.Name,
 	})
 }
+
 
 // GetAppUsers muestra los usuarios de una aplicación
 func (ctrl *AdminController) GetAppUsers(c *gin.Context) {
@@ -322,6 +371,82 @@ func (ctrl *AdminController) PostRole(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Rol creado con éxito"})
 }
+
+// --- GESTIÓN DE REGLAS VÍA API AJAX ---
+
+// PostAppRule (Crea nueva regla)
+func (ctrl *AdminController) PostAppRule(c *gin.Context) {
+	id := c.Param("id")
+	code := c.Param("code")
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "App no encontrada"})
+		return
+	}
+
+	body, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error leyendo el JSON"})
+		return
+	}
+
+	err = ctrl.RuleService.CreateRule(app.ID, code, body)
+	if err != nil {
+		// Asumiendo que si el error es de gorm duplicado, devolvemos un 409
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Regla creada exitosamente"})
+}
+
+// PutAppRule (Actualiza valor JSON de regla existente)
+func (ctrl *AdminController) PutAppRule(c *gin.Context) {
+	id := c.Param("id")
+	code := c.Param("code")
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "App no encontrada"})
+		return
+	}
+
+	body, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error leyendo el JSON"})
+		return
+	}
+
+	err = ctrl.RuleService.UpdateRuleValue(app.ID, code, body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Regla actualizada correctamente"})
+}
+
+// DeleteAppRule (Desactiva regla lógica)
+func (ctrl *AdminController) DeleteAppRule(c *gin.Context) {
+	id := c.Param("id")
+	code := c.Param("code")
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "App no encontrada"})
+		return
+	}
+
+	err = ctrl.RuleService.DeleteRule(app.ID, code)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Regla eliminada"})
+}
+
 
 // renderAdmin renderiza la plantilla de administración
 func (ctrl *AdminController) renderAdmin(c *gin.Context, templateName string, data gin.H) {
