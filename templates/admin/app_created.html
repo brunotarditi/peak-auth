@@ -1,4 +1,4 @@
-{{ template "admin/header" . }}
+{{ define "content" }}
 <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
     <div class="flex items-center justify-center w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full mb-6 mx-auto">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,7 +31,7 @@
         </div>
 
         <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100 relative overflow-hidden">
-            <div class="absolute -top-4 -right-4 p-2 opacity-10">
+            <div class="absolute -top-4 -right-4 p-2 opacity-10 pointer-events-none">
                 <svg class="w-24 h-24 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd"
                         d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -72,4 +72,8 @@
         </a>
     </div>
 </div>
-{{ template "admin/footer" . }}
+{{ end }}
+
+{{ define "scripts" }} {{ end }}
+
+{{ template "base_admin" . }}

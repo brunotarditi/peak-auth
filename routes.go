@@ -38,6 +38,7 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 	{
 		api.POST("/login", userCtrl.Login)
 		api.POST("/register", userCtrl.Register)
+		api.POST("/refresh", userCtrl.Refresh)
 
 		// Verificación y Recuperación (activación)
 		api.GET("/verify", userCtrl.GetVerifyEmail)
@@ -74,12 +75,15 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 
 		// Gestión de Roles
 		adminPrivate.POST("/roles", adminCtrl.PostRole)
+		adminPrivate.DELETE("/roles", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.DeleteRole)
 
 		// Gestión de Usuarios por App
 		apps := adminPrivate.Group("/apps/:id")
 		{
 			apps.GET("/users", adminCtrl.GetAppUsers)
 			apps.POST("/users", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostUsersInApp)
+			apps.DELETE("/users/:user_id", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.RevokeUserAccess)
+			apps.POST("/users/:user_id/unlock", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostUnlockUser)
 			apps.GET("/rules", adminCtrl.GetAppRules)
 			apps.POST("/rules", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostDefaultRules)
 			apps.POST("/rules/:code", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostAppRule)

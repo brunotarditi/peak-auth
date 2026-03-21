@@ -34,6 +34,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	emailRepo := repository.NewEmailVerificationRepositoryRepository(db)
 	passRepo := repository.NewPasswordResetRepository(db)
 	setupRepo := repository.NewSetupRepository(db)
+	refreshRepo := repository.NewRefreshTokenRepository(db)
 	txManager := repository.NewTransactionManager(db)
 
 	// 2. Inicializar Servicios inyectando los repos
@@ -41,7 +42,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 
 	emailService := service.NewEmailService()
 	appService := service.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo)
-	userService := service.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo, emailService)
+	userService := service.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo, emailService, refreshRepo)
 	setupService := service.NewSetupService(setupRepo, setupToken, txManager)
 	roleService := service.NewRoleService(roleRepo)
 

@@ -9,7 +9,7 @@ import (
 )
 
 type ApplicationRuleService interface {
-	ValidateRegistration(appID uint, req request.RegisterRequest) (string, error)
+	ValidateRegistration(appID uint, req request.RegisterRequest) (*utils.RegistrationPolicy, error)
 	ValidateLogin(appID uint, userID uint) error
 	FindRulesByAppID(appID uint) ([]model.ApplicationRules, error)
 	CreateDefaultRules(appID uint) error
@@ -29,35 +29,35 @@ func NewApplicationRuleService(ruleRepo repository.ApplicationRuleRepository, ua
 }
 
 // ValidateRegistration valida las reglas de registro de la app y devuelve
-// el `DefaultRole` si alguna regla lo especifica. Devuelve error si alguna regla falla.
-func (s *applicationRuleService) ValidateRegistration(appID uint, req request.RegisterRequest) (string, error) {
+// la política completa (incluyendo DefaultRole y RequireEmailVerification) si alguna regla lo especifica.
+func (s *applicationRuleService) ValidateRegistration(appID uint, req request.RegisterRequest) (*utils.RegistrationPolicy, error) {
 	rules, err := s.ruleRepo.GetRulesByAppID(appID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var defaultRole string
+	var policy *utils.RegistrationPolicy
 	for _, rule := range rules {
 		switch rule.Code {
 		case "PWD_POLICY":
 			if err := utils.ValidatePasswordPolicy(rule.Value, req.Password); err != nil {
-				return "", err
+				return nil, err
 			}
 		case "REGISTRATION_POLICY":
 			regRule, err := utils.ValidateRegistrationPolicy(rule.Value)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-			defaultRole = regRule.DefaultRole
+			policy = regRule
 		}
 	}
 
 	// Validación crítica de seguridad:
-	if defaultRole == "" {
-		return "", fmt.Errorf("configuración incompleta: la aplicación no tiene un rol por defecto configurado en REGISTRATION_POLICY")
+	if policy == nil || policy.DefaultRole == "" {
+		return nil, fmt.Errorf("configuración incompleta: la aplicación no tiene un rol por defecto configurado en REGISTRATION_POLICY")
 	}
 
-	return defaultRole, nil
+	return policy, nil
 }
 
 // ValidateLogin aplica reglas que afectan el proceso de login. Actualmente
@@ -68,6 +68,12 @@ func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 		return err
 	}
 
+	// 1. Verificar que el usuario pertenezca a la aplicación.
+	roles, err := s.uarRepo.FindRolesByUserAndApp(userID, appID)
+	if err != nil || len(roles) == 0 {
+		return fmt.Errorf("el usuario no tiene acceso a esta aplicación")
+	}
+
 	for _, rule := range rules {
 		switch rule.Code {
 		case "AUTHZ_POLICY":
@@ -75,13 +81,10 @@ func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 			if err != nil {
 				return fmt.Errorf("invalid AUTHZ_POLICY rule: %w", err)
 			}
-			// Future: Enforce roles strictly if enabled
+			// (Futuro: Verificación de roles específicos requeridos si se habilita)
 			if authzRule.EnableRoles {
-				// By default any logged in user who belongs to the app should be allowed,
-				// specific endpoint roles are checked by RoleMiddleware. 
-				// The actual logic verifying they belong to the app is handled inside Login.
+				// El usuario ya tiene roles (chequeado arriba), se permite el acceso base.
 			}
-			// (Session policy max_failed_logins could also be validated here)
 		}
 	}
 	return nil

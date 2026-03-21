@@ -25,6 +25,7 @@ func AuthMiddleware(manager *auth.JWTManager) gin.HandlerFunc {
 		if token == "" {
 			if strings.HasPrefix(c.Request.URL.Path, "/admin") {
 				c.Redirect(http.StatusSeeOther, "/admin/login")
+				c.Abort()
 			} else {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token no provisto"})
 			}
@@ -41,6 +42,7 @@ func AuthMiddleware(manager *auth.JWTManager) gin.HandlerFunc {
 		fmt.Sscanf(jsonToken.Subject, "%d", &userID)
 		c.Set("user_id", userID)
 		c.Set("user_email", jsonToken.Username)
+		c.Set("user_roles", jsonToken.Roles)
 		c.Next()
 	}
 }

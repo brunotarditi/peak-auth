@@ -1,0 +1,16 @@
+{{ define "partials/footer_admin" }}
+<footer class="bg-white/50 border-t border-slate-200 py-8 mt-auto">
+    <div
+        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-sm">
+        <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-600">Peak Auth</span>
+            <span>&bull;</span>
+            <p>&copy; {{ now.Year }} Gestión de Identidades en la Nube.</p>
+        </div>
+        <div class="flex gap-6">
+            <a href="#" class="hover:text-indigo-600 transition">Documentación</a>
+            <a href="#" class="hover:text-indigo-600 transition">API</a>
+        </div>
+    </div>
+</footer>
+{{ end }}

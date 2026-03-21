@@ -6,21 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Email Verificado</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: { bg: '#0f172a', card: '#1e293b', border: '#334155' }
-                    }
-                }
-            }
-        }
-        if (localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        }
-    </script>
+    <script src="/static/admin/js/config.js?v={{ now.Unix }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/admin/css/admin.css?v=1.1">
     <style>
@@ -36,9 +22,7 @@
             class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 text-center">
             <div
                 class="bg-emerald-500 text-white w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-100 dark:shadow-none">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                </svg>
+                {{template "icon-check"}}
             </div>
 
             <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-4">¡Email <span
@@ -49,10 +33,7 @@
             <button onclick="window.close()"
                 class="w-full bg-slate-900 dark:bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 dark:hover:bg-indigo-700 transition shadow-xl shadow-slate-100 dark:shadow-none flex items-center justify-center gap-3 group">
                 <span>Cerrar Ventana</span>
-                <svg class="w-5 h-5 opacity-50 group-hover:scale-110 transition-transform" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                {{template "icon-close"}}
             </button>
         </div>
 

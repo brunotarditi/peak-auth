@@ -1,0 +1,33 @@
+{{ define "base_admin" }}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ .Title }} | Peak Auth</title>
+
+    <!-- Fuentes y CSS -->
+    <link rel="stylesheet" href="/static/admin/css/admin.css?v={{ now.Unix }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Configuración y Lógica (Separada) -->
+    <script src="/static/admin/js/config.js?v={{ now.Unix }}"></script>
+    <script src="/static/admin/js/common.js?v={{ now.Unix }}"></script>
+</head>
+
+<body class="bg-pattern flex flex-col min-h-screen text-slate-900">
+    {{ template "partials/nav_admin" . }}
+    <main class="container mx-auto py-10 px-4 flex-grow">
+        {{ block "content" . }}{{ end }}
+    </main>
+    {{ template "partials/footer_admin" . }}
+
+    {{ block "scripts" . }}{{ end }}
+</body>
+
+</html>
+
+{{ end }}

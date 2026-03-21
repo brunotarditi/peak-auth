@@ -4,18 +4,21 @@ import (
 	"fmt"
 	"peak-auth/model"
 	"peak-auth/response"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 type UserApplicationRoleRepository interface {
 	AssignRole(userID, appID, roleID uint) error
+	RevokeAccess(userID, appID uint) error
 	FindRolesByUserAndApp(userID, appID uint) ([]model.Role, error)
 	CountUsersByApp(appID uint) (int64, error)
 	HasRole(userID uint, roleName string) (bool, error)
 	GetUsersByApp(appID uint) ([]model.User, error)
 	GetUserRolesInApp(userID, appID uint) ([]string, error)
 	GetUsersWithRolesByApp(appID uint) ([]response.UserAppRow, error)
+	GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error)
 }
 
 type userApplicationRoleRepository struct {
@@ -44,6 +47,22 @@ func (r *userApplicationRoleRepository) AssignRole(userID, appID, roleID uint) e
 		RoleID:        roleID,
 	}
 	return r.db.Create(&uar).Error
+}
+
+// RevokeAccess elimina lógicamente todos los roles del usuario en la app.
+func (r *userApplicationRoleRepository) RevokeAccess(userID, appID uint) error {
+	result := r.db.Model(&model.UserApplicationRole{}).
+		Where("user_id = ? AND application_id = ? AND deleted_at IS NULL", userID, appID).
+		Updates(map[string]interface{}{
+			"deleted_at": time.Now(),
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no se encontró vinculación activa para este usuario")
+	}
+	return nil
 }
 
 // FindRolesByUserAndApp obtiene los roles que tiene un usuario en una aplicación.
@@ -108,4 +127,34 @@ func (r *userApplicationRoleRepository) GetUsersWithRolesByApp(appID uint) ([]re
 		Scan(&rows).Error
 
 	return rows, err
+}
+
+// GetUsersWithRolesByAppPaginated devuelve los usuarios con roles de forma paginada para una aplicación.
+func (r *userApplicationRoleRepository) GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error) {
+	var rows []response.UserAppRow
+	var total int64
+
+	baseQuery := r.db.Table("users").
+		Joins("JOIN profiles ON profiles.user_id = users.id").
+		Joins("JOIN user_application_roles uar ON uar.user_id = users.id").
+		Joins("JOIN roles ON roles.id = uar.role_id").
+		Where("uar.application_id = ? AND uar.deleted_at IS NULL", appID)
+
+	// Contar el total de registros (usuarios únicos) para esta consulta
+	if err := baseQuery.Distinct("users.id").Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * limit
+
+	// Realizar la consulta con paginación agrupando por usuario para juntar sus roles
+	err := baseQuery.
+		Select("users.id, users.email, users.is_verified, users.is_active, users.failed_logins, profiles.first_name, profiles.last_name, string_agg(roles.name, ', ') as role_name").
+		Group("users.id, users.email, users.is_verified, users.is_active, users.failed_logins, profiles.first_name, profiles.last_name").
+		Order("users.email ASC").
+		Offset(offset).
+		Limit(limit).
+		Scan(&rows).Error
+
+	return rows, total, err
 }

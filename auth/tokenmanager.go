@@ -18,8 +18,9 @@ type JWTManager struct {
 
 // CustomClaims define qué info viajará en el token
 type CustomClaims struct {
-	Username string `json:"username"`
-	AppID    string `json:"app_id"`
+	Username string   `json:"username"`
+	AppID    string   `json:"app_id"`
+	Roles    []string `json:"roles"`
 	jwt.RegisteredClaims
 }
 
@@ -63,10 +64,11 @@ func NewJWTManager() (*JWTManager, error) {
 }
 
 // GenerateToken crea un nuevo token JWT para un usuario y aplicación específicos.
-func (m *JWTManager) GenerateToken(userID uint, username string, appID string, duration time.Duration) (string, error) {
+func (m *JWTManager) GenerateToken(userID uint, username string, appID string, roles []string, duration time.Duration) (string, error) {
 	claims := CustomClaims{
 		Username: username,
 		AppID:    appID,
+		Roles:    roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   fmt.Sprintf("%d", userID),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
