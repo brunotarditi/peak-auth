@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"net/http"
 	"peak-auth/model"
 	"peak-auth/request"
 	"peak-auth/service"
@@ -29,11 +30,11 @@ func (c *UserController) Login(ctx *gin.Context) {
 
 	response, err := c.UserService.Login(req, appID)
 	if err != nil {
-		ctx.JSON(401, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(200, response)
+	ctx.JSON(http.StatusOK, response)
 }
 
 // Register maneja el endpoint de registro.
@@ -43,23 +44,23 @@ func (c *UserController) Register(ctx *gin.Context) {
 
 	// Bind del JSON
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Validación de seguridad: el AppID del body debe ser el del middleware
 	if req.AppID != app.AppID { // Suponiendo que AppCode es el ID externo string
-		ctx.JSON(403, gin.H{"error": "App ID mismatch"})
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "App ID mismatch"})
 		return
 	}
 
 	user, err := c.UserService.Register(req)
 	if err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(201, gin.H{"message": "Usuario creado, verifique su email", "id": user.ID})
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Usuario creado, verifique su email", "id": user.ID})
 }
 
 // GetVerifyEmail maneja la verificación de email vía GET
@@ -99,14 +100,34 @@ func (c *UserController) PostResetPassword(ctx *gin.Context) {
 	confirm := ctx.PostForm("confirm_password")
 
 	if password != confirm {
-		ctx.String(400, "Las contraseñas no coinciden")
+		ctx.String(http.StatusBadRequest, "Las contraseñas no coinciden")
 		return
 	}
 
 	if err := c.UserService.ResetPassword(token, password); err != nil {
-		ctx.String(400, "Error restableciendo contraseña: %v", err)
+		ctx.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	ctx.String(200, "Contraseña actualizada. Ya puedes iniciar sesión en tu aplicación.")
+	ctx.String(http.StatusOK, "Contraseña actualizada. Ya puedes iniciar sesión en tu aplicación.")
+}
+
+// Refresh maneja la renovación de tokens vía refresh token
+func (c *UserController) Refresh(ctx *gin.Context) {
+	var req struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(400, gin.H{"error": "Refresh token es requerido"})
+		return
+	}
+
+	resp, err := c.UserService.Refresh(req.RefreshToken)
+	if err != nil {
+		ctx.JSON(401, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(200, resp)
 }

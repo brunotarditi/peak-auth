@@ -52,7 +52,7 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		return
 	}
 
-	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, "System Root", "peak-auth-raiz", 24*time.Hour)
+	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, "System Root", "peak-auth-raiz", []string{"ROOT"}, 24*time.Hour)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error al generar sesión")
 		return

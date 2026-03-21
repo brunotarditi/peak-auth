@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"html/template"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"peak-auth/app"
 	"peak-auth/auth"
 	"peak-auth/db"
+	"peak-auth/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -44,15 +46,33 @@ func main() {
 	// 5) Gin router
 	router := gin.New()
 
-	// Registrar funciones globales para templates ANTES de cargar glob
-	router.SetFuncMap(template.FuncMap{
+	// Registrar funciones globales para templates
+	funcMap := template.FuncMap{
 		"now": func() time.Time {
 			return time.Now()
 		},
-	})
+		"dict": func(values ...interface{}) (map[string]interface{}, error) {
+			if len(values)%2 != 0 {
+				return nil, errors.New("invalid dict call")
+			}
+			dict := make(map[string]interface{}, len(values)/2)
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					return nil, errors.New("dict keys must be strings")
+				}
+				dict[key] = values[i+1]
+			}
+			return dict, nil
+		},
+	}
 
-	// Cargar plantillas HTML de forma recursiva (todas las subcarpetas)
-	router.LoadHTMLGlob("templates/*/*.html")
+	// Cargar plantillas HTML de forma recursiva e ISOLADA por cada página
+	renderer, err := utils.NewRenderer("templates", funcMap)
+	if err != nil {
+		log.Fatalf("error initializing template renderer: %v", err)
+	}
+	router.HTMLRender = renderer
 
 	SetupRoutes(router, appInstance)
 

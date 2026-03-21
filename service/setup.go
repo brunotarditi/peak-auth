@@ -56,7 +56,18 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 			return err
 		}
 
-		if err := tx.Roles().Create(&rootRole); err != nil {
+		// Roles por defecto del sistema
+		rootRole = model.Role{Name: "ROOT", IsDefault: true}
+		adminRole := model.Role{Name: "ADMIN", IsDefault: true}
+		userRole := model.Role{Name: "USER", IsDefault: true}
+
+		if err = tx.Roles().Create(&rootRole); err != nil {
+			return err
+		}
+		if err = tx.Roles().Create(&adminRole); err != nil {
+			return err
+		}
+		if err = tx.Roles().Create(&userRole); err != nil {
 			return err
 		}
 		user = model.User{Email: email, Password: hashedPassword, IsVerified: true}

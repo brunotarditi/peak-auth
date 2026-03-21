@@ -121,3 +121,83 @@ async function copyToClipboard(text, btn) {
         showToast('Error al acceder al portapapeles', 'error');
     }
 }
+
+
+// --- SweetAlert2 Wrappers Premium ---
+
+/**
+ * Diálogo de confirmación premium estilo Peak Auth.
+ * Devuelve true si el usuario confirma, false si cancela.
+ * @param {object} options
+ * @param {string} options.title - Título principal
+ * @param {string} options.text - Descripción
+ * @param {string} options.confirmText - Texto del botón de confirmar
+ * @param {string} options.type - 'danger' | 'warning' | 'info'
+ * @returns {Promise<boolean>}
+ */
+async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'danger' }) {
+    const colorMap = {
+        danger:  { confirm: '#e11d48', iconColor: '#e11d48' },
+        warning: { confirm: '#f59e0b', iconColor: '#f59e0b' },
+        info:    { confirm: '#6366f1', iconColor: '#6366f1' }
+    };
+    const colors = colorMap[type] || colorMap.danger;
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const background = isDark ? '#1e293b' : '#fff';
+    const color = isDark ? '#f8fafc' : '#0f172a';
+
+    const result = await Swal.fire({
+        title: title,
+        text: text,
+        icon: type === 'danger' ? 'warning' : type,
+        showCancelButton: true,
+        confirmButtonText: confirmText,
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: colors.confirm,
+        cancelButtonColor: '#64748b',
+        iconColor: colors.iconColor,
+        background: background,
+        color: color,
+        reverseButtons: true,
+        customClass: {
+            popup: 'rounded-3xl',
+            confirmButton: 'rounded-xl font-bold',
+            cancelButton: 'rounded-xl font-bold'
+        }
+    });
+
+    return result.isConfirmed;
+}
+
+/**
+ * Alerta premium para mostrar errores o información.
+ * @param {string} title
+ * @param {string} text
+ * @param {string} icon - 'error' | 'success' | 'info' | 'warning'
+ */
+function peakAlert(title, text, icon = 'error') {
+    const colorMap = {
+        error: '#e11d48',
+        success: '#10b981',
+        info: '#6366f1',
+        warning: '#f59e0b'
+    };
+    const isDark = document.documentElement.classList.contains('dark');
+    const background = isDark ? '#1e293b' : '#fff';
+    const color = isDark ? '#f8fafc' : '#0f172a';
+
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: icon,
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: colorMap[icon] || '#6366f1',
+        background: background,
+        color: color,
+        customClass: {
+            popup: 'rounded-3xl',
+            confirmButton: 'rounded-xl font-bold'
+        }
+    });
+}

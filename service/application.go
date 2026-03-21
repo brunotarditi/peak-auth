@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"peak-auth/model"
 	"peak-auth/repository"
 	"peak-auth/response"
@@ -10,9 +11,11 @@ import (
 
 type ApplicationService interface {
 	CreateApp(name, description string, isActive bool) (model.Application, string, error)
-	UpdateApp(appID string, name, description string, isActive bool) error
+	UpdateApp(appID string, description string, isActive bool) error
+	ValidateAppNameUnique(name string) error
 	RegenerateSecret(appID string) (string, error)
 	RegisterUserInApp(userEmail, appID, roleName string) error
+	RevokeUserFromApp(userID, appID uint) error
 	GetAppDetails(appID string) (model.Application, error)
 	DeleteApp(appID string) error
 	GetDashboardStats() ([]response.AppStatsResponse, error)
@@ -60,6 +63,16 @@ func (s *applicationService) CreateApp(name, description string, isActive bool) 
 	}
 
 	return app, plainSecret, nil
+}
+
+// ValidateAppNameUnique verifica que no exista otra app activa con ese nombre.
+func (s *applicationService) ValidateAppNameUnique(name string) error {
+	_, err := s.repo.FindByName(name)
+	if err == nil {
+		// Si NO hay error, significa que encontró una app con ese nombre
+		return fmt.Errorf("ya existe una aplicación con el nombre \"%s\"", name)
+	}
+	return nil // No existe, podemos continuar
 }
 
 func (s *applicationService) RegisterUserInApp(userEmail, publicAppID, roleName string) error {
@@ -129,17 +142,20 @@ func (s *applicationService) RegisterUserInApp(userEmail, publicAppID, roleName 
 	})
 }
 
+func (s *applicationService) RevokeUserFromApp(userID, appID uint) error {
+	return s.uarRepo.RevokeAccess(userID, appID)
+}
+
 func (s *applicationService) GetAppDetails(publicAppID string) (model.Application, error) {
 	return s.repo.FindByAppID(publicAppID)
 }
 
-func (s *applicationService) UpdateApp(appID string, name, description string, isActive bool) error {
+func (s *applicationService) UpdateApp(appID string, description string, isActive bool) error {
 	app, err := s.repo.FindByAppID(appID)
 	if err != nil {
 		return err
 	}
 
-	app.Name = name
 	app.Description = description
 	app.IsActive = isActive
 

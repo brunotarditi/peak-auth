@@ -1,0 +1,32 @@
+{{ define "content" }}
+<div class="max-w-xl mx-auto py-20 text-center">
+    <div class="mb-8 relative inline-block">
+        <div class="absolute inset-0 bg-rose-500 blur-2xl opacity-20 transform scale-150 animate-pulse"></div>
+        <div
+            class="relative bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 transform -rotate-6 shadow-2xl">
+            {{ template "icon-warning"}}
+        </div>
+    </div>
+
+    <h1 class="text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">¡Algo salió mal!</h1>
+    <p
+        class="text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/50 p-6 rounded-2xl font-medium mb-10 border border-slate-200 dark:border-slate-800 leading-relaxed italic">
+        "{{ .error }}"
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="/admin"
+            class="w-full sm:w-auto px-8 py-3.5 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-2 group">
+            {{template "icon-arrow-back"}}
+            Volver al Panel
+        </a>
+        <button onclick="window.location.reload()"
+            class="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 font-bold rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+            Reintentar
+        </button>
+    </div>
+</div>
+{{ end }}
+{{ define "scripts" }} {{ end }}
+
+{{ template "base_admin" . }}

@@ -6,24 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Acceso Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: { bg: '#0f172a', card: '#1e293b', border: '#334155' }
-                    }
-                }
-            }
-        }
-        // Apply dark mode immediately
-        if (localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        }
-    </script>
+    <script src="/static/admin/js/config.js?v={{ now.Unix }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/admin/css/admin.css?v=1.1">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/static/admin/js/login.js?v={{ now.Unix }}"></script>
 </head>
 
 <body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900">
@@ -31,10 +18,7 @@
         <div class="text-center mb-10">
             <div
                 class="bg-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-200 dark:shadow-none">
-                <svg class="w-8 h-8 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                        d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                {{ template "icon-lightning"}}
             </div>
             <h1 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Peak <span
                     class="text-indigo-600">Auth</span></h1>
@@ -53,21 +37,23 @@
                         class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
                 </div>
 
-                <div>
+                <div class="relative">
                     <label
                         class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Contraseña</label>
-                    <input type="password" name="password" required placeholder="••••••••"
-                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                    <div class="relative">
+                        <input type="password" name="password" id="password_field" required placeholder="••••••••"
+                            class="w-full px-5 py-4 pr-12 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                        <button type="button" onclick="toggleLoginPassword('password_field')"
+                            class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                            {{template "icon-eye"}}
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit"
                     class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 group">
                     <span>Entrar al Panel</span>
-                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
+                    {{template "icon-arrow-forward"}}
                 </button>
             </form>
 

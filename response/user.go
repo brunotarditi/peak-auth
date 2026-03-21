@@ -6,6 +6,7 @@ type UserAppRow struct {
 	FirstName  string
 	LastName   string
 	RoleName   string
-	IsVerified bool
-	IsActive   bool
+	IsVerified   bool
+	IsActive     bool
+	FailedLogins uint
 }

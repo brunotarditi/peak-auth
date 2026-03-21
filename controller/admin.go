@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"peak-auth/response"
@@ -52,8 +53,14 @@ func (ctrl *AdminController) Dashboard(c *gin.Context) {
 // GetFormApp renderiza el formulario de creación de aplicación
 func (ctrl *AdminController) GetFormApp(c *gin.Context) {
 	ctrl.renderAdmin(c, "app_new.html", gin.H{
-		"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva Aplicación"}},
-		"Title":       "Nueva Aplicación",
+		"FormAction": "/admin/apps",
+		"IsEdit":     false,
+		"Breadcrumbs": []gin.H{
+			{"Label": "Apps", "URL": "/admin"},
+			{"Label": "Nueva Aplicación"},
+		},
+		"Title":  "Nueva Aplicación",
+		"Action": "Crear aplicación",
 	})
 }
 
@@ -66,9 +73,16 @@ func (ctrl *AdminController) GetEditApp(c *gin.Context) {
 		return
 	}
 	ctrl.renderAdmin(c, "app_new.html", gin.H{
-		"App":         app,
-		"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": app.Name, "URL": "/admin/apps/" + app.AppID}, {"Label": "Editar"}},
-		"Title":       "Editar " + app.Name,
+		"App":        app,
+		"FormAction": "/admin/apps/" + app.AppID,
+		"IsEdit":     true,
+		"Breadcrumbs": []gin.H{
+			{"Label": "Apps", "URL": "/admin"},
+			{"Label": app.Name, "URL": "/admin/apps/" + app.AppID},
+			{"Label": "Editar"},
+		},
+		"Title":  "Editar " + app.Name,
+		"Action": "Guardar cambios",
 	})
 }
 
@@ -80,6 +94,16 @@ func (ctrl *AdminController) PostFormApp(c *gin.Context) {
 
 	if name == "" {
 		c.String(http.StatusBadRequest, "name requerido")
+		return
+	}
+
+	// Validar que no exista otra app con el mismo nombre
+	if err := ctrl.AppService.ValidateAppNameUnique(name); err != nil {
+		ctrl.renderAdmin(c, "app_new.html", gin.H{
+			"Error":       err.Error(),
+			"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva Aplicación"}},
+			"Title":       "Nueva Aplicación",
+		})
 		return
 	}
 
@@ -107,27 +131,53 @@ func (ctrl *AdminController) PostFormApp(c *gin.Context) {
 // UpdateFormApp actualiza una aplicación
 func (ctrl *AdminController) UpdateFormApp(c *gin.Context) {
 	id := c.Param("id")
-	name := c.PostForm("name")
+	_ = c.PostForm("name") // Se ignora: el nombre no es editable
 	description := c.PostForm("description")
 	isActive := c.PostForm("is_active") == "on"
 
-	if name == "" {
-		c.String(http.StatusBadRequest, "Nombre requerido")
+	if !isActive {
+		if id == "peak-auth-raiz" {
+			ctrl.renderAdmin(c, "error.html", gin.H{
+				"error":       "La aplicación principal (Peak Auth Raíz) no puede ser desactivada ni eliminada. Es el núcleo del sistema SSO.",
+				"Title":       "Operación Bloqueada",
+				"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Error"}},
+			})
+			return
+		}
+
+		// Verificar rol ROOT para la eliminación
+		roles, _ := c.Get("user_roles")
+		isRoot := false
+		if rList, ok := roles.([]string); ok {
+			for _, r := range rList {
+				if r == "ROOT" {
+					isRoot = true
+					break
+				}
+			}
+		}
+
+		if !isRoot {
+			c.String(http.StatusForbidden, "Se requiere rol ROOT para desactivar/eliminar aplicaciones")
+			return
+		}
+
+		if err := ctrl.AppService.DeleteApp(id); err != nil {
+			c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
+			return
+		}
+		c.Redirect(http.StatusSeeOther, "/admin")
 		return
 	}
 
-	// Si desactivan el check de la raíz, no lo permitimos
-	if !isActive && id == "peak-auth-raiz" {
-		c.String(http.StatusBadRequest, "La aplicación principal (Peak Auth Raíz) no puede ser desactivada")
-		return
-	}
-
-	err := ctrl.AppService.UpdateApp(id, name, description, isActive)
+	err := ctrl.AppService.UpdateApp(id, description, true)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error actualizando app: %v", err)
 		return
 	}
-	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id)
+
+	// Como se solicita, redirigimos al dashboard
+	c.Redirect(http.StatusSeeOther, "/admin")
 }
 
 // PostDeleteApp maneja la eliminación real (lógica) de una aplicación desde la zona de peligro
@@ -161,15 +211,16 @@ func (ctrl *AdminController) PostDeleteApp(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
 		return
 	}
-	
+
 	// Redirigir al dashboard principal porque la app ya no existe a la vista
 	c.Redirect(http.StatusSeeOther, "/admin")
 }
 
-
 // GetLoginForm renderiza el formulario de login
 func (ctrl *AdminController) GetLoginForm(c *gin.Context) {
-	c.HTML(http.StatusOK, "login.html", nil)
+	c.HTML(http.StatusOK, "login.html", gin.H{
+		"Error": c.Query("error"),
+	})
 }
 
 // PostLoginForm procesa el login
@@ -177,9 +228,9 @@ func (ctrl *AdminController) PostLoginForm(c *gin.Context) {
 	email := c.PostForm("email")
 	password := c.PostForm("password")
 
-	token, err := ctrl.UserService.AdminLogin(email, password)
+	token, expireMinutes, err := ctrl.UserService.AdminLogin(email, password)
 	if err != nil {
-		c.String(http.StatusUnauthorized, err.Error())
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+err.Error())
 		return
 	}
 
@@ -187,7 +238,7 @@ func (ctrl *AdminController) PostLoginForm(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	isSecure := os.Getenv("ENV") == "production"
 
-	c.SetCookie("admin_token", token, 12*3600, "/", "", isSecure, true)
+	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
 	c.Redirect(http.StatusSeeOther, "/admin")
 }
 
@@ -233,14 +284,14 @@ func (ctrl *AdminController) GetAppDetails(c *gin.Context) {
 	}
 
 	ctrl.renderAdmin(c, "app_show.html", gin.H{
-		"App":            app,
-		"Rules":          rules,
-		"RegPolicy":      regPolicy,
-		"PwdPolicy":      pwdPolicy,
-		"SessionPolicy":  sessionPolicy,
-		"AuthzPolicy":    authzPolicy,
-		"UserCount":      len(users),
-		"Roles":          roles,
+		"App":           app,
+		"Rules":         rules,
+		"RegPolicy":     regPolicy,
+		"PwdPolicy":     pwdPolicy,
+		"SessionPolicy": sessionPolicy,
+		"AuthzPolicy":   authzPolicy,
+		"UserCount":     len(users),
+		"Roles":         roles,
 		"Breadcrumbs": []gin.H{
 			{"Label": "Apps", "URL": "/admin"},
 			{"Label": app.Name},
@@ -248,7 +299,6 @@ func (ctrl *AdminController) GetAppDetails(c *gin.Context) {
 		"Title": app.Name,
 	})
 }
-
 
 // GetAppUsers muestra los usuarios de una aplicación
 func (ctrl *AdminController) GetAppUsers(c *gin.Context) {
@@ -260,7 +310,14 @@ func (ctrl *AdminController) GetAppUsers(c *gin.Context) {
 		return
 	}
 
-	users, err := ctrl.UserService.FindUserByAppID(appIDParam)
+	pageStr := c.DefaultQuery("page", "1")
+	var page int
+	if _, err := fmt.Sscanf(pageStr, "%d", &page); err != nil || page < 1 {
+		page = 1
+	}
+	limit := 10
+
+	users, total, err := ctrl.UserService.FindUserByAppIDPaginated(appIDParam, page, limit)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error al cargar los usuarios")
 		return
@@ -272,10 +329,35 @@ func (ctrl *AdminController) GetAppUsers(c *gin.Context) {
 		return
 	}
 
-	ctrl.renderAdmin(c, "app_users.html", gin.H{
-		"App":   app,
-		"Users": users,
-		"Roles": roles,
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	pagesSlice := make([]int, totalPages)
+	for i := 0; i < totalPages; i++ {
+		pagesSlice[i] = i + 1
+	}
+
+	nextPg := page + 1
+	if nextPg > totalPages {
+		nextPg = totalPages
+	}
+	prevPg := page - 1
+	if prevPg < 1 {
+		prevPg = 1
+	}
+
+	ctrl.renderAdmin(c, "users.html", gin.H{
+		"App":        app,
+		"Users":      users,
+		"TotalCount": total,
+		"CurrentPg":  page,
+		"TotalPages": totalPages,
+		"NextPg":     nextPg,
+		"PrevPg":     prevPg,
+		"Pages":      pagesSlice,
+		"Roles":      roles,
 		"Breadcrumbs": []gin.H{
 			{"Label": app.Name, "URL": "/admin/apps/" + app.AppID},
 			{"Label": "Usuarios"},
@@ -289,20 +371,20 @@ func (ctrl *AdminController) PostUsersInApp(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
 	if err != nil {
-		c.String(http.StatusNotFound, "app no encontrada: %v", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "aplicación no encontrada"})
 		return
 	}
 	email := c.PostForm("email")
 	role := c.PostForm("role")
 	if email == "" || role == "" {
-		c.String(http.StatusBadRequest, "email y role requeridos")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email y role requeridos"})
 		return
 	}
 	if err := ctrl.AppService.RegisterUserInApp(email, app.AppID, role); err != nil {
-		c.String(http.StatusInternalServerError, "error registrando usuario en app: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.Redirect(http.StatusSeeOther, "/admin/apps/"+c.Param("id")+"/users")
+	c.JSON(http.StatusOK, gin.H{"message": "Usuario vinculado con éxito"})
 }
 
 // GetAppRules redirige a los detalles de la aplicación
@@ -372,6 +454,51 @@ func (ctrl *AdminController) PostRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Rol creado con éxito"})
 }
 
+// DeleteRole elimina un rol (lógicamente) si ningún usuario lo tiene asignado
+func (ctrl *AdminController) DeleteRole(c *gin.Context) {
+	var req struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Nombre de rol requerido"})
+		return
+	}
+
+	err := ctrl.RoleService.DeleteRole(req.Name)
+	if err != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Rol eliminado con éxito"})
+}
+
+// RevokeUserAccess revoca el acceso de un usuario a una aplicación
+func (ctrl *AdminController) RevokeUserAccess(c *gin.Context) {
+	appIDParam := c.Param("id")
+	userIDParam := c.Param("user_id")
+
+	app, err := ctrl.AppService.GetAppDetails(appIDParam)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "App no encontrada"})
+		return
+	}
+
+	var userID uint
+	if _, err := fmt.Sscanf(userIDParam, "%d", &userID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+
+	if err := ctrl.AppService.RevokeUserFromApp(userID, app.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Acceso revocado"})
+}
+
 // --- GESTIÓN DE REGLAS VÍA API AJAX ---
 
 // PostAppRule (Crea nueva regla)
@@ -418,6 +545,34 @@ func (ctrl *AdminController) PutAppRule(c *gin.Context) {
 		return
 	}
 
+	switch code {
+	case "SESSION_POLICY":
+		var params struct {
+			TokenExpirationMinutes int `json:"token_expiration_minutes"`
+			MaxFailedLogins        int `json:"max_failed_logins"`
+		}
+		if err := json.Unmarshal(body, &params); err == nil {
+			if params.TokenExpirationMinutes < 1 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "La expiración de la sesión debe ser al menos de 1 minuto"})
+				return
+			}
+			if params.MaxFailedLogins < 1 || params.MaxFailedLogins > 10 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "El máximo de logins fallidos debe estar entre 1 y 10"})
+				return
+			}
+		}
+	case "PWD_POLICY":
+		var params struct {
+			MinLength int `json:"min_length"`
+		}
+		if err := json.Unmarshal(body, &params); err == nil {
+			if params.MinLength < 4 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "La contraseña debe tener al menos 4 caracteres"})
+				return
+			}
+		}
+	}
+
 	err = ctrl.RuleService.UpdateRuleValue(app.ID, code, body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -447,7 +602,6 @@ func (ctrl *AdminController) DeleteAppRule(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Regla eliminada"})
 }
 
-
 // renderAdmin renderiza la plantilla de administración
 func (ctrl *AdminController) renderAdmin(c *gin.Context, templateName string, data gin.H) {
 	if data == nil {
@@ -462,4 +616,18 @@ func (ctrl *AdminController) renderAdmin(c *gin.Context, templateName string, da
 	}
 
 	c.HTML(http.StatusOK, templateName, data)
+}
+
+// PostUnlockUser resetea el contador de intentos fallidos
+func (ctrl *AdminController) PostUnlockUser(c *gin.Context) {
+	userIDStr := c.Param("user_id")
+	var userID uint
+	fmt.Sscanf(userIDStr, "%d", &userID)
+
+	if err := ctrl.UserService.UnlockUser(userID); err != nil {
+		c.JSON(500, gin.H{"error": "No se pudo desbloquear al usuario"})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "Usuario desbloqueado correctamente"})
 }
