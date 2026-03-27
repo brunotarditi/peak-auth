@@ -59,8 +59,17 @@ func (ctrl *AdminController) GetFormApp(c *gin.Context) {
 			{"Label": "Apps", "URL": "/admin"},
 			{"Label": "Nueva Aplicación"},
 		},
-		"Title":  "Nueva Aplicación",
-		"Action": "Crear aplicación",
+		"Title":          "Nueva Aplicación",
+		"Action":         "Crear aplicación",
+		"NameValue":      "",
+		"NameReadonly":   false,
+		"NameDisabled":   false,
+		"NameClass":      "",
+		"HelpText":       "El AppID se generará automáticamente",
+		"IsActive":       true,
+		"IsLocked":       false,
+		"SubmitDisabled": true,
+		"StatusApp":      "Activar inmediatamente",
 	})
 }
 
@@ -81,8 +90,17 @@ func (ctrl *AdminController) GetEditApp(c *gin.Context) {
 			{"Label": app.Name, "URL": "/admin/apps/" + app.AppID},
 			{"Label": "Editar"},
 		},
-		"Title":  "Editar " + app.Name,
-		"Action": "Guardar cambios",
+		"Title":          "Editar " + app.Name,
+		"Action":         "Guardar cambios",
+		"NameValue":      app.Name,
+		"NameReadonly":   true,
+		"NameDisabled":   true,
+		"NameClass":      "opacity-60 cursor-not-allowed",
+		"HelpText":       "El nombre no puede modificarse después de la creación",
+		"IsActive":       true,
+		"IsLocked":       false,
+		"SubmitDisabled": true,
+		"StatusApp":      "Estado de la Aplicación (Activa)",
 	})
 }
 

@@ -1,62 +1,57 @@
 {{ define "content" }}
-<div class="flex justify-center max-w-2xl mx-auto">
-    <div class="bg-white p-10 rounded-3xl shadow-sm border border-slate-100 w-full">
-        <div class="flex items-center gap-4 mb-8">
-            <a href="/admin" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition">
+<div class="app-page">
+    <div class="app-card">
+        <div class="app-header">
+            <a href="/admin" class="app-back-link">
                 {{ template "icon-arrow-back" }}
             </a>
-            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ .Title }}</h2>
+            <h2 class="app-title">{{ .Title }}</h2>
         </div>
 
         <form id="appForm" action="{{ .FormAction }}" method="POST" class="space-y-8" data-edit="{{ .IsEdit }}">
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2 tracking-tight">Nombre de la
+                <label class="app-label">Nombre de la
                     aplicación</label>
-                <input type="text" name="name" value="{{ if .App }}{{ .App.Name }}{{ end }}"
-                    placeholder="Ej: Mi App de Recetas" required {{ if .App }}readonly disabled{{ end }}
-                    class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 focus:bg-white text-lg {{ if .App }}opacity-60 cursor-not-allowed{{ end }}">
+                <input type="text" name="name" value="{{ .NameValue }}" placeholder="Ej: Mi nueva app" required {{
+                    if .NameReadonly }}readonly{{ end }} {{ if .NameDisabled }}disabled{{ end }}
+                    class="app-input {{ .NameClass }}">
                 {{ if .Error }}
                 <p class="text-xs text-rose-600 font-bold mt-2 flex items-center gap-1">
                     {{ template "icon-warning" }}
                     {{ .Error }}
                 </p>
                 {{ else }}
-                <p
-                    class="text-[10px] text-slate-400 mt-2 font-medium flex items-center gap-1 uppercase tracking-widest">
+                <p class="app-helper">
                     {{ template "icon-info" }}
-                    {{ if .App }}El nombre no puede modificarse después de la creación{{ else }}El AppID se generará
-                    automáticamente{{ end }}
+                    {{ .HelpText }}
                 </p>
                 {{ end }}
             </div>
 
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2 tracking-tight">Descripción</label>
+                <label class="app-label">Descripción</label>
                 <textarea name="description" rows="4" placeholder="Describe brevemente tu aplicación..."
-                    class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 focus:bg-white">{{ if .App }}{{ .App.Description }}{{ end }}</textarea>
+                    class="app-textarea">{{ if .App }}{{ .App.Description }}{{ end }}</textarea>
             </div>
 
-            <div class="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center justify-between">
+            <div class="app-toggle-panel">
                 <div class="flex items-center">
                     <input type="checkbox" name="is_active" {{ if or (not .App) .App.IsActive }}checked{{ end }}
-                        id="is_active" {{ if and .App (eq .App.AppID "peak-auth-raiz" )
-                        }}onclick="peakAlert('Denegado', 'La aplicación principal Peak Auth Raíz no puede ser desactivada o eliminada.', 'error'); return false;"
-                        {{ end }}
-                        class="h-5 w-5 text-indigo-600 border-slate-300 rounded-md focus:ring-indigo-500 transition cursor-pointer">
-                    <label for="is_active" class="ml-3 text-sm text-indigo-900 font-bold cursor-pointer">
-                        {{ if .App }}Estado de la Aplicación (Activa){{ else }}Activar inmediatamente{{ end }}
+                        id="is_active" {{ if .IsActive }}checked{{ end }} data-locked="{{ .IsLocked }}"
+                        class="h-5 w-5 text-indigo-600 dark:text-indigo-400 border-slate-300 dark:border-slate-600 rounded-md focus:ring-indigo-500 transition cursor-pointer">
+                    <label for="is_active" class="ml-3 text-sm text-indigo-900 dark:text-slate-100 font-bold cursor-pointer">
+                        {{ .StatusApp }}
                     </label>
                 </div>
                 {{ template "icon-lightning" }}
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                <a href="/admin"
-                    class="flex-1 text-center py-4 px-6 border border-slate-200 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition">
+            <div class="app-actions">
+                <a href="/admin" class="app-btn-secondary">
                     Cancelar
                 </a>
-                <button type="submit" id="submitBtn" {{ if .App }}disabled{{ end }}
-                    class="flex-1 bg-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" id="submitBtn" {{ if .SubmitDisabled }}disabled{{ end }}
+                    class="app-btn-primary">
                     <span>{{ .Action }}</span>
                     {{ template "icon-arrow-forward" }}
                 </button>
@@ -69,7 +64,8 @@
 
 {{ define "scripts" }}
 
-<script src="/static/admin/js/app.js"></script>
+<script src="{{ asset "/static/js/dist/app.min.js" }}"></script>
+
 {{ end }}
 
 {{ template "base_admin" . }}

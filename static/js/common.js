@@ -1,55 +1,4 @@
 /**
- * common.js - Lógica compartida de la interfaz de administración
- */
-
-// --- Sistema de Temas (Modo Oscuro) ---
-
-/**
- * Alterna entre modo claro y oscuro.
- */
-function toggleDarkMode() {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('darkMode', isDark);
-    updateThemeIcons(isDark);
-}
-
-/**
- * Actualiza los iconos del selector de tema según el estado actual.
- * @param {boolean} isDark 
- */
-function updateThemeIcons(isDark) {
-    const moon = document.getElementById('moon-icon');
-    const sun = document.getElementById('sun-icon');
-    if (!moon || !sun) return;
-
-    if (isDark) {
-        moon.classList.add('hidden');
-        sun.classList.remove('hidden');
-    } else {
-        moon.classList.remove('hidden');
-        sun.classList.add('hidden');
-    }
-}
-
-// Inicialización inmediata para evitar parpadeo blanco (FOUC)
-(function initTheme() {
-    const savedTheme = localStorage.getItem('darkMode');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    if (savedTheme === 'true' || (savedTheme === null && prefersDark)) {
-        document.documentElement.classList.add('dark');
-    }
-})();
-
-// Sincronizar iconos cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    updateThemeIcons(document.documentElement.classList.contains('dark'));
-});
-
-
-// --- Utilidades de UI ---
-
-/**
  * Muestra una notificación visual tipo toast.
  * @param {string} message 
  * @param {string} type - 'success', 'error', 'warning'
@@ -81,7 +30,6 @@ function showToast(message, type = 'success', duration = 4000) {
     const config = typeConfigs[type] || typeConfigs.success;
     const toast = document.createElement('div');
 
-    // Usamos clases CSS definidas en admin.css
     toast.className = `toast animate-slide-in-right ${config.classes}`;
     toast.innerHTML = `
         <div class="toast-icon">${config.icon}</div>
@@ -123,8 +71,6 @@ async function copyToClipboard(text, btn) {
 }
 
 
-// --- SweetAlert2 Wrappers Premium ---
-
 /**
  * Diálogo de confirmación premium estilo Peak Auth.
  * Devuelve true si el usuario confirma, false si cancela.
@@ -137,9 +83,9 @@ async function copyToClipboard(text, btn) {
  */
 async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'danger' }) {
     const colorMap = {
-        danger:  { confirm: '#e11d48', iconColor: '#e11d48' },
+        danger: { confirm: '#e11d48', iconColor: '#e11d48' },
         warning: { confirm: '#f59e0b', iconColor: '#f59e0b' },
-        info:    { confirm: '#6366f1', iconColor: '#6366f1' }
+        info: { confirm: '#6366f1', iconColor: '#6366f1' }
     };
     const colors = colorMap[type] || colorMap.danger;
 
@@ -200,4 +146,15 @@ function peakAlert(title, text, icon = 'error') {
             confirmButton: 'rounded-xl font-bold'
         }
     });
+}
+
+/**
+ * Alternar visibilidad de contraseña en el campo de login
+ * @param {string} fieldId - ID del campo input tipo password
+ */
+function toggleLoginPassword(fieldId) {
+    const input = document.getElementById(fieldId);
+    if (!input) return;
+
+    input.type = input.type === 'password' ? 'text' : 'password';
 }

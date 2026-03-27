@@ -1,0 +1,21 @@
+{
+  "name": "peak-auth",
+  "version": "1.0.0",
+  "description": "![Go Version](https://img.shields.io/badge/go-1.24.0-blue.svg)\r ![Gin Framework](https://img.shields.io/badge/gin-v1.11.0-blue.svg)\r ![PostgreSQL](https://img.shields.io/badge/postgresql-v1.6.0-blue.svg)",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/css/input.css -o ./static/css/output.css",
+    "watch:css": "tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch",
+    "build:js": "esbuild static/js/*.js --minify --outdir=static/js/dist --out-extension:.js=.min.js",
+    "build": "npm run build:css && npm run build:js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "esbuild": "^0.27.4",
+    "tailwindcss": "^4.2.2"
+  }
+}

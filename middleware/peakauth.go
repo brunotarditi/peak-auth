@@ -34,7 +34,13 @@ func AuthMiddleware(manager *auth.JWTManager) gin.HandlerFunc {
 
 		jsonToken, err := manager.VerifyToken(token)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token inválido"})
+			if strings.HasPrefix(c.Request.URL.Path, "/admin") {
+				c.SetCookie("admin_token", "", -1, "/", "", false, true)
+				c.Redirect(http.StatusSeeOther, "/admin/login")
+				c.Abort()
+			} else {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token inválido"})
+			}
 			return
 		}
 

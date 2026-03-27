@@ -1,3 +1,14 @@
+/**
+ * users.js - Gestión de usuarios y roles dentro de una aplicación.
+ * Permite asignar, revocar y configurar permisos de forma asíncrona.
+ */
+
+// Abrir el modal de roles
+function openRoleModal() {
+    document.getElementById('roleModal').classList.remove('hidden');
+}
+
+
 // Cerrar el modal de roles
 function closeRoleModal() {
     document.getElementById('roleModal').classList.add('hidden');
@@ -71,31 +82,16 @@ async function deleteRole(roleName) {
     }
 }
 
-/**
- * users.js - Gestión de usuarios y roles dentro de una aplicación.
- * Permite asignar, revocar y configurar permisos de forma asíncrona.
- */
-
-// --- Diálogos de Confirmación ---
-
-/**
- * Confirmación para revocar el acceso de un usuario a la aplicación.
- */
+// Revocar el acceso de un usuario a la aplicación.
 async function revokeAccess(appID, userID) {
-    const result = await Swal.fire({
+    const confirmed = await peakConfirm({
         title: '¿Revocar acceso?',
-        text: "El usuario perderá todos sus roles en esta aplicación.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Sí, revocar',
-        cancelButtonText: 'Cancelar',
-        background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
-        color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b'
+        text: 'El usuario perderá todos sus roles en esta aplicación.',
+        confirmText: 'Sí, revocar',
+        type: 'danger'
     });
 
-    if (result.isConfirmed) {
+    if (confirmed) {
         try {
             const response = await fetch(`/admin/apps/${appID}/users/${userID}`, {
                 method: 'DELETE'
@@ -122,7 +118,7 @@ async function assignUser(event, appID) {
     const btn = form.querySelector('button[type="submit"]');
 
     btn.disabled = true;
-    
+
     try {
         const body = new URLSearchParams();
         body.append('email', email);
@@ -133,7 +129,7 @@ async function assignUser(event, appID) {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body
         });
-        
+
         if (response.ok) {
             await peakAlert('Éxito', 'Usuario y Rol vinculados correctamente a esta aplicación.', 'success');
             window.location.reload();
@@ -142,7 +138,7 @@ async function assignUser(event, appID) {
             try {
                 const data = await response.json();
                 msg = data.error || msg;
-            } catch(e) {
+            } catch (e) {
                 msg = await response.text();
             }
             peakAlert('Error al vincular', msg, 'error');
@@ -171,3 +167,22 @@ async function unlockUser(appID, userID) {
         peakAlert('Error', 'Error de conexión', 'error');
     }
 }
+
+// Event listeners para los botones del modal de roles
+document.addEventListener('DOMContentLoaded', () => {
+    const openRoleBtn = document.getElementById('openRoleModalBtn');
+    const closeRoleBtn = document.getElementById('closeRoleModalBtn');
+    const roleBackdrop = document.getElementById('roleModalBackdrop');
+
+    if (openRoleBtn) {
+        openRoleBtn.addEventListener('click', openRoleModal);
+    }
+
+    if (closeRoleBtn) {
+        closeRoleBtn.addEventListener('click', closeRoleModal);
+    }
+
+    if (roleBackdrop) {
+        roleBackdrop.addEventListener('click', closeRoleModal);
+    }
+});

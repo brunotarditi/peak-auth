@@ -9,13 +9,13 @@
     <title>{{ .Title }} | Peak Auth</title>
 
     <!-- Fuentes y CSS -->
-    <link rel="stylesheet" href="/static/admin/css/admin.css?v={{ now.Unix }}">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ asset "/static/css/output.css" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/admin.css" }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Configuración y Lógica (Separada) -->
-    <script src="/static/admin/js/config.js?v={{ now.Unix }}"></script>
-    <script src="/static/admin/js/common.js?v={{ now.Unix }}"></script>
+    <script src="{{ asset "/static/js/dist/config.min.js" }}"></script>
+    <script src="{{ asset "/static/js/dist/common.min.js" }}"></script>
 </head>
 
 <body class="bg-pattern flex flex-col min-h-screen text-slate-900">

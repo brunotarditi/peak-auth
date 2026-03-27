@@ -1,6 +1,15 @@
+FROM node:22-alpine AS assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY static ./static
+COPY templates ./templates
+RUN npm run build:css
+
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
 COPY . .
+COPY --from=assets /app/static/css/output.css ./static/css/output.css
 RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o peak-auth
 
@@ -10,5 +19,6 @@ ENV TZ=America/Argentina/Buenos_Aires
 WORKDIR /root/
 COPY --from=builder /app/peak-auth .
 COPY --from=builder /app/templates /root/templates
+COPY --from=builder /app/static /root/static
 EXPOSE 8080
 CMD ["./peak-auth"]
