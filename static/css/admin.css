@@ -148,10 +148,6 @@ body {
     color: #f59e0b;
 }
 
-.toast-warning .toast-icon {
-    color: var(--warning);
-}
-
 /* --- Animations --- */
 @keyframes slide-in-right {
     from {
@@ -203,58 +199,4 @@ body {
 .dark ::-webkit-scrollbar-thumb {
     background: #334155;
     background-clip: content-box;
-}
-
-/* Dark Mode Utilities */
-.dark .bg-white {
-    background-color: var(--bg-card-dark) !important;
-    border-color: var(--border-main-dark) !important;
-}
-
-.dark .text-slate-900,
-.dark .text-slate-800,
-.dark .text-gray-900 {
-    color: #f8fafc !important;
-}
-
-.dark .text-slate-500,
-.dark .text-slate-400 {
-    color: #94a3b8 !important;
-}
-
-.dark .border-slate-100,
-.dark .border-slate-50,
-.dark .border-gray-200 {
-    border-color: var(--border-main-dark) !important;
-}
-
-.dark .bg-slate-50,
-.dark .bg-slate-50\/30 {
-    background-color: var(--bg-main-dark) !important;
-}
-
-.dark input,
-.dark textarea,
-.dark select {
-    background-color: var(--bg-main-dark) !important;
-    border-color: var(--border-main-dark) !important;
-    color: #f8fafc !important;
-}
-
-.dark nav {
-    background-color: rgba(15, 23, 42, 0.8) !important;
-    border-color: var(--bg-card-dark) !important;
-}
-
-.dark footer {
-    background-color: var(--bg-main-dark) !important;
-    border-color: var(--bg-card-dark) !important;
-}
-
-.dark .shadow-indigo-200,
-.dark .shadow-indigo-100,
-.dark .shadow-xl,
-.dark .shadow-lg,
-.dark .shadow-sm {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3) !important;
 }

@@ -1,7 +1,7 @@
 {{ define "content" }}
 <div class="mb-10">
     <a href="/admin"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-100 transition shadow-sm group border border-indigo-100">
+        class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 rounded-xl font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition shadow-sm group border border-indigo-100 dark:border-indigo-800">
         {{ template "icon-arrow-back" }}
         Volver al Panel
     </a>
@@ -10,11 +10,11 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     <!-- New User Form -->
     <div class="lg:col-span-1">
-        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 sticky top-24">
+        <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800 sticky top-24">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-slate-900 tracking-tight">Vincular Usuario</h2>
-                <button onclick="document.getElementById('roleModal').classList.remove('hidden')"
-                    class="text-[10px] font-black uppercase tracking-widest bg-slate-50 hover:bg-slate-100 text-slate-500 px-3 py-1.5 rounded-lg transition border border-slate-100">
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Vincular Usuario</h2>
+                <button type="button" id="openRoleModalBtn"
+                    class="text-[10px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 px-3 py-1.5 rounded-lg transition border border-slate-100 dark:border-slate-700">
                     + Roles
                 </button>
             </div>
@@ -26,7 +26,7 @@
                         usuario</label>
                     <input type="email" name="email" placeholder="ejemplo@correo.com" required autocomplete="off"
                         data-bwignore data-1p-ignore
-                        class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 focus:bg-white">
+                        class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 focus:bg-white text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500">
                 </div>
 
                 <div class="relative">
@@ -34,7 +34,7 @@
                         App</label>
                     <div class="relative group">
                         <select name="role" required
-                            class="custom-select w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 focus:bg-white text-slate-700 font-medium">
+                            class="custom-select w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 focus:bg-white text-slate-700 dark:text-slate-200 font-medium">
                             <option value="" disabled selected>Selecciona un rol</option>
                             {{range .Roles}}
                             {{ if ne .Name "ROOT" }}
@@ -46,7 +46,7 @@
                 </div>
 
                 <button type="submit"
-                    class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 group">
+                    class="w-full bg-indigo-600 dark:bg-indigo-500 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 dark:hover:bg-indigo-400 transition shadow-lg shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-2 group">
                     {{ template "icon-user-add" }}
                     Asignar Acceso
                 </button>
@@ -56,11 +56,11 @@
 
     <!-- Users List -->
     <div class="lg:col-span-2">
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-                <h3 class="font-bold text-slate-800">Listado de Usuarios</h3>
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden">
+            <div class="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/30">
+                <h3 class="font-bold text-slate-800 dark:text-white">Listado de Usuarios</h3>
                 <span
-                    class="px-3 py-1 bg-white border border-slate-200 text-[10px] font-black text-slate-400 rounded-full uppercase tracking-wider">Total:
+                    class="px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400 dark:text-slate-300 rounded-full uppercase tracking-wider">Total:
                     {{.TotalCount}}</span>
             </div>
 
@@ -68,25 +68,25 @@
                 <table class="w-full text-left">
                     <thead>
                         <tr
-                            class="text-slate-400 uppercase text-[10px] font-black tracking-widest border-b border-slate-50">
+                            class="text-slate-400 dark:text-slate-500 uppercase text-[10px] font-black tracking-widest border-b border-slate-50 dark:border-slate-800">
                             <th class="px-8 py-5">Usuario</th>
                             <th class="px-8 py-5">Estado</th>
                             <th class="px-8 py-5 text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-50">
+                    <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
                         {{range .Users}}
-                        <tr class="hover:bg-slate-50/50 transition-colors group">
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors group">
                             <td class="px-8 py-5">
                                 <div class="flex items-center gap-3">
                                     <div
-                                        class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                                        class="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold text-xs uppercase">
                                         {{ slice .Email 0 2 }}
                                     </div>
                                     <div>
-                                        <div class="font-bold text-slate-900">{{.Email}}</div>
+                                        <div class="font-bold text-slate-900 dark:text-white">{{.Email}}</div>
                                         <div
-                                            class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-0.5">
+                                            class="text-[10px] font-black text-indigo-500 dark:text-indigo-300 uppercase tracking-widest mt-0.5">
                                             {{.RoleName}}</div>
                                     </div>
                                 </div>
@@ -94,13 +94,13 @@
                             <td class="px-8 py-5">
                                 {{if .IsVerified}}
                                 <span
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-100">
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 dark:border-emerald-800">
                                     <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                                     Verificado
                                 </span>
                                 {{else}}
                                 <span
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-amber-700 bg-amber-50 rounded-lg border border-amber-100">
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800">
                                     <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
                                     Pendiente
                                 </span>
@@ -110,7 +110,7 @@
                                 <div class="flex items-center justify-end gap-2">
                                     {{ if gt .FailedLogins 0 }}
                                     <button onclick="unlockUser('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="text-[9px] bg-amber-50 text-amber-600 px-2 py-1 rounded-lg font-black uppercase tracking-widest hover:bg-amber-100 transition border border-amber-100"
+                                        class="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-300 px-2 py-1 rounded-lg font-black uppercase tracking-widest hover:bg-amber-100 dark:hover:bg-amber-900/30 transition border border-amber-100 dark:border-amber-800"
                                         title="Resetear intentos fallidos">
                                         Habilitar
                                     </button>
@@ -118,12 +118,12 @@
 
                                     {{if ne .RoleName "ROOT"}}
                                     <button onclick="revokeAccess('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition">
+                                        class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-red-600 transition">
                                         Revocar
                                     </button>
                                     {{else}}
                                     <span
-                                        class="text-[10px] font-black uppercase tracking-widest text-slate-300 italic">Sistema</span>
+                                        class="text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-600 italic">Sistema</span>
                                     {{end}}
                                 </div>
                             </td>
@@ -131,10 +131,10 @@
                         {{else}}
                         <tr>
                             <td colspan="3" class="px-8 py-20 text-center">
-                                <div class="text-slate-300 mb-2">
+                                <div class="text-slate-300 dark:text-slate-600 mb-2">
                                     {{ template "icon-user-empty" }}
                                 </div>
-                                <p class="text-slate-400 font-medium">No hay usuarios vinculados.</p>
+                                <p class="text-slate-400 dark:text-slate-500 font-medium">No hay usuarios vinculados.</p>
                             </td>
                         </tr>
                         {{end}}
@@ -144,15 +144,15 @@
 
             <!-- Paginación -->
             {{ if gt .TotalPages 1 }}
-            <div class="p-6 border-t border-slate-50 bg-slate-50/10 flex items-center justify-center gap-2">
+            <div class="p-6 border-t border-slate-50 dark:border-slate-800 bg-slate-50/10 dark:bg-slate-800/20 flex items-center justify-center gap-2">
                 {{ if gt .CurrentPg 1 }}
                 <a href="?page={{ .PrevPg }}"
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-colors">
+                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-300 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors">
                     {{ template "icon-back" }}
                 </a>
                 {{ else }}
                 <span
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 text-slate-300 bg-slate-50/50 cursor-not-allowed">
+                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-800/30 cursor-not-allowed">
                     {{ template "icon-back" }}
                 </span>
                 {{ end }}
@@ -161,12 +161,12 @@
                     {{ range .Pages }}
                     {{ if eq . $.CurrentPg }}
                     <span
-                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-600 text-white font-bold shadow-md shadow-indigo-100 cursor-default">
+                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-600 dark:bg-indigo-500 text-white font-bold shadow-md shadow-indigo-100 dark:shadow-none cursor-default">
                         {{ . }}
                     </span>
                     {{ else }}
                     <a href="?page={{ . }}"
-                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-600 font-medium hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors">
                         {{ . }}
                     </a>
                     {{ end }}
@@ -175,12 +175,12 @@
 
                 {{ if lt .CurrentPg .TotalPages }}
                 <a href="?page={{ .NextPg }}"
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-colors">
+                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-300 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors">
                     {{ template "icon-forward" }}
                 </a>
                 {{ else }}
                 <span
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 text-slate-300 bg-slate-50/50 cursor-not-allowed">
+                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-800/30 cursor-not-allowed">
                     {{ template "icon-forward" }}
                 </span>
                 {{ end }}
@@ -194,14 +194,14 @@
 <div id="roleModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
     aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeRoleModal()"></div>
+        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" id="roleModalBackdrop"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         <div
-            class="inline-block align-bottom bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="bg-white p-8">
+            class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl dark:shadow-none transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-100 dark:border-slate-800">
+            <div class="bg-white dark:bg-slate-900 p-8">
                 <div class="mb-6">
-                    <h3 class="text-xl font-bold text-slate-900" id="modal-title">Nuevo Rol de Aplicación</h3>
-                    <p class="text-sm text-slate-500 mt-1">Define un nuevo rol que estará disponible para todas las
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white" id="modal-title">Nuevo Rol de Aplicación</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Define un nuevo rol que estará disponible para todas las
                         aplicaciones.</p>
                 </div>
 
@@ -211,42 +211,42 @@
                             class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Identificador
                             del Rol</label>
                         <input type="text" id="roleName" name="name" placeholder="Ej: EDITOR, VIEWER, ADMIN" required
-                            class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition uppercase font-bold">
+                            class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition uppercase font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
 
-                    <div class="flex flex-col sm:flex-row-reverse gap-3">
-                        <button type="submit" id="submitRoleBtn"
-                            class="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">
-                            Crear Rol
-                        </button>
-                        <button type="button" onclick="closeRoleModal()"
-                            class="w-full sm:w-auto px-8 py-3 bg-white text-slate-500 rounded-xl font-bold border border-slate-200 hover:bg-slate-50 transition">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" id="closeRoleModalBtn"
+                            class="w-full px-8 py-3 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-xl font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
                             Cancelar
+                        </button>
+                        <button type="submit" id="submitRoleBtn"
+                            class="w-full px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl font-bold hover:bg-indigo-700 dark:hover:bg-indigo-400 transition shadow-lg shadow-indigo-100 dark:shadow-none">
+                            Crear Rol
                         </button>
                     </div>
                 </form>
 
-                <div class="mt-8 pt-8 border-t border-slate-100">
-                    <h4 class="text-sm font-bold text-slate-800 mb-4">Roles Existentes</h4>
+                <div class="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-white mb-4">Roles Existentes</h4>
                     <div class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                         {{range .Roles}}
-                        {{ if not .IsDefault }}
+                        {{ if and (not .IsDefault) (ne .Name "ROOT") }}
                         <div
-                            class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                            <span class="text-sm font-bold text-slate-700">{{.Name}}</span>
+                            class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-700 group">
+                            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{.Name}}</span>
                             <button type="button" onclick="deleteRole('{{.Name}}')"
-                                class="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition opacity-0 group-hover:opacity-100"
+                                class="text-rose-400 dark:text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition opacity-0 group-hover:opacity-100 cursor-pointer"
                                 title="Eliminar Rol">
                                 {{ template "icon-delete" }}
                             </button>
                         </div>
                         {{ else }}
                         <div
-                            class="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100 opacity-60">
+                            class="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-700 opacity-60">
                             <div class="flex items-center gap-2">
-                                <span class="text-sm font-bold text-slate-700">{{.Name}}</span>
+                                <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{.Name}}</span>
                                 <span
-                                    class="text-[9px] font-black uppercase text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded-md">Default</span>
+                                    class="text-[9px] font-black uppercase text-indigo-500 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-md">{{ if eq .Name "ROOT" }}Sistema{{ else }}Default{{ end }}</span>
                             </div>
                             {{ template "icon-lock" }}
                         </div>
@@ -262,6 +262,6 @@
 {{ end }}
 
 {{ define "scripts" }}
-<script src="/static/admin/js/users.js?v=2.0"></script>
+<script src="{{ asset "/static/js/dist/users.min.js" }}"></script>
 {{ end }}
 {{ template "base_admin" . }}

@@ -1,7 +1,6 @@
 {{ define "components/card_header" }}
-<div
-    class="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group">
-    <div class="absolute top-0 right-0 p-6 opacity-5 transition-opacity pointer-events-none">
+<div class="policy-card">
+    <div class="policy-card-ghost">
         <svg class="w-32 h-32 text-{{ .color }}-500 -mt-10 -mr-10" fill="none" stroke="currentColor"
             viewBox="0 0 24 24">
             {{ if eq .icon "user" }}
@@ -20,17 +19,12 @@
             {{ end }}
         </svg>
     </div>
-    <h3 class="font-bold text-slate-800 dark:text-white mb-4 flex items-center justify-between relative z-10">
-        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-{{ .color }}-500"></span> {{ .title
-            }}</span>
+    <h3 class="policy-card-title">
+        <span class="policy-card-label"><span class="policy-card-dot bg-{{ .color }}-500"></span> {{ .title }}</span>
         <button onclick="toggleEdit('{{ .code }}', '{{ .color }}')" id="btn_edit_{{ .code }}"
-            class="group/btn p-2 hover:bg-{{ .color }}-50 dark:hover:bg-{{ .color }}-900/10 rounded-xl transition flex items-center gap-2 text-slate-400">
-            <span
-                class="text-[9px] font-black uppercase tracking-widest hidden group-hover/btn:block text-{{ .color }}-600">Editar</span>
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
+            class="group/btn policy-card-edit hover:bg-{{ .color }}-50 dark:hover:bg-{{ .color }}-900/10">
+            <span class="policy-card-edit-text text-{{ .color }}-600 dark:text-{{ .color }}-300">Editar</span>
+            {{ template "icon-edit" }}
         </button>
     </h3>
     <fieldset id="fs_{{ .code }}" disabled

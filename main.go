@@ -65,6 +65,16 @@ func main() {
 			}
 			return dict, nil
 		},
+		"asset": func(path string) string {
+			return utils.Asset(path)
+		},
+		"env": func() string {
+			e := os.Getenv("ENV")
+			if e == "" {
+				return "development"
+			}
+			return e
+		},
 	}
 
 	// Cargar plantillas HTML de forma recursiva e ISOLADA por cada página

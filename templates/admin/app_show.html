@@ -4,7 +4,7 @@
     <!-- Top Bar -->
     <div class="flex items-center justify-between">
         <a href="/admin"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-100 transition shadow-sm group border border-indigo-100">
+            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 rounded-xl font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition shadow-sm group border border-indigo-100 dark:border-indigo-800">
             {{ template "icon-arrow-back" }}
             Volver al Panel
         </a>
@@ -16,7 +16,7 @@
             </a>
             <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" class="m-0 flex">
                 <button type="button" onclick="confirmDeleteApp()" title="Eliminar Aplicación"
-                    class="inline-flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition border border-rose-200 dark:border-rose-900/50">
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/40 transition border border-rose-200 dark:border-rose-900/50 cursor-pointer">
                     {{template "icon-delete"}}
                     Eliminar
                 </button>
@@ -249,11 +249,11 @@
 
 <!-- Revoke Secret Modal -->
 <div id="revokeModal" class="fixed inset-0 z-[100] hidden">
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onclick="closeRevokeModal()">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" id="revokeModalBackdrop" onclick="closeRevokeModal()">
     </div>
-    <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="flex items-center justify-center min-h-screen p-4 relative z-10">
         <div
-            class="relative bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 animate-slide-in-right">
+            class="bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl dark:shadow-none border border-slate-100 dark:border-slate-800 animate-slide-in-right">
             <div
                 class="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
                 {{ template "icon-warning" }}
@@ -279,12 +279,6 @@
     </div>
 </div>
 
-<!-- Toast Notification -->
-<div id="toast"
-    class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-full font-bold text-sm shadow-2xl transition-all duration-300 z-50 flex items-center gap-2 pointer-events-none">
-    {{ template "icon-check" }}
-    <span id="toast-msg">Actualizado</span>
-</div>
 
 {{ end }}
 
@@ -292,7 +286,7 @@
 <script>
     window.appID = "{{ .App.AppID }}";
 </script>
-<script src="/static/admin/js/app.js"></script>
+<script src="{{ asset "/static/js/dist/app.min.js" }}"></script>
 {{ end }}
 
 {{ template "base_admin" . }}

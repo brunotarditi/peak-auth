@@ -38,3 +38,6 @@ jwt_public.pem
 #agents
 AGENTS.md
 
+node_modules
+/static/css/output.css
+

@@ -1,0 +1,333 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source "../../templates/**/*.html";
+@source "../../templates/**/*.tmpl";
+
+@utility app-page {
+  @apply flex justify-center max-w-2xl mx-auto;
+}
+
+@utility app-card {
+  @apply bg-white dark:bg-slate-900 p-10 rounded-3xl shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800 w-full;
+}
+
+@utility app-header {
+  @apply flex items-center gap-4 mb-8;
+}
+
+@utility app-back-link {
+  @apply p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl transition;
+}
+
+@utility app-title {
+  @apply text-2xl font-bold text-slate-900 dark:text-white tracking-tight;
+}
+
+@utility app-label {
+  @apply block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 tracking-tight;
+}
+
+@utility app-input {
+  @apply w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 text-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500;
+}
+
+@utility app-textarea {
+  @apply w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500;
+}
+
+@utility app-helper {
+  @apply text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-medium flex items-center gap-1 uppercase tracking-widest;
+}
+
+@utility app-toggle-panel {
+  @apply p-5 bg-indigo-50/50 dark:bg-slate-800/50 rounded-2xl border border-indigo-100 dark:border-slate-700 flex items-center justify-between;
+}
+
+@utility app-actions {
+  @apply flex flex-col sm:flex-row gap-4 pt-4;
+}
+
+@utility app-btn-secondary {
+  @apply flex-1 text-center py-4 px-6 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition;
+}
+
+@utility app-btn-primary {
+  @apply flex-1 bg-indigo-600 dark:bg-indigo-500 text-white font-bold py-4 px-6 rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-400 shadow-lg shadow-indigo-100 dark:shadow-none transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+@utility dashboard-hero {
+  @apply mb-12;
+}
+
+@utility dashboard-title {
+  @apply text-4xl font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight;
+}
+
+@utility dashboard-copy {
+  @apply text-slate-500 dark:text-slate-400 text-lg mb-8 max-w-2xl;
+}
+
+@utility dashboard-action {
+  @apply inline-flex items-center bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-400 transition shadow-lg shadow-indigo-200 dark:shadow-none font-bold text-sm;
+}
+
+@utility dashboard-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8;
+}
+
+@utility dashboard-card {
+  @apply bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col hover:shadow-xl hover:shadow-indigo-50 dark:hover:shadow-none transition-all duration-300 relative overflow-hidden;
+}
+
+@utility dashboard-card-edit {
+  @apply absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-xl transition opacity-0 group-hover:opacity-100 z-10;
+}
+
+@utility dashboard-card-body {
+  @apply p-8 flex-grow;
+}
+
+@utility dashboard-card-icon {
+  @apply w-14 h-14 bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-300 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300;
+}
+
+@utility dashboard-card-title {
+  @apply text-xl font-bold text-slate-900 dark:text-white mb-1 group-hover:text-indigo-600 transition-colors;
+}
+
+@utility dashboard-card-meta {
+  @apply flex items-center gap-2 mb-4;
+}
+
+@utility dashboard-card-footer {
+  @apply border-t border-slate-50 dark:border-slate-800 p-6 bg-slate-50/30 dark:bg-slate-800/30 flex justify-between items-center;
+}
+
+@utility dashboard-card-link {
+  @apply flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 transition uppercase tracking-wider;
+}
+
+@utility dashboard-empty {
+  @apply col-span-full text-center py-24 bg-white/50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700;
+}
+
+@utility dashboard-empty-icon {
+  @apply w-20 h-20 bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-500 rounded-full flex items-center justify-center mx-auto mb-6;
+}
+
+@utility created-shell {
+  @apply max-w-2xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800;
+}
+
+@utility created-hero {
+  @apply flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full mb-6 mx-auto;
+}
+
+@utility created-title {
+  @apply text-3xl font-extrabold text-slate-900 dark:text-white mb-2 text-center tracking-tight;
+}
+
+@utility created-copy {
+  @apply text-slate-500 dark:text-slate-400 mb-8 text-center max-w-md mx-auto;
+}
+
+@utility created-stack {
+  @apply space-y-6;
+}
+
+@utility created-credential {
+  @apply bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 relative;
+}
+
+@utility created-credential-label {
+  @apply block text-[10px] font-black uppercase tracking-widest mb-3;
+}
+
+@utility created-credential-row {
+  @apply flex items-center gap-4 bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-100/50 dark:border-slate-700/50;
+}
+
+@utility created-credential-value {
+  @apply flex-grow min-w-0;
+}
+
+@utility created-credential-code {
+  @apply font-mono text-base font-bold break-all block;
+}
+
+@utility created-credential-button {
+  @apply shrink-0 flex items-center justify-center transition;
+}
+
+@utility created-credential-button-copy {
+  @apply w-11 h-11 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-700;
+}
+
+@utility created-credential-button-secret {
+  @apply w-12 h-12 bg-amber-600 text-white rounded-xl hover:bg-amber-700 shadow-lg shadow-amber-200 active:scale-95;
+}
+
+@utility created-warning {
+  @apply text-[11px] text-amber-700 dark:text-amber-500/80 mt-4 flex items-center gap-2 font-medium;
+}
+
+@utility created-secret {
+  @apply bg-amber-50 dark:bg-amber-900/10 p-6 rounded-2xl border border-amber-100 dark:border-amber-900/30 relative overflow-hidden;
+}
+
+@utility created-primary {
+  @apply block w-full text-center bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 transition shadow-xl shadow-indigo-100 dark:shadow-none;
+}
+
+@utility policy-card {
+  @apply bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none relative overflow-hidden;
+}
+
+@utility policy-card-ghost {
+  @apply absolute top-0 right-0 p-6 opacity-10 dark:opacity-15 transition-opacity pointer-events-none z-0;
+}
+
+@utility policy-card-title {
+  @apply font-bold text-slate-800 dark:text-white mb-4 flex items-center justify-between relative z-10;
+}
+
+@utility policy-card-label {
+  @apply flex items-center gap-2;
+}
+
+@utility policy-card-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+@utility policy-card-edit {
+  @apply p-2 rounded-xl transition flex items-center gap-2 text-slate-400 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700;
+}
+
+@utility policy-card-edit-active {
+  @apply ring-2 ring-indigo-500/20 dark:ring-indigo-400/30;
+}
+
+@utility policy-card-edit-text {
+  @apply text-[9px] font-black uppercase tracking-widest hidden group-hover/btn:block;
+}
+
+@utility policy-card-field {
+  @apply flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl;
+}
+
+@utility policy-card-field-label {
+  @apply text-xs font-bold text-slate-500;
+}
+
+@utility policy-card-field-select {
+  @apply text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg uppercase tracking-wider outline-none focus:border-indigo-500 focus:ring-2 ring-indigo-500/20 cursor-pointer transition shadow-sm;
+}
+
+@utility policy-card-field-input {
+  @apply w-10 text-right bg-transparent font-black text-slate-700 dark:text-slate-300 outline-none text-xs disabled:text-slate-400;
+}
+
+@utility show-topbar {
+  @apply flex items-center justify-between;
+}
+
+@utility show-top-actions {
+  @apply flex items-center gap-3;
+}
+
+@utility show-back-btn {
+  @apply inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 rounded-xl font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition shadow-sm border border-indigo-100 dark:border-indigo-800;
+}
+
+@utility show-action-btn {
+  @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition border;
+}
+
+@utility show-action-edit {
+  @apply bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700;
+}
+
+@utility show-action-delete {
+  @apply bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 border-rose-200 dark:border-rose-900/50;
+}
+
+@utility show-action-users {
+  @apply bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 border-indigo-100 dark:border-indigo-800;
+}
+
+@utility show-app-card {
+  @apply bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800;
+}
+
+@utility show-app-title {
+  @apply text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight;
+}
+
+@utility show-app-copy {
+  @apply text-slate-500 dark:text-slate-400 font-medium;
+}
+
+@utility show-meta-label {
+  @apply text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1;
+}
+
+@utility show-meta-row {
+  @apply flex items-center gap-2;
+}
+
+@utility show-meta-code {
+  @apply grow px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl font-mono text-xs text-slate-600 dark:text-slate-300 truncate;
+}
+
+@utility show-meta-input {
+  @apply w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl font-mono text-xs text-slate-400 dark:text-slate-500 outline-none;
+}
+
+@utility show-section-title {
+  @apply text-xl font-black text-slate-900 dark:text-white tracking-tight;
+}
+
+@utility show-section-copy {
+  @apply text-sm font-medium text-slate-500 dark:text-slate-400 mt-1;
+}
+
+@utility show-modal-root {
+  @apply fixed inset-0 z-[100] hidden;
+}
+
+@utility show-modal-backdrop {
+  @apply absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity;
+}
+
+@utility show-modal-wrap {
+  @apply flex items-center justify-center min-h-screen p-4;
+}
+
+@utility show-modal-card {
+  @apply relative bg-white dark:bg-slate-900 w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl dark:shadow-none border border-slate-100 dark:border-slate-800;
+}
+
+@utility show-modal-icon {
+  @apply bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 w-16 h-16 rounded-2xl flex items-center justify-center mb-6;
+}
+
+@utility show-modal-title {
+  @apply text-2xl font-black text-slate-900 dark:text-white mb-3;
+}
+
+@utility show-modal-copy {
+  @apply text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8;
+}
+
+@utility show-modal-actions {
+  @apply flex flex-col gap-3;
+}
+
+@utility show-modal-primary {
+  @apply w-full py-4 bg-rose-600 text-white font-bold rounded-2xl hover:bg-rose-700 transition shadow-xl shadow-rose-100 dark:shadow-none;
+}
+
+@utility show-modal-secondary {
+  @apply w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition;
+}
