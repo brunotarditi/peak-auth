@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -48,7 +49,23 @@ func GetAssetHash(filePath string) string {
 // Asset returns the path to an asset with its version hash (e.g. /static/css/styles.css?v=abcdef12)
 func Asset(path string) string {
 	// Root dir for assets is "static" (without / prefix)
-	cleanPath := filepath.Join(".", path)
-	hash := GetAssetHash(cleanPath)
-	return fmt.Sprintf("%s?v=%s", path, hash)
+	// We handle the / prefix to find the file
+	cleanPath := strings.TrimSpace(path)
+	filePath := filepath.Join(".", strings.TrimPrefix(cleanPath, "/"))
+	
+	hash := GetAssetHash(filePath)
+	return fmt.Sprintf("%s?v=%s", cleanPath, hash)
+}
+
+// JS returns the correct JS path depending on the environment
+func JS(name string) string {
+	isProd := os.Getenv("ENV") == "production"
+	cleanName := strings.TrimSpace(name)
+	
+	if isProd {
+		minName := strings.Replace(cleanName, ".js", ".min.js", 1)
+		return Asset("/static/js/dist/" + minName)
+	}
+	
+	return Asset("/static/js/" + cleanName)
 }

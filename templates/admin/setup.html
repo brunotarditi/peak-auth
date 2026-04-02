@@ -5,21 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Setup Inicial</title>
-    <script src="{{ asset "/static/js/dist/config.min.js" }}"></script>
+    <script src="{{ js " config.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/output.css" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/admin.css" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/admin.css" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/output.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
 </head>
 
 <body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900">
     <div class="max-w-md w-full animate-slide-in-right">
         <div class="text-center mb-10">
             <div
-                class="bg-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-200 dark:shadow-none">
+                class="bg-brand-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-brand-200 dark:shadow-none">
                 {{template "icon-lightning"}}
             </div>
             <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Setup <span
-                    class="text-indigo-600">Peak Auth</span></h1>
+                    class="text-brand-600">Peak Auth</span></h1>
             <p class="text-slate-400 mt-2 font-medium uppercase tracking-[0.2em] text-[10px]">Paso Final de Instalación
             </p>
         </div>
@@ -39,26 +40,30 @@
                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Email del
                         Root</label>
                     <input type="email" name="email" required placeholder="admin@proyectopeak.com"
-                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-medium">
                 </div>
 
                 <div>
                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Contraseña
                         Maestra</label>
-                    <input type="password" name="password" required placeholder="••••••••"
-                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                    <input type="password" name="password" required minlength="8"
+                        pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$"
+                        title="La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo"
+                        placeholder="••••••••"
+                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-medium">
                     <div
-                        class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl flex items-start gap-3">
-                        {{template "icon-warning"}}
-                        <p class="text-[10px] text-amber-700 dark:text-amber-500 font-bold leading-tight">
-                            Guarda esta contraseña en un lugar seguro. Es la llave maestra de tu infraestructura.
+                        class="mt-4 p-4 bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30 rounded-xl flex items-start gap-3">
+                        <div class="text-brand-600">{{template "icon-warning"}}</div>
+                        <p class="text-[10px] text-slate-600 dark:text-slate-400 font-bold leading-tight">
+                            Requerido: 8+ caracteres, mayúsculas, números y símbolos (@$!%*?&#). Esta es la llave
+                            maestra de tu infraestructura.
                         </p>
                     </div>
                 </div>
 
                 <div class="pt-2">
                     <button type="submit"
-                        class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 group">
+                        class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-brand-700 transition shadow-xl shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3 group">
                         <span>Finalizar Instalación</span>
                         {{template "icon-check"}}
                     </button>

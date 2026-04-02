@@ -98,3 +98,15 @@ func ParseAuthzPolicy(raw []byte) (*AuthzPolicy, error) {
 	}
 	return &r, nil
 }
+
+// ValidatePasswordStrength checks a password against hardcoded best practices (for root/setup)
+func ValidatePasswordStrength(password string) bool {
+	if len(password) < 8 {
+		return false
+	}
+	hasUpper, _ := regexp.MatchString("[A-Z]", password)
+	hasLower, _ := regexp.MatchString("[a-z]", password)
+	hasNumber, _ := regexp.MatchString("[0-9]", password)
+	hasSymbol, _ := regexp.MatchString("[^A-Za-z0-9]", password)
+	return hasUpper && hasLower && hasNumber && hasSymbol
+}

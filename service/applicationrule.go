@@ -103,6 +103,25 @@ func (s *applicationRuleService) CreateRule(appID uint, code string, value []byt
 }
 
 func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value []byte) error {
+	// Protecciones para la App Raíz (ID 1)
+	if appID == 1 {
+		if code == "AUTHZ_POLICY" {
+			policy, _ := utils.ParseAuthzPolicy(value)
+			if !policy.EnableRoles {
+				return fmt.Errorf("la autorización por roles es obligatoria para la aplicación raíz")
+			}
+		}
+		if code == "REGISTRATION_POLICY" {
+			policy, _ := utils.ParseRegistrationPolicy(value)
+			if policy.Mode == "public" {
+				return fmt.Errorf("el registro público no está permitido para la aplicación raíz")
+			}
+			if policy.DefaultRole != "ADMIN" && policy.DefaultRole != "ROOT" {
+				return fmt.Errorf("el rol por defecto para la aplicación raíz debe ser ADMIN o ROOT")
+			}
+		}
+	}
+
 	return s.ruleRepo.UpdateRuleValue(appID, code, value)
 }
 

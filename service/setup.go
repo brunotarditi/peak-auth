@@ -35,6 +35,12 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 	if err := s.ValidateSetupToken(token); err != nil {
 		return model.User{}, errors.New("token de setup inválido")
 	}
+
+	// Validación de complejidad de password
+	if !utils.ValidatePasswordStrength(password) {
+		return model.User{}, errors.New("la contraseña es demasiado débil: debe tener al menos 8 caracteres, mayúsculas, números y símbolos")
+	}
+
 	hashedPassword, err := utils.HashPassword(password)
 	if err != nil {
 		return model.User{}, err

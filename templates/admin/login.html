@@ -5,23 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Acceso Admin</title>
-    <script src="{{ asset "/static/js/dist/config.min.js" }}"></script>
+    <script src="{{ js " config.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/output.css" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/admin.css" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/admin.css" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/output.css" }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{{ asset "/static/js/dist/login.min.js" }}"></script>
+    <script src="{{ js " login.js" }}"></script>
+    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
 </head>
 
 <body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900">
     <div class="max-w-md w-full animate-slide-in-right">
         <div class="text-center mb-10">
             <div
-                class="bg-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-200 dark:shadow-none">
+                class="bg-brand-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-brand-200 dark:shadow-none">
                 {{ template "icon-lightning"}}
             </div>
             <h1 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Peak <span
-                    class="text-indigo-600">Auth</span></h1>
+                    class="text-brand-600">Auth</span></h1>
             <p class="text-slate-400 mt-2 font-medium">Panel de Control de Identidad</p>
         </div>
 
@@ -34,7 +35,7 @@
                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Email
                         Administrador</label>
                     <input type="email" name="email" required placeholder="admin@ejemplo.com"
-                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-medium">
                 </div>
 
                 <div class="relative">
@@ -42,7 +43,7 @@
                         class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Contraseña</label>
                     <div class="relative">
                         <input type="password" name="password" id="password_field" required placeholder="••••••••"
-                            class="w-full px-5 py-4 pr-12 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                            class="w-full px-5 py-4 pr-12 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-medium">
                         <button type="button" onclick="toggleLoginPassword('password_field')"
                             class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
                             {{template "icon-eye"}}
@@ -51,7 +52,7 @@
                 </div>
 
                 <button type="submit"
-                    class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition shadow-xl shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-3 group">
+                    class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-brand-700 transition shadow-xl shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3 group">
                     <span>Entrar al Panel</span>
                     {{template "icon-arrow-forward"}}
                 </button>

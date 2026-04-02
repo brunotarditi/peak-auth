@@ -151,6 +151,10 @@ func (s *applicationService) GetAppDetails(publicAppID string) (model.Applicatio
 }
 
 func (s *applicationService) UpdateApp(appID string, description string, isActive bool) error {
+	if appID == utils.AppID_PEAK_AUTH {
+		isActive = true
+	}
+
 	app, err := s.repo.FindByAppID(appID)
 	if err != nil {
 		return err
@@ -163,6 +167,9 @@ func (s *applicationService) UpdateApp(appID string, description string, isActiv
 }
 
 func (s *applicationService) RegenerateSecret(appID string) (string, error) {
+	if appID == utils.AppID_PEAK_AUTH {
+		return "", fmt.Errorf("la aplicación raíz no requiere ni permite la regeneración de Client Secret")
+	}
 	app, err := s.repo.FindByAppID(appID)
 	if err != nil {
 		return "", err
@@ -188,6 +195,9 @@ func (s *applicationService) RegenerateSecret(appID string) (string, error) {
 }
 
 func (s *applicationService) DeleteApp(appID string) error {
+	if appID == utils.AppID_PEAK_AUTH {
+		return fmt.Errorf("la aplicación raíz es vital para el sistema y no puede ser eliminada")
+	}
 	app, err := s.repo.FindByAppID(appID)
 	if err != nil {
 		return err

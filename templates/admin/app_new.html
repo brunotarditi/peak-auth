@@ -38,8 +38,8 @@
                 <div class="flex items-center">
                     <input type="checkbox" name="is_active" {{ if or (not .App) .App.IsActive }}checked{{ end }}
                         id="is_active" {{ if .IsActive }}checked{{ end }} data-locked="{{ .IsLocked }}"
-                        class="h-5 w-5 text-indigo-600 dark:text-indigo-400 border-slate-300 dark:border-slate-600 rounded-md focus:ring-indigo-500 transition cursor-pointer">
-                    <label for="is_active" class="ml-3 text-sm text-indigo-900 dark:text-slate-100 font-bold cursor-pointer">
+                        class="h-5 w-5 text-brand-600 dark:text-brand-400 border-slate-300 dark:border-slate-600 rounded-md focus:ring-brand-500 transition cursor-pointer">
+                    <label for="is_active" class="ml-3 text-sm text-brand-900 dark:text-slate-100 font-bold cursor-pointer">
                         {{ .StatusApp }}
                     </label>
                 </div>
@@ -64,7 +64,7 @@
 
 {{ define "scripts" }}
 
-<script src="{{ asset "/static/js/dist/app.min.js" }}"></script>
+<script src="{{ js "app.js" }}"></script>
 
 {{ end }}
 

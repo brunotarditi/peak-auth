@@ -3,6 +3,14 @@
  * Controla principalmente el modo oscuro y parámetros compartidos.
  */
 
+window.PeakPalette = {
+    primary: '#083d69',
+    secondary: '#3075ad',
+    warning: '#e5e843',
+    success: '#10b981',
+    error: '#b91c1c'
+};
+
 function shouldUseDarkTheme() {
     const savedTheme = localStorage.getItem('darkMode');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
