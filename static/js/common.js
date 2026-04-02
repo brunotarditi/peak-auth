@@ -82,10 +82,12 @@ async function copyToClipboard(text, btn) {
  * @returns {Promise<boolean>}
  */
 async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'danger' }) {
+    const palette = window.PeakPalette || { error: '#b91c1c', warning: '#e5e843', secondary: '#3075ad' };
+    
     const colorMap = {
-        danger: { confirm: '#e11d48', iconColor: '#e11d48' },
-        warning: { confirm: '#f59e0b', iconColor: '#f59e0b' },
-        info: { confirm: '#6366f1', iconColor: '#6366f1' }
+        danger: { confirm: palette.error, iconColor: palette.error },
+        warning: { confirm: palette.warning, iconColor: palette.warning },
+        info: { confirm: palette.secondary, iconColor: palette.secondary }
     };
     const colors = colorMap[type] || colorMap.danger;
 

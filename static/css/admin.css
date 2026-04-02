@@ -1,12 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    /* Brand Colors */
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --success: #10b981;
-    --danger: #f43f5e;
-    --warning: #f59e0b;
+    /* Full Official Brand Palette (Sourced from logo) */
+    --yale-blue-50: #f0f7ff;
+    --yale-blue-100: #e0effe;
+    --yale-blue-200: #bae0fd;
+    --yale-blue-300: #7cc8fb;
+    --yale-blue-400: #38a9f8;
+    --yale-blue-500: #3075ad; /* Rich Cerulean Mapping */
+    --yale-blue-600: #083d69; /* Yale Blue (Official Logo) */
+    --yale-blue-700: #062e4f;
+    --yale-blue-800: #042036;
+    --yale-blue-900: #02121d;
+    --yale-blue-950: #01090f;
+
+    --rich-cerulean: #3075ad;
+    --lemon-lime: #e5e843;
+    --mint-leaf: #10b981;
+    --mahogany-red: #b91c1c;
+
+    /* Semantic Mappings */
+    --primary: var(--yale-blue-600);
+    --secondary: var(--rich-cerulean);
+    --success: var(--mint-leaf);
+    --danger: var(--mahogany-red);
+    --warning: var(--lemon-lime);
+
+    --primary-hover: var(--yale-blue-700);
+    --secondary-hover: #215177;
 
     /* Surface Colors - Light */
     --bg-main: #f8fafc;

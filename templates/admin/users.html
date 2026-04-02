@@ -1,7 +1,7 @@
 {{ define "content" }}
 <div class="mb-10">
     <a href="/admin"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-300 rounded-xl font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition shadow-sm group border border-indigo-100 dark:border-indigo-800">
+        class="inline-flex items-center gap-2 px-4 py-2 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-300 rounded-xl font-bold text-sm hover:bg-brand-100 dark:hover:bg-brand-900/30 transition shadow-sm group border border-brand-100 dark:border-brand-800">
         {{ template "icon-arrow-back" }}
         Volver al Panel
     </a>
@@ -26,7 +26,7 @@
                         usuario</label>
                     <input type="email" name="email" placeholder="ejemplo@correo.com" required autocomplete="off"
                         data-bwignore data-1p-ignore
-                        class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 focus:bg-white text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500">
+                        class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 focus:bg-white text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500">
                 </div>
 
                 <div class="relative">
@@ -34,7 +34,7 @@
                         App</label>
                     <div class="relative group">
                         <select name="role" required
-                            class="custom-select w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 focus:bg-white text-slate-700 dark:text-slate-200 font-medium">
+                            class="custom-select w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 focus:bg-white text-slate-700 dark:text-slate-200 font-medium">
                             <option value="" disabled selected>Selecciona un rol</option>
                             {{range .Roles}}
                             {{ if ne .Name "ROOT" }}
@@ -46,7 +46,7 @@
                 </div>
 
                 <button type="submit"
-                    class="w-full bg-indigo-600 dark:bg-indigo-500 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 dark:hover:bg-indigo-400 transition shadow-lg shadow-indigo-100 dark:shadow-none flex items-center justify-center gap-2 group">
+                    class="w-full bg-brand-600 dark:bg-brand-500 text-white py-3.5 rounded-xl font-bold hover:bg-brand-700 dark:hover:bg-brand-400 transition shadow-lg shadow-brand-100 dark:shadow-none flex items-center justify-center gap-2 group">
                     {{ template "icon-user-add" }}
                     Asignar Acceso
                 </button>
@@ -80,13 +80,13 @@
                             <td class="px-8 py-5">
                                 <div class="flex items-center gap-3">
                                     <div
-                                        class="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                                        class="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 rounded-full flex items-center justify-center font-bold text-xs uppercase">
                                         {{ slice .Email 0 2 }}
                                     </div>
                                     <div>
                                         <div class="font-bold text-slate-900 dark:text-white">{{.Email}}</div>
                                         <div
-                                            class="text-[10px] font-black text-indigo-500 dark:text-indigo-300 uppercase tracking-widest mt-0.5">
+                                            class="text-[10px] font-black text-brand-500 dark:text-brand-300 uppercase tracking-widest mt-0.5">
                                             {{.RoleName}}</div>
                                     </div>
                                 </div>
@@ -147,7 +147,7 @@
             <div class="p-6 border-t border-slate-50 dark:border-slate-800 bg-slate-50/10 dark:bg-slate-800/20 flex items-center justify-center gap-2">
                 {{ if gt .CurrentPg 1 }}
                 <a href="?page={{ .PrevPg }}"
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-300 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors">
+                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-300 hover:text-brand-600 hover:border-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors">
                     {{ template "icon-back" }}
                 </a>
                 {{ else }}
@@ -161,12 +161,12 @@
                     {{ range .Pages }}
                     {{ if eq . $.CurrentPg }}
                     <span
-                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-indigo-600 dark:bg-indigo-500 text-white font-bold shadow-md shadow-indigo-100 dark:shadow-none cursor-default">
+                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-brand-600 dark:bg-brand-500 text-white font-bold shadow-md shadow-brand-100 dark:shadow-none cursor-default">
                         {{ . }}
                     </span>
                     {{ else }}
                     <a href="?page={{ . }}"
-                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors">
+                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium hover:border-brand-200 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors">
                         {{ . }}
                     </a>
                     {{ end }}
@@ -175,7 +175,7 @@
 
                 {{ if lt .CurrentPg .TotalPages }}
                 <a href="?page={{ .NextPg }}"
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-300 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors">
+                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-300 hover:text-brand-600 hover:border-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors">
                     {{ template "icon-forward" }}
                 </a>
                 {{ else }}
@@ -211,7 +211,7 @@
                             class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Identificador
                             del Rol</label>
                         <input type="text" id="roleName" name="name" placeholder="Ej: EDITOR, VIEWER, ADMIN" required
-                            class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition uppercase font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                            class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition uppercase font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
@@ -220,7 +220,7 @@
                             Cancelar
                         </button>
                         <button type="submit" id="submitRoleBtn"
-                            class="w-full px-8 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl font-bold hover:bg-indigo-700 dark:hover:bg-indigo-400 transition shadow-lg shadow-indigo-100 dark:shadow-none">
+                            class="w-full px-8 py-3 bg-brand-600 dark:bg-brand-500 text-white rounded-xl font-bold hover:bg-brand-700 dark:hover:bg-brand-400 transition shadow-lg shadow-brand-100 dark:shadow-none">
                             Crear Rol
                         </button>
                     </div>
@@ -246,7 +246,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{.Name}}</span>
                                 <span
-                                    class="text-[9px] font-black uppercase text-indigo-500 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-md">{{ if eq .Name "ROOT" }}Sistema{{ else }}Default{{ end }}</span>
+                                    class="text-[9px] font-black uppercase text-brand-500 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 px-1.5 py-0.5 rounded-md">{{ if eq .Name "ROOT" }}Sistema{{ else }}Default{{ end }}</span>
                             </div>
                             {{ template "icon-lock" }}
                         </div>
@@ -262,6 +262,6 @@
 {{ end }}
 
 {{ define "scripts" }}
-<script src="{{ asset "/static/js/dist/users.min.js" }}"></script>
+<script src="{{ js "users.js" }}"></script>
 {{ end }}
 {{ template "base_admin" . }}

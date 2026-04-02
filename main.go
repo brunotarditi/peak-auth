@@ -68,6 +68,9 @@ func main() {
 		"asset": func(path string) string {
 			return utils.Asset(path)
 		},
+		"js": func(name string) string {
+			return utils.JS(name)
+		},
 		"env": func() string {
 			e := os.Getenv("ENV")
 			if e == "" {
