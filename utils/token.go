@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 )
 
+// GenerateToken genera un token aleatorio de longitud n y su hash
 func GenerateToken(n int) (string, []byte, error) {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
