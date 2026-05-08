@@ -122,20 +122,20 @@ func (s *applicationService) RegisterUserInApp(userEmail, publicAppID, roleName 
 			return err
 		}
 
-		// ACTIVACIÓN: Si es nuevo o nunca verificó su cuenta, disparamos onboarding.
+		// ACTIVACIÓN: Enviamos email de verificación estándar.
 		if isNewUser || !user.IsVerified {
 			plainToken, hashedToken, _ := utils.GenerateToken(32)
-			reset := model.PasswordReset{
+			verification := model.EmailVerification{
 				UserID:        user.ID,
 				ApplicationID: app.ID,
 				TokenHash:     hashedToken,
 				ExpiresAt:     time.Now().Add(24 * time.Hour),
 			}
-			if err := tx.PasswordResets().CreatePasswordReset(&reset); err != nil {
+			if err := tx.EmailVerifications().CreateEmailVerification(&verification); err != nil {
 				return err
 			}
-			// Envío asíncrono para no demorar la respuesta del panel
-			go s.emailService.SendVerificationEmail(user.Email, plainToken)
+			// Envío asíncrono
+			go s.emailService.SendVerificationEmail(user.Email, plainToken, app.Name)
 		}
 
 		return nil
