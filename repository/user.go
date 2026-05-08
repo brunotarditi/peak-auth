@@ -78,11 +78,9 @@ func (r *userRepository) CreateWithProfile(user *model.User, profile *model.Prof
 // VerifyUserEmail verifica que el usuario recibe el email para completar el registro
 func (r *userRepository) VerifyUserEmail(userID uint, verificationID uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// 1. Marcar usuario como verificado
 		if err := tx.Model(&model.User{}).Where("id = ?", userID).Update("is_verified", true).Error; err != nil {
 			return err
 		}
-		// 2. Marcar el token de verificación como usado
 		return tx.Model(&model.EmailVerification{}).Where("id = ?", verificationID).Update("used_at", time.Now()).Error
 	})
 }
