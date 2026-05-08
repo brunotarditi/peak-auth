@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Inter', -apple-system, system-ui, sans-serif; line-height: 1.6; color: #1e293b; background: #f8fafc; margin: 0; padding: 40px 20px; }
+        .wrapper { max-width: 600px; margin: 0 auto; padding: 40px; background: #ffffff; border-radius: 24px; border: 1px solid #e2e8f0; text-align: center; }
+        .logo { width: 48px; height: 48px; margin-bottom: 24px; }
+        h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -1px; }
+        p { font-size: 15px; color: #64748b; margin: 0 0 24px; text-align: left; }
+        a { background: #083d69; color: #ffffff !important; padding: 16px 32px; border-radius: 14px; font-weight: 700; text-decoration: none; display: inline-block; margin: 8px 0 24px; }
+        footer { margin-top: 32px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 24px; }
+        b { color: #083d69; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <img src="{{.LogoURL}}" alt="Peak Auth" width="48" height="48" class="logo">
+        <h1>Bienvenido a Peak Auth</h1>
+        
+        <p>Hola,</p>
+        <p>Has sido invitado a unirte a <b>{{.AppName}}</b>. Para activar tu cuenta y establecer tu contraseña maestra, haz clic abajo:</p>
+        
+        <a href="{{.Link}}">Activar mi cuenta ahora</a>
+        
+        <p>Este enlace expirará en 24 horas por razones de seguridad.</p>
+        
+        <footer>
+            Si no esperabas esta invitación, ignora este correo.<br>
+            Enviado por <b>Peak Auth</b> — Tu infraestructura de confianza.
+        </footer>
+    </div>
+</body>
+</html>

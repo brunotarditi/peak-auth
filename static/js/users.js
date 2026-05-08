@@ -168,6 +168,42 @@ async function unlockUser(appID, userID) {
     }
 }
 
+// Reenviar email de verificación
+async function resendVerification(appID, userID) {
+    try {
+        const response = await fetch(`/admin/apps/${appID}/users/${userID}/resend-verification`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            showToast('Email de activación reenviado');
+        } else {
+            const data = await response.json();
+            peakAlert('Error', data.error || 'No se pudo reenviar el email', 'error');
+        }
+    } catch (err) {
+        peakAlert('Error', 'Error de conexión', 'error');
+    }
+}
+
+// Enviar email de reset de password manualmente
+async function sendResetPassword(appID, userID) {
+    try {
+        const response = await fetch(`/admin/apps/${appID}/users/${userID}/send-reset`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            showToast('Email de recuperación enviado');
+        } else {
+            const data = await response.json();
+            peakAlert('Error', data.error || 'No se pudo enviar el email', 'error');
+        }
+    } catch (err) {
+        peakAlert('Error', 'Error de conexión', 'error');
+    }
+}
+
 // Event listeners para los botones del modal de roles
 document.addEventListener('DOMContentLoaded', () => {
     const openRoleBtn = document.getElementById('openRoleModalBtn');

@@ -5,33 +5,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Email Verificado</title>
-    <script src="{{ js " config.js" }}"></script>
+    <script src="{{ js "config.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset " /static/css/admin.css" }}">
-    <link rel="stylesheet" href="{{ asset " /static/css/output.css" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/admin.css" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/output.css" }}">
 
-    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
 </head>
 
 <body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900 bg-slate-50 dark:bg-slate-950">
     <div class="max-w-md w-full animate-slide-in-right">
         <div
             class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 text-center">
-            <div
-                class="bg-emerald-500 text-white w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-emerald-100 dark:shadow-none">
-                {{template "icon-check"}}
-            </div>
+            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" class="h-24 mx-auto mb-10">
 
             <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-4">¡Email <span
                     class="text-emerald-500">Verificado!</span></h1>
             <p class="text-slate-400 font-medium leading-relaxed mb-10">Tu dirección de correo electrónico ha sido
                 confirmada con éxito. Ya puedes acceder a todas las funciones de tu aplicación.</p>
 
-            <button onclick="window.close()"
+            {{ if .NeedsPassword }}
+            <a href="/reset-password?token={{ .ResetToken }}"
+                class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-brand-700 transition shadow-xl shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3 group">
+                <span>Establecer Contraseña</span>
+                {{template "icon-forward"}}
+            </a>
+            {{ else }}
+            <a href="/admin/login"
                 class="w-full bg-slate-900 dark:bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 dark:hover:bg-brand-700 transition shadow-xl shadow-slate-100 dark:shadow-none flex items-center justify-center gap-3 group">
-                <span>Cerrar Ventana</span>
-                {{template "icon-close"}}
-            </button>
+                <span>Ir al Inicio de Sesión</span>
+                {{template "icon-forward"}}
+            </a>
+            {{ end }}
         </div>
 
         <p
