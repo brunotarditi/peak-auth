@@ -10,6 +10,7 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+// Slugify convierte un string en un slug (ej: "Mi Aplicación" -> "mi-aplicacion")
 func Slugify(s string) string {
 	// 1. Normalizar para separar tildes de letras (e.g., 'í' -> 'i' + '´')
 	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
