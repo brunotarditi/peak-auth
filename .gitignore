@@ -39,6 +39,6 @@ jwt_public.pem
 AGENTS.md
 
 node_modules
-/static/css/output.css
-/static/js/dist
+/web/static/css/output.css
+/web/static/js/dist
 
