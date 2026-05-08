@@ -9,8 +9,8 @@ import (
 )
 
 // SetupRoutes registra las rutas del servidor en el router Gin proporcionado.
-func SetupRoutes(r *gin.Engine, app *app.App) {
-	// --- ESTÁTICOS ---
+func SetRoutes(r *gin.Engine, app *app.App) {
+
 	r.Static("/static", "./static")
 
 	userCtrl := &controller.UserController{
@@ -29,21 +29,19 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 		RoleService: app.RoleService,
 	}
 
-	// --- SETUP ---
+	// --- SETUP & USER ACTIONS (Raíz) ---
 	r.GET("/setup", setupCtrl.ShowSetup)
 	r.POST("/setup", setupCtrl.ProcessSetup)
+	r.GET("/verify", userCtrl.GetVerifyEmail)
+	r.GET("/reset-password", userCtrl.GetResetPassword)
+	r.POST("/reset-password", userCtrl.PostResetPassword)
 
-	// --- API V1 ---
+	// --- API V1 (Para integraciones externas) ---
 	api := r.Group("/api/v1")
 	{
 		api.POST("/login", userCtrl.Login)
 		api.POST("/register", userCtrl.Register)
 		api.POST("/refresh", userCtrl.Refresh)
-
-		// Verificación y Recuperación (activación)
-		api.GET("/verify", userCtrl.GetVerifyEmail)
-		api.GET("/reset-password", userCtrl.GetResetPassword)
-		api.POST("/reset-password", userCtrl.PostResetPassword)
 	}
 
 	// --- RUTAS PÚBLICAS DE ADMINISTRACIÓN ---
@@ -52,14 +50,14 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 		adminPublic.GET("/login", adminCtrl.GetLoginForm)
 		adminPublic.POST("/login", adminCtrl.PostLoginForm)
 
-		// El setup también es "público" porque se autoprotege con su propio token efímero
+		// El setup también es accesible desde /admin/setup
 		adminPublic.GET("/setup", setupCtrl.ShowSetup)
 		adminPublic.POST("/setup", setupCtrl.ProcessSetup)
 	}
 
 	// --- RUTAS PROTEGIDAS DE ADMINISTRACIÓN ---
 	adminPrivate := r.Group("/admin")
-	adminPrivate.Use(middleware.SecurityHeaderMiddleware()) // Prevenir caché y añadir seguridad
+	adminPrivate.Use(middleware.SecurityHeaderMiddleware())
 	adminPrivate.Use(middleware.AuthMiddleware(app.TokenManager))
 	{
 		adminPrivate.GET("/", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.Dashboard)
@@ -84,6 +82,8 @@ func SetupRoutes(r *gin.Engine, app *app.App) {
 			apps.POST("/users", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostUsersInApp)
 			apps.DELETE("/users/:user_id", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.RevokeUserAccess)
 			apps.POST("/users/:user_id/unlock", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostUnlockUser)
+			apps.POST("/users/:user_id/resend-verification", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostResendVerification)
+			apps.POST("/users/:user_id/send-reset", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostSendResetPassword)
 			apps.GET("/rules", adminCtrl.GetAppRules)
 			apps.POST("/rules", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostDefaultRules)
 			apps.POST("/rules/:code", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), adminCtrl.PostAppRule)
