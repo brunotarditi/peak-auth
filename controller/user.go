@@ -71,12 +71,32 @@ func (c *UserController) GetVerifyEmail(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.UserService.VerifyEmail(token); err != nil {
+	userID, appID, err := c.UserService.VerifyEmail(token)
+	if err != nil {
 		ctx.String(400, "Error verificando email: %v", err)
 		return
 	}
 
-	ctx.HTML(200, "verify_email.html", gin.H{})
+	// Lógica inteligente: Si el usuario fue invitado (onboarding), 
+	// le generamos un token de reset para que ponga su pass ahora mismo.
+	resetToken := ""
+	needsPassword := false
+	
+	// Si logramos generar un token de reset, es porque queremos que lo use
+	if user, err := c.UserService.FindVerifiedUserByID(userID); err == nil {
+		// Si el usuario no tiene login previo o marcamos que necesita pass
+		if user.LastLogin.IsZero() {
+			needsPassword = true
+			// Generar token de reset al vuelo
+			plainReset, _, _ := c.UserService.GenerateResetToken(userID, appID)
+			resetToken = plainReset
+		}
+	}
+
+	ctx.HTML(200, "verify_email.html", gin.H{
+		"NeedsPassword": needsPassword,
+		"ResetToken":    resetToken,
+	})
 }
 
 // GetResetPassword muestra el formulario de cambio de contraseña
@@ -99,12 +119,18 @@ func (c *UserController) PostResetPassword(ctx *gin.Context) {
 	password := ctx.PostForm("password")
 	confirm := ctx.PostForm("confirm_password")
 
+	if token == "" || password == "" {
+		ctx.String(http.StatusBadRequest, "El token y la contraseña son requeridos")
+		return
+	}
+
 	if password != confirm {
 		ctx.String(http.StatusBadRequest, "Las contraseñas no coinciden")
 		return
 	}
 
 	if err := c.UserService.ResetPassword(token, password); err != nil {
+		// Logueamos el error interno pero devolvemos un mensaje limpio
 		ctx.String(http.StatusBadRequest, err.Error())
 		return
 	}

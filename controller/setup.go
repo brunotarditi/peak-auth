@@ -68,5 +68,5 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		true,          // HttpOnly: TRUE para que JS no pueda robarlo (XSS)
 	)
 
-	c.Redirect(http.StatusSeeOther, "/admin")
+	c.Redirect(http.StatusSeeOther, "/admin/login")
 }
