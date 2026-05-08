@@ -61,7 +61,7 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 }
 
 // ValidateLogin aplica reglas que afectan el proceso de login. Actualmente
-// evalúa ADMIN_ONLY: si está activado sólo usuarios con rol ADMIN/ROOT en la app pueden logearse.
+// evalúa si el usuario tiene acceso a la aplicación.
 func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 	rules, err := s.ruleRepo.GetRulesByAppID(appID)
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 		case "AUTHZ_POLICY":
 			authzRule, err := utils.ParseAuthzPolicy(rule.Value)
 			if err != nil {
-				return fmt.Errorf("invalid AUTHZ_POLICY rule: %w", err)
+				return fmt.Errorf("regla AUTHZ_POLICY inválida: %w", err)
 			}
 			// (Futuro: Verificación de roles específicos requeridos si se habilita)
 			if authzRule.EnableRoles {

@@ -46,13 +46,12 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 		return model.User{}, err
 	}
 	err = s.txManager.WithinTransaction(func(tx repository.TxRepository) error {
-		// Creamos los modelos...
+		// 2. Ejecutamos mediante el repositorio
 		rootApp := model.Application{Name: "Peak Auth Raíz", AppID: "peak-auth-raiz", IsActive: true}
-		rootRole := model.Role{Name: "ROOT"}
-		user := model.User{Email: email, Password: hashedPassword, IsVerified: true}
+		rootRole := model.Role{Name: "ROOT", IsDefault: true}
+		user = model.User{Email: email, Password: hashedPassword, IsVerified: true}
 		profile := model.Profile{FirstName: "System", LastName: "Root"}
 
-		// 2. Ejecutamos mediante el repositorio
 		if err := tx.Apps().Create(&rootApp); err != nil {
 			return err
 		}
@@ -63,7 +62,6 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 		}
 
 		// Roles por defecto del sistema
-		rootRole = model.Role{Name: "ROOT", IsDefault: true}
 		adminRole := model.Role{Name: "ADMIN", IsDefault: true}
 		userRole := model.Role{Name: "USER", IsDefault: true}
 
@@ -76,7 +74,6 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 		if err = tx.Roles().Create(&userRole); err != nil {
 			return err
 		}
-		user = model.User{Email: email, Password: hashedPassword, IsVerified: true}
 		if err := tx.Users().CreateWithProfile(&user, &profile); err != nil {
 			return err
 		}

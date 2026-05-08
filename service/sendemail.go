@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"peak-auth/utils"
 
 	"github.com/resend/resend-go/v2"
 )
@@ -66,8 +67,11 @@ func NewEmailService() *EmailService {
 	return &EmailService{Provider: provider}
 }
 
-func (s *EmailService) SendVerificationEmail(toEmail string, token string) error {
-	// Link de ejemplo (esto debería apuntar a tu UI front de activación)
+func (s *EmailService) SendVerificationEmail(toEmail string, token string, appName string) error {
+	if appName == "" {
+		appName = "Peak Auth"
+	}
+
 	host := os.Getenv("HOST")
 	if host == "" {
 		host = "localhost"
@@ -77,15 +81,71 @@ func (s *EmailService) SendVerificationEmail(toEmail string, token string) error
 		port = "9009"
 	}
 
-	link := fmt.Sprintf("http://%s:%s/api/v1/reset-password?token=%s", host, port, token)
-	subject := "Verifica tu cuenta en Peak Auth"
-	html := fmt.Sprintf(`
-		<h1>¡Bienvenido!</h1>
-		<p>Has sido invitado a una aplicación gestionada por Peak Auth.</p>
-		<p>Para activar tu cuenta y establecer tu contraseña, haz clic en el siguiente enlace:</p>
-		<a href="%s" style="background: #4f46e5; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">Activar Cuenta</a>
-		<p>Si el botón no funciona, copia y pega esto: %s</p>
-	`, link, link)
+	link := fmt.Sprintf("http://%s:%s/verify?token=%s", host, port, token)
+	subject := fmt.Sprintf("Activa tu cuenta en %s", appName)
+
+	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
+	html, err := utils.RenderVerificationEmail("templates/emails/verify.html", map[string]string{
+		"Link":    link,
+		"AppName": appName,
+		"LogoURL": logoURL,
+	})
+	if err != nil {
+		return fmt.Errorf("error renderizando email: %v", err)
+	}
+
+	return s.Provider.Send(subject, toEmail, html)
+}
+
+func (s *EmailService) SendPasswordResetEmail(toEmail string, token string) error {
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9009"
+	}
+
+	link := fmt.Sprintf("http://%s:%s/reset-password?token=%s", host, port, token)
+	subject := "Restablece tu contraseña - Peak Auth"
+
+	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
+	html, err := utils.RenderVerificationEmail("templates/emails/reset.html", map[string]string{
+		"Link":    link,
+		"LogoURL": logoURL,
+	})
+	if err != nil {
+		return fmt.Errorf("error renderizando email: %v", err)
+	}
+
+	return s.Provider.Send(subject, toEmail, html)
+}
+
+func (s *EmailService) SendActivationEmail(toEmail string, token string, appName string) error {
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "localhost"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "9009"
+	}
+
+	link := fmt.Sprintf("http://%s:%s/reset-password?token=%s", host, port, token)
+	subject := fmt.Sprintf("Bienvenido a %s - Activa tu cuenta", appName)
+
+	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
+	html, err := utils.RenderVerificationEmail("templates/emails/reset.html", map[string]string{
+		"Link":    link,
+		"LogoURL": logoURL,
+		"Title":   "Activa tu Cuenta",
+		"Message": fmt.Sprintf("Has sido invitado a colaborar en %s. Para comenzar, por favor establece tu contraseña de acceso.", appName),
+		"Action":  "Establecer Contraseña",
+	})
+	if err != nil {
+		return fmt.Errorf("error renderizando email: %v", err)
+	}
 
 	return s.Provider.Send(subject, toEmail, html)
 }

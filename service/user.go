@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"os"
 	"peak-auth/auth"
 	"peak-auth/model"
 	"peak-auth/repository"
@@ -19,9 +18,11 @@ type UserService interface {
 	Register(req request.RegisterRequest) (model.User, error)
 	Login(req request.LoginRequest, publicAppID string) (response.TokenResponse, error)
 	FindAll() ([]model.User, error)
-	VerifyEmail(token string) error
+	VerifyEmail(token string) (uint, uint, error)
 	ResetPassword(token, newPassword string) error
 	FindVerifiedUser(email string) (*model.User, error)
+	FindVerifiedUserByID(id uint) (*model.User, error)
+	GenerateResetToken(userID, appID uint) (string, []byte, error)
 	CanRequestPasswordReset(userID uint) (bool, error)
 	SendResetEmail(user *model.User) error
 	AdminLogin(email, password string) (string, int, error)
@@ -29,6 +30,7 @@ type UserService interface {
 	FindUserByAppIDPaginated(appID string, page, limit int) ([]response.UserAppRow, int64, error)
 	Refresh(token string) (response.TokenResponse, error)
 	UnlockUser(userID uint) error
+	ResendVerification(userID uint, appID string) error
 }
 
 type userService struct {
@@ -212,27 +214,17 @@ func (s *userService) Register(req request.RegisterRequest) (model.User, error) 
 	}
 
 	verification := model.EmailVerification{
-		UserID:    user.ID,
-		TokenHash: tokenHash,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		UserID:        user.ID,
+		ApplicationID: app.ID,
+		TokenHash:     tokenHash,
+		ExpiresAt:     time.Now().Add(24 * time.Hour),
 	}
 
 	if err := s.emailVerificationRepo.CreateEmailVerification(&verification); err != nil {
 		return model.User{}, err
 	}
 
-	url := os.Getenv("VERIFY_URL")
-	verifyURL := fmt.Sprintf(url, plainToken)
-
-	htmlBody, err := utils.RenderVerificationEmail("templates/verify-email.html", map[string]string{
-		"VerifyURL": verifyURL,
-	})
-
-	if err != nil {
-		return model.User{}, fmt.Errorf("error al renderizar email: %w", err)
-	}
-
-	if err := s.emailService.Provider.Send("Verificá tu email", user.Email, htmlBody); err != nil {
+	if err := s.emailService.SendVerificationEmail(user.Email, plainToken, app.Name); err != nil {
 		return model.User{}, fmt.Errorf("error enviando email: %v", err)
 	}
 
@@ -249,14 +241,19 @@ func (s *userService) FindAll() ([]model.User, error) {
 }
 
 // VerifyEmail verifica el token de email y marca el usuario como verificado.
-func (s *userService) VerifyEmail(token string) error {
+// Retorna el UserID y ApplicationID si todo es correcto para redirección inteligente.
+func (s *userService) VerifyEmail(token string) (uint, uint, error) {
 	verification, err := s.emailVerificationRepo.FindEmailVerification(token)
 	if err != nil {
-		return fmt.Errorf("token inválido o expirado")
+		return 0, 0, fmt.Errorf("token inválido o expirado")
 	}
 
 	// Movemos la lógica de "marcar como verificado" a una operación atómica en el repo
-	return s.userRepo.VerifyUserEmail(verification.UserID, verification.ID)
+	if err := s.userRepo.VerifyUserEmail(verification.UserID, verification.ID); err != nil {
+		return 0, 0, err
+	}
+
+	return verification.UserID, verification.ApplicationID, nil
 }
 
 // FindVerifiedUser retorna el usuario si existe y está verificado por email.
@@ -270,6 +267,34 @@ func (s *userService) FindVerifiedUser(email string) (*model.User, error) {
 		return nil, fmt.Errorf("usuario no verificado")
 	}
 	return &user, nil
+}
+
+// FindVerifiedUserByID retorna el usuario si existe y está verificado por email.
+func (s *userService) FindVerifiedUserByID(id uint) (*model.User, error) {
+	user, err := s.userRepo.FindById(id)
+	if err != nil {
+		return nil, fmt.Errorf("usuario no encontrado")
+	}
+	return &user, nil
+}
+
+func (s *userService) GenerateResetToken(userID, appID uint) (string, []byte, error) {
+	plainToken, tokenHash, err := utils.GenerateToken(32)
+	if err != nil {
+		return "", nil, err
+	}
+
+	reset := &model.PasswordReset{
+		UserID:        userID,
+		ApplicationID: appID,
+		TokenHash:     tokenHash,
+		ExpiresAt:     time.Now().Add(1 * time.Hour),
+	}
+	if err := s.passwordResetRepo.CreatePasswordReset(reset); err != nil {
+		return "", nil, err
+	}
+
+	return plainToken, tokenHash, nil
 }
 
 // CanRequestPasswordReset indica si el usuario puede solicitar un reset (rate-limit).
@@ -297,15 +322,7 @@ func (s *userService) SendResetEmail(user *model.User) error {
 		return err
 	}
 
-	verifyURL := fmt.Sprintf(os.Getenv("RESET_PASSWORD"), plainToken)
-	htmlBody, err := utils.RenderVerificationEmail("templates/reset-password.html", map[string]string{
-		"VerifyURL": verifyURL,
-	})
-	if err != nil {
-		return fmt.Errorf("error al renderizar email: %w", err)
-	}
-
-	if err := s.emailService.Provider.Send("Restablecer contraseña", user.Email, htmlBody); err != nil {
+	if err := s.emailService.SendPasswordResetEmail(user.Email, plainToken); err != nil {
 		return fmt.Errorf("error enviando email: %v", err)
 	}
 	return nil
@@ -315,10 +332,16 @@ func (s *userService) SendResetEmail(user *model.User) error {
 func (s *userService) ResetPassword(token, newPassword string) error {
 	reset, err := s.passwordResetRepo.FindValidPasswordReset(token)
 	if err != nil {
-		return fmt.Errorf("token inválido o expirado")
+		return fmt.Errorf("el token de restablecimiento es inválido o ha expirado")
 	}
 
-	// 1. Aplicar reglas de la aplicación (PWD_POLICY)
+	// 1. Verificar que el usuario esté activo
+	user, err := s.userRepo.FindById(reset.UserID)
+	if err != nil || !user.IsActive {
+		return fmt.Errorf("el usuario asociado a este token no está activo o no existe")
+	}
+
+	// 2. Aplicar reglas de la aplicación (PWD_POLICY)
 	rules, err := s.ruleService.FindRulesByAppID(reset.ApplicationID)
 	if err == nil {
 		for _, r := range rules {
@@ -354,13 +377,14 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 	return nil
 }
 
+// AdminLogin valida credenciales y permisos para acceder al panel administrativo.
 func (s *userService) AdminLogin(email, password string) (string, int, error) {
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		return "", 0, fmt.Errorf("credenciales de administrador inválidas")
 	}
 
-	peakApp, err := s.appRepo.FindByAppID("peak-auth-raiz")
+	peakApp, err := s.appRepo.FindByAppID(utils.AppID_PEAK_AUTH)
 	if err != nil {
 		return "", 0, fmt.Errorf("error de configuración del sistema")
 	}
@@ -387,6 +411,10 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 
 	if user.FailedLogins >= uint(maxFails) {
 		return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos")
+	}
+
+	if !user.IsVerified {
+		return "", 0, fmt.Errorf("la cuenta de administrador debe estar verificada por email para acceder al panel")
 	}
 
 	// 2. Verificar password
@@ -419,7 +447,6 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 	s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
 
 	// 4. Generar token con la duración de la política
-	// La regla SESSION_POLICY.TokenExpirationMinutes está en MINUTOS.
 	duration := time.Duration(expireMinutes) * time.Minute
 	
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration)
@@ -512,4 +539,49 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 // UnlockUser resetea el contador de intentos fallidos
 func (s *userService) UnlockUser(userID uint) error {
 	return s.userRepo.UpdateColumn("failed_logins", 0, userID)
+}
+
+// ResendVerification genera un nuevo token y envía el email de verificación
+func (s *userService) ResendVerification(userID uint, appID string) error {
+	user, err := s.userRepo.FindById(userID)
+	if err != nil {
+		return fmt.Errorf("usuario no encontrado")
+	}
+
+	app, err := s.appRepo.FindByAppID(appID)
+	if err != nil {
+		return fmt.Errorf("aplicación no encontrada")
+	}
+
+	if user.IsVerified {
+		return errors.New("el usuario ya está verificado")
+	}
+
+	// Rate Limit: Chequear si ya se envió uno recientemente (15 min)
+	if latest, err := s.emailVerificationRepo.FindLatestByUserIDAndAppID(user.ID, app.ID); err == nil {
+		if time.Since(latest.CreatedAt) < 15*time.Minute {
+			wait := 15 - int(time.Since(latest.CreatedAt).Minutes())
+			return fmt.Errorf("debe esperar %d minutos más antes de reenviar otro correo", wait)
+		}
+	}
+
+	// 1. Generar nuevo Token
+	plainToken, tokenHash, err := utils.GenerateToken(32)
+	if err != nil {
+		return err
+	}
+
+	// 2. Crear nueva verificación (expira en 24h)
+	verification := model.EmailVerification{
+		UserID:        user.ID,
+		ApplicationID: app.ID,
+		TokenHash:     tokenHash,
+		ExpiresAt:     time.Now().Add(24 * time.Hour),
+	}
+
+	if err := s.emailVerificationRepo.CreateEmailVerification(&verification); err != nil {
+		return err
+	}
+
+	return s.emailService.SendVerificationEmail(user.Email, plainToken, app.Name)
 }
