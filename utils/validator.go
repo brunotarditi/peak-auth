@@ -7,7 +7,7 @@ import (
 )
 
 type RegistrationPolicy struct {
-	Mode                     string `json:"mode"` // Can be: "public", "admin_only"
+	Mode                     string `json:"mode"`
 	RequireEmailVerification bool   `json:"require_email_verification"`
 	DefaultRole              string `json:"default_role"`
 }
@@ -56,7 +56,7 @@ func ValidatePasswordPolicy(raw []byte, password string) error {
 	if err := json.Unmarshal(raw, &r); err != nil {
 		return fmt.Errorf("invalid PWD_POLICY rule: %w", err)
 	}
-	
+
 	if r.MinLength > 0 && len(password) < r.MinLength {
 		return fmt.Errorf("la contraseña debe tener al menos %d caracteres", r.MinLength)
 	}

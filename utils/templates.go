@@ -23,64 +23,62 @@ func (r MultitemplateRenderer) Instance(name string, data any) render.Render {
 	}
 }
 
-// NewRenderer construye el cargador de plantillas avanzado
+// isGlobalComponent determina si un archivo HTML es una pieza compartida (Layout, Partial o Component)
+func isGlobalComponent(path string) bool {
+	cleanPath := filepath.ToSlash(path)
+	return strings.Contains(cleanPath, "/layouts/") ||
+		strings.Contains(cleanPath, "/partials/") ||
+		strings.Contains(cleanPath, "/components/")
+}
+
+// NewRenderer construye el cargador de plantillas avanzado.
+// Su objetivo es crear un pool de plantillas aisladas por archivo, incluyendo 
+// siempre los layouts y componentes comunes para evitar colisiones de bloques entre páginas.
 func NewRenderer(root string, funcs template.FuncMap) (render.HTMLRender, error) {
 	renderer := MultitemplateRenderer{
 		templates: make(map[string]*template.Template),
 	}
 
-	// 1. Encontrar Layouts, Partials y Componentes compartidos
+	// 1. Recolectar todos los archivos HTML y clasificarlos
 	var baseStyles []string
-	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() && strings.HasSuffix(info.Name(), ".html") {
-			// Normalizar la ruta para que sea independiente del sistema
-			cleanPath := filepath.ToSlash(path)
+	var pageFiles []string
 
-			// Consideramos layouts, partials y cualquier cosa en carpetas específicas como base común
-			isComponent := strings.Contains(cleanPath, "/layouts/") ||
-				strings.Contains(cleanPath, "/partials/") ||
-				strings.Contains(cleanPath, "/components/") 
-
-			if isComponent {
-				baseStyles = append(baseStyles, path)
-			}
-		}
-		return nil
-	})
-
-	// 2. Cargar cada página de manera aislada
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
+		if err != nil || info.IsDir() || !strings.HasSuffix(info.Name(), ".html") {
 			return err
 		}
 
-		if info.IsDir() || !strings.HasSuffix(info.Name(), ".html") {
-			return nil
+		if isGlobalComponent(path) {
+			baseStyles = append(baseStyles, path)
+		} else {
+			pageFiles = append(pageFiles, path)
 		}
-
-		cleanPath := filepath.ToSlash(path)
-
-		// Ignorar layouts, partials y componentes como entry-points directos
-		isComponent := strings.Contains(cleanPath, "/layouts/") ||
-			strings.Contains(cleanPath, "/partials/") ||
-			strings.Contains(cleanPath, "/components/")
-
-		if isComponent {
-			return nil
-		}
-
-		// Crear un nuevo set de plantillas con las funciones globales
-		t := template.New(info.Name()).Funcs(funcs)
-
-		// Parsear el archivo de la página y los estilos base
-		files := append(baseStyles, path)
-		if _, err := t.ParseFiles(files...); err != nil {
-			return err
-		}
-
-		renderer.templates[info.Name()] = t
 		return nil
 	})
 
-	return renderer, err
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Procesar cada página de manera independiente
+	// Para cada página (ej: login.html), creamos un set de plantillas que incluya:
+	// La página misma + Todos los componentes base (piezas comunes).
+	for _, pagePath := range pageFiles {
+		fileName := filepath.Base(pagePath)
+		
+		// Creamos la instancia de la plantilla aislada
+		t := template.New(fileName).Funcs(funcs)
+
+		// Combinamos la página específica con todos los estilos/layouts base
+		allFiles := append([]string{pagePath}, baseStyles...)
+		
+		if _, err := t.ParseFiles(allFiles...); err != nil {
+			return nil, err
+		}
+
+		// Registramos la plantilla por el nombre del archivo
+		renderer.templates[fileName] = t
+	}
+
+	return renderer, nil
 }
