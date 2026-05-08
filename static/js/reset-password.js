@@ -1,51 +1,71 @@
 /**
- * Maneja el reset de contraseña
+ * Maneja el restablecimiento de contraseña y activación de cuenta.
  */
 async function handleReset(e) {
     e.preventDefault();
+    
     const form = e.target;
-    const btn = form.querySelector('button[type="submit"]');
-    btn.disabled = true;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const token = document.getElementById('reset_token')?.value;
+    const password = document.getElementById('password_field')?.value;
+    const confirm = document.getElementById('confirm_password_field')?.value;
+
+    if (!token || !password) {
+        Swal.fire({
+            title: 'Atención',
+            text: 'Por favor, complete todos los campos requeridos.',
+            icon: 'warning',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+
+    if (password !== confirm) {
+        Swal.fire({
+            title: 'Error',
+            text: 'Las contraseñas no coinciden.',
+            icon: 'error',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+
+    submitBtn.disabled = true;
 
     const body = new URLSearchParams();
-    body.append('token', document.getElementById('reset_token').value);
-    body.append('password', document.getElementById('password_field').value);
-    body.append('confirm_password', document.getElementById('confirm_password_field').value);
+    body.append('token', token);
+    body.append('password', password);
+    body.append('confirm_password', confirm);
 
     try {
-        const response = await fetch('/api/v1/reset-password', {
+        const response = await fetch('/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body
         });
+        
         const text = await response.text();
 
         if (response.ok) {
             await Swal.fire({
-                title: 'Éxito',
+                title: '¡Cuenta Activada!',
                 text: text,
                 icon: 'success',
-                confirmButtonColor: '#4f46e5'
+                confirmButtonColor: '#4f46e5',
+                timer: 3000
             });
-            form.reset();
-            // Como el usuario activó su cuenta, lo regresamos al login o cerramos la vista
             window.location.href = "/admin/login";
         } else {
-            Swal.fire({
-                title: 'Error',
-                text: text,
-                icon: 'error',
-                confirmButtonColor: '#4f46e5'
-            });
+            throw new Error(text || 'Ocurrió un error al procesar la solicitud');
         }
     } catch (err) {
         Swal.fire({
-            title: 'Error de conexión',
-            text: 'No se pudo conectar con el servidor',
+            title: 'Error',
+            text: err.message,
             icon: 'error',
             confirmButtonColor: '#4f46e5'
         });
     } finally {
-        btn.disabled = false;
+        submitBtn.disabled = false;
     }
 }

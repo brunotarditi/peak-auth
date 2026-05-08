@@ -11,16 +11,14 @@
     <link rel="stylesheet" href="{{ asset " /static/css/output.css" }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ js " login.js" }}"></script>
+    <script src="{{ js " common.js" }}"></script>
     <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
 </head>
 
 <body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900">
     <div class="max-w-md w-full animate-slide-in-right">
         <div class="text-center mb-10">
-            <div
-                class="bg-brand-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-brand-200 dark:shadow-none">
-                {{ template "icon-lightning"}}
-            </div>
+            <img src="{{ asset " /static/img/logo.svg" }}" alt="Peak Auth" class="h-16 mx-auto mb-4">
             <h1 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Peak <span
                     class="text-brand-600">Auth</span></h1>
             <p class="text-slate-400 mt-2 font-medium">Panel de Control de Identidad</p>
@@ -65,7 +63,7 @@
         </div>
 
         <p class="text-center text-slate-400 dark:text-slate-600 text-xs mt-10 font-medium">
-            &copy; 2026 Peak Auth &bull; v1.0.0
+            &copy; {{ year }} Peak Auth &bull; v{{ version }}
         </p>
     </div>
 </body>

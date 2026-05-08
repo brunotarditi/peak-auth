@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Inter', -apple-system, system-ui, sans-serif; line-height: 1.6; color: #1e293b; background: #f8fafc; margin: 0; padding: 40px 20px; }
+        .wrapper { max-width: 600px; margin: 0 auto; padding: 40px; background: #ffffff; border-radius: 24px; border: 1px solid #e2e8f0; text-align: center; }
+        .logo { width: 48px; height: 48px; margin-bottom: 24px; }
+        h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 16px; letter-spacing: -1px; }
+        p { font-size: 15px; color: #64748b; margin: 0 0 24px; text-align: left; }
+        a { background: #b91c1c; color: #ffffff !important; padding: 16px 32px; border-radius: 14px; font-weight: 700; text-decoration: none; display: inline-block; margin: 8px 0 24px; }
+        footer { margin-top: 32px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 24px; }
+        b { color: #083d69; }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <img src="{{.LogoURL}}" alt="Peak Auth" width="48" height="48" class="logo">
+        <h1>{{if .Title}}{{.Title}}{{else}}Recuperación de Acceso{{end}}</h1>
+        
+        <p>Hola,</p>
+        <p>{{if .Message}}{{.Message}}{{else}}Hemos recibido una solicitud para restablecer tu contraseña. Si fuiste tú, haz clic en el botón de abajo para elegir una nueva:{{end}}</p>
+        
+        <a href="{{.Link}}">{{if .Action}}{{.Action}}{{else}}Restablecer Contraseña{{end}}</a>
+        
+        <p>{{if .Message}}Si tienes problemas con el botón, copia y pega el siguiente enlace en tu navegador: {{.Link}}{{else}}Si no solicitaste este cambio, te recomendamos revisar la seguridad de tu cuenta de inmediato.{{end}}</p>
+        
+        <footer>
+            Este es un correo automático, por favor no respondas.<br>
+            Protegido por <b>Peak Auth</b>.
+        </footer>
+    </div>
+</body>
+</html>
