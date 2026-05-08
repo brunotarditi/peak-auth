@@ -13,9 +13,9 @@ type UserRepository interface {
 	VerifyUserEmail(userID uint, verificationID uint) error
 	FindByEmail(email string) (model.User, error)
 	FindById(ID uint) (model.User, error)
-	Update(user *model.User) error
+	//Update(user *model.User) error
 	UpdateColumn(column string, value interface{}, id uint) error
-	ExistsByEmail(email string) (bool, error)
+	//ExistsByEmail(email string) (bool, error)
 }
 
 type userRepository struct {
@@ -48,9 +48,9 @@ func (r *userRepository) FindById(id uint) (model.User, error) {
 }
 
 // Update actualiza un usuario en BD.
-func (r *userRepository) Update(user *model.User) error {
-	return r.db.Save(user).Error
-}
+// func (r *userRepository) Update(user *model.User) error {
+// 	return r.db.Save(user).Error
+// }
 
 // UpdateColumn actualiza una columna de un usuario en BD.
 func (r *userRepository) UpdateColumn(column string, value interface{}, id uint) error {
@@ -58,11 +58,11 @@ func (r *userRepository) UpdateColumn(column string, value interface{}, id uint)
 }
 
 // ExistsByEmail verifica si ese email ya existe.
-func (r *userRepository) ExistsByEmail(email string) (bool, error) {
-	var count int64
-	err := r.db.Model(&model.User{}).Where("email = ?", email).Count(&count).Error
-	return count > 0, err
-}
+// func (r *userRepository) ExistsByEmail(email string) (bool, error) {
+// 	var count int64
+// 	err := r.db.Model(&model.User{}).Where("email = ?", email).Count(&count).Error
+// 	return count > 0, err
+// }
 
 // Create inserta un nuevo usuario con su perfil en BD.
 func (r *userRepository) CreateWithProfile(user *model.User, profile *model.Profile) error {

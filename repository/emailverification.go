@@ -11,7 +11,6 @@ import (
 type EmailVerificationRepository interface {
 	CreateEmailVerification(verification *model.EmailVerification) error
 	FindEmailVerification(token string) (*model.EmailVerification, error)
-	UpdateUsedAt(verification *model.EmailVerification, usedAt time.Time) error
 	FindLatestByUserIDAndAppID(userID, appID uint) (*model.EmailVerification, error)
 }
 
@@ -39,10 +38,6 @@ func (r *emailVerification) FindEmailVerification(plainToken string) (*model.Ema
 	}
 
 	return &verification, nil
-}
-
-func (r *emailVerification) UpdateUsedAt(verification *model.EmailVerification, usedAt time.Time) error {
-	return r.db.Model(verification).Update("used_at", usedAt).Error
 }
 
 func (r *emailVerification) FindLatestByUserIDAndAppID(userID, appID uint) (*model.EmailVerification, error) {

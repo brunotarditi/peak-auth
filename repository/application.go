@@ -16,7 +16,6 @@ type ApplicationRepository interface {
 	FindByAppID(appID string) (model.Application, error)
 	FindByName(name string) (model.Application, error)
 	ValidateSecret(appID string, secret string) (model.Application, error)
-	FindAll() ([]model.Application, error)
 	Update(app *model.Application) error
 	Delete(id uint) error
 	GetAppsWithUserCount() ([]response.AppStatsResponse, error)
@@ -69,13 +68,6 @@ func (r *applicationRepository) ValidateSecret(appID string, secret string) (mod
 		return model.Application{}, gorm.ErrRecordNotFound
 	}
 	return app, nil
-}
-
-// FindAll devuelve todas las aplicaciones activas.
-func (r *applicationRepository) FindAll() ([]model.Application, error) {
-	var apps []model.Application
-	err := r.db.Where("deleted_at IS NULL").Find(&apps).Error
-	return apps, err
 }
 
 // Update actualiza una aplicación.
