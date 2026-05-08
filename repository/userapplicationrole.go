@@ -13,9 +13,9 @@ type UserApplicationRoleRepository interface {
 	AssignRole(userID, appID, roleID uint) error
 	RevokeAccess(userID, appID uint) error
 	FindRolesByUserAndApp(userID, appID uint) ([]model.Role, error)
-	CountUsersByApp(appID uint) (int64, error)
-	HasRole(userID uint, roleName string) (bool, error)
-	GetUsersByApp(appID uint) ([]model.User, error)
+	//CountUsersByApp(appID uint) (int64, error)
+	//HasRole(userID uint, roleName string) (bool, error)
+	//GetUsersByApp(appID uint) ([]model.User, error)
 	GetUserRolesInApp(userID, appID uint) ([]string, error)
 	GetUsersWithRolesByApp(appID uint) ([]response.UserAppRow, error)
 	GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error)
@@ -76,35 +76,35 @@ func (r *userApplicationRoleRepository) FindRolesByUserAndApp(userID, appID uint
 }
 
 // CountUsersByApp cuenta usuarios únicos asociados a la aplicación (para bootstrapping).
-func (r *userApplicationRoleRepository) CountUsersByApp(appID uint) (int64, error) {
-	var count int64
-	err := r.db.Model(&model.UserApplicationRole{}).Where("application_id = ?", appID).Distinct("user_id").Count(&count).Error
-	return count, err
-}
+// func (r *userApplicationRoleRepository) CountUsersByApp(appID uint) (int64, error) {
+// 	var count int64
+// 	err := r.db.Model(&model.UserApplicationRole{}).Where("application_id = ?", appID).Distinct("user_id").Count(&count).Error
+// 	return count, err
+// }
 
 // HasRole verifica si el usuario tiene un rol con nombre `roleName` en alguna aplicación.
-func (r *userApplicationRoleRepository) HasRole(userID uint, roleName string) (bool, error) {
-	var count int64
-	err := r.db.Model(&model.UserApplicationRole{}).
-		Joins("JOIN roles r ON r.id = user_application_roles.role_id").
-		Where("user_application_roles.user_id = ? AND r.name = ?", userID, roleName).
-		Count(&count).Error
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
-}
+// func (r *userApplicationRoleRepository) HasRole(userID uint, roleName string) (bool, error) {
+// 	var count int64
+// 	err := r.db.Model(&model.UserApplicationRole{}).
+// 		Joins("JOIN roles r ON r.id = user_application_roles.role_id").
+// 		Where("user_application_roles.user_id = ? AND r.name = ?", userID, roleName).
+// 		Count(&count).Error
+// 	if err != nil {
+// 		return false, err
+// 	}
+// 	return count > 0, nil
+// }
 
-func (r *userApplicationRoleRepository) GetUsersByApp(appID uint) ([]model.User, error) {
-	var users []model.User
-	err := r.db.Model(&model.User{}).
-		Preload("Profile").
-		Joins("JOIN user_application_roles uar ON uar.user_id = users.id").
-		Where("uar.application_id = ?", appID).
-		Group("users.id").
-		Find(&users).Error
-	return users, err
-}
+// func (r *userApplicationRoleRepository) GetUsersByApp(appID uint) ([]model.User, error) {
+// 	var users []model.User
+// 	err := r.db.Model(&model.User{}).
+// 		Preload("Profile").
+// 		Joins("JOIN user_application_roles uar ON uar.user_id = users.id").
+// 		Where("uar.application_id = ?", appID).
+// 		Group("users.id").
+// 		Find(&users).Error
+// 	return users, err
+// }
 
 func (r *userApplicationRoleRepository) GetUserRolesInApp(userID, appID uint) ([]string, error) {
 	var roles []string

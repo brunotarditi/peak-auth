@@ -7,7 +7,7 @@ import (
 )
 
 type ApplicationRuleRepository interface {
-	GetByCode(appID uint, code string) (model.ApplicationRules, error)
+	//GetByCode(appID uint, code string) (model.ApplicationRules, error)
 	GetRulesByAppID(appID uint) ([]model.ApplicationRules, error)
 	CreateDefaultRules(appID uint) error
 	CreateRule(appID uint, code string, value []byte) error
@@ -24,11 +24,11 @@ func NewApplicationRuleRepository(db *gorm.DB) ApplicationRuleRepository {
 }
 
 // GetByCode devuelve la regla activa de una aplicación por su código (p.ej. "PWD_STRENGTH").
-func (r *applicationRuleRepository) GetByCode(appID uint, code string) (model.ApplicationRules, error) {
-	var rule model.ApplicationRules
-	err := r.db.Where("application_id = ? AND code = ? AND is_active = ?", appID, code, true).First(&rule).Error
-	return rule, err
-}
+// func (r *applicationRuleRepository) GetByCode(appID uint, code string) (model.ApplicationRules, error) {
+// 	var rule model.ApplicationRules
+// 	err := r.db.Where("application_id = ? AND code = ? AND is_active = ?", appID, code, true).First(&rule).Error
+// 	return rule, err
+// }
 
 // GetRulesByAppID devuelve todas las reglas activas asociadas a una aplicación.
 func (r *applicationRuleRepository) GetRulesByAppID(appID uint) ([]model.ApplicationRules, error) {
