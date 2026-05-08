@@ -9,6 +9,7 @@ type TxRepository interface {
 	UAR() UserApplicationRoleRepository
 	PasswordResets() PasswordResetRepository
 	Rules() ApplicationRuleRepository
+	EmailVerifications() EmailVerificationRepository
 }
 
 type TransactionManager interface {
@@ -46,6 +47,10 @@ func (u *unitOfWork) PasswordResets() PasswordResetRepository {
 
 func (u *unitOfWork) Rules() ApplicationRuleRepository {
 	return NewApplicationRuleRepository(u.db)
+}
+
+func (u *unitOfWork) EmailVerifications() EmailVerificationRepository {
+	return NewEmailVerificationRepositoryRepository(u.db)
 }
 
 type transactionManager struct {
