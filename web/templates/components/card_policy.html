@@ -21,11 +21,13 @@
     </div>
     <h3 class="policy-card-title">
         <span class="policy-card-label"><span class="policy-card-dot bg-{{ .color }}-500"></span> {{ .title }}</span>
+        {{ if or (ne .appId "peak-auth") (eq .code "session") }}
         <button onclick="toggleEdit('{{ .code }}', '{{ .color }}')" id="btn_edit_{{ .code }}"
             class="group/btn policy-card-edit hover:bg-{{ .color }}-50 dark:hover:bg-{{ .color }}-900/10">
             <span class="policy-card-edit-text text-{{ .color }}-600 dark:text-{{ .color }}-300">Editar</span>
             {{ template "icon-edit" }}
         </button>
+        {{ end }}
     </h3>
     <fieldset id="fs_{{ .code }}" disabled
         class="flex flex-col gap-4 opacity-80 cursor-not-allowed transition-all duration-300">

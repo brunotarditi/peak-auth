@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"peak-auth/internal/api/dto"
+	"peak-auth/internal/api/response"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
@@ -14,12 +14,12 @@ type ApplicationService interface {
 	UpdateApp(appID string, description string, isActive bool) error
 	ValidateAppNameUnique(name string) error
 	RegenerateSecret(appID string) (string, error)
-	RegisterUserInApp(userEmail, appID, roleName string) error
+	RegisterUserInApp(userEmail, roleName string, app *model.Application) error
 	RevokeUserFromApp(userID, appID uint) error
 	GetAppDetails(appID string) (model.Application, error)
 	DeleteApp(appID string) error
-	GetDashboardStats() ([]dto.AppStatsResponse, error)
-	GetDashboardStatsForUser(userID uint) ([]dto.AppStatsResponse, error)
+	GetDashboardStats() ([]response.AppStatsResponse, error)
+	GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error)
 }
 
 type applicationService struct {
@@ -75,11 +75,7 @@ func (s *applicationService) ValidateAppNameUnique(name string) error {
 	return nil // No existe, podemos continuar
 }
 
-func (s *applicationService) RegisterUserInApp(userEmail, publicAppID, roleName string) error {
-	app, err := s.repo.FindByAppID(publicAppID)
-	if err != nil {
-		return err
-	}
+func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *model.Application) error {
 
 	role, err := s.roleRepo.FindByRoleName(roleName)
 	if err != nil {
@@ -151,7 +147,7 @@ func (s *applicationService) GetAppDetails(publicAppID string) (model.Applicatio
 }
 
 func (s *applicationService) UpdateApp(appID string, description string, isActive bool) error {
-	if appID == util.AppID_PEAK_AUTH {
+	if appID == util.AppIdPeakAuth {
 		isActive = true
 	}
 
@@ -167,7 +163,7 @@ func (s *applicationService) UpdateApp(appID string, description string, isActiv
 }
 
 func (s *applicationService) RegenerateSecret(appID string) (string, error) {
-	if appID == util.AppID_PEAK_AUTH {
+	if appID == util.AppIdPeakAuth {
 		return "", fmt.Errorf("la aplicación raíz no requiere ni permite la regeneración de Client Secret")
 	}
 	app, err := s.repo.FindByAppID(appID)
@@ -195,7 +191,7 @@ func (s *applicationService) RegenerateSecret(appID string) (string, error) {
 }
 
 func (s *applicationService) DeleteApp(appID string) error {
-	if appID == util.AppID_PEAK_AUTH {
+	if appID == util.AppIdPeakAuth {
 		return fmt.Errorf("la aplicación raíz es vital para el sistema y no puede ser eliminada")
 	}
 	app, err := s.repo.FindByAppID(appID)
@@ -205,10 +201,10 @@ func (s *applicationService) DeleteApp(appID string) error {
 	return s.repo.Delete(app.ID)
 }
 
-func (s *applicationService) GetDashboardStats() ([]dto.AppStatsResponse, error) {
+func (s *applicationService) GetDashboardStats() ([]response.AppStatsResponse, error) {
 	return s.repo.GetAppsWithUserCount()
 }
 
-func (s *applicationService) GetDashboardStatsForUser(userID uint) ([]dto.AppStatsResponse, error) {
+func (s *applicationService) GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error) {
 	return s.repo.GetAppsForUser(userID)
 }

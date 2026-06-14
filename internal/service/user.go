@@ -3,7 +3,8 @@ package service
 import (
 	"errors"
 	"fmt"
-	"peak-auth/internal/api/dto"
+	"peak-auth/internal/api/request"
+	"peak-auth/internal/api/response"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
@@ -14,8 +15,8 @@ import (
 )
 
 type UserService interface {
-	Register(req dto.RegisterRequest) (model.User, error)
-	Login(req dto.LoginRequest, publicAppID string) (dto.TokenResponse, error)
+	Register(req request.RegisterRequest) (model.User, error)
+	Login(req request.LoginRequest, publicAppID string) (response.TokenResponse, error)
 	FindAll() ([]model.User, error)
 	VerifyEmail(token string) (uint, uint, error)
 	ResetPassword(token, newPassword string) error
@@ -25,9 +26,9 @@ type UserService interface {
 	CanRequestPasswordReset(userID uint) (bool, error)
 	SendResetEmail(user *model.User) error
 	AdminLogin(email, password string) (string, int, error)
-	FindUserByAppID(appID string) ([]dto.UserAppRow, error)
-	FindUserByAppIDPaginated(appID string, page, limit int) ([]dto.UserAppRow, int64, error)
-	Refresh(token string) (dto.TokenResponse, error)
+	FindUserByAppID(appID string) ([]response.UserAppRow, error)
+	FindUserByAppIDPaginated(appID string, page, limit int) ([]response.UserAppRow, int64, error)
+	Refresh(token string) (response.TokenResponse, error)
 	UnlockUser(userID uint) error
 	ResendVerification(userID uint, appID string) error
 }
@@ -51,16 +52,16 @@ func NewUserService(userRepo repo.UserRepository, roleRepo repo.RoleRepository, 
 }
 
 // Login valida credenciales, comprueba estado del usuario y genera un token JWT.
-func (s *userService) Login(req dto.LoginRequest, publicAppID string) (dto.TokenResponse, error) {
+func (s *userService) Login(req request.LoginRequest, publicAppID string) (response.TokenResponse, error) {
 	// 1. Validar Usuario y Aplicación
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
-		return dto.TokenResponse{}, fmt.Errorf("credenciales inválidas")
+		return response.TokenResponse{}, fmt.Errorf("credenciales inválidas")
 	}
 
 	app, err := s.appRepo.FindByAppID(publicAppID)
 	if err != nil {
-		return dto.TokenResponse{}, fmt.Errorf("aplicación no autorizada")
+		return response.TokenResponse{}, fmt.Errorf("aplicación no autorizada")
 	}
 
 	// 2. Aplicar política de intentos fallidos (SESSION_POLICY)
@@ -78,21 +79,31 @@ func (s *userService) Login(req dto.LoginRequest, publicAppID string) (dto.Token
 	}
 
 	if user.FailedLogins >= uint(maxFails) {
-		return dto.TokenResponse{}, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos")
+		// Auto-desbloqueo tras 30 días
+		if time.Since(user.UpdatedAt) >= 30*24*time.Hour {
+			s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
+			user.FailedLogins = 0
+		} else {
+			daysLeft := 30 - int(time.Since(user.UpdatedAt).Hours()/24)
+			if daysLeft < 1 {
+				daysLeft = 1
+			}
+			return response.TokenResponse{}, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
+		}
 	}
 
 	// 3. Validar Password
 	if !util.CheckPasswordHash(req.Password, user.Password) {
 		s.userRepo.UpdateColumn("failed_logins", user.FailedLogins+1, user.ID)
-		return dto.TokenResponse{}, fmt.Errorf("credenciales inválidas")
+		return response.TokenResponse{}, fmt.Errorf("credenciales inválidas")
 	}
 
 	if !user.IsVerified {
-		return dto.TokenResponse{}, fmt.Errorf("usuario no verificado")
+		return response.TokenResponse{}, fmt.Errorf("usuario no verificado")
 	}
 
 	if !user.IsActive {
-		return dto.TokenResponse{}, fmt.Errorf("usuario está desactivado")
+		return response.TokenResponse{}, fmt.Errorf("usuario está desactivado")
 	}
 
 	// Login exitoso: Resetear contador de fallos
@@ -100,7 +111,7 @@ func (s *userService) Login(req dto.LoginRequest, publicAppID string) (dto.Token
 
 	// 3. Validar reglas de autorización (AUTHZ_POLICY)
 	if err := s.ruleService.ValidateLogin(app.ID, user.ID); err != nil {
-		return dto.TokenResponse{}, err
+		return response.TokenResponse{}, err
 	}
 
 	// 4. Aplicar duración de sesión (SESSION_POLICY)
@@ -124,7 +135,7 @@ func (s *userService) Login(req dto.LoginRequest, publicAppID string) (dto.Token
 	// 4. Generar Token JWT
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration)
 	if err != nil {
-		return dto.TokenResponse{}, err
+		return response.TokenResponse{}, err
 	}
 
 	// 5. Generar y Almacenar Refresh Token
@@ -141,7 +152,7 @@ func (s *userService) Login(req dto.LoginRequest, publicAppID string) (dto.Token
 
 	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
 
-	return dto.TokenResponse{
+	return response.TokenResponse{
 		AccessToken:  token,
 		RefreshToken: plainRT,
 	}, nil
@@ -149,7 +160,7 @@ func (s *userService) Login(req dto.LoginRequest, publicAppID string) (dto.Token
 
 // Register crea un usuario respetando las reglas de la aplicación,
 // asigna un rol por defecto si corresponde y envía email de verificación.
-func (s *userService) Register(req dto.RegisterRequest) (model.User, error) {
+func (s *userService) Register(req request.RegisterRequest) (model.User, error) {
 
 	// Verificar app objetivo
 	app, err := s.appRepo.FindByAppID(req.AppID)
@@ -302,7 +313,19 @@ func (s *userService) CanRequestPasswordReset(userID uint) (bool, error) {
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, err
 	}
-	return time.Since(lastReset) >= 15*time.Minute, nil
+	if time.Since(lastReset) < 15*time.Minute {
+		return false, fmt.Errorf("debe esperar al menos 15 minutos entre solicitudes de reset")
+	}
+
+	count, err := s.passwordResetRepo.CountResetsThisMonth(userID)
+	if err != nil {
+		return false, err
+	}
+	if count >= 5 {
+		return false, fmt.Errorf("límite mensual alcanzado: solo se permiten 5 restablecimientos por mes")
+	}
+
+	return true, nil
 }
 
 // SendResetEmail crea un token de restablecimiento, lo guarda y envía el email.
@@ -380,17 +403,16 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 func (s *userService) AdminLogin(email, password string) (string, int, error) {
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
-		return "", 0, fmt.Errorf("credenciales de administrador inválidas")
+		return "", 0, fmt.Errorf("email no encontrado")
 	}
 
-	peakApp, err := s.appRepo.FindByAppID(util.AppID_PEAK_AUTH)
+	peakApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
 	if err != nil {
-		return "", 0, fmt.Errorf("error de configuración del sistema")
+		return "", 0, fmt.Errorf("error interno del sistema")
 	}
 
-	// 1. Aplicar política de intentos fallidos (SESSION_POLICY de Peak Auth Raíz)
-	maxFails := 5        // Default
-	expireMinutes := 720 // Default 12h
+	maxFails := 5
+	expireMinutes := 720
 	rules, err := s.ruleService.FindRulesByAppID(peakApp.ID)
 	if err == nil {
 		for _, r := range rules {
@@ -409,43 +431,55 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 	}
 
 	if user.FailedLogins >= uint(maxFails) {
-		return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos")
+		if time.Since(user.UpdatedAt) >= 30*24*time.Hour {
+			s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
+			user.FailedLogins = 0
+		} else {
+			daysLeft := 30 - int(time.Since(user.UpdatedAt).Hours()/24)
+			if daysLeft < 1 {
+				daysLeft = 1
+			}
+			return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
+		}
 	}
 
 	if !user.IsVerified {
-		return "", 0, fmt.Errorf("la cuenta de administrador debe estar verificada por email para acceder al panel")
+		return "", 0, fmt.Errorf("la cuenta no está verificada")
 	}
 
-	// 2. Verificar password
 	if !util.CheckPasswordHash(password, user.Password) {
 		s.userRepo.UpdateColumn("failed_logins", user.FailedLogins+1, user.ID)
-		return "", 0, fmt.Errorf("credenciales de administrador inválidas")
+		return "", 0, fmt.Errorf("las credenciales son inválidas")
 	}
 
-	// 3. Validar rol administrativo en Peak Auth Raíz
 	roleModels, err := s.uarRepo.FindRolesByUserAndApp(user.ID, peakApp.ID)
-	if err != nil || len(roleModels) == 0 {
-		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
-	}
-
 	isAdmin := false
-	roles := make([]string, len(roleModels))
-	for i, r := range roleModels {
-		roles[i] = r.Name
-		// ROOT o ADMIN de la app raíz
-		if r.Name == "ROOT" || r.Name == "ADMIN" {
-			isAdmin = true
+	var roles []string
+
+	if err == nil && len(roleModels) > 0 {
+		roles = make([]string, len(roleModels))
+		for i, r := range roleModels {
+			roles[i] = r.Name
+			if r.Name == "ROOT" || r.Name == "ADMIN" {
+				isAdmin = true
+			}
 		}
 	}
 
 	if !isAdmin {
-		return "", 0, fmt.Errorf("acceso denegado: se requiere rol ROOT o ADMIN")
+		hasLocalAdmin, err := s.uarRepo.HasAdminRoleInAnyApp(user.ID)
+		if err == nil && hasLocalAdmin {
+			isAdmin = true
+			roles = []string{"ADMIN"}
+		}
 	}
 
-	// Limpiar fallos si todo ok
+	if !isAdmin {
+		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
+	}
+
 	s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
 
-	// 4. Generar token con la duración de la política
 	duration := time.Duration(expireMinutes) * time.Minute
 
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration)
@@ -457,7 +491,7 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 	return token, expireMinutes, nil
 }
 
-func (s *userService) FindUserByAppID(appID string) ([]dto.UserAppRow, error) {
+func (s *userService) FindUserByAppID(appID string) ([]response.UserAppRow, error) {
 	app, err := s.appRepo.FindByAppID(appID)
 	if err != nil {
 		return nil, fmt.Errorf("aplicación no encontrada")
@@ -471,7 +505,7 @@ func (s *userService) FindUserByAppID(appID string) ([]dto.UserAppRow, error) {
 }
 
 // FindUserByAppIDPaginated devuelve los usuarios paginados y el total
-func (s *userService) FindUserByAppIDPaginated(appID string, page, limit int) ([]dto.UserAppRow, int64, error) {
+func (s *userService) FindUserByAppIDPaginated(appID string, page, limit int) ([]response.UserAppRow, int64, error) {
 	app, err := s.appRepo.FindByAppID(appID)
 	if err != nil {
 		return nil, 0, fmt.Errorf("aplicación no encontrada")
@@ -486,20 +520,20 @@ func (s *userService) FindUserByAppIDPaginated(appID string, page, limit int) ([
 }
 
 // Refresh valida un refresh token y genera un nuevo access token.
-func (s *userService) Refresh(refreshToken string) (dto.TokenResponse, error) {
+func (s *userService) Refresh(refreshToken string) (response.TokenResponse, error) {
 	rt, err := s.refreshTokenRepo.FindByToken(refreshToken)
 	if err != nil {
-		return dto.TokenResponse{}, fmt.Errorf("refresh token inválido o expirado")
+		return response.TokenResponse{}, fmt.Errorf("refresh token inválido o expirado")
 	}
 
 	user, err := s.userRepo.FindById(rt.UserID)
 	if err != nil {
-		return dto.TokenResponse{}, fmt.Errorf("usuario no encontrado")
+		return response.TokenResponse{}, fmt.Errorf("usuario no encontrado")
 	}
 
 	app, err := s.appRepo.FindByID(rt.ApplicationID)
 	if err != nil {
-		return dto.TokenResponse{}, fmt.Errorf("aplicación no encontrada")
+		return response.TokenResponse{}, fmt.Errorf("aplicación no encontrada")
 	}
 
 	// 1. Duración según SESSION_POLICY
@@ -526,10 +560,10 @@ func (s *userService) Refresh(refreshToken string) (dto.TokenResponse, error) {
 	// 2. Generar nuevo Access Token
 	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration)
 	if err != nil {
-		return dto.TokenResponse{}, err
+		return response.TokenResponse{}, err
 	}
 
-	return dto.TokenResponse{
+	return response.TokenResponse{
 		AccessToken:  newAT,
 		RefreshToken: refreshToken,
 	}, nil

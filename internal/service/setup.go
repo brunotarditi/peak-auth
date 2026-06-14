@@ -47,7 +47,7 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 	}
 	err = s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
 		// 2. Ejecutamos mediante el repositorio
-		rootApp := model.Application{Name: "Peak Auth Raíz", AppID: "peak-auth-raiz", IsActive: true}
+		rootApp := model.Application{Name: "Peak Auth", AppID: util.AppIdPeakAuth, IsActive: true}
 		rootRole := model.Role{Name: "ROOT", IsDefault: true}
 		user = model.User{Email: email, Password: hashedPassword, IsVerified: true}
 		profile := model.Profile{FirstName: "System", LastName: "Root"}

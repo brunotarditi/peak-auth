@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"peak-auth/internal/store/repo"
+	"peak-auth/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,8 +22,7 @@ func RoleMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.App
 		}
 		userID := valUser.(uint)
 
-		// 1. Identificar la APP de destino
-		// Si la URL tiene :id (slug), buscamos el ID numérico
+		// 1. Identifica la APP de destino
 		appSlug := c.Param("id")
 		var targetAppID uint = 1 // Por defecto Peak Auth Admin
 		if appSlug != "" {
@@ -32,8 +32,8 @@ func RoleMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.App
 			}
 		}
 
-		// 2. ¿Es ROOT Global? (Check en App Maestra)
-		masterApp, err := appRepo.FindByAppID("peak-auth-raiz")
+		// 2. Identifica si el usuario es ROOT a nivel global (en Peak Auth Admin)
+		masterApp, err := appRepo.FindByAppID(util.AppIdPeakAuth)
 		isRoot := false
 		if err == nil {
 			globalRoles, _ := uarRepo.GetUserRolesInApp(userID, masterApp.ID)
@@ -51,6 +51,16 @@ func RoleMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.App
 			c.Set("is_root", true)
 			c.Next()
 			return
+		}
+
+		// Si es el panel de administración principal y el usuario tiene el rol ADMIN en cualquier aplicación, le dejamos pasar
+		if err == nil && targetAppID == masterApp.ID {
+			hasLocalAdmin, err := uarRepo.HasAdminRoleInAnyApp(userID)
+			if err == nil && hasLocalAdmin {
+				c.Set("user_roles", []string{"ADMIN"})
+				c.Next()
+				return
+			}
 		}
 
 		// 3. Si no es ROOT, validamos roles en la APP destino

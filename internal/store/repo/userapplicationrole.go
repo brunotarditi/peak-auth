@@ -2,7 +2,7 @@ package repo
 
 import (
 	"fmt"
-	"peak-auth/internal/api/dto"
+	"peak-auth/internal/api/response"
 	"peak-auth/internal/store/model"
 	"time"
 
@@ -17,8 +17,9 @@ type UserApplicationRoleRepository interface {
 	//HasRole(userID uint, roleName string) (bool, error)
 	//GetUsersByApp(appID uint) ([]model.User, error)
 	GetUserRolesInApp(userID, appID uint) ([]string, error)
-	GetUsersWithRolesByApp(appID uint) ([]dto.UserAppRow, error)
-	GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]dto.UserAppRow, int64, error)
+	GetUsersWithRolesByApp(appID uint) ([]response.UserAppRow, error)
+	GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error)
+	HasAdminRoleInAnyApp(userID uint) (bool, error)
 }
 
 type userApplicationRoleRepository struct {
@@ -115,8 +116,8 @@ func (r *userApplicationRoleRepository) GetUserRolesInApp(userID, appID uint) ([
 	return roles, err
 }
 
-func (r *userApplicationRoleRepository) GetUsersWithRolesByApp(appID uint) ([]dto.UserAppRow, error) {
-	var rows []dto.UserAppRow
+func (r *userApplicationRoleRepository) GetUsersWithRolesByApp(appID uint) ([]response.UserAppRow, error) {
+	var rows []response.UserAppRow
 
 	err := r.db.Table("users").
 		Select("users.id, users.email, users.is_verified, users.is_active, profiles.first_name, profiles.last_name, roles.name as role_name").
@@ -130,8 +131,8 @@ func (r *userApplicationRoleRepository) GetUsersWithRolesByApp(appID uint) ([]dt
 }
 
 // GetUsersWithRolesByAppPaginated devuelve los usuarios con roles de forma paginada para una aplicación.
-func (r *userApplicationRoleRepository) GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]dto.UserAppRow, int64, error) {
-	var rows []dto.UserAppRow
+func (r *userApplicationRoleRepository) GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error) {
+	var rows []response.UserAppRow
 	var total int64
 
 	baseQuery := r.db.Table("users").
@@ -157,4 +158,13 @@ func (r *userApplicationRoleRepository) GetUsersWithRolesByAppPaginated(appID ui
 		Scan(&rows).Error
 
 	return rows, total, err
+}
+
+func (r *userApplicationRoleRepository) HasAdminRoleInAnyApp(userID uint) (bool, error) {
+	var count int64
+	err := r.db.Table("user_application_roles").
+		Joins("JOIN roles ON roles.id = user_application_roles.role_id").
+		Where("user_application_roles.user_id = ? AND roles.name = ? AND user_application_roles.deleted_at IS NULL", userID, "ADMIN").
+		Count(&count).Error
+	return count > 0, err
 }

@@ -26,16 +26,9 @@ type CustomClaims struct {
 
 // NewJWTManager crea una nueva instancia de JWTManager.
 // Lee la clave privada RSA (en formato PEM) desde la variable de entorno JWT_PRIVATE_KEY.
-//
-// Para generar un par de claves RSA puedes usar openssl:
-//  1. Generar clave privada:
-//     openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
-//  2. Para configurar la variable de entorno, es recomendable usar el contenido del fichero en una sola línea.
-//     En Linux/macOS: export JWT_PRIVATE_KEY=$(cat private_key.pem)
 func NewJWTManager() (*JWTManager, error) {
 	privKeyPEM := os.Getenv("JWT_PRIVATE_KEY")
 	if privKeyPEM == "" {
-		// permitir especificar una ruta a un archivo PEM
 		path := os.Getenv("JWT_PRIVATE_KEY_PATH")
 		if path == "" {
 			return nil, fmt.Errorf("la variable de entorno JWT_PRIVATE_KEY o JWT_PRIVATE_KEY_PATH no está definida")
@@ -46,9 +39,7 @@ func NewJWTManager() (*JWTManager, error) {
 		}
 		privKeyPEM = string(data)
 	} else {
-		// Si la clave fue colocada en una sola línea con '\n', convertir a saltos de línea reales
 		privKeyPEM = strings.ReplaceAll(privKeyPEM, "\\n", "\n")
-		// Quitar comillas envolventes si las hubiera
 		privKeyPEM = strings.Trim(privKeyPEM, "\"")
 	}
 
@@ -85,10 +76,8 @@ func (m *JWTManager) VerifyToken(tokenString string) (*CustomClaims, error) {
 	if m.publicKey == nil {
 		return nil, fmt.Errorf("la clave pública no está cargada en el manager")
 	}
-	// 1. Instanciamos el struct antes de parsear
 	claims := &CustomClaims{}
 
-	// 2. Pasamos 'claims' (el puntero) directamente aquí
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("método de firma inesperado: %v", token.Header["alg"])
@@ -96,17 +85,13 @@ func (m *JWTManager) VerifyToken(tokenString string) (*CustomClaims, error) {
 		return m.publicKey, nil
 	})
 
-	// 3. Si hay error de parseo (expirado, firma mal, etc.), lo devolvemos
 	if err != nil {
 		return nil, err
 	}
 
-	// 4. Validamos que el token sea formalmente válido
 	if !token.Valid {
 		return nil, fmt.Errorf("token inválido")
 	}
 
-	// Como pasamos el puntero 'claims' al inicio, si token.Valid es true,
-	// 'claims' ya tiene los datos cargados. No hace falta casting.
 	return claims, nil
 }

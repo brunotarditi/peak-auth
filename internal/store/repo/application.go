@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"peak-auth/internal/api/dto"
+	"peak-auth/internal/api/response"
 	"peak-auth/internal/store/model"
 	"time"
 
@@ -18,8 +18,8 @@ type ApplicationRepository interface {
 	ValidateSecret(appID string, secret string) (model.Application, error)
 	Update(app *model.Application) error
 	Delete(id uint) error
-	GetAppsWithUserCount() ([]dto.AppStatsResponse, error)
-	GetAppsForUser(userID uint) ([]dto.AppStatsResponse, error)
+	GetAppsWithUserCount() ([]response.AppStatsResponse, error)
+	GetAppsForUser(userID uint) ([]response.AppStatsResponse, error)
 }
 
 type applicationRepository struct {
@@ -82,8 +82,8 @@ func (r *applicationRepository) Delete(id uint) error {
 
 // GetAppsWithUserCount devuelve estadísticas de uso por aplicación.
 // Agrupamos por aplicación y contamos usuarios únicos en UserApplicationRole
-func (r *applicationRepository) GetAppsWithUserCount() ([]dto.AppStatsResponse, error) {
-	var stats []dto.AppStatsResponse
+func (r *applicationRepository) GetAppsWithUserCount() ([]response.AppStatsResponse, error) {
+	var stats []response.AppStatsResponse
 	err := r.db.Table("applications").
 		Select("applications.id, applications.name, applications.app_id, applications.description, COUNT(DISTINCT uar.user_id) as user_count").
 		Joins("LEFT JOIN user_application_roles uar ON uar.application_id = applications.id AND uar.deleted_at IS NULL").
@@ -94,8 +94,8 @@ func (r *applicationRepository) GetAppsWithUserCount() ([]dto.AppStatsResponse, 
 }
 
 // GetAppsForUser devuelve solo las apps donde el usuario tiene roles asignados.
-func (r *applicationRepository) GetAppsForUser(userID uint) ([]dto.AppStatsResponse, error) {
-	var stats []dto.AppStatsResponse
+func (r *applicationRepository) GetAppsForUser(userID uint) ([]response.AppStatsResponse, error) {
+	var stats []response.AppStatsResponse
 	err := r.db.Table("applications").
 		Select("applications.id, applications.name, applications.app_id, applications.description, (SELECT COUNT(DISTINCT u2.user_id) FROM user_application_roles u2 WHERE u2.application_id = applications.id AND u2.deleted_at IS NULL) as user_count").
 		Joins("JOIN user_application_roles uar ON uar.application_id = applications.id AND uar.deleted_at IS NULL").
