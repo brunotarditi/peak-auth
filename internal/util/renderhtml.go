@@ -26,6 +26,27 @@ func RenderVerificationEmail(path string, data any) (string, error) {
 // GetTemplateFuncMap retorna el mapa global de funciones para templates
 func GetTemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
+		"sub": func(a interface{}, b interface{}) int {
+			var valA int
+			var valB int
+			switch v := a.(type) {
+			case int:
+				valA = v
+			case int64:
+				valA = int(v)
+			case uint:
+				valA = int(v)
+			}
+			switch v := b.(type) {
+			case int:
+				valB = v
+			case int64:
+				valB = int(v)
+			case uint:
+				valB = int(v)
+			}
+			return valA - valB
+		},
 		"now": func() time.Time {
 			return time.Now()
 		},
@@ -67,7 +88,7 @@ func GetTemplateFuncMap() template.FuncMap {
 
 // SetupRenderer inicializa el renderer de Gin con las funciones globales y las plantillas
 func SetTemplateRenderer(router *gin.Engine) {
-	renderer, err := NewRenderer("templates", GetTemplateFuncMap())
+	renderer, err := NewRenderer("web/templates", GetTemplateFuncMap())
 	if err != nil {
 		log.Fatalf("error initializing template renderer: %v", err)
 	}

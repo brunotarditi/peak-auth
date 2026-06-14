@@ -2,14 +2,14 @@ package service
 
 import (
 	"fmt"
-	"peak-auth/internal/api/dto"
+	"peak-auth/internal/api/request"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
 )
 
 type ApplicationRuleService interface {
-	ValidateRegistration(appID uint, req dto.RegisterRequest) (*util.RegistrationPolicy, error)
+	ValidateRegistration(appID uint, req request.RegisterRequest) (*util.RegistrationPolicy, error)
 	ValidateLogin(appID uint, userID uint) error
 	FindRulesByAppID(appID uint) ([]model.ApplicationRules, error)
 	CreateDefaultRules(appID uint) error
@@ -30,7 +30,7 @@ func NewApplicationRuleService(ruleRepo repo.ApplicationRuleRepository, uarRepo 
 
 // ValidateRegistration valida las reglas de registro de la app y devuelve
 // la política completa (incluyendo DefaultRole y RequireEmailVerification) si alguna regla lo especifica.
-func (s *applicationRuleService) ValidateRegistration(appID uint, req dto.RegisterRequest) (*util.RegistrationPolicy, error) {
+func (s *applicationRuleService) ValidateRegistration(appID uint, req request.RegisterRequest) (*util.RegistrationPolicy, error) {
 	rules, err := s.ruleRepo.GetRulesByAppID(appID)
 	if err != nil {
 		return nil, err

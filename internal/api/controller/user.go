@@ -1,102 +1,20 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
-	"peak-auth/internal/api/dto"
 	"peak-auth/internal/service"
-	"peak-auth/internal/store/model"
+	"peak-auth/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
 
 type UserController struct {
+	BaseController
 	UserService service.UserService
-}
-
-// Login maneja el endpoint de login. Espera el header X-App-Id con el AppID público.
-func (c *UserController) Login(ctx *gin.Context) {
-	var req dto.LoginRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(400, gin.H{"error": "Formato inválido"})
-		return
-	}
-
-	// El app_id lo podemos recibir por Header o QueryParam
-	appID := ctx.GetHeader("X-App-ID")
-	if appID == "" {
-		ctx.JSON(400, gin.H{"error": "X-App-ID es requerido"})
-		return
-	}
-
-	response, err := c.UserService.Login(req, appID)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, response)
-}
-
-// Register maneja el endpoint de registro.
-func (c *UserController) Register(ctx *gin.Context) {
-	app := ctx.MustGet("app").(model.Application)
-	var req dto.RegisterRequest
-
-	// Bind del JSON
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Validación de seguridad: el AppID del body debe ser el del middleware
-	if req.AppID != app.AppID { // Suponiendo que AppCode es el ID externo string
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "App ID mismatch"})
-		return
-	}
-
-	user, err := c.UserService.Register(req)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, gin.H{"message": "Usuario creado, verifique su email", "id": user.ID})
-}
-
-// GetVerifyEmail maneja la verificación de email vía GET
-func (c *UserController) GetVerifyEmail(ctx *gin.Context) {
-	token := ctx.Query("token")
-	if token == "" {
-		ctx.String(400, "Token requerido")
-		return
-	}
-
-	userID, appID, err := c.UserService.VerifyEmail(token)
-	if err != nil {
-		ctx.String(400, "Error verificando email: %v", err)
-		return
-	}
-
-	// Lógica inteligente: Si el usuario fue invitado (onboarding),
-	// le generamos un token de reset para que ponga su pass ahora mismo.
-	resetToken := ""
-	needsPassword := false
-
-	// Si logramos generar un token de reset, es porque queremos que lo use
-	if user, err := c.UserService.FindVerifiedUserByID(userID); err == nil {
-		// Si el usuario no tiene login previo o marcamos que necesita pass
-		if user.LastLogin.IsZero() {
-			needsPassword = true
-			// Generar token de reset al vuelo
-			plainReset, _, _ := c.UserService.GenerateResetToken(userID, appID)
-			resetToken = plainReset
-		}
-	}
-
-	ctx.HTML(200, "verify_email.html", gin.H{
-		"NeedsPassword": needsPassword,
-		"ResetToken":    resetToken,
-	})
+	AppService  service.ApplicationService
+	RuleService service.ApplicationRuleService
+	RoleService service.RoleService
 }
 
 // GetResetPassword muestra el formulario de cambio de contraseña
@@ -130,7 +48,6 @@ func (c *UserController) PostResetPassword(ctx *gin.Context) {
 	}
 
 	if err := c.UserService.ResetPassword(token, password); err != nil {
-		// Logueamos el error interno pero devolvemos un mensaje limpio
 		ctx.String(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -156,4 +73,120 @@ func (c *UserController) Refresh(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, resp)
+}
+
+// RevokeUserAccess revoca el acceso de un usuario a una aplicación
+func (ctrl *UserController) RevokeUserAccess(c *gin.Context) {
+	appIDParam := c.Param("id")
+	userIDParam := c.Param("user_id")
+
+	app, err := ctrl.AppService.GetAppDetails(appIDParam)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "App no encontrada"})
+		return
+	}
+
+	var userID uint
+	if _, err := fmt.Sscanf(userIDParam, "%d", &userID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+
+	if err := ctrl.AppService.RevokeUserFromApp(userID, app.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Acceso revocado"})
+}
+
+// GetAppUsers muestra los usuarios de una aplicación
+func (ctrl *UserController) GetAppUsers(c *gin.Context) {
+	appIDParam := c.Param("id")
+
+	app, err := ctrl.AppService.GetAppDetails(appIDParam)
+	if err != nil {
+		c.String(http.StatusNotFound, "Aplicación no encontrada")
+		return
+	}
+
+	pageStr := c.DefaultQuery("page", "1")
+	var page int
+	if _, err := fmt.Sscanf(pageStr, "%d", &page); err != nil || page < 1 {
+		page = 1
+	}
+	limit := 10
+
+	users, total, err := ctrl.UserService.FindUserByAppIDPaginated(appIDParam, page, limit)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error al cargar los usuarios")
+		return
+	}
+
+	roles, err := ctrl.RoleService.FindAll()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Error al cargar los roles")
+		return
+	}
+
+	rules, _ := ctrl.RuleService.FindRulesByAppID(app.ID)
+	maxFailedLogins := 5
+	for _, r := range rules {
+		if r.Code == "SESSION_POLICY" {
+			if sess, err := util.ParseSessionPolicy(r.Value); err == nil && sess.MaxFailedLogins > 0 {
+				maxFailedLogins = sess.MaxFailedLogins
+			}
+		}
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	pagesSlice := make([]int, totalPages)
+	for i := 0; i < totalPages; i++ {
+		pagesSlice[i] = i + 1
+	}
+
+	nextPg := page + 1
+	if nextPg > totalPages {
+		nextPg = totalPages
+	}
+	prevPg := page - 1
+	if prevPg < 1 {
+		prevPg = 1
+	}
+
+	ctrl.renderAdmin(c, "users.html", gin.H{
+		"App":             app,
+		"Users":           users,
+		"TotalCount":      total,
+		"CurrentPg":       page,
+		"TotalPages":      totalPages,
+		"NextPg":          nextPg,
+		"PrevPg":          prevPg,
+		"Pages":           pagesSlice,
+		"Roles":           roles,
+		"MaxFailedLogins": maxFailedLogins,
+		"Breadcrumbs": []gin.H{
+			{"Label": app.Name, "URL": "/admin/apps/" + app.AppID},
+			{"Label": "Usuarios"},
+		},
+		"Title": "Usuarios - " + app.Name,
+	})
+}
+
+// PostUnlockUser resetea el contador de intentos fallidos de los usuarios bloqueados
+func (ctrl *UserController) PostUnlockUser(c *gin.Context) {
+	userIDStr := c.Param("user_id")
+	var userID uint
+	fmt.Sscanf(userIDStr, "%d", &userID)
+
+	if err := ctrl.UserService.UnlockUser(userID); err != nil {
+		c.JSON(500, gin.H{"error": "No se pudo desbloquear al usuario"})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "Usuario desbloqueado correctamente"})
 }

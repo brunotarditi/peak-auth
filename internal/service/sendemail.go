@@ -85,7 +85,7 @@ func (s *EmailService) SendVerificationEmail(toEmail string, token string, appNa
 	subject := fmt.Sprintf("Activa tu cuenta en %s", appName)
 
 	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
-	html, err := util.RenderVerificationEmail("templates/emails/verify.html", map[string]string{
+	html, err := util.RenderVerificationEmail("web/templates/emails/verify.html", map[string]string{
 		"Link":    link,
 		"AppName": appName,
 		"LogoURL": logoURL,
@@ -111,7 +111,7 @@ func (s *EmailService) SendPasswordResetEmail(toEmail string, token string) erro
 	subject := "Restablece tu contraseña - Peak Auth"
 
 	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
-	html, err := util.RenderVerificationEmail("templates/emails/reset.html", map[string]string{
+	html, err := util.RenderVerificationEmail("web/templates/emails/reset.html", map[string]string{
 		"Link":    link,
 		"LogoURL": logoURL,
 	})
@@ -136,7 +136,7 @@ func (s *EmailService) SendActivationEmail(toEmail string, token string, appName
 	subject := fmt.Sprintf("Bienvenido a %s - Activa tu cuenta", appName)
 
 	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
-	html, err := util.RenderVerificationEmail("templates/emails/reset.html", map[string]string{
+	html, err := util.RenderVerificationEmail("web/templates/emails/reset.html", map[string]string{
 		"Link":    link,
 		"LogoURL": logoURL,
 		"Title":   "Activa tu Cuenta",

@@ -52,7 +52,7 @@ func GetAssetHash(filePath string) string {
 func Asset(path string) string {
 	cleanPath := strings.TrimSpace(path)
 	// Normalizar ruta para encontrar el archivo en el sistema de archivos
-	filePath := filepath.Join(".", strings.TrimPrefix(cleanPath, "/"))
+	filePath := filepath.Join("web", strings.TrimPrefix(cleanPath, "/"))
 
 	hash := GetAssetHash(filePath)
 	return fmt.Sprintf("%s?v=%s", cleanPath, hash)

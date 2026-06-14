@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
+	"peak-auth/internal/util"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -52,7 +53,7 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		return
 	}
 
-	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, "System Root", "peak-auth-raiz", []string{"ROOT"}, 24*time.Hour)
+	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, "System Root", util.AppIdPeakAuth, []string{"ROOT"}, 24*time.Hour)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error al generar sesión")
 		return
