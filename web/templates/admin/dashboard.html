@@ -18,7 +18,7 @@
 
         <div class="dashboard-card-body">
             <div class="dashboard-card-icon dark:bg-slate-800 dark:text-brand-300">
-                <span class="text-xl font-black uppercase">{{ slice .Name 0 1 }}</span>
+                <span class="text-xl font-black uppercase">{{ safe_slice .Name 0 1 }}</span>
             </div>
 
             <h3 class="dashboard-card-title dark:text-white">{{ .Name }}</h3>

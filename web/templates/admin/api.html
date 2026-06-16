@@ -1,0 +1,108 @@
+{{ define "content" }}
+<div class="flex flex-col md:flex-row gap-8 max-w-7xl mx-auto w-full p-4 md:p-8">
+    <!-- Sidebar Navegación -->
+    <aside class="w-full md:w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 pr-6 hidden md:block">
+        <nav class="sticky top-8 space-y-8">
+            <div>
+                <h4 class="font-bold text-slate-900 dark:text-white mb-3 text-xs uppercase tracking-widest">Conceptos Core</h4>
+                <ul class="space-y-3 text-sm">
+                    <li><a href="/admin/docs" class="text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Introducción
+                    </a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-slate-900 dark:text-white mb-3 text-xs uppercase tracking-widest">Desarrollo</h4>
+                <ul class="space-y-3 text-sm">
+                    <li><a href="/admin/docs/api" class="text-brand-600 dark:text-brand-400 font-semibold flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        API Endpoints
+                    </a></li>
+                    <li><a href="#login" class="text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition pl-6">Autenticar Usuario</a></li>
+                    <li><a href="#refresh" class="text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition pl-6">Refresh Tokens</a></li>
+                    <li><a href="#validation" class="text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition pl-6">Validación de Firma</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 max-w-3xl">
+        <div class="mb-12">
+            <h1 class="text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Referencia de API</h1>
+            <p class="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+                Endpoints de integración pública para interactuar con Peak Auth desde tus microservicios y aplicaciones cliente.
+            </p>
+        </div>
+
+        <section id="login" class="mb-12">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center gap-3">
+                <span class="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-2 py-1 rounded font-mono">POST</span>
+                /api/v1/login
+            </h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                Autentica a un usuario y genera un JWT firmado mediante criptografía asimétrica. Requiere las credenciales del cliente (App).
+            </p>
+            <div class="bg-slate-900 rounded-xl p-4 mb-4 overflow-x-auto text-sm text-slate-300 font-mono">
+<pre><code>{
+  "email": "user@example.com",
+  "password": "SecurePassword123!",
+  "client_id": "mi-app-id",
+  "client_secret": "secret-de-la-app"
+}</code></pre>
+            </div>
+            <h4 class="font-bold text-slate-900 dark:text-white mb-2">Respuesta Exitosa</h4>
+            <div class="bg-slate-900 rounded-xl p-4 mb-4 overflow-x-auto text-sm text-emerald-400 font-mono">
+<pre><code>{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5c...",
+  "refresh_token": "rt_28f2j9fj28f...",
+  "expires_in": 3600
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="refresh" class="mb-12">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center gap-3">
+                <span class="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-2 py-1 rounded font-mono">POST</span>
+                /api/v1/refresh
+            </h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                Obtiene un nuevo Access Token enviando un Refresh Token válido, sin necesidad de pedir usuario y contraseña de nuevo. Aplica rotación de tokens (el viejo muere, uno nuevo nace).
+            </p>
+            <div class="bg-slate-900 rounded-xl p-4 mb-4 overflow-x-auto text-sm text-slate-300 font-mono">
+<pre><code>{
+  "refresh_token": "rt_28f2j9fj28f..."
+}</code></pre>
+            </div>
+        </section>
+
+        <section id="validation" class="mb-12">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">Validación en tu Aplicación</h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                Tu aplicación NO necesita llamar a Peak Auth para validar cada request. En su lugar, usa el archivo público <code>jwt_public.pem</code>.
+            </p>
+            <div class="bg-slate-900 rounded-xl p-4 overflow-x-auto text-sm text-slate-300 font-mono">
+<pre><code>// Ejemplo en Node.js
+const jwt = require("jsonwebtoken");
+const fs = require("fs");
+
+const publicKey = fs.readFileSync("./jwt_public.pem", "utf-8");
+
+app.get("/recurso-protegido", (req, res) => {
+    const token = req.headers.authorization.split(" ")[1];
+    try {
+        // Validación local (sin latencia de red)
+        const decoded = jwt.verify(token, publicKey, { algorithms: ["RS256"] });
+        res.json({ user: decoded.email });
+    } catch (err) {
+        res.status(401).send("Token Inválido");
+    }
+});</code></pre>
+            </div>
+        </section>
+
+    </main>
+</div>
+{{ end }}
+{{ template "base_admin" . }}

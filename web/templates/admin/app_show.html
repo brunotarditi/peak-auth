@@ -30,12 +30,10 @@
             </a>
         </div>
     </div>
-
+    <!-- Main Content -->
     <div class="flex flex-col gap-8">
-        <!-- Main Content -->
         <div class="flex flex-col gap-8">
-
-            <!-- App Card -->
+            <!-- Application Details Card -->
             <div
                 class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800">
                 <div class="flex justify-between items-start mb-8">
@@ -73,7 +71,7 @@
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Client
                             Secret</label>
                         <div class="flex items-center gap-2">
-                            <div class="relative flex-grow">
+                            <div class="relative grow">
                                 <input type="password" readonly value="********************************"
                                     autocomplete="new-password" data-bwignore data-1p-ignore
                                     class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl font-mono text-xs text-slate-400 dark:text-slate-500 outline-none">
@@ -89,165 +87,52 @@
                 </div>
             </div>
 
-            <!-- Security Policies Section -->
             <div class="space-y-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">Políticas de
-                            Seguridad</h2>
-                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">Configuración actual del
-                            motor de reglas</p>
-                    </div>
+                <div class="flex flex-col gap-1">
+                    <h2 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Políticas de Seguridad</h2>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Configuración actual de seguridad y del motor de reglas</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Registration Policy -->
-                    {{ if .RegPolicy }}
-                    {{ template "components/card_header" dict "title" "Registro" "color" "indigo" "icon" "user" "code" "reg" "appId" $.App.AppID }}
-                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
-                        <span class="text-xs font-bold text-slate-500">Modo de Registro</span>
-                        <select id="reg_mode" onchange="updateRegistration()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                            class="text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg uppercase tracking-wider outline-none focus:border-brand-500 focus:ring-2 ring-brand-500/20 cursor-pointer transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                            {{ if eq .App.AppID "peak-auth" }}
-                            <option value="admin_only" selected>Solo Admin</option>
-                            {{ else }}
-                            <option value="public" {{ if eq .RegPolicy.Mode "public" }}selected{{ end }}>Público</option>
-                            <option value="admin_only" {{ if eq .RegPolicy.Mode "admin_only" }}selected{{ end }}>Solo Admin</option>
-                            <option value="app_admin_only" {{ if eq .RegPolicy.Mode "app_admin_only" }}selected{{ end }}>Solo App Admin</option>
-                            {{ end }}
-                        </select>
-                    </div>
-                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
-                        <span class="text-xs font-bold text-slate-500">Rol por Defecto</span>
-                        <select id="reg_default_role" onchange="updateRegistration()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                            class="text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg uppercase tracking-wider outline-none focus:border-brand-500 focus:ring-2 ring-brand-500/20 cursor-pointer transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                            {{ if eq .App.AppID "peak-auth" }}
-                            <option value="ADMIN" selected>ADMIN</option>
-                            {{ else }}
-                            <option value="" {{ if eq .RegPolicy.DefaultRole "" }}selected{{ end }}>Ninguno</option>
-                            {{ $defaultRole := .RegPolicy.DefaultRole }}
-                            {{ range .Roles }}
-                            {{ if ne .Name "ROOT" }}
-                            <option value="{{ .Name }}" {{ if eq $defaultRole .Name }}selected{{ end }}>{{ .Name }}</option>
-                            {{ end }}
-                            {{ end }}
-                            {{ end }}
-                        </select>
-                    </div>
-                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
-                        <span class="text-xs font-bold text-slate-500">Validar Email</span>
-                        <label
-                            class="w-8 h-5 {{ if .RegPolicy.RequireEmailVerification }}bg-emerald-500{{ else }}bg-slate-300 dark:bg-slate-600{{ end }} rounded-full flex items-center px-1 {{ if ne .App.AppID "peak-auth" }}cursor-pointer{{ else }}cursor-not-allowed opacity-50{{ end }} transition-colors"
-                            id="reg_email_wrapper">
-                            <input type="checkbox" id="reg_require_email_verification" class="sr-only"
-                                {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                                onchange="toggleUI(this, 'reg_email_wrapper'); updateRegistration()" {{ if
-                                .RegPolicy.RequireEmailVerification }}checked{{ end }}>
-                            <div
-                                class="w-3 h-3 bg-white rounded-full {{ if .RegPolicy.RequireEmailVerification }}translate-x-3{{ end }} transition-transform">
-                            </div>
-                        </label>
-                    </div>
-                    {{ end }}
-                    {{ template "components/card_footer" }}
 
-                    <!-- Password Policy -->
-                    {{ template "components/card_header" dict "title" "Accesos" "color" "rose" "icon" "lock" "code" "pwd" "appId" $.App.AppID }}
-                    {{ if .PwdPolicy }}
-                    <div
-                        class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl focus-within:ring-2 ring-rose-500/50 transition">
-                        <span class="text-xs font-bold text-slate-500">Largo Mínimo</span>
-                        <div class="flex items-center gap-1">
-                            <input type="number" autocomplete="new-password" data-bwignore data-1p-ignore
-                                id="pwd_min_length" onchange="updatePassword()" value="{{ .PwdPolicy.MinLength }}"
-                                {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                                class="w-10 text-right bg-transparent font-black text-slate-700 dark:text-slate-300 outline-none text-xs disabled:text-slate-400">
-                            <span class="text-xs font-black text-slate-700 dark:text-slate-300">Car.</span>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 mt-2">
-                        <label
-                            class="text-center p-2 rounded-xl {{ if ne .App.AppID "peak-auth" }}cursor-pointer{{ else }}cursor-not-allowed opacity-50{{ end }} transition-colors {{ if .PwdPolicy.RequireUppercase }}bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400{{ else }}bg-slate-50 dark:bg-slate-800 text-slate-400{{ end }}"
-                            id="pwd_lbl_uppercase">
-                            <input type="checkbox" id="pwd_require_uppercase" class="sr-only"
-                                {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                                onchange="togglePill(this, 'pwd_lbl_uppercase', 'rose'); updatePassword()" {{ if
-                                .PwdPolicy.RequireUppercase }}checked{{ end }}>
-                            <div class="text-[10px] font-black uppercase tracking-widest">Mayús</div>
-                        </label>
-                        <label
-                            class="text-center p-2 rounded-xl {{ if ne .App.AppID "peak-auth" }}cursor-pointer{{ else }}cursor-not-allowed opacity-50{{ end }} transition-colors {{ if .PwdPolicy.RequireNumbers }}bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400{{ else }}bg-slate-50 dark:bg-slate-800 text-slate-400{{ end }}"
-                            id="pwd_lbl_numbers">
-                            <input type="checkbox" id="pwd_require_numbers" class="sr-only"
-                                {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                                onchange="togglePill(this, 'pwd_lbl_numbers', 'rose'); updatePassword()" {{ if
-                                .PwdPolicy.RequireNumbers }}checked{{ end }}>
-                            <div class="text-[10px] font-black uppercase tracking-widest">Núms</div>
-                        </label>
-                        <label
-                            class="text-center p-2 rounded-xl {{ if ne .App.AppID "peak-auth" }}cursor-pointer{{ else }}cursor-not-allowed opacity-50{{ end }} transition-colors {{ if .PwdPolicy.RequireSymbols }}bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400{{ else }}bg-slate-50 dark:bg-slate-800 text-slate-400{{ end }}"
-                            id="pwd_lbl_symbols">
-                            <input type="checkbox" id="pwd_require_symbols" class="sr-only"
-                                {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                                onchange="togglePill(this, 'pwd_lbl_symbols', 'rose'); updatePassword()" {{ if
-                                .PwdPolicy.RequireSymbols }}checked{{ end }}>
-                            <div class="text-[10px] font-black uppercase tracking-widest">Símb</div>
-                        </label>
-                    </div>
-                    {{ end }}
-                    {{ template "components/card_footer" }}
+                <!-- Tabs Navigation -->
+                <div class="border-b border-slate-200 dark:border-slate-800">
+                    <nav class="flex gap-6 -mb-px overflow-x-auto select-none scrollbar-none" aria-label="Tabs">
+                        <button onclick="switchTab('registro')" id="tab_registro"
+                            class="settings-tab-btn active-tab flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            Registro
+                        </button>
+                        <button onclick="switchTab('accesos')" id="tab_accesos"
+                            class="settings-tab-btn flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            Accesos
+                        </button>
+                        <button onclick="switchTab('sesiones')" id="tab_sesiones"
+                            class="settings-tab-btn flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Sesiones
+                        </button>
+                        <button onclick="switchTab('autorizacion')" id="tab_autorizacion"
+                            class="settings-tab-btn flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            Autorización
+                        </button>
+                        <button onclick="switchTab('mfa')" id="tab_mfa"
+                            class="settings-tab-btn flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m-3.414-2.586A2 2 0 0010 7a5 5 0 103.536 8.536L19 11v-3h-3v3h-2v2h-2V7z"/></svg>
+                            MFA
+                        </button>
+                    </nav>
+                </div>
 
-                    <!-- Session Policy -->
-                    {{ template "components/card_header" dict "title" "Sesiones (JWT)" "color" "amber" "icon" "clock" "code" "session" "appId" $.App.AppID }}
-                    {{ if .SessionPolicy }}
-                    <div
-                        class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl focus-within:ring-2 ring-amber-500/50 transition">
-                        <span class="text-xs font-bold text-slate-500">Expiración</span>
-                        <div class="flex items-center gap-1">
-                            <input type="number" min="1" autocomplete="off" id="session_expiration"
-                                onchange="updateSession()" value="{{ .SessionPolicy.TokenExpirationMinutes }}"
-                                class="w-12 text-right bg-transparent font-black text-slate-700 dark:text-slate-300 outline-none text-xs disabled:text-slate-400">
-                            <span class="text-xs font-black text-slate-700 dark:text-slate-300">mins</span>
-                        </div>
-                    </div>
-                    <div
-                        class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl focus-within:ring-2 ring-amber-500/50 transition">
-                        <span class="text-xs font-bold text-slate-500">Máx. Fallidos</span>
-                        <div class="flex items-center gap-1">
-                            <input type="number" min="1" max="10" autocomplete="off" id="session_max_failed"
-                                onchange="updateSession()" value="{{ .SessionPolicy.MaxFailedLogins }}"
-                                class="w-10 text-right bg-transparent font-black text-slate-700 dark:text-slate-300 outline-none text-xs disabled:text-slate-400">
-                        </div>
-                    </div>
-                    {{ end }}
-                    {{ template "components/card_footer" }}
-
-
-                    <!-- Authorization Policy -->
-                    {{ template "components/card_header" dict "title" "Autorización (RBAC)" "color" "emerald" "icon" "shield" "code" "authz" "appId" $.App.AppID }}
-                    {{ if .AuthzPolicy }}
-                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
-                        <span class="text-xs font-bold text-slate-500">Sistema de Roles</span>
-                        <label
-                            class="w-8 h-5 {{ if .AuthzPolicy.EnableRoles }}bg-emerald-500{{ else }}bg-slate-300 dark:bg-slate-600{{ end }} rounded-full flex items-center px-1 {{ if ne .App.AppID "peak-auth" }}cursor-pointer{{ else }}cursor-not-allowed opacity-50{{ end }} transition-colors"
-                            id="authz_roles_wrapper">
-                            <input type="checkbox" id="authz_enable_roles" class="sr-only"
-                                {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                                onchange="toggleUI(this, 'authz_roles_wrapper'); updateAuthz()" {{ if
-                                .AuthzPolicy.EnableRoles }}checked{{ end }}>
-                            <div
-                                class="w-3 h-3 bg-white rounded-full {{ if .AuthzPolicy.EnableRoles }}translate-x-3{{ end }} transition-transform">
-                            </div>
-                        </label>
-                    </div>
-                    <p class="text-[10px] text-slate-400 font-medium px-2 leading-relaxed mt-2" id="authz_description">
-                        {{ if .AuthzPolicy.EnableRoles }}
-                        Los accesos de los usuarios están supeditados a los roles y premisos asignados.
-                        {{ else }}
-                        Sistema plano. Cualquier usuario autenticado tiene acceso total.
-                        {{ end }}
-                    </p>
-                    {{ end }}
-                    {{ template "components/card_footer" }}
+                <!-- Unified Settings Card -->
+                <div class="bg-white dark:bg-slate-900 p-8 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm min-h-80">
+                    {{ template "components/policy_registro" . }}
+                    {{ template "components/policy_accesos" . }}
+                    {{ template "components/policy_sesiones" . }}
+                    {{ template "components/policy_autorizacion" . }}
+                    {{ template "components/policy_mfa" . }}
+                </div>
+            </div>
                 </div>
             </div>
         </div>
@@ -255,7 +140,7 @@
 </div>
 
 <!-- Revoke Secret Modal -->
-<div id="revokeModal" class="fixed inset-0 z-[100] hidden">
+<div id="revokeModal" class="fixed inset-0 z-100 hidden">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" id="revokeModalBackdrop" onclick="closeRevokeModal()">
     </div>
     <div class="flex items-center justify-center min-h-screen p-4 relative z-10">

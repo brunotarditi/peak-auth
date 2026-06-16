@@ -1,0 +1,77 @@
+{{ define "content" }}
+<div class="flex flex-col md:flex-row gap-8 max-w-7xl mx-auto w-full p-4 md:p-8">
+    <!-- Sidebar Navegación -->
+    <aside class="w-full md:w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 pr-6 hidden md:block">
+        <nav class="sticky top-8 space-y-8">
+            <div>
+                <h4 class="font-bold text-slate-900 dark:text-white mb-3 text-xs uppercase tracking-widest">Conceptos Core</h4>
+                <ul class="space-y-3 text-sm">
+                    <li><a href="/admin/docs" class="text-brand-600 dark:text-brand-400 font-semibold flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Introducción
+                    </a></li>
+                    <li><a href="#jwt" class="text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition">JWT Asimétrico</a></li>
+                    <li><a href="#sso" class="text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition">Flujo SSO</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-slate-900 dark:text-white mb-3 text-xs uppercase tracking-widest">Desarrollo</h4>
+                <ul class="space-y-3 text-sm">
+                    <li><a href="/admin/docs/api" class="text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        API Endpoints
+                    </a></li>
+                    <li><a href="/admin/docs/api#auth" class="text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition">Validación en Cliente</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 max-w-3xl">
+        <div class="mb-12">
+            <h1 class="text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Documentación de Peak Auth</h1>
+            <p class="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+                Peak Auth es un Proveedor de Identidad (IdP) centralizado, diseñado para ser rápido, seguro e integrarse fácilmente con tu ecosistema de aplicaciones mediante <strong class="text-slate-900 dark:text-white">JWT Asimétrico (RSA-256)</strong>.
+            </p>
+        </div>
+
+        <section id="jwt" class="mb-12">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">JWT Asimétrico (RSA-256)</h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                A diferencia de los JWT tradicionales que usan una clave secreta única (HS256) compartida entre todas las aplicaciones, Peak Auth utiliza criptografía asimétrica.
+            </p>
+            <ul class="space-y-3 mb-6 text-slate-600 dark:text-slate-400">
+                <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span><strong>Clave Privada:</strong> Solo Peak Auth la conoce. Se utiliza exclusivamente para firmar los tokens JWT cuando un usuario inicia sesión.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span><strong>Clave Pública:</strong> Es distribuida a todas las aplicaciones satélite. Permite a cualquier aplicación verificar matemáticamente que un token fue emitido por Peak Auth, pero no les permite crear nuevos tokens falsos.</span>
+                </li>
+            </ul>
+            <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/30 text-blue-800 dark:text-blue-300 text-sm">
+                <strong class="font-bold block mb-1">Nota de Seguridad</strong>
+                Nunca compartas ni expongas el archivo <code>jwt_private.pem</code>. Las aplicaciones de terceros solo necesitan <code>jwt_public.pem</code> para validar los accesos.
+            </div>
+        </section>
+
+        <section id="sso" class="mb-12">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-slate-800 pb-2">Flujo de Single Sign-On (SSO)</h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                El flujo de inicio de sesión descentralizado permite a los usuarios autenticarse una sola vez en el sistema central:
+            </p>
+            <ol class="list-decimal list-inside space-y-4 text-slate-600 dark:text-slate-400 marker:text-slate-400 marker:font-bold">
+                <li>El usuario intenta acceder a <code>App Cliente</code>.</li>
+                <li>Como no está autenticado, la app cliente lo redirige al portal de login de Peak Auth, pasando su <code>Client ID</code> en la URL.</li>
+                <li>Peak Auth valida credenciales, aplica políticas de seguridad (intentos fallidos, reglas) y genera un Access Token (JWT) y un Refresh Token.</li>
+                <li>Peak Auth retorna al usuario a la <code>App Cliente</code> adjuntando el código o los tokens generados.</li>
+                <li>La <code>App Cliente</code> utiliza la Clave Pública para validar el JWT y permite el ingreso.</li>
+            </ol>
+        </section>
+
+    </main>
+</div>
+{{ end }}
+{{ template "base_admin" . }}
