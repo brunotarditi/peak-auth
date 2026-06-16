@@ -58,6 +58,11 @@
    ```bash
    cp .env.example .env
    ```
+   **Variables Críticas:**
+   - `DATABASE_URL`: URL de conexión a PostgreSQL.
+   - `JWT_PRIVATE_KEY_PATH`: Ruta a la clave privada (`./jwt_private.pem`) o contenido directo en `JWT_PRIVATE_KEY`.
+   - `ENV`: `development` o `production` (Habilita cookies `Secure`).
+   - `RESEND_API_KEY`: API Key para el envío de correos de verificación y reseteos.
 
 4. **Generar claves RSA para JWT:**
 
