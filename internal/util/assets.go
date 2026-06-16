@@ -1,7 +1,7 @@
 package util
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
@@ -11,12 +11,11 @@ import (
 )
 
 var (
-	// assetCache guarda los hashes ya calculados para no leer el disco en cada request
 	assetCache = make(map[string]string)
 	cacheMutex sync.RWMutex
 )
 
-// GetAssetHash calcula un hash MD5 corto basado en el contenido de un archivo
+// GetAssetHash calcula un hash SHA256 corto basado en el contenido de un archivo
 func GetAssetHash(filePath string) string {
 	cacheMutex.RLock()
 	hash, exists := assetCache[filePath]
@@ -26,14 +25,13 @@ func GetAssetHash(filePath string) string {
 		return hash
 	}
 
-	// Si no está en cache, lo leemos del disco
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "1"
 	}
 	defer file.Close()
 
-	hashObj := md5.New()
+	hashObj := sha256.New()
 	if _, err := io.Copy(hashObj, file); err != nil {
 		return "1"
 	}

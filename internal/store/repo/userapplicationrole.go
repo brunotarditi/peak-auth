@@ -34,11 +34,15 @@ func NewUserApplicationRoleRepository(db *gorm.DB) UserApplicationRoleRepository
 // AssignRole asigna el `roleID` al `userID` dentro de la `appID`, evitando duplicados.
 func (r *userApplicationRoleRepository) AssignRole(userID, appID, roleID uint) error {
 	var existing model.UserApplicationRole
-	// Evitamos duplicados: misma app, mismo usuario, mismo rol
-	err := r.db.Where("user_id = ? AND application_id = ? AND role_id = ?", userID, appID, roleID).
+	// Buscamos duplicados incluyendo registros eliminados lógicamente (soft-deleted)
+	err := r.db.Unscoped().Where("user_id = ? AND application_id = ? AND role_id = ?", userID, appID, roleID).
 		First(&existing).Error
 
 	if err == nil {
+		// Si el registro existe pero está borrado (deleted_at no es null), lo restauramos
+		if existing.DeletedAt.Valid {
+			return r.db.Unscoped().Model(&existing).UpdateColumn("deleted_at", nil).Error
+		}
 		return fmt.Errorf("el usuario ya tiene este rol en esta aplicación")
 	}
 
@@ -71,7 +75,7 @@ func (r *userApplicationRoleRepository) FindRolesByUserAndApp(userID, appID uint
 	var roles []model.Role
 	err := r.db.Table("roles").
 		Joins("JOIN user_application_roles uar ON uar.role_id = roles.id").
-		Where("uar.user_id = ? AND uar.application_id = ?", userID, appID).
+		Where("uar.user_id = ? AND uar.application_id = ? AND uar.deleted_at IS NULL", userID, appID).
 		Find(&roles).Error
 	return roles, err
 }
@@ -111,7 +115,7 @@ func (r *userApplicationRoleRepository) GetUserRolesInApp(userID, appID uint) ([
 	var roles []string
 	err := r.db.Model(&model.Role{}).
 		Joins("JOIN user_application_roles uar ON uar.role_id = roles.id").
-		Where("uar.user_id = ? AND uar.application_id = ?", userID, appID).
+		Where("uar.user_id = ? AND uar.application_id = ? AND uar.deleted_at IS NULL", userID, appID).
 		Pluck("roles.name", &roles).Error
 	return roles, err
 }

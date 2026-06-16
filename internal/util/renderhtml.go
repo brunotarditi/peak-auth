@@ -47,6 +47,21 @@ func GetTemplateFuncMap() template.FuncMap {
 			}
 			return valA - valB
 		},
+		"safe_slice": func(s string, start, end int) string {
+			if len(s) == 0 {
+				return ""
+			}
+			if start < 0 {
+				start = 0
+			}
+			if end > len(s) {
+				end = len(s)
+			}
+			if start > end {
+				return ""
+			}
+			return s[start:end]
+		},
 		"now": func() time.Time {
 			return time.Now()
 		},

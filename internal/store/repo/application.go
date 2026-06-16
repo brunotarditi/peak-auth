@@ -64,7 +64,7 @@ func (r *applicationRepository) ValidateSecret(appID string, secret string) (mod
 	if err != nil {
 		return model.Application{}, err
 	}
-	if !util.CheckTokenSHA256(secret, []byte(app.SecretKey)) {
+	if !util.CheckPasswordHash(secret, app.SecretKey) {
 		return model.Application{}, gorm.ErrRecordNotFound
 	}
 	return app, nil

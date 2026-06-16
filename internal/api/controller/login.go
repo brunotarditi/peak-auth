@@ -66,6 +66,7 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 // PostLogout cierra la sesión
 func (ctrl *LoginController) PostLogout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("admin_token", "", -1, "/", "", false, true)
+	isSecure := os.Getenv("ENV") == "production"
+	c.SetCookie("admin_token", "", -1, "/", "", isSecure, true)
 	c.Redirect(http.StatusSeeOther, "/admin/login")
 }

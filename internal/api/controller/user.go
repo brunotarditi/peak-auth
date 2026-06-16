@@ -48,7 +48,7 @@ func (c *UserController) PostResetPassword(ctx *gin.Context) {
 	}
 
 	if err := c.UserService.ResetPassword(token, password); err != nil {
-		ctx.String(http.StatusBadRequest, err.Error())
+		ctx.String(http.StatusBadRequest, "No se pudo actualizar la contraseña. Verifique que el enlace sea válido y no haya expirado.")
 		return
 	}
 
@@ -68,7 +68,7 @@ func (c *UserController) Refresh(ctx *gin.Context) {
 
 	resp, err := c.UserService.Refresh(req.RefreshToken)
 	if err != nil {
-		ctx.JSON(401, gin.H{"error": err.Error()})
+		ctx.JSON(401, gin.H{"error": "No se pudo renovar la sesión"})
 		return
 	}
 
@@ -90,6 +90,14 @@ func (ctrl *UserController) RevokeUserAccess(c *gin.Context) {
 	if _, err := fmt.Sscanf(userIDParam, "%d", &userID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
 		return
+	}
+
+	currentUserIDVal, exists := c.Get("user_id")
+	if exists {
+		if currentUserID, ok := currentUserIDVal.(uint); ok && currentUserID == userID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No puedes revocar tu propio acceso a la aplicación"})
+			return
+		}
 	}
 
 	if err := ctrl.AppService.RevokeUserFromApp(userID, app.ID); err != nil {
@@ -117,7 +125,7 @@ func (ctrl *UserController) GetAppUsers(c *gin.Context) {
 	}
 	limit := 10
 
-	users, total, err := ctrl.UserService.FindUserByAppIDPaginated(appIDParam, page, limit)
+	users, total, err := ctrl.UserService.FindUserByAppIDPaginated(app, page, limit)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error al cargar los usuarios")
 		return
