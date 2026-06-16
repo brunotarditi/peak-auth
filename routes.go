@@ -56,6 +56,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		AppService:  app.AppService,
 	}
 
+	docsCtrl := &controller.DocsController{}
+
 	// --- SETUP & USER ACTIONS (App inicial) ---
 	r.GET("/setup", setupCtrl.ShowSetup)
 	r.POST("/setup", setupCtrl.ProcessSetup)
@@ -65,14 +67,16 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 
 	// --- API V1 (Para integraciones externas) ---
 	api := r.Group("/api/v1")
+	api.Use(middleware.CORSMiddleware())
 	{
 		api.POST("/login", loginCtrl.Login)
-		api.POST("/register", registerCtrl.Register)
+		api.POST("/register", middleware.AppAuthMiddleware(app.AppRepo), registerCtrl.Register)
 		api.POST("/refresh", userCtrl.Refresh)
 	}
 
 	// --- RUTAS PÚBLICAS DE ADMINISTRACIÓN ---
 	adminPublic := r.Group("/admin")
+	adminPublic.Use(middleware.AdminCSRFMiddleware())
 	{
 		adminPublic.GET("/login", loginCtrl.GetLoginForm)
 		adminPublic.POST("/login", loginCtrl.PostLoginForm)
@@ -85,6 +89,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// --- RUTAS PROTEGIDAS DE ADMINISTRACIÓN ---
 	adminPrivate := r.Group("/admin")
 	adminPrivate.Use(middleware.SecurityHeaderMiddleware())
+	adminPrivate.Use(middleware.AdminCSRFMiddleware())
 	adminPrivate.Use(middleware.AuthMiddleware(app.TokenManager))
 	{
 		adminPrivate.GET("/", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), dashboardCtrl.Dashboard)
@@ -93,6 +98,11 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		// Gestión de Apps
 		adminPrivate.GET("/apps/new", appCtrl.GetFormApp)
 		adminPrivate.POST("/apps", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), appCtrl.PostFormApp)
+
+		// Documentación
+		adminPrivate.GET("/docs", docsCtrl.ShowDocs)
+		adminPrivate.GET("/docs/api", docsCtrl.ShowAPI)
+
 		adminPrivate.GET("/apps/:id", appCtrl.GetAppDetails)
 		adminPrivate.GET("/apps/:id/edit", appCtrl.GetEditApp)
 		adminPrivate.POST("/apps/:id", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ROOT", "ADMIN"), appCtrl.UpdateFormApp)
