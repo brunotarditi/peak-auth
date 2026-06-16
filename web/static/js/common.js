@@ -33,11 +33,12 @@ function showToast(message, type = 'success', duration = 4000) {
     toast.className = `toast animate-slide-in-right ${config.classes}`;
     toast.innerHTML = `
         <div class="toast-icon">${config.icon}</div>
-        <div class="toast-message">${message}</div>
+        <div class="toast-message"></div>
         <button onclick="this.parentElement.remove()" class="toast-close">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
     `;
+    toast.querySelector('.toast-message').textContent = message;
 
     container.appendChild(toast);
 

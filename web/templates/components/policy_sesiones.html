@@ -1,0 +1,49 @@
+{{ define "components/policy_sesiones" }}
+{{ if .SessionPolicy }}
+<div id="content_sesiones" class="tab-content hidden space-y-6">
+    <div class="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Políticas de Sesión (JWT)</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Controla la vigencia de los tokens de sesión y bloqueos en login.</p>
+        </div>
+        <button onclick="toggleEdit('session', 'amber')" id="btn_edit_session"
+            class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs transition border border-slate-200 dark:border-slate-700 cursor-pointer">
+            <span>Editar</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+        </button>
+    </div>
+
+    <fieldset id="fs_session" disabled class="pt-2 transition-all duration-300 opacity-80 cursor-not-allowed">
+        <div class="divide-y divide-slate-100 dark:divide-slate-800">
+            <!-- Duración de Token -->
+            <div class="policy-row">
+                <div class="flex flex-col gap-0.5 max-w-[70%]">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Duración de Token (Expiración)</span>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Tiempo de validez para el token de acceso (JWT) antes de expirar.</span>
+                </div>
+                <div class="flex items-center gap-1 border border-slate-200 dark:border-slate-700 px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <input type="number" min="1" autocomplete="off" id="session_expiration"
+                        onchange="updateSession()" value="{{ .SessionPolicy.TokenExpirationMinutes }}"
+                        class="w-12 text-right bg-transparent font-black text-slate-700 dark:text-slate-300 outline-none text-xs disabled:text-slate-400">
+                    <span class="text-xs font-black text-slate-500 dark:text-slate-400">mins</span>
+                </div>
+            </div>
+
+            <!-- Intentos Fallidos -->
+            <div class="policy-row">
+                <div class="flex flex-col gap-0.5 max-w-[70%]">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Límite de Intentos Fallidos</span>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Número máximo de intentos fallidos antes de bloquear la cuenta por un mes de manera automática.</span>
+                </div>
+                <div class="flex items-center gap-1 border border-slate-200 dark:border-slate-700 px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <input type="number" min="1" max="10" autocomplete="off" id="session_max_failed"
+                        onchange="updateSession()" value="{{ .SessionPolicy.MaxFailedLogins }}"
+                        class="w-10 text-right bg-transparent font-black text-slate-700 dark:text-slate-300 outline-none text-xs disabled:text-slate-400">
+                    <span class="text-xs font-black text-slate-500 dark:text-slate-400">intentos</span>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>
+{{ end }}
+{{ end }}

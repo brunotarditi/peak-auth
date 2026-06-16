@@ -240,3 +240,44 @@ body {
     background: #334155;
     background-clip: content-box;
 }
+
+/* --- Settings Tabs & Layout --- */
+.settings-tab-btn {
+    position: relative;
+    padding-bottom: 0.75rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #64748b;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+.dark .settings-tab-btn {
+    color: #94a3b8;
+}
+.settings-tab-btn:hover {
+    color: #0f172a;
+}
+.dark .settings-tab-btn:hover {
+    color: #ffffff;
+}
+.settings-tab-btn.active-tab {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+.dark .settings-tab-btn.active-tab {
+    color: #38a9f8;
+    border-bottom-color: #38a9f8;
+}
+.policy-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.dark .policy-row {
+    border-bottom-color: #1e293b;
+}
+.policy-row:last-child {
+    border-bottom: none;
+}

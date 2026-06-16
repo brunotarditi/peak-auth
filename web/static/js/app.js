@@ -135,8 +135,25 @@ function toggleUI(checkbox, wrapperId) {
  */
 function togglePill(checkbox, labelId, color) {
     const label = document.getElementById(labelId);
+    let classes = "";
+    
+    // Explicit map for Tailwind compiler to detect
+    switch (color) {
+        case 'rose':
+            classes = "bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400";
+            break;
+        case 'emerald':
+            classes = "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400";
+            break;
+        case 'blue':
+            classes = "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400";
+            break;
+        default:
+            classes = `bg-${color}-50 dark:bg-${color}-900/20 text-${color}-600 dark:text-${color}-400`;
+    }
+
     if (checkbox.checked) {
-        label.className = `text-center p-2 rounded-xl cursor-pointer transition-colors bg-${color}-50 dark:bg-${color}-900/20 text-${color}-600 dark:text-${color}-400`;
+        label.className = `text-center p-2 rounded-xl cursor-pointer transition-colors ${classes}`;
     } else {
         label.className = `text-center p-2 rounded-xl cursor-pointer transition-colors bg-slate-50 dark:bg-slate-800 text-slate-400`;
     }
@@ -241,4 +258,31 @@ function updateAuthz() {
         enable_roles: enabled
     });
 }
+
+/**
+ * Cambia la pestaña activa en la vista de configuración
+ * @param {string} tabName 
+ */
+function switchTab(tabName) {
+    // Ocultar todos los contenidos de pestaña
+    document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.add('hidden');
+    });
+    // Quitar clases activas de todos los botones de pestaña
+    document.querySelectorAll('.settings-tab-btn').forEach(el => {
+        el.classList.remove('active-tab');
+    });
+    
+    // Mostrar contenido de pestaña actual
+    const contentEl = document.getElementById('content_' + tabName);
+    if (contentEl) {
+        contentEl.classList.remove('hidden');
+    }
+    // Añadir clase activa al botón presionado
+    const btn = document.getElementById('tab_' + tabName);
+    if (btn) {
+        btn.classList.add('active-tab');
+    }
+}
+
 

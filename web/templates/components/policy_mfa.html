@@ -1,0 +1,32 @@
+{{ define "components/policy_mfa" }}
+<div id="content_mfa" class="tab-content hidden space-y-6">
+    <div class="pb-4 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Autenticación en Dos Pasos (2FA / MFA)</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Añade capas extra de seguridad para el inicio de sesión.</p>
+    </div>
+
+    <div class="divide-y divide-slate-100 dark:divide-slate-800 pt-2">
+        <!-- Google / Microsoft Authenticator -->
+        <div class="policy-row opacity-60">
+            <div class="flex flex-col gap-0.5 max-w-[70%]">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Google / Microsoft Authenticator (TOTP)</span>
+                <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Permite a los usuarios generar códigos OTP temporales de 6 dígitos para iniciar sesión de forma segura.</span>
+            </div>
+            <div>
+                <span class="text-[8px] font-black tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-1 rounded uppercase select-none">No Disponible</span>
+            </div>
+        </div>
+
+        <!-- Llaves de Seguridad de Hardware -->
+        <div class="policy-row opacity-60">
+            <div class="flex flex-col gap-0.5 max-w-[70%]">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Llaves de Seguridad de Hardware (WebAuthn / YubiKey)</span>
+                <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Inicio de sesión ultra-seguro mediante hardware criptográfico de doble factor (FIDO2/WebAuthn).</span>
+            </div>
+            <div>
+                <span class="text-[8px] font-black tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-1 rounded uppercase select-none">No Disponible</span>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}

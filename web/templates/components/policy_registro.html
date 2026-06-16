@@ -1,0 +1,86 @@
+{{ define "components/policy_registro" }}
+{{ if .RegPolicy }}
+<div id="content_registro" class="tab-content space-y-6">
+    <div class="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Registro de Usuarios</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Controla cómo los nuevos usuarios pueden unirse a tu aplicación.</p>
+        </div>
+        {{ if ne .App.AppID "peak-auth" }}
+        <button onclick="toggleEdit('reg', 'indigo')" id="btn_edit_reg"
+            class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs transition border border-slate-200 dark:border-slate-700 cursor-pointer">
+            <span>Editar</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+        </button>
+        {{ end }}
+    </div>
+
+    <fieldset id="fs_reg" disabled class="pt-2 transition-all duration-300 opacity-80 cursor-not-allowed">
+        <div class="divide-y divide-slate-100 dark:divide-slate-800">
+            <!-- Modo de Registro -->
+            <div class="policy-row">
+                <div class="flex flex-col gap-0.5 max-w-[70%]">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Modo de Registro</span>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Define si la creación de usuarios es pública o restringida a administradores.</span>
+                </div>
+                <div>
+                    <select id="reg_mode" onchange="updateRegistration()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
+                        class="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg uppercase tracking-wider outline-none focus:border-brand-500 cursor-pointer transition disabled:opacity-60 disabled:cursor-not-allowed">
+                        {{ if eq .App.AppID "peak-auth" }}
+                        <option value="admin_only" selected>Solo Admin</option>
+                        {{ else }}
+                        <option value="public" {{ if eq .RegPolicy.Mode "public" }}selected{{ end }}>Público</option>
+                        <option value="admin_only" {{ if eq .RegPolicy.Mode "admin_only" }}selected{{ end }}>Solo Admin</option>
+                        <option value="app_admin_only" {{ if eq .RegPolicy.Mode "app_admin_only" }}selected{{ end }}>Solo App Admin</option>
+                        {{ end }}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Rol por Defecto -->
+            <div class="policy-row">
+                <div class="flex flex-col gap-0.5 max-w-[70%]">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Rol por Defecto</span>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Rol que se asigna automáticamente a los nuevos usuarios al registrarse.</span>
+                </div>
+                <div>
+                    <select id="reg_default_role" onchange="updateRegistration()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
+                        class="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg uppercase tracking-wider outline-none focus:border-brand-500 cursor-pointer transition disabled:opacity-60 disabled:cursor-not-allowed">
+                        {{ if eq .App.AppID "peak-auth" }}
+                        <option value="ADMIN" selected>ADMIN</option>
+                        {{ else }}
+                        <option value="" {{ if eq .RegPolicy.DefaultRole "" }}selected{{ end }}>Ninguno</option>
+                        {{ $defaultRole := .RegPolicy.DefaultRole }}
+                        {{ range .Roles }}
+                        {{ if ne .Name "ROOT" }}
+                        <option value="{{ .Name }}" {{ if eq $defaultRole .Name }}selected{{ end }}>{{ .Name }}</option>
+                        {{ end }}
+                        {{ end }}
+                        {{ end }}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Validar Email -->
+            <div class="policy-row">
+                <div class="flex flex-col gap-0.5 max-w-[70%]">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Validar Email</span>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Exigir a los usuarios confirmar su correo mediante un token antes de poder iniciar sesión.</span>
+                </div>
+                <div>
+                    <label
+                        class="w-8 h-5 {{ if .RegPolicy.RequireEmailVerification }}bg-emerald-500{{ else }}bg-slate-300 dark:bg-slate-600{{ end }} rounded-full flex items-center px-1 {{ if ne .App.AppID "peak-auth" }}cursor-pointer{{ else }}cursor-not-allowed opacity-50{{ end }} transition-colors"
+                        id="reg_email_wrapper">
+                        <input type="checkbox" id="reg_require_email_verification" class="sr-only"
+                            {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
+                            onchange="toggleUI(this, 'reg_email_wrapper'); updateRegistration()" {{ if
+                            .RegPolicy.RequireEmailVerification }}checked{{ end }}>
+                        <div class="w-3 h-3 bg-white rounded-full {{ if .RegPolicy.RequireEmailVerification }}translate-x-3{{ end }} transition-transform"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>
+{{ end }}
+{{ end }}
