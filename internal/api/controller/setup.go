@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"os"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
@@ -59,13 +60,14 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		return
 	}
 
+	isSecure := os.Getenv("ENV") == "production"
 	c.SetCookie(
 		"admin_token", // Nombre
 		tokenString,   // Valor (JWT)
 		86400,         // MaxAge en segundos (1 día)
 		"/",           // Path
 		"",            // Domain
-		false,         // Secure: En true solo con HTTPS (importante en prod)
+		isSecure,      // Secure: En true solo con HTTPS (importante en prod)
 		true,          // HttpOnly: TRUE para que JS no pueda robarlo (XSS)
 	)
 

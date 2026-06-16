@@ -84,7 +84,14 @@ func (ctrl *DashboardController) PostSendResetPassword(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.UserService.SendResetEmail(user); err != nil {
+	appIDParam := c.Param("id")
+	app, err := ctrl.AppService.GetAppDetails(appIDParam)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aplicación no encontrada"})
+		return
+	}
+
+	if err := ctrl.UserService.SendResetEmail(user, app.ID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -70,7 +70,7 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 
 	userID, appID, err := c.UserService.VerifyEmail(token)
 	if err != nil {
-		ctx.String(400, "Error verificando email: %v", err)
+		ctx.String(400, "El enlace de verificación es inválido o ha expirado")
 		return
 	}
 

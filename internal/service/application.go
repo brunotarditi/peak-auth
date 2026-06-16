@@ -49,6 +49,18 @@ func (s *applicationService) CreateApp(name, description string, isActive bool) 
 
 	slugID := util.Slugify(name)
 
+	// Verificar colisión de slug y añadir sufijo si es necesario
+	baseSlug := slugID
+	attempt := 1
+	for {
+		_, err := s.repo.FindByAppID(slugID)
+		if err != nil {
+			break // Slug disponible
+		}
+		slugID = fmt.Sprintf("%s-%d", baseSlug, attempt)
+		attempt++
+	}
+
 	app := model.Application{
 		AppID:       slugID,
 		Name:        name,
@@ -198,6 +210,12 @@ func (s *applicationService) DeleteApp(appID string) error {
 	if err != nil {
 		return err
 	}
+
+	users, err := s.uarRepo.GetUsersWithRolesByApp(app.ID)
+	if err == nil && len(users) > 0 {
+		return fmt.Errorf("no se puede eliminar la aplicación porque tiene usuarios vinculados. Revoca el acceso a todos los usuarios primero.")
+	}
+
 	return s.repo.Delete(app.ID)
 }
 

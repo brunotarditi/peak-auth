@@ -1,6 +1,8 @@
 package service
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"peak-auth/internal/api/request"
@@ -24,10 +26,10 @@ type UserService interface {
 	FindVerifiedUserByID(id uint) (*model.User, error)
 	GenerateResetToken(userID, appID uint) (string, []byte, error)
 	CanRequestPasswordReset(userID uint) (bool, error)
-	SendResetEmail(user *model.User) error
+	SendResetEmail(user *model.User, appID uint) error
 	AdminLogin(email, password string) (string, int, error)
 	FindUserByAppID(appID string) ([]response.UserAppRow, error)
-	FindUserByAppIDPaginated(appID string, page, limit int) ([]response.UserAppRow, int64, error)
+	FindUserByAppIDPaginated(appID model.Application, page, limit int) ([]response.UserAppRow, int64, error)
 	Refresh(token string) (response.TokenResponse, error)
 	UnlockUser(userID uint) error
 	ResendVerification(userID uint, appID string) error
@@ -64,7 +66,19 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 		return response.TokenResponse{}, fmt.Errorf("aplicación no autorizada")
 	}
 
-	// 2. Aplicar política de intentos fallidos (SESSION_POLICY)
+	// 2. Aplicar política de intentos fallidos (SESSION_POLICY) (solo si NO es ROOT global)
+	isRoot := false
+	masterApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
+	if err == nil {
+		globalRoles, _ := s.uarRepo.GetUserRolesInApp(user.ID, masterApp.ID)
+		for _, r := range globalRoles {
+			if r == "ROOT" {
+				isRoot = true
+				break
+			}
+		}
+	}
+
 	maxFails := 5 // Default
 	rules, err := s.ruleService.FindRulesByAppID(app.ID)
 	if err == nil {
@@ -78,23 +92,21 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 		}
 	}
 
-	if user.FailedLogins >= uint(maxFails) {
+	if !isRoot && user.FailedLogins >= uint(maxFails) {
 		// Auto-desbloqueo tras 30 días
 		if time.Since(user.UpdatedAt) >= 30*24*time.Hour {
 			s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
 			user.FailedLogins = 0
 		} else {
-			daysLeft := 30 - int(time.Since(user.UpdatedAt).Hours()/24)
-			if daysLeft < 1 {
-				daysLeft = 1
-			}
-			return response.TokenResponse{}, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
+			return response.TokenResponse{}, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Contacte al administrador de la aplicación.")
 		}
 	}
 
 	// 3. Validar Password
 	if !util.CheckPasswordHash(req.Password, user.Password) {
-		s.userRepo.UpdateColumn("failed_logins", user.FailedLogins+1, user.ID)
+		if !isRoot {
+			s.userRepo.UpdateColumn("failed_logins", user.FailedLogins+1, user.ID)
+		}
 		return response.TokenResponse{}, fmt.Errorf("credenciales inválidas")
 	}
 
@@ -139,15 +151,19 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	}
 
 	// 5. Generar y Almacenar Refresh Token
-	plainRT, _, err := util.GenerateToken(64)
-	if err == nil {
-		rt := model.RefreshToken{
-			UserID:        user.ID,
-			ApplicationID: app.ID,
-			Token:         plainRT,
-			ExpiresAt:     time.Now().Add(7 * 24 * time.Hour), // 7 días
-		}
-		_ = s.refreshTokenRepo.Create(&rt)
+	plainRT, rtHash, err := util.GenerateToken(64)
+	if err != nil {
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
+	}
+	rt := model.RefreshToken{
+		UserID:        user.ID,
+		ApplicationID: app.ID,
+		Token:         hex.EncodeToString(rtHash),
+		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+	}
+	createErr := s.refreshTokenRepo.Create(&rt)
+	if createErr != nil {
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", createErr)
 	}
 
 	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
@@ -208,7 +224,9 @@ func (s *userService) Register(req request.RegisterRequest) (model.User, error) 
 	// 4) Asignar rol por reglas
 	if registrationPolicy.DefaultRole != "" {
 		if role, err := s.roleRepo.FindByRoleName(registrationPolicy.DefaultRole); err == nil {
-			_ = s.uarRepo.AssignRole(user.ID, app.ID, role.ID)
+			if assignErr := s.uarRepo.AssignRole(user.ID, app.ID, role.ID); assignErr != nil {
+				return model.User{}, fmt.Errorf("error al asignar el rol por defecto: %w", assignErr)
+			}
 		}
 	}
 
@@ -329,16 +347,17 @@ func (s *userService) CanRequestPasswordReset(userID uint) (bool, error) {
 }
 
 // SendResetEmail crea un token de restablecimiento, lo guarda y envía el email.
-func (s *userService) SendResetEmail(user *model.User) error {
+func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 	plainToken, tokenHash, err := util.GenerateToken(32)
 	if err != nil {
 		return err
 	}
 
 	reset := &model.PasswordReset{
-		UserID:    user.ID,
-		TokenHash: tokenHash,
-		ExpiresAt: time.Now().Add(1 * time.Hour),
+		UserID:        user.ID,
+		ApplicationID: appID,
+		TokenHash:     tokenHash,
+		ExpiresAt:     time.Now().Add(1 * time.Hour),
 	}
 	if err := s.passwordResetRepo.CreatePasswordReset(reset); err != nil {
 		return err
@@ -403,7 +422,9 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 func (s *userService) AdminLogin(email, password string) (string, int, error) {
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
-		return "", 0, fmt.Errorf("email no encontrado")
+		// Mitigación de timing attack y user enumeration
+		util.CheckPasswordHash("dummy", "$2a$10$FKTUgxnqSnUp8kDjnTFlyOn3s165yiYmcLxXeNv7NavMY3DH19IIq")
+		return "", 0, fmt.Errorf("las credenciales de administrador son inválidas")
 	}
 
 	peakApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
@@ -430,43 +451,28 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 		}
 	}
 
-	if user.FailedLogins >= uint(maxFails) {
-		if time.Since(user.UpdatedAt) >= 30*24*time.Hour {
-			s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
-			user.FailedLogins = 0
-		} else {
-			daysLeft := 30 - int(time.Since(user.UpdatedAt).Hours()/24)
-			if daysLeft < 1 {
-				daysLeft = 1
-			}
-			return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
-		}
-	}
-
-	if !user.IsVerified {
-		return "", 0, fmt.Errorf("la cuenta no está verificada")
-	}
-
-	if !util.CheckPasswordHash(password, user.Password) {
-		s.userRepo.UpdateColumn("failed_logins", user.FailedLogins+1, user.ID)
-		return "", 0, fmt.Errorf("las credenciales son inválidas")
-	}
-
+	// 1. Obtener roles para ver si es ROOT o ADMIN global
 	roleModels, err := s.uarRepo.FindRolesByUserAndApp(user.ID, peakApp.ID)
 	isAdmin := false
+	isRoot := false
 	var roles []string
 
 	if err == nil && len(roleModels) > 0 {
 		roles = make([]string, len(roleModels))
 		for i, r := range roleModels {
 			roles[i] = r.Name
-			if r.Name == "ROOT" || r.Name == "ADMIN" {
+			switch r.Name {
+			case "ROOT":
+				isRoot = true
+				isAdmin = true
+			case "ADMIN":
 				isAdmin = true
 			}
 		}
 	}
 
 	if !isAdmin {
+		// Validar si tiene rol ADMIN en alguna otra aplicación
 		hasLocalAdmin, err := s.uarRepo.HasAdminRoleInAnyApp(user.ID)
 		if err == nil && hasLocalAdmin {
 			isAdmin = true
@@ -476,6 +482,34 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 
 	if !isAdmin {
 		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
+	}
+
+	// 2. Aplicar política de intentos fallidos (solo si NO es ROOT)
+	if !isRoot {
+		if user.FailedLogins >= uint(maxFails) {
+			if time.Since(user.UpdatedAt) >= 30*24*time.Hour {
+				s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
+				user.FailedLogins = 0
+			} else {
+				daysLeft := 30 - int(time.Since(user.UpdatedAt).Hours()/24)
+				if daysLeft < 1 {
+					daysLeft = 1
+				}
+				return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
+			}
+		}
+	}
+
+	if !user.IsVerified {
+		return "", 0, fmt.Errorf("la cuenta no está verificada")
+	}
+
+	// 3. Verificar password
+	if !util.CheckPasswordHash(password, user.Password) {
+		if !isRoot {
+			s.userRepo.UpdateColumn("failed_logins", user.FailedLogins+1, user.ID)
+		}
+		return "", 0, fmt.Errorf("las credenciales son inválidas")
 	}
 
 	s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
@@ -505,12 +539,7 @@ func (s *userService) FindUserByAppID(appID string) ([]response.UserAppRow, erro
 }
 
 // FindUserByAppIDPaginated devuelve los usuarios paginados y el total
-func (s *userService) FindUserByAppIDPaginated(appID string, page, limit int) ([]response.UserAppRow, int64, error) {
-	app, err := s.appRepo.FindByAppID(appID)
-	if err != nil {
-		return nil, 0, fmt.Errorf("aplicación no encontrada")
-	}
-
+func (s *userService) FindUserByAppIDPaginated(app model.Application, page, limit int) ([]response.UserAppRow, int64, error) {
 	users, total, err := s.uarRepo.GetUsersWithRolesByAppPaginated(app.ID, page, limit)
 	if err != nil {
 		return nil, 0, fmt.Errorf("error al obtener usuarios: %v", err)
@@ -521,7 +550,10 @@ func (s *userService) FindUserByAppIDPaginated(appID string, page, limit int) ([
 
 // Refresh valida un refresh token y genera un nuevo access token.
 func (s *userService) Refresh(refreshToken string) (response.TokenResponse, error) {
-	rt, err := s.refreshTokenRepo.FindByToken(refreshToken)
+	hash := sha256.Sum256([]byte(refreshToken))
+	tokenHashStr := hex.EncodeToString(hash[:])
+
+	rt, err := s.refreshTokenRepo.FindByToken(tokenHashStr)
 	if err != nil {
 		return response.TokenResponse{}, fmt.Errorf("refresh token inválido o expirado")
 	}
@@ -557,15 +589,34 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		roles[i] = r.Name
 	}
 
+	// Rotar: eliminar el token viejo
+	s.refreshTokenRepo.DeleteByToken(tokenHashStr)
+
 	// 2. Generar nuevo Access Token
 	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
 
+	// 3. Generar nuevo Refresh Token
+	plainRT, rtHash, err := util.GenerateToken(64)
+	var newRT string
+	if err == nil {
+		newRT = plainRT
+		newRtModel := model.RefreshToken{
+			UserID:        user.ID,
+			ApplicationID: app.ID,
+			Token:         hex.EncodeToString(rtHash),
+			ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+		}
+		_ = s.refreshTokenRepo.Create(&newRtModel)
+	} else {
+		newRT = refreshToken // fallback if token generation fails
+	}
+
 	return response.TokenResponse{
 		AccessToken:  newAT,
-		RefreshToken: refreshToken,
+		RefreshToken: newRT,
 	}, nil
 }
 

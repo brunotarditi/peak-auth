@@ -7,7 +7,6 @@ import (
 )
 
 type ApplicationRuleRepository interface {
-	//GetByCode(appID uint, code string) (model.ApplicationRules, error)
 	GetRulesByAppID(appID uint) ([]model.ApplicationRules, error)
 	CreateDefaultRules(appID uint) error
 	CreateRule(appID uint, code string, value []byte) error
@@ -23,13 +22,6 @@ func NewApplicationRuleRepository(db *gorm.DB) ApplicationRuleRepository {
 	return &applicationRuleRepository{db: db}
 }
 
-// GetByCode devuelve la regla activa de una aplicación por su código (p.ej. "PWD_STRENGTH").
-// func (r *applicationRuleRepository) GetByCode(appID uint, code string) (model.ApplicationRules, error) {
-// 	var rule model.ApplicationRules
-// 	err := r.db.Where("application_id = ? AND code = ? AND is_active = ?", appID, code, true).First(&rule).Error
-// 	return rule, err
-// }
-
 // GetRulesByAppID devuelve todas las reglas activas asociadas a una aplicación.
 func (r *applicationRuleRepository) GetRulesByAppID(appID uint) ([]model.ApplicationRules, error) {
 	var rules []model.ApplicationRules
@@ -38,7 +30,6 @@ func (r *applicationRuleRepository) GetRulesByAppID(appID uint) ([]model.Applica
 }
 
 func (r *applicationRuleRepository) CreateDefaultRules(appID uint) error {
-	// STARTER PACK de reglas para una nueva aplicación
 	defs := []model.ApplicationRules{
 		{ApplicationID: appID, Code: "REGISTRATION_POLICY", Value: []byte(`{"mode": "public", "require_email_verification": true, "default_role": "USER"}`), IsActive: true},
 		{ApplicationID: appID, Code: "PWD_POLICY", Value: []byte(`{"min_length": 8, "require_uppercase": true, "require_numbers": true, "require_symbols": true}`), IsActive: true},
@@ -56,7 +47,6 @@ func (r *applicationRuleRepository) CreateDefaultRules(appID uint) error {
 // CreateRule crea una nueva regla para la app, verificando que no exista el código
 func (r *applicationRuleRepository) CreateRule(appID uint, code string, value []byte) error {
 	var rule model.ApplicationRules
-	// Comprobar si ya existe una regla activa con ese código
 	err := r.db.Where("application_id = ? AND code = ? AND is_active = ?", appID, code, true).First(&rule).Error
 	if err == nil {
 		return gorm.ErrDuplicatedKey // Ya existe
@@ -90,7 +80,6 @@ func (r *applicationRuleRepository) UpdateRuleValue(appID uint, code string, val
 
 // DeleteRule hace un soft delete
 func (r *applicationRuleRepository) DeleteRule(appID uint, code string) error {
-	// Gorm soft delete con deleted_at y también bajamos el flag is_active
 	return r.db.Model(&model.ApplicationRules{}).
 		Where("application_id = ? AND code = ? AND is_active = ?", appID, code, true).
 		Updates(map[string]interface{}{
