@@ -96,14 +96,14 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 
 	app, plainSecret, err := ctrl.AppService.CreateApp(name, description, isActive)
 	if err != nil {
-		c.String(500, "Error creando app: %v", err)
+		c.String(500, "Error creando aplicación")
 		return
 	}
 
 	// Crear las reglas por defecto (Starter Pack) para la app recién nacida
 	if err := ctrl.RuleService.CreateDefaultRules(app.ID); err != nil {
 		// Log error pero continuamos porque la app ya fue creada exitosamente. El admin puede crear las reglas manualmente desde el dashboard.
-		c.String(500, "App creada pero error generando políticas base: %v", err)
+		c.String(500, "App creada pero error generando políticas base")
 		return
 	}
 
@@ -150,7 +150,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 		}
 
 		if err := ctrl.AppService.DeleteApp(id); err != nil {
-			c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
+			c.String(http.StatusInternalServerError, "Error eliminando aplicación")
 			return
 		}
 		c.Redirect(http.StatusSeeOther, "/admin")
@@ -159,7 +159,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 
 	err := ctrl.AppService.UpdateApp(id, description, true)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error actualizando app: %v", err)
+		c.String(http.StatusInternalServerError, "Error actualizando aplicación")
 		return
 	}
 
@@ -193,7 +193,7 @@ func (ctrl *ApplicationController) PostDeleteApp(c *gin.Context) {
 	}
 
 	if err := ctrl.AppService.DeleteApp(id); err != nil {
-		c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
+		c.String(http.StatusInternalServerError, "Error eliminando aplicación")
 		return
 	}
 
@@ -206,7 +206,7 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
 	if err != nil {
-		c.String(http.StatusNotFound, "app no encontrada: %v", err)
+		c.String(http.StatusNotFound, "Aplicación no encontrada")
 		return
 	}
 	rules, _ := ctrl.RuleService.FindRulesByAppID(app.ID)
@@ -256,7 +256,7 @@ func (ctrl *ApplicationController) PostRegenerateSecret(c *gin.Context) {
 	id := c.Param("id")
 	plainSecret, err := ctrl.AppService.RegenerateSecret(id)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "error regenerando secreto: %v", err)
+		c.String(http.StatusInternalServerError, "Error regenerando secreto")
 		return
 	}
 

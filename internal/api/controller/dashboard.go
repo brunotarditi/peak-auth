@@ -34,7 +34,7 @@ func (ctrl *DashboardController) Dashboard(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": err.Error()})
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": "Error cargando datos del dashboard"})
 		return
 	}
 
@@ -53,7 +53,7 @@ func (ctrl *DashboardController) PostResendVerification(c *gin.Context) {
 	fmt.Sscanf(userIDStr, "%d", &userID)
 
 	if err := ctrl.UserService.ResendVerification(userID, appID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No se pudo reenviar el email de verificación"})
 		return
 	}
 
@@ -75,7 +75,7 @@ func (ctrl *DashboardController) PostSendResetPassword(c *gin.Context) {
 	// Rate limit de reset
 	canReset, err := ctrl.UserService.CanRequestPasswordReset(userID)
 	if err != nil {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Debe esperar antes de solicitar un nuevo reset de contraseña"})
 		return
 	}
 
@@ -92,7 +92,7 @@ func (ctrl *DashboardController) PostSendResetPassword(c *gin.Context) {
 	}
 
 	if err := ctrl.UserService.SendResetEmail(user, app.ID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo enviar el email de recuperación"})
 		return
 	}
 

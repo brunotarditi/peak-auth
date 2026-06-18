@@ -101,7 +101,7 @@ func (ctrl *UserController) RevokeUserAccess(c *gin.Context) {
 	}
 
 	if err := ctrl.AppService.RevokeUserFromApp(userID, app.ID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo revocar el acceso del usuario"})
 		return
 	}
 

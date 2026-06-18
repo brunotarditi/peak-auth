@@ -491,11 +491,7 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 				s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
 				user.FailedLogins = 0
 			} else {
-				daysLeft := 30 - int(time.Since(user.UpdatedAt).Hours()/24)
-				if daysLeft < 1 {
-					daysLeft = 1
-				}
-				return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
+				return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Contacte al administrador de la aplicación.")
 			}
 		}
 	}
