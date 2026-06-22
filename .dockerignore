@@ -1,0 +1,38 @@
+# Control de versiones
+.git
+.gitignore
+
+# Entorno y secretos (NUNCA deben entrar a la imagen)
+.env
+.env.*
+!.env.example
+*.pem
+jwt_private.pem
+jwt_public.pem
+
+# Dependencias / artefactos de build
+node_modules
+web/node_modules
+web/static/css/output.css
+web/static/js/dist
+peak-auth
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Tests y cobertura
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Editores / IDE
+.idea
+.vscode
+
+# Docs y agentes
+AGENTS.md
+README.md
+LICENSE
