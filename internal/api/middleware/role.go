@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
@@ -8,88 +9,183 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// PlatformScope contiene los privilegios de alto nivel del usuario
+type PlatformScope struct {
+	IsRoot          bool
+	IsPlatformAdmin bool
+}
+
+// RoleMiddleware autoriza el acceso a una aplicación concreta identificada por el
+// parámetro de ruta :id. Reglas (de mayor a menor privilegio):
+//  1. ROOT o ADMIN en la app raíz (peak-auth) -> acceso concedido (plataforma).
+//  2. Sobre la app destino: el usuario debe PERTENECER a ella y además tener
+//     alguno de los roles requeridos (típicamente ADMIN). Si pertenece pero no
+//     tiene el rol -> 403 privilegios insuficientes. Si no pertenece -> 403.
 func RoleMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository, requiredRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if len(requiredRoles) == 0 {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "se requiere al menos un rol"})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "configuración inválida: se requiere al menos un rol"})
 			return
 		}
 
-		valUser, exists := c.Get("user_id")
-		if !exists || valUser == nil {
+		userID, ok := currentUserID(c)
+		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "usuario no autenticado"})
 			return
 		}
-		userID := valUser.(uint)
 
-		// 1. Identifica la APP de destino
-		appSlug := c.Param("id")
-		var targetAppID uint = 1 // Por defecto Peak Auth Admin
-		if appSlug != "" {
-			app, err := appRepo.FindByAppID(appSlug)
-			if err == nil {
-				targetAppID = app.ID
-			}
-		}
+		// 1. Verificar privilegios de plataforma (ROOT o ADMIN global)
+		scope := resolvePlatformScope(c, uarRepo, appRepo, userID)
 
-		// 2. Identifica si el usuario es ROOT a nivel global (en Peak Auth Admin)
-		masterApp, err := appRepo.FindByAppID(util.AppIdPeakAuth)
-		isRoot := false
-		if err == nil {
-			globalRoles, _ := uarRepo.GetUserRolesInApp(userID, masterApp.ID)
-			for _, r := range globalRoles {
-				if r == "ROOT" {
-					isRoot = true
-					c.Set("user_roles", globalRoles)
-					break
-				}
-			}
-		}
-
-		// Si es ROOT, pasa directo (bypass)
-		if isRoot {
+		if scope.IsRoot {
 			c.Set("is_root", true)
+			c.Set("is_platform_admin", true)
 			c.Next()
 			return
 		}
 
-		// Si es el panel de administración principal y el usuario tiene el rol ADMIN en cualquier aplicación, le dejamos pasar
-		if err == nil && targetAppID == masterApp.ID {
-			hasLocalAdmin, err := uarRepo.HasAdminRoleInAnyApp(userID)
-			if err == nil && hasLocalAdmin {
-				c.Set("user_roles", []string{"ADMIN"})
-				c.Next()
-				return
-			}
-		}
-
-		// 3. Si no es ROOT, validamos roles en la APP destino
-		roles, err := uarRepo.GetUserRolesInApp(userID, targetAppID)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "no tienes permisos en esta aplicación"})
+		if scope.IsPlatformAdmin {
+			c.Set("is_platform_admin", true)
+			c.Next()
 			return
 		}
 
-		roleSet := make(map[string]bool, len(roles))
-		for _, r := range roles {
-			roleSet[r] = true
+		// 2. Verificar acceso a la aplicación específica
+		appID, err := getTargetAppID(c, appRepo)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
 		}
+
+		// 3. ¿Pertenece el usuario a esta aplicación?
+		belongs, err := uarRepo.BelongsToApp(userID, appID)
+		if err != nil || !belongs {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "no tienes acceso a esta aplicación"})
+			return
+		}
+
+		// 4. ¿Tiene alguno de los roles requeridos?
+		roles, err := uarRepo.GetUserRolesInApp(userID, appID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "error al obtener roles"})
+			return
+		}
+
 		c.Set("user_roles", roles)
 
-		// Verificar si tiene rol requerido
-		for _, rr := range requiredRoles {
-			if roleSet[rr] {
+		roleSet := make(map[string]struct{}, len(roles))
+		for _, r := range roles {
+			roleSet[r] = struct{}{}
+		}
+
+		for _, required := range requiredRoles {
+			if _, hasRole := roleSet[required]; hasRole {
 				c.Next()
 				return
 			}
 		}
 
-		// Fallback: Si es ADMIN de la app destino, también le dejamos pasar
-		if roleSet["ADMIN"] || roleSet["admin"] {
-			c.Next()
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "privilegios insuficientes"})
+	}
+}
+
+// PlatformAdminMiddleware restringe una ruta a ROOT o ADMIN de la app raíz.
+// Se usa para acciones globales: crear/eliminar aplicaciones y gestionar el
+// catálogo de roles globales del sistema.
+func PlatformAdminMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, ok := currentUserID(c)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "usuario no autenticado"})
 			return
 		}
 
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "no tienes los privilegios necesarios"})
+		scope := resolvePlatformScope(c, uarRepo, appRepo, userID)
+
+		if !scope.IsRoot && !scope.IsPlatformAdmin {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "se requieren privilegios de administrador de plataforma"})
+			return
+		}
+
+		c.Set("is_root", scope.IsRoot)
+		c.Set("is_platform_admin", true)
+		c.Next()
 	}
+}
+
+// RootOnlyMiddleware restringe una ruta exclusivamente al rol ROOT (operaciones
+// destructivas a nivel plataforma).
+func RootOnlyMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, ok := currentUserID(c)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "usuario no autenticado"})
+			return
+		}
+
+		scope := resolvePlatformScope(c, uarRepo, appRepo, userID)
+		if !scope.IsRoot {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "se requiere rol ROOT"})
+			return
+		}
+
+		c.Set("is_root", true)
+		c.Set("is_platform_admin", true)
+		c.Next()
+	}
+}
+
+// resolvePlatformScope determina el alcance del usuario a nivel plataforma:
+//   - isRoot:          rol ROOT en la app raíz (peak-auth) -> superusuario, bypass total.
+//   - isPlatformAdmin: rol ADMIN en la app raíz (peak-auth) -> administra todo el panel.
+//
+// Estas son las ÚNICAS dos formas de obtener privilegios sobre toda la plataforma.
+// Tener ADMIN en una app externa NO otorga ningún privilegio de plataforma.
+func resolvePlatformScope(c *gin.Context, uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository, userID uint) PlatformScope {
+	masterApp, err := appRepo.FindByAppID(util.AppIdPeakAuth)
+	if err != nil {
+		return PlatformScope{}
+	}
+
+	roles, err := uarRepo.GetUserRolesInApp(userID, masterApp.ID)
+	if err != nil {
+		return PlatformScope{}
+	}
+
+	var scope PlatformScope
+	for _, r := range roles {
+		switch r {
+		case "ROOT":
+			scope.IsRoot = true
+			scope.IsPlatformAdmin = true
+			return scope // early return
+		case "ADMIN":
+			scope.IsPlatformAdmin = true
+		}
+	}
+	return scope
+}
+
+// currentUserID extrae y valida el user_id inyectado por AuthMiddleware.
+func currentUserID(c *gin.Context) (uint, bool) {
+	val, exists := c.Get("user_id")
+	if !exists || val == nil {
+		return 0, false
+	}
+	id, ok := val.(uint)
+	return id, ok
+}
+
+func getTargetAppID(c *gin.Context, appRepo repo.ApplicationRepository) (uint, error) {
+	slug := c.Param("id")
+	if !util.IsValidSlug(slug) {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "formato de slug inválido"})
+		return 0, fmt.Errorf("invalid app slug")
+	}
+
+	app, err := appRepo.FindByAppID(slug)
+	if err != nil {
+		return 0, err
+	}
+	return app.ID, nil
 }

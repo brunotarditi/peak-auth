@@ -1,31 +1,42 @@
 package middleware
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
+	"peak-auth/internal/store/repo"
+	"peak-auth/internal/util"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func AppContextMiddleware() gin.HandlerFunc {
+func AppContextMiddleware(appRepo repo.ApplicationRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		appIDStr := c.Param("id")
-		if appIDStr == "" {
-			// Si no hay ID en la URL, quizás estamos en la raíz del admin (Peak)
-			// Aquí podrías setear el ID de Peak por defecto o dejarlo pasar
+		slug := c.Param("id") // o c.Param("slug") si cambias el nombre
+		if slug == "" {
 			c.Next()
 			return
 		}
 
-		var appID uint
-		_, err := fmt.Sscanf(appIDStr, "%d", &appID)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID de aplicación malformado"})
+		if !util.IsValidSlug(slug) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "slug de aplicación inválido"})
 			return
 		}
 
-		// Guardamos el ID real como uint para que los servicios/repos no tengan que castear
-		c.Set("current_app_id", appID)
+		app, err := appRepo.FindByAppID(slug)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "aplicación no encontrada"})
+			} else {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "error interno"})
+			}
+			return
+		}
+
+		c.Set("current_app", app)
+		c.Set("current_app_id", app.ID)
+		c.Set("current_app_slug", app.AppID)
+
 		c.Next()
 	}
 }
