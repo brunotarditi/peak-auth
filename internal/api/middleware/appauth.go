@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"peak-auth/internal/store/repo"
@@ -15,33 +16,33 @@ func AppAuthMiddleware(appRepo repo.ApplicationRepository) gin.HandlerFunc {
 		appID := c.GetHeader("X-App-Id")
 		secret := c.GetHeader("X-App-Secret")
 
-		if appID == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "X-App-Id header requerido"})
-			return
-		}
-		if secret == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "X-App-Secret header requerido"})
+		if appID == "" || secret == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"error": "se requieren headers X-App-Id y X-App-Secret",
+			})
 			return
 		}
 
 		app, err := appRepo.ValidateSecret(appID, secret)
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
-				log.Printf("intento de autenticación con app_id=%s fallido: credenciales inválidas", appID)
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				log.Printf("Intento de auth fallido - AppID: %s", appID)
 			} else {
-				log.Printf("error validando app_id=%s: %v", appID, err)
+				log.Printf("Error validando AppID %s: %v", appID, err)
 			}
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "credenciales de aplicación inválidas"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "credenciales inválidas"})
 			return
 		}
 
 		if !app.IsActive {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "aplicación desactivada"})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "la aplicación está desactivada"})
 			return
 		}
 
 		c.Set("app_id", app.ID)
 		c.Set("app", app)
+		c.Set("is_app_authenticated", true)
+
 		c.Next()
 	}
 }
