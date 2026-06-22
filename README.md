@@ -108,7 +108,14 @@ app.get("/api/protected", (req, res) => {
   if (!token) return res.status(401).json({ error: "No token" });
 
   try {
-    const decoded = jwt.verify(token, publicKeyPEM, { algorithms: ["RS256"] });
+    // Validar firma, algoritmo, emisor (issuer) y audiencia (tu app_id).
+    // La verificación de `audience` impide que un token emitido para OTRA
+    // aplicación sea aceptado por la tuya.
+    const decoded = jwt.verify(token, publicKeyPEM, {
+      algorithms: ["RS256"],
+      issuer: "peak-auth",
+      audience: "TU_APP_ID",
+    });
     res.json({ message: "Acceso permitido", user: decoded });
   } catch (err) {
     res.status(403).json({ error: "Token inválido" });
