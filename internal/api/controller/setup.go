@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"os"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
@@ -28,7 +27,8 @@ func (ctrl *SetupController) ShowSetup(c *gin.Context) {
 		c.String(403, "Token de setup inválido")
 		return
 	}
-	c.HTML(200, "setup.html", gin.H{"SetupToken": token})
+	csrf, _ := c.Get("csrf_token")
+	c.HTML(200, "setup.html", gin.H{"SetupToken": token, "CSRFToken": csrf})
 }
 
 func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
@@ -60,7 +60,7 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		return
 	}
 
-	isSecure := os.Getenv("ENV") == "production"
+	isSecure := util.IsProduction()
 	c.SetCookie(
 		"admin_token", // Nombre
 		tokenString,   // Valor (JWT)
