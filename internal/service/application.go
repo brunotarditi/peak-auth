@@ -6,6 +6,7 @@ import (
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
+	"strings"
 	"time"
 )
 
@@ -89,9 +90,16 @@ func (s *applicationService) ValidateAppNameUnique(name string) error {
 
 func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *model.Application) error {
 
-	role, err := s.roleRepo.FindByRoleName(roleName)
+	// No se permite asignar el rol de superusuario de plataforma desde la
+	// gestión de usuarios de una app.
+	if strings.EqualFold(roleName, "ROOT") {
+		return fmt.Errorf("no se puede asignar el rol ROOT")
+	}
+
+	// Resolver el rol con alcance de la app: primero rol propio, luego global.
+	role, err := s.roleRepo.FindByNameForApp(roleName, app.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("el rol indicado no existe para esta aplicación")
 	}
 
 	return s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
