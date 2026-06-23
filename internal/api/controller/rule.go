@@ -33,8 +33,7 @@ func (ctrl *RuleController) PostAppRule(c *gin.Context) {
 
 	err = ctrl.RuleService.CreateRule(app.ID, code, body)
 	if err != nil {
-		// Asumiendo que si el error es de gorm duplicado, devolvemos un 409
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -93,7 +92,7 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 
 	err = ctrl.RuleService.UpdateRuleValue(app.ID, code, body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
