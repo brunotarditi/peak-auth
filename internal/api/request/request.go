@@ -6,7 +6,7 @@ import (
 )
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -14,7 +14,7 @@ type RegisterRequest struct {
 	Username  string `json:"username" binding:"required"`
 	Email     string `json:"email" binding:"required,email"`
 	AppID     string `json:"app_id" binding:"required"`
-	Password  string `json:"password" binding:"required,min=6"`
+	Password  string `json:"password" binding:"required,min=6,max=72"`
 	FirstName string `json:"first_name" binding:"required,max=50"`
 	LastName  string `json:"last_name" binding:"required,max=50"`
 }
