@@ -2,7 +2,7 @@ package controller
 
 import (
 	"fmt"
-
+	"log"
 	"net/http"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/service"
@@ -19,27 +19,33 @@ type DashboardController struct {
 // Dashboard renderiza el dashboard
 func (ctrl *DashboardController) Dashboard(c *gin.Context) {
 	isRoot, _ := c.Get("is_root")
+	isPlatformAdmin, _ := c.Get("is_platform_admin")
 	valUser, _ := c.Get("user_id")
 
 	rootStatus, _ := isRoot.(bool)
+	platformStatus, _ := isPlatformAdmin.(bool)
 	userID, _ := valUser.(uint)
 
 	var stats []response.AppStatsResponse
 	var err error
 
-	if rootStatus {
+	// ROOT y administradores de plataforma ven todas las apps.
+	// Un app-admin solo ve las apps a las que pertenece.
+	if rootStatus || platformStatus {
 		stats, err = ctrl.AppService.GetDashboardStats()
 	} else {
 		stats, err = ctrl.AppService.GetDashboardStatsForUser(userID)
 	}
 
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": "Error cargando datos del dashboard"})
+		log.Printf("[error] Dashboard stats: %v", err)
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": "No se pudieron cargar las aplicaciones"})
 		return
 	}
 
 	ctrl.renderAdmin(c, "dashboard.html", gin.H{
 		"Applications": stats,
+		"IsPlatform":   rootStatus || platformStatus,
 		"Breadcrumbs":  nil,
 		"Title":        "Dashboard",
 	})
@@ -92,7 +98,7 @@ func (ctrl *DashboardController) PostSendResetPassword(c *gin.Context) {
 	}
 
 	if err := ctrl.UserService.SendResetEmail(user, app.ID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo enviar el email de recuperación"})
+		internalErrorJSON(c, "SendResetEmail", err)
 		return
 	}
 
