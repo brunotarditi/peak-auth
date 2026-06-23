@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
 
@@ -26,8 +27,10 @@ func (c *UserController) GetResetPassword(ctx *gin.Context) {
 	}
 
 	// Renderizamos el template de reset-password
+	csrf, _ := ctx.Get("csrf_token")
 	ctx.HTML(200, "reset_password.html", gin.H{
-		"token": token,
+		"token":     token,
+		"CSRFToken": csrf,
 	})
 }
 
@@ -101,9 +104,11 @@ func (ctrl *UserController) RevokeUserAccess(c *gin.Context) {
 	}
 
 	if err := ctrl.AppService.RevokeUserFromApp(userID, app.ID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo revocar el acceso del usuario"})
+		internalErrorJSON(c, "RevokeUserFromApp", err)
 		return
 	}
+
+	audit.Event(c, "user.revoke", fmt.Sprintf("app=%s user=%d", app.AppID, userID))
 
 	c.JSON(http.StatusOK, gin.H{"message": "Acceso revocado"})
 }
@@ -131,7 +136,7 @@ func (ctrl *UserController) GetAppUsers(c *gin.Context) {
 		return
 	}
 
-	roles, err := ctrl.RoleService.FindAll()
+	roles, err := ctrl.RoleService.FindVisibleForApp(app.ID)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Error al cargar los roles")
 		return
