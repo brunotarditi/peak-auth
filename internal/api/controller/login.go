@@ -2,9 +2,11 @@ package controller
 
 import (
 	"net/http"
-	"os"
+	"net/url"
 	"peak-auth/internal/api/request"
+	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
+	"peak-auth/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,8 +41,10 @@ func (c *LoginController) Login(ctx *gin.Context) {
 
 // GetLoginForm renderiza el formulario de login
 func (ctrl *LoginController) GetLoginForm(c *gin.Context) {
+	csrf, _ := c.Get("csrf_token")
 	c.HTML(http.StatusOK, "login.html", gin.H{
-		"Error": c.Query("error"),
+		"Error":     c.Query("error"),
+		"CSRFToken": csrf,
 	})
 }
 
@@ -51,13 +55,18 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 
 	token, expireMinutes, err := ctrl.UserService.AdminLogin(email, password)
 	if err != nil {
-		c.Redirect(http.StatusSeeOther, "/admin/login?error="+err.Error())
+		audit.EventResult(c, "admin.login", "email="+email, false, err.Error())
+		// El mensaje proviene de errores de dominio controlados; se URL-encodea
+		// para evitar cualquier inyección en la query string.
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape(err.Error()))
 		return
 	}
 
+	audit.EventResult(c, "admin.login", "email="+email, true, "")
+
 	// Configuración de cookie segura
 	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := os.Getenv("ENV") == "production"
+	isSecure := util.IsProduction()
 
 	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
 	c.Redirect(http.StatusSeeOther, "/admin")
@@ -66,7 +75,7 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 // PostLogout cierra la sesión
 func (ctrl *LoginController) PostLogout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := os.Getenv("ENV") == "production"
+	isSecure := util.IsProduction()
 	c.SetCookie("admin_token", "", -1, "/", "", isSecure, true)
 	c.Redirect(http.StatusSeeOther, "/admin/login")
 }
