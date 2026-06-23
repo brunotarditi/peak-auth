@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"net/http"
+	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
 
@@ -96,16 +97,18 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 
 	app, plainSecret, err := ctrl.AppService.CreateApp(name, description, isActive)
 	if err != nil {
-		c.String(500, "Error creando aplicación")
+		c.String(500, "Error creando app: %v", err)
 		return
 	}
 
 	// Crear las reglas por defecto (Starter Pack) para la app recién nacida
 	if err := ctrl.RuleService.CreateDefaultRules(app.ID); err != nil {
 		// Log error pero continuamos porque la app ya fue creada exitosamente. El admin puede crear las reglas manualmente desde el dashboard.
-		c.String(500, "App creada pero error generando políticas base")
+		c.String(500, "App creada pero error generando políticas base: %v", err)
 		return
 	}
+
+	audit.Event(c, "app.create", "app="+app.AppID)
 
 	ctrl.renderAdmin(c, "app_created.html", gin.H{
 		"App":         app,
@@ -115,55 +118,30 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 	})
 }
 
-// UpdateFormApp actualiza una aplicación
+// UpdateFormApp actualiza una aplicación (descripción y estado activo/inactivo).
+// La ELIMINACIÓN es una operación separada y explícita (ver PostDeleteApp).
 func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 	id := c.Param("id")
 	_ = c.PostForm("name")
 	description := c.PostForm("description")
 	isActive := c.PostForm("is_active") == "on"
 
-	if !isActive {
-		if id == util.AppIdPeakAuth {
-			ctrl.renderAdmin(c, "error.html", gin.H{
-				"error":       "La aplicación principal (Peak Auth Raíz) no puede ser desactivada ni eliminada. Es el núcleo del sistema SSO.",
-				"Title":       "Operación Bloqueada",
-				"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Error"}},
-			})
-			return
-		}
-
-		// Verificar rol ROOT para la eliminación
-		roles, _ := c.Get("user_roles")
-		isRoot := false
-		if rList, ok := roles.([]string); ok {
-			for _, rol := range rList {
-				if rol == "ROOT" {
-					isRoot = true
-					break
-				}
-			}
-		}
-
-		if !isRoot {
-			c.String(http.StatusForbidden, "Se requiere rol ROOT para desactivar/eliminar aplicaciones")
-			return
-		}
-
-		if err := ctrl.AppService.DeleteApp(id); err != nil {
-			c.String(http.StatusInternalServerError, "Error eliminando aplicación")
-			return
-		}
-		c.Redirect(http.StatusSeeOther, "/admin")
+	// La app raíz no puede desactivarse.
+	if !isActive && id == util.AppIdPeakAuth {
+		ctrl.renderAdmin(c, "error.html", gin.H{
+			"error":       "La aplicación principal (Peak Auth Raíz) no puede ser desactivada. Es el núcleo del sistema SSO.",
+			"Title":       "Operación Bloqueada",
+			"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Error"}},
+		})
 		return
 	}
 
-	err := ctrl.AppService.UpdateApp(id, description, true)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Error actualizando aplicación")
+	if err := ctrl.AppService.UpdateApp(id, description, isActive); err != nil {
+		c.String(http.StatusInternalServerError, "Error actualizando app: %v", err)
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/admin")
+	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id)
 }
 
 // PostDeleteApp maneja la eliminación real (lógica) de una aplicación
@@ -175,17 +153,9 @@ func (ctrl *ApplicationController) PostDeleteApp(c *gin.Context) {
 		return
 	}
 
-	// Solo ROOT puede eliminar
-	roles, _ := c.Get("user_roles")
-	isRoot := false
-	if rList, ok := roles.([]string); ok {
-		for _, r := range rList {
-			if r == "ROOT" {
-				isRoot = true
-				break
-			}
-		}
-	}
+	// Solo ROOT puede eliminar (garantizado por RootOnlyMiddleware; defensa en profundidad)
+	isRootVal, _ := c.Get("is_root")
+	isRoot, _ := isRootVal.(bool)
 
 	if !isRoot {
 		c.String(http.StatusForbidden, "Se requiere rol ROOT para eliminar aplicaciones de manera permanente de la vista")
@@ -193,9 +163,11 @@ func (ctrl *ApplicationController) PostDeleteApp(c *gin.Context) {
 	}
 
 	if err := ctrl.AppService.DeleteApp(id); err != nil {
-		c.String(http.StatusInternalServerError, "Error eliminando aplicación")
+		c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
 		return
 	}
+
+	audit.Event(c, "app.delete", "app="+id)
 
 	// Redirigir al dashboard principal porque la app ya no existe a la vista
 	c.Redirect(http.StatusSeeOther, "/admin")
@@ -206,12 +178,12 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
 	if err != nil {
-		c.String(http.StatusNotFound, "Aplicación no encontrada")
+		c.String(http.StatusNotFound, "app no encontrada: %v", err)
 		return
 	}
 	rules, _ := ctrl.RuleService.FindRulesByAppID(app.ID)
 	users, _ := ctrl.UserService.FindUserByAppID(id)
-	roles, _ := ctrl.RoleService.FindAll()
+	roles, _ := ctrl.RoleService.FindVisibleForApp(app.ID)
 
 	var regPolicy *util.RegistrationPolicy
 	var pwdPolicy *util.PasswordPolicy
@@ -234,6 +206,9 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 		}
 	}
 
+	isRootVal, _ := c.Get("is_root")
+	isRoot, _ := isRootVal.(bool)
+
 	ctrl.renderAdmin(c, "app_show.html", gin.H{
 		"App":           app,
 		"Rules":         rules,
@@ -243,6 +218,7 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 		"AuthzPolicy":   authzPolicy,
 		"UserCount":     len(users),
 		"Roles":         roles,
+		"IsRoot":        isRoot,
 		"Breadcrumbs": []gin.H{
 			{"Label": "Apps", "URL": "/admin"},
 			{"Label": app.Name},
@@ -256,9 +232,11 @@ func (ctrl *ApplicationController) PostRegenerateSecret(c *gin.Context) {
 	id := c.Param("id")
 	plainSecret, err := ctrl.AppService.RegenerateSecret(id)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error regenerando secreto")
+		c.String(http.StatusInternalServerError, "error regenerando secreto: %v", err)
 		return
 	}
+
+	audit.Event(c, "app.secret.regenerate", "app="+id)
 
 	app, _ := ctrl.AppService.GetAppDetails(id)
 
