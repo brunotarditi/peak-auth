@@ -58,7 +58,7 @@ func Asset(path string) string {
 
 // JS retorna la ruta de un script, permitiendo cargar versiones .min.js en producción
 func JS(name string) string {
-	isProd := os.Getenv("ENV") == "production"
+	isProd := IsProduction()
 	cleanName := strings.TrimSpace(name)
 
 	if isProd {
