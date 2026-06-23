@@ -38,13 +38,13 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	txManager := repo.NewTransactionManager(db)
 
 	// 2. Inicializar Servicios inyectando los repos
-	ruleService := service.NewApplicationRuleService(ruleRepo, uarRepo, roleRepo)
+	ruleService := service.NewApplicationRuleService(ruleRepo, uarRepo, roleRepo, appRepo)
 
 	emailService := service.NewEmailService()
 	appService := service.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo)
-	userService := service.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo, emailService, refreshRepo)
+	userService := service.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo, emailService, refreshRepo, txManager)
 	setupService := service.NewSetupService(setupRepo, setupToken, txManager)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := service.NewRoleService(roleRepo, ruleRepo)
 
 	return &App{
 		DB:           db,
