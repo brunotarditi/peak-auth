@@ -50,11 +50,23 @@ func ParseRegistrationPolicy(raw []byte) (*RegistrationPolicy, error) {
 	return &r, nil
 }
 
+// ValidatePasswordLength garantiza que la contraseña no exceda el límite de bcrypt.
+func ValidatePasswordLength(password string) error {
+	if len(password) > BcryptMaxPasswordBytes {
+		return fmt.Errorf("la contraseña no puede superar los %d caracteres", BcryptMaxPasswordBytes)
+	}
+	return nil
+}
+
 // ValidatePasswordPolicy checks if a plaintext password satisfies the configured constraints.
 func ValidatePasswordPolicy(raw []byte, password string) error {
 	var r PasswordPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
 		return fmt.Errorf("invalid PWD_POLICY rule: %w", err)
+	}
+
+	if err := ValidatePasswordLength(password); err != nil {
+		return err
 	}
 
 	if r.MinLength > 0 && len(password) < r.MinLength {
@@ -101,7 +113,7 @@ func ParseAuthzPolicy(raw []byte) (*AuthzPolicy, error) {
 
 // ValidatePasswordStrength checks a password against hardcoded best practices (for root/setup)
 func ValidatePasswordStrength(password string) bool {
-	if len(password) < 8 {
+	if len(password) < 8 || len(password) > BcryptMaxPasswordBytes {
 		return false
 	}
 	hasUpper, _ := regexp.MatchString("[A-Z]", password)
