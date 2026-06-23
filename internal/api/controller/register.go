@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"peak-auth/internal/api/request"
+	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
 
@@ -57,6 +58,7 @@ func (ctrl *RegisterController) PostUsersInApp(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	audit.Event(c, "user.assign", "app="+app.AppID+" email="+email+" role="+role)
 	c.JSON(http.StatusOK, gin.H{"message": "Usuario vinculado con éxito"})
 }
 
