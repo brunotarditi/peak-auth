@@ -15,8 +15,8 @@ function closeRoleModal() {
     document.getElementById('roleForm').reset();
 }
 
-// Crear un nuevo rol
-async function createRole(event) {
+// Crear un nuevo rol propio de la aplicación
+async function createRole(event, appID) {
     event.preventDefault();
     const btn = document.getElementById('submitRoleBtn');
     const roleNameInput = document.getElementById('roleName');
@@ -26,7 +26,7 @@ async function createRole(event) {
     btn.innerText = 'Creando...';
 
     try {
-        const response = await fetch('/admin/roles', {
+        const response = await fetch(`/admin/apps/${appID}/roles`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: roleName })
@@ -39,6 +39,7 @@ async function createRole(event) {
             select.value = roleName;
             closeRoleModal();
             showToast('Rol creado con éxito');
+            setTimeout(() => window.location.reload(), 800);
         } else {
             const data = await response.json();
             peakAlert('Error', data.error || 'No se pudo crear el rol', 'error');
@@ -51,8 +52,8 @@ async function createRole(event) {
     }
 }
 
-// Eliminar un rol
-async function deleteRole(roleName) {
+// Eliminar un rol propio de la aplicación
+async function deleteRole(roleName, appID) {
     const confirmed = await peakConfirm({
         title: `¿Eliminar rol "${roleName}"?`,
         text: 'Se verificará que ningún usuario tenga este rol asignado. Si alguien lo tiene, no podrá eliminarse.',
@@ -63,10 +64,9 @@ async function deleteRole(roleName) {
     if (!confirmed) return;
 
     try {
-        const response = await fetch('/admin/roles', {
+        const response = await fetch(`/admin/apps/${appID}/roles/${encodeURIComponent(roleName)}`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: roleName })
+            headers: { 'Content-Type': 'application/json' }
         });
 
         const data = await response.json();

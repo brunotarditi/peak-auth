@@ -47,14 +47,16 @@ document.addEventListener("DOMContentLoaded", () => {
         form.addEventListener("submit", (event) => {
             const checkbox = document.getElementById("is_active");
 
+            // Desmarcar el switch desactiva la app (NO la elimina). La eliminación
+            // es una acción separada y explícita (botón "Eliminar aplicación").
             if (checkbox && !checkbox.checked) {
                 event.preventDefault();
 
                 peakConfirm({
-                    title: "¿Desactivar y Eliminar aplicación?",
-                    text: "La aplicación se desactivará...",
-                    confirmText: "Sí, eliminar",
-                    type: "danger"
+                    title: "¿Desactivar aplicación?",
+                    text: "La aplicación quedará inactiva y sus usuarios no podrán autenticarse hasta reactivarla. No se eliminará ningún dato.",
+                    confirmText: "Sí, desactivar",
+                    type: "warning"
                 }).then((confirmed) => {
                     if (confirmed) {
                         form.submit();
