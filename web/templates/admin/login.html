@@ -29,6 +29,7 @@
             <h2 class="text-xl font-bold mb-8 text-slate-800 dark:text-white">Bienvenido al Panel</h2>
 
             <form action="/admin/login" method="POST" class="space-y-6">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                 <div>
                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Email
                         Administrador</label>
