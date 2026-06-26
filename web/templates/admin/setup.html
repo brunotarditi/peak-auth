@@ -32,6 +32,7 @@
 
             <form id="setupForm" action="/setup" method="POST" class="space-y-6" novalidate>
                 <input type="hidden" name="token" value="{{.SetupToken}}">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 
                 <div>
                     <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Email del
