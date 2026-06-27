@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"peak-auth/internal/util"
 
@@ -72,19 +73,11 @@ func (s *EmailService) SendVerificationEmail(toEmail string, token string, appNa
 		appName = "Peak Auth"
 	}
 
-	host := os.Getenv("HOST")
-	if host == "" {
-		host = "localhost"
-	}
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "9009"
-	}
-
-	link := fmt.Sprintf("http://%s:%s/verify?token=%s", host, port, token)
+	baseURL := util.BaseURL()
+	link := fmt.Sprintf("%s/verify?token=%s", baseURL, url.QueryEscape(token))
 	subject := fmt.Sprintf("Activa tu cuenta en %s", appName)
 
-	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
+	logoURL := fmt.Sprintf("%s/static/img/logo.png", baseURL)
 	html, err := util.RenderVerificationEmail("web/templates/emails/verify.html", map[string]string{
 		"Link":    link,
 		"AppName": appName,
@@ -98,19 +91,11 @@ func (s *EmailService) SendVerificationEmail(toEmail string, token string, appNa
 }
 
 func (s *EmailService) SendPasswordResetEmail(toEmail string, token string) error {
-	host := os.Getenv("HOST")
-	if host == "" {
-		host = "localhost"
-	}
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "9009"
-	}
-
-	link := fmt.Sprintf("http://%s:%s/reset-password?token=%s", host, port, token)
+	baseURL := util.BaseURL()
+	link := fmt.Sprintf("%s/reset-password?token=%s", baseURL, url.QueryEscape(token))
 	subject := "Restablece tu contraseña - Peak Auth"
 
-	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
+	logoURL := fmt.Sprintf("%s/static/img/logo.png", baseURL)
 	html, err := util.RenderVerificationEmail("web/templates/emails/reset.html", map[string]string{
 		"Link":    link,
 		"LogoURL": logoURL,
@@ -123,19 +108,11 @@ func (s *EmailService) SendPasswordResetEmail(toEmail string, token string) erro
 }
 
 func (s *EmailService) SendActivationEmail(toEmail string, token string, appName string) error {
-	host := os.Getenv("HOST")
-	if host == "" {
-		host = "localhost"
-	}
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "9009"
-	}
-
-	link := fmt.Sprintf("http://%s:%s/reset-password?token=%s", host, port, token)
+	baseURL := util.BaseURL()
+	link := fmt.Sprintf("%s/reset-password?token=%s", baseURL, url.QueryEscape(token))
 	subject := fmt.Sprintf("Bienvenido a %s - Activa tu cuenta", appName)
 
-	logoURL := fmt.Sprintf("http://%s:%s/static/img/logo.png", host, port)
+	logoURL := fmt.Sprintf("%s/static/img/logo.png", baseURL)
 	html, err := util.RenderVerificationEmail("web/templates/emails/reset.html", map[string]string{
 		"Link":    link,
 		"LogoURL": logoURL,
