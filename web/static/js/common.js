@@ -83,7 +83,7 @@ async function copyToClipboard(text, btn) {
  * @returns {Promise<boolean>}
  */
 async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'danger' }) {
-    const palette = window.PeakPalette || { error: '#b91c1c', warning: '#e5e843', secondary: '#3075ad' };
+    const palette = window.PeakPalette || { error: '#b91c1c', warning: '#e5e843', secondary: '#3075ad', cancel: '#64748b' };
     
     const colorMap = {
         danger: { confirm: palette.error, iconColor: palette.error },
@@ -92,9 +92,7 @@ async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'dan
     };
     const colors = colorMap[type] || colorMap.danger;
 
-    const isDark = document.documentElement.classList.contains('dark');
-    const background = isDark ? '#1e293b' : '#fff';
-    const color = isDark ? '#f8fafc' : '#0f172a';
+    const themeConfig = window.getPeakThemeConfig ? window.getPeakThemeConfig() : { background: '#fff', color: '#0f172a' };
 
     const result = await Swal.fire({
         title: title,
@@ -104,10 +102,10 @@ async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'dan
         confirmButtonText: confirmText,
         cancelButtonText: 'Cancelar',
         confirmButtonColor: colors.confirm,
-        cancelButtonColor: '#64748b',
+        cancelButtonColor: palette.cancel,
         iconColor: colors.iconColor,
-        background: background,
-        color: color,
+        background: themeConfig.background,
+        color: themeConfig.color,
         reverseButtons: true,
         customClass: {
             popup: 'rounded-3xl',
@@ -126,24 +124,23 @@ async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'dan
  * @param {string} icon - 'error' | 'success' | 'info' | 'warning'
  */
 function peakAlert(title, text, icon = 'error') {
+    const palette = window.PeakPalette || { error: '#b91c1c', warning: '#e5e843', secondary: '#3075ad', success: '#10b981' };
     const colorMap = {
-        error: '#e11d48',
-        success: '#10b981',
-        info: '#6366f1',
-        warning: '#f59e0b'
+        error: palette.error,
+        success: palette.success,
+        info: palette.secondary,
+        warning: palette.warning
     };
-    const isDark = document.documentElement.classList.contains('dark');
-    const background = isDark ? '#1e293b' : '#fff';
-    const color = isDark ? '#f8fafc' : '#0f172a';
+    const themeConfig = window.getPeakThemeConfig ? window.getPeakThemeConfig() : { background: '#fff', color: '#0f172a' };
 
     Swal.fire({
         title: title,
         text: text,
         icon: icon,
         confirmButtonText: 'Entendido',
-        confirmButtonColor: colorMap[icon] || '#6366f1',
-        background: background,
-        color: color,
+        confirmButtonColor: colorMap[icon] || palette.secondary,
+        background: themeConfig.background,
+        color: themeConfig.color,
         customClass: {
             popup: 'rounded-3xl',
             confirmButton: 'rounded-xl font-bold'
