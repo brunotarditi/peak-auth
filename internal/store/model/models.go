@@ -66,8 +66,13 @@ type RefreshToken struct {
 
 type Role struct {
 	gorm.Model
-	Name      string `gorm:"type:varchar(100);uniqueIndex;not null"`
-	IsDefault bool   `gorm:"default:false"`
+	Name string `gorm:"type:varchar(100);index:idx_role_name_app,unique;not null"`
+	// ApplicationID define el alcance del rol:
+	//   - nil  -> rol GLOBAL del sistema (ROOT, ADMIN, USER), visible para todas las apps.
+	//   - !nil -> rol PROPIO de una aplicación, visible/asignable solo dentro de esa app.
+	ApplicationID *uint        `gorm:"index:idx_role_name_app,unique"`
+	Application   *Application `gorm:"foreignKey:ApplicationID"`
+	IsDefault     bool         `gorm:"default:false"`
 }
 
 type User struct {
@@ -83,9 +88,9 @@ type User struct {
 
 type UserApplicationRole struct {
 	gorm.Model
-	UserID        uint        `gorm:"not null;index"`
-	ApplicationID uint        `gorm:"not null;index"`
-	RoleID        uint        `gorm:"not null;index"`
+	UserID        uint        `gorm:"not null;index:idx_uar_unique,unique"`
+	ApplicationID uint        `gorm:"not null;index:idx_uar_unique,unique"`
+	RoleID        uint        `gorm:"not null;index:idx_uar_unique,unique"`
 	User          User        `gorm:"foreignKey:UserID"`
 	Application   Application `gorm:"foreignKey:ApplicationID"`
 	Role          Role        `gorm:"foreignKey:RoleID"`
