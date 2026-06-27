@@ -7,14 +7,15 @@ window.addEventListener('load', () => {
     const errorMsg = urlParams.get('error');
 
     if (errorMsg) {
+        const themeConfig = window.getPeakThemeConfig ? window.getPeakThemeConfig() : { background: '#fff', color: '#0f172a' };
         Swal.fire({
             title: 'Error de Acceso',
             text: errorMsg,
             icon: 'error',
-            confirmButtonColor: '#4f46e5',
+            confirmButtonColor: window.PeakPalette ? window.PeakPalette.error : '#b91c1c',
             confirmButtonText: 'Entendido',
-            background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
-            color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b'
+            background: themeConfig.background,
+            color: themeConfig.color
         });
 
         window.history.replaceState({}, document.title, window.location.pathname);

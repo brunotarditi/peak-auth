@@ -111,7 +111,7 @@
 }
 
 @utility dashboard-card-body {
-  @apply p-8 flex-grow;
+  @apply p-8 grow;
 }
 
 @utility dashboard-card-icon {
@@ -175,7 +175,7 @@
 }
 
 @utility created-credential-value {
-  @apply flex-grow min-w-0;
+  @apply grow min-w-0;
 }
 
 @utility created-credential-code {
@@ -207,7 +207,7 @@
 }
 
 @utility policy-card {
-  @apply bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none relative overflow-hidden;
+  @apply bg-white dark:bg-slate-900 p-6 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none relative overflow-hidden;
 }
 
 @utility policy-card-ghost {
@@ -319,7 +319,7 @@
 }
 
 @utility show-modal-root {
-  @apply fixed inset-0 z-[100] hidden;
+  @apply fixed inset-0 z-100 hidden;
 }
 
 @utility show-modal-backdrop {
