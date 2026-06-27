@@ -19,6 +19,8 @@ type UserApplicationRoleRepository interface {
 	GetUserRolesInApp(userID, appID uint) ([]string, error)
 	GetUsersWithRolesByApp(appID uint) ([]response.UserAppRow, error)
 	GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error)
+	BelongsToApp(userID, appID uint) (bool, error)
+	IsAppAdmin(userID, appID uint) (bool, error)
 	HasAdminRoleInAnyApp(userID uint) (bool, error)
 }
 
@@ -169,6 +171,29 @@ func (r *userApplicationRoleRepository) HasAdminRoleInAnyApp(userID uint) (bool,
 	err := r.db.Table("user_application_roles").
 		Joins("JOIN roles ON roles.id = user_application_roles.role_id").
 		Where("user_application_roles.user_id = ? AND roles.name = ? AND user_application_roles.deleted_at IS NULL", userID, "ADMIN").
+		Count(&count).Error
+	return count > 0, err
+}
+
+// BelongsToApp indica si el usuario pertenece a la aplicación (tiene al menos un
+// rol activo en ella), independientemente de cuál sea ese rol. Es la primera
+// barrera de autorización: si no perteneces, no ves ni accedes a la app.
+func (r *userApplicationRoleRepository) BelongsToApp(userID, appID uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&model.UserApplicationRole{}).
+		Where("user_id = ? AND application_id = ? AND deleted_at IS NULL", userID, appID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+// IsAppAdmin indica si el usuario tiene el rol ADMIN dentro de la aplicación
+// indicada (scope estricto: solo esa app). El rol ADMIN gobierna el panel de la
+// app aunque la app no tenga el sistema de roles habilitado.
+func (r *userApplicationRoleRepository) IsAppAdmin(userID, appID uint) (bool, error) {
+	var count int64
+	err := r.db.Table("user_application_roles uar").
+		Joins("JOIN roles ON roles.id = uar.role_id").
+		Where("uar.user_id = ? AND uar.application_id = ? AND uar.deleted_at IS NULL AND roles.name = ?", userID, appID, "ADMIN").
 		Count(&count).Error
 	return count > 0, err
 }
