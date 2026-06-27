@@ -46,11 +46,12 @@ type userService struct {
 	passwordResetRepo     repo.PasswordResetRepository
 	emailService          *EmailService
 	refreshTokenRepo      repo.RefreshTokenRepository
+	txManager             repo.TransactionManager
 }
 
 // NewUserService crea una instancia de UserService con las dependencias necesarias.
-func NewUserService(userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository, ruleService ApplicationRuleService, tokenManager *auth.JWTManager, emailVerificationRepo repo.EmailVerificationRepository, passwordResetRepo repo.PasswordResetRepository, emailService *EmailService, refreshTokenRepo repo.RefreshTokenRepository) UserService {
-	return &userService{userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, appRepo: appRepo, ruleService: ruleService, tokenManager: tokenManager, emailVerificationRepo: emailVerificationRepo, passwordResetRepo: passwordResetRepo, emailService: emailService, refreshTokenRepo: refreshTokenRepo}
+func NewUserService(userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository, ruleService ApplicationRuleService, tokenManager *auth.JWTManager, emailVerificationRepo repo.EmailVerificationRepository, passwordResetRepo repo.PasswordResetRepository, emailService *EmailService, refreshTokenRepo repo.RefreshTokenRepository, txManager repo.TransactionManager) UserService {
+	return &userService{userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, appRepo: appRepo, ruleService: ruleService, tokenManager: tokenManager, emailVerificationRepo: emailVerificationRepo, passwordResetRepo: passwordResetRepo, emailService: emailService, refreshTokenRepo: refreshTokenRepo, txManager: txManager}
 }
 
 // Login valida credenciales, comprueba estado del usuario y genera un token JWT.
@@ -223,7 +224,7 @@ func (s *userService) Register(req request.RegisterRequest) (model.User, error) 
 
 	// 4) Asignar rol por reglas
 	if registrationPolicy.DefaultRole != "" {
-		if role, err := s.roleRepo.FindByRoleName(registrationPolicy.DefaultRole); err == nil {
+		if role, err := s.roleRepo.FindByNameForApp(registrationPolicy.DefaultRole, app.ID); err == nil {
 			if assignErr := s.uarRepo.AssignRole(user.ID, app.ID, role.ID); assignErr != nil {
 				return model.User{}, fmt.Errorf("error al asignar el rol por defecto: %w", assignErr)
 			}
@@ -369,7 +370,8 @@ func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 	return nil
 }
 
-// ResetPassword valida el token, actualiza la contraseña y marca el token como usado.
+// ResetPassword valida el token, actualiza la contraseña y marca el token como
+// usado de forma ATÓMICA, e invalida todas las sesiones (refresh tokens) del usuario.
 func (s *userService) ResetPassword(token, newPassword string) error {
 	reset, err := s.passwordResetRepo.FindValidPasswordReset(token)
 	if err != nil {
@@ -382,7 +384,10 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 		return fmt.Errorf("el usuario asociado a este token no está activo o no existe")
 	}
 
-	// 2. Aplicar reglas de la aplicación (PWD_POLICY)
+	// 2. Validar longitud (límite de bcrypt) y políticas de la aplicación (PWD_POLICY)
+	if err := util.ValidatePasswordLength(newPassword); err != nil {
+		return err
+	}
 	rules, err := s.ruleService.FindRulesByAppID(reset.ApplicationID)
 	if err == nil {
 		for _, r := range rules {
@@ -401,21 +406,27 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 		return fmt.Errorf("error al hashear contraseña: %w", err)
 	}
 
-	if err := s.passwordResetRepo.UpdatePassword(reset.UserID, hashed); err != nil {
-		return fmt.Errorf("error al actualizar contraseña: %w", err)
-	}
-
 	now := time.Now()
-	if err := s.passwordResetRepo.MarkPasswordResetUsed(reset.ID, now); err != nil {
-		return fmt.Errorf("error al actualizar estado del token: %w", err)
-	}
 
-	// Al restablecer (o crear) la contraseña con el token de email, queda verificado implícitamente.
-	if err := s.userRepo.UpdateColumn("is_verified", true, reset.UserID); err != nil {
-		return fmt.Errorf("error al verificar la cuenta: %w", err)
-	}
-
-	return nil
+	// 3. Aplicar todos los cambios en una única transacción para evitar estados
+	//    inconsistentes (token reutilizable si falla un paso posterior).
+	return s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
+		if err := tx.PasswordResets().UpdatePassword(reset.UserID, hashed); err != nil {
+			return fmt.Errorf("error al actualizar contraseña: %w", err)
+		}
+		if err := tx.PasswordResets().MarkPasswordResetUsed(reset.ID, now); err != nil {
+			return fmt.Errorf("error al actualizar estado del token: %w", err)
+		}
+		// Al restablecer la contraseña con el token de email, queda verificado.
+		if err := tx.Users().UpdateColumn("is_verified", true, reset.UserID); err != nil {
+			return fmt.Errorf("error al verificar la cuenta: %w", err)
+		}
+		// Invalidar todas las sesiones existentes del usuario (revocación de tokens).
+		if err := tx.RefreshTokens().DeleteByUser(reset.UserID); err != nil {
+			return fmt.Errorf("error al revocar sesiones: %w", err)
+		}
+		return nil
+	})
 }
 
 // AdminLogin valida credenciales y permisos para acceder al panel administrativo.
@@ -451,9 +462,9 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 		}
 	}
 
-	// 1. Obtener roles para ver si es ROOT o ADMIN global
+	// 1. Obtener roles en la app raíz (peak-auth) para determinar el alcance de plataforma.
 	roleModels, err := s.uarRepo.FindRolesByUserAndApp(user.ID, peakApp.ID)
-	isAdmin := false
+	canAccessPanel := false
 	isRoot := false
 	var roles []string
 
@@ -464,23 +475,25 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 			switch r.Name {
 			case "ROOT":
 				isRoot = true
-				isAdmin = true
+				canAccessPanel = true
 			case "ADMIN":
-				isAdmin = true
+				// ADMIN en la app raíz = administrador de plataforma.
+				canAccessPanel = true
 			}
 		}
 	}
 
-	if !isAdmin {
-		// Validar si tiene rol ADMIN en alguna otra aplicación
+	if !canAccessPanel {
+		// Un usuario que es ADMIN de alguna app externa también puede acceder al
+		// panel, pero su alcance quedará limitado a sus apps por el middleware y
+		// los controllers. No se le inyectan roles globales falsos.
 		hasLocalAdmin, err := s.uarRepo.HasAdminRoleInAnyApp(user.ID)
 		if err == nil && hasLocalAdmin {
-			isAdmin = true
-			roles = []string{"ADMIN"}
+			canAccessPanel = true
 		}
 	}
 
-	if !isAdmin {
+	if !canAccessPanel {
 		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
 	}
 
@@ -491,7 +504,11 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 				s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
 				user.FailedLogins = 0
 			} else {
-				return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Contacte al administrador de la aplicación.")
+				daysLeft := 30 - int(time.Since(user.UpdatedAt).Hours()/24)
+				if daysLeft < 1 {
+					daysLeft = 1
+				}
+				return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
 			}
 		}
 	}
@@ -585,34 +602,39 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		roles[i] = r.Name
 	}
 
-	// Rotar: eliminar el token viejo
-	s.refreshTokenRepo.DeleteByToken(tokenHashStr)
-
 	// 2. Generar nuevo Access Token
 	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
 
-	// 3. Generar nuevo Refresh Token
+	// 3. Generar nuevo Refresh Token ANTES de borrar el viejo.
 	plainRT, rtHash, err := util.GenerateToken(64)
-	var newRT string
-	if err == nil {
-		newRT = plainRT
-		newRtModel := model.RefreshToken{
-			UserID:        user.ID,
-			ApplicationID: app.ID,
-			Token:         hex.EncodeToString(rtHash),
-			ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+	if err != nil {
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
+	}
+
+	newRtModel := model.RefreshToken{
+		UserID:        user.ID,
+		ApplicationID: app.ID,
+		Token:         hex.EncodeToString(rtHash),
+		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+	}
+
+	// 4. Rotación atómica: persistir el nuevo y eliminar el viejo en una transacción.
+	//    Si algo falla, no se borra el token vigente (el usuario no pierde la sesión).
+	if err := s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
+		if err := tx.RefreshTokens().Create(&newRtModel); err != nil {
+			return err
 		}
-		_ = s.refreshTokenRepo.Create(&newRtModel)
-	} else {
-		newRT = refreshToken // fallback if token generation fails
+		return tx.RefreshTokens().DeleteByToken(tokenHashStr)
+	}); err != nil {
+		return response.TokenResponse{}, fmt.Errorf("error al rotar el refresh token: %w", err)
 	}
 
 	return response.TokenResponse{
 		AccessToken:  newAT,
-		RefreshToken: newRT,
+		RefreshToken: plainRT,
 	}, nil
 }
 
