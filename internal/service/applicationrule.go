@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"strings"
+
 	"peak-auth/internal/api/request"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
@@ -22,10 +24,21 @@ type applicationRuleService struct {
 	ruleRepo repo.ApplicationRuleRepository
 	uarRepo  repo.UserApplicationRoleRepository
 	roleRepo repo.RoleRepository
+	appRepo  repo.ApplicationRepository
 }
 
-func NewApplicationRuleService(ruleRepo repo.ApplicationRuleRepository, uarRepo repo.UserApplicationRoleRepository, roleRepo repo.RoleRepository) ApplicationRuleService {
-	return &applicationRuleService{ruleRepo: ruleRepo, uarRepo: uarRepo, roleRepo: roleRepo}
+func NewApplicationRuleService(ruleRepo repo.ApplicationRuleRepository, uarRepo repo.UserApplicationRoleRepository, roleRepo repo.RoleRepository, appRepo repo.ApplicationRepository) ApplicationRuleService {
+	return &applicationRuleService{ruleRepo: ruleRepo, uarRepo: uarRepo, roleRepo: roleRepo, appRepo: appRepo}
+}
+
+// isRootApp indica si el appID numérico corresponde a la aplicación raíz (peak-auth),
+// resolviéndola por su AppID público en lugar de asumir un ID fijo.
+func (s *applicationRuleService) isRootApp(appID uint) bool {
+	rootApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
+	if err != nil {
+		return false
+	}
+	return rootApp.ID == appID
 }
 
 // ValidateRegistration valida las reglas de registro de la app y devuelve
@@ -55,6 +68,11 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 	// Validación crítica de seguridad:
 	if policy == nil || policy.DefaultRole == "" {
 		return nil, fmt.Errorf("configuración incompleta: la aplicación no tiene un rol por defecto configurado en REGISTRATION_POLICY")
+	}
+
+	// Defensa en profundidad: el auto-registro nunca puede otorgar ROOT.
+	if strings.EqualFold(policy.DefaultRole, "ROOT") {
+		return nil, fmt.Errorf("el registro automático no puede asignar el rol ROOT")
 	}
 
 	return policy, nil
@@ -99,12 +117,29 @@ func (s *applicationRuleService) CreateDefaultRules(appID uint) error {
 }
 
 func (s *applicationRuleService) CreateRule(appID uint, code string, value []byte) error {
+	if code == "REGISTRATION_POLICY" {
+		if policy, err := util.ParseRegistrationPolicy(value); err == nil {
+			if strings.EqualFold(policy.DefaultRole, "ROOT") {
+				return fmt.Errorf("el rol por defecto no puede ser ROOT")
+			}
+		}
+	}
 	return s.ruleRepo.CreateRule(appID, code, value)
 }
 
 func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value []byte) error {
-	// Protecciones para la App Raíz (ID 1)
-	if appID == 1 {
+	// Defensa transversal: jamás permitir que el rol por defecto del auto-registro
+	// sea ROOT (superusuario de plataforma), en ninguna aplicación.
+	if code == "REGISTRATION_POLICY" {
+		if policy, err := util.ParseRegistrationPolicy(value); err == nil {
+			if strings.EqualFold(policy.DefaultRole, "ROOT") {
+				return fmt.Errorf("el rol por defecto no puede ser ROOT")
+			}
+		}
+	}
+
+	// Protecciones para la App Raíz (resuelta por AppID, no por ID fijo)
+	if s.isRootApp(appID) {
 		if code == "AUTHZ_POLICY" {
 			policy, _ := util.ParseAuthzPolicy(value)
 			if !policy.EnableRoles {
