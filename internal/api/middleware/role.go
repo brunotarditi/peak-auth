@@ -35,7 +35,7 @@ func RoleMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.App
 		}
 
 		// 1. Verificar privilegios de plataforma (ROOT o ADMIN global)
-		scope := resolvePlatformScope(c, uarRepo, appRepo, userID)
+		scope := resolvePlatformScope(uarRepo, appRepo, userID)
 
 		if scope.IsRoot {
 			c.Set("is_root", true)
@@ -100,7 +100,7 @@ func PlatformAdminMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo
 			return
 		}
 
-		scope := resolvePlatformScope(c, uarRepo, appRepo, userID)
+		scope := resolvePlatformScope(uarRepo, appRepo, userID)
 
 		if !scope.IsRoot && !scope.IsPlatformAdmin {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "se requieren privilegios de administrador de plataforma"})
@@ -123,7 +123,7 @@ func RootOnlyMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo
 			return
 		}
 
-		scope := resolvePlatformScope(c, uarRepo, appRepo, userID)
+		scope := resolvePlatformScope(uarRepo, appRepo, userID)
 		if !scope.IsRoot {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "se requiere rol ROOT"})
 			return
@@ -135,13 +135,32 @@ func RootOnlyMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo
 	}
 }
 
+// PlatformScopeMiddleware inyecta los privilegios de plataforma en el contexto
+func PlatformScopeMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, ok := currentUserID(c)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "usuario no autenticado"})
+			return
+		}
+
+		scope := resolvePlatformScope(uarRepo, appRepo, userID)
+
+		c.Set("is_root", scope.IsRoot)
+		c.Set("is_platform_admin", scope.IsPlatformAdmin)
+		c.Set("platform_scope", scope)
+
+		c.Next()
+	}
+}
+
 // resolvePlatformScope determina el alcance del usuario a nivel plataforma:
 //   - isRoot:          rol ROOT en la app raíz (peak-auth) -> superusuario, bypass total.
 //   - isPlatformAdmin: rol ADMIN en la app raíz (peak-auth) -> administra todo el panel.
 //
 // Estas son las ÚNICAS dos formas de obtener privilegios sobre toda la plataforma.
 // Tener ADMIN en una app externa NO otorga ningún privilegio de plataforma.
-func resolvePlatformScope(c *gin.Context, uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository, userID uint) PlatformScope {
+func resolvePlatformScope(uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository, userID uint) PlatformScope {
 	masterApp, err := appRepo.FindByAppID(util.AppIdPeakAuth)
 	if err != nil {
 		return PlatformScope{}
@@ -158,7 +177,7 @@ func resolvePlatformScope(c *gin.Context, uarRepo repo.UserApplicationRoleReposi
 		case "ROOT":
 			scope.IsRoot = true
 			scope.IsPlatformAdmin = true
-			return scope // early return
+			return scope
 		case "ADMIN":
 			scope.IsPlatformAdmin = true
 		}
