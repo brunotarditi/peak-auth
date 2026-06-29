@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"peak-auth/internal/api/middleware"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/service"
 
@@ -18,34 +19,35 @@ type DashboardController struct {
 
 // Dashboard renderiza el dashboard
 func (ctrl *DashboardController) Dashboard(c *gin.Context) {
-	isRoot, _ := c.Get("is_root")
-	isPlatformAdmin, _ := c.Get("is_platform_admin")
-	valUser, _ := c.Get("user_id")
+	scopeVal, exists := c.Get("platform_scope")
+	if !exists {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"error": "Error al obtener privilegios",
+		})
+		return
+	}
 
-	rootStatus, _ := isRoot.(bool)
-	platformStatus, _ := isPlatformAdmin.(bool)
-	userID, _ := valUser.(uint)
+	scope := scopeVal.(middleware.PlatformScope)
 
 	var stats []response.AppStatsResponse
 	var err error
 
-	// ROOT y administradores de plataforma ven todas las apps.
-	// Un app-admin solo ve las apps a las que pertenece.
-	if rootStatus || platformStatus {
+	if scope.IsRoot || scope.IsPlatformAdmin {
 		stats, err = ctrl.AppService.GetDashboardStats()
 	} else {
+		userID := c.MustGet("user_id").(uint)
 		stats, err = ctrl.AppService.GetDashboardStatsForUser(userID)
 	}
 
 	if err != nil {
 		log.Printf("[error] Dashboard stats: %v", err)
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": "No se pudieron cargar las aplicaciones"})
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": "No se pudieron cargar las estadísticas"})
 		return
 	}
 
 	ctrl.renderAdmin(c, "dashboard.html", gin.H{
 		"Applications": stats,
-		"IsPlatform":   rootStatus || platformStatus,
+		"IsPlatform":   scope.IsRoot || scope.IsPlatformAdmin,
 		"Breadcrumbs":  nil,
 		"Title":        "Dashboard",
 	})
