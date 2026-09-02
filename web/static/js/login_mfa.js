@@ -23,9 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const options = await beginRes.json();
-                options.publicKey.challenge = bufferDecode(options.publicKey.challenge);
+                options.publicKey.challenge = base64urlToBuffer(options.publicKey.challenge);
                 options.publicKey.allowCredentials.forEach(cred => {
-                    cred.id = bufferDecode(cred.id);
+                    cred.id = base64urlToBuffer(cred.id);
                 });
 
                 const credential = await navigator.credentials.get({
@@ -34,13 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const authData = {
                     id: credential.id,
-                    rawId: bufferEncode(credential.rawId),
+                    rawId: bufferToBase64url(credential.rawId),
                     type: credential.type,
                     response: {
-                        authenticatorData: bufferEncode(credential.response.authenticatorData),
-                        clientDataJSON: bufferEncode(credential.response.clientDataJSON),
-                        signature: bufferEncode(credential.response.signature),
-                        userHandle: credential.response.userHandle ? bufferEncode(credential.response.userHandle) : null
+                        authenticatorData: bufferToBase64url(credential.response.authenticatorData),
+                        clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+                        signature: bufferToBase64url(credential.response.signature),
+                        userHandle: credential.response.userHandle ? bufferToBase64url(credential.response.userHandle) : null
                     }
                 };
 
