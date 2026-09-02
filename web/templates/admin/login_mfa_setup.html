@@ -74,7 +74,10 @@
     </div>
 
     <!-- Modales y scripts -->
-    <script src="{{ js \"login_mfa_setup.js\" }}"></script>
+    <script>
+        window.MFA_TOKEN = "{{ .MfaToken }}";
+    </script>
+    <script src="{{ js "login_mfa_setup.js" }}"></script>
 </body>
 
 </html>
