@@ -45,7 +45,7 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 	id := c.Param("id")
 	code := c.Param("code")
 
-	if id == util.AppIdPeakAuth && code != "SESSION_POLICY" {
+	if id == util.AppIdPeakAuth && code != "SESSION_POLICY" && code != "MFA_POLICY" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "No está permitido modificar esta política para la aplicación principal (Peak Auth Raíz)"})
 		return
 	}
@@ -85,6 +85,16 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 		if err := json.Unmarshal(body, &params); err == nil {
 			if params.MinLength < 4 {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "La contraseña debe tener al menos 4 caracteres"})
+				return
+			}
+		}
+	case "MFA_POLICY":
+		var params struct {
+			Mode string `json:"mode"`
+		}
+		if err := json.Unmarshal(body, &params); err == nil {
+			if params.Mode != "OPTIONAL" && params.Mode != "REQUIRED" && params.Mode != "DISABLED" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Modo de MFA inválido. Debe ser OPTIONAL, REQUIRED o DISABLED"})
 				return
 			}
 		}

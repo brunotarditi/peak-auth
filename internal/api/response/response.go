@@ -9,8 +9,12 @@ type AppStatsResponse struct {
 }
 
 type TokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken      string `json:"access_token,omitempty"`
+	RefreshToken     string `json:"refresh_token,omitempty"`
+	MfaRequired      bool   `json:"mfa_required,omitempty"`
+	MfaSetupRequired bool   `json:"mfa_setup_required,omitempty"`
+	MfaToken         string `json:"mfa_token,omitempty"`
+	ExpiresIn        int    `json:"expires_in,omitempty"`
 }
 
 type UserAppRow struct {
@@ -21,5 +25,6 @@ type UserAppRow struct {
 	RoleName     string
 	IsVerified   bool
 	IsActive     bool
+	MfaEnabled   bool
 	FailedLogins uint
 }

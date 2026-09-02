@@ -73,6 +73,9 @@ func AutoMigrate() {
 		&model.PasswordReset{},
 		&model.RefreshToken{},
 		&model.ApplicationRules{},
+		&model.UserMfaCredential{},
+		&model.UserRecoveryCode{},
+		&model.OAuthCode{},
 	)
 	if err != nil {
 		log.Printf("⚠️ Error durante AutoMigrate: %v", err)
@@ -87,6 +90,15 @@ func AutoMigrate() {
         WHERE application_id IS NULL AND deleted_at IS NULL
     `).Error; err != nil {
 		log.Printf("⚠️ No se pudo crear el índice idx_role_name_global: %v", err)
+	}
+
+	// Índice único parcial para vinculación de roles de usuario (evita duplicados activos)
+	if err := postgresqlDB.Exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_uar_unique
+        ON user_application_roles (user_id, application_id, role_id)
+        WHERE deleted_at IS NULL
+    `).Error; err != nil {
+		log.Printf("⚠️ No se pudo crear el índice idx_uar_unique: %v", err)
 	}
 }
 

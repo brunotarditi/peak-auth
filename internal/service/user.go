@@ -27,12 +27,14 @@ type UserService interface {
 	GenerateResetToken(userID, appID uint) (string, []byte, error)
 	CanRequestPasswordReset(userID uint) (bool, error)
 	SendResetEmail(user *model.User, appID uint) error
-	AdminLogin(email, password string) (string, int, error)
+	AdminLogin(email, password string) (string, int, bool, bool, string, error)
 	FindUserByAppID(appID string) ([]response.UserAppRow, error)
 	FindUserByAppIDPaginated(appID model.Application, page, limit int) ([]response.UserAppRow, int64, error)
 	Refresh(token string) (response.TokenResponse, error)
 	UnlockUser(userID uint) error
 	ResendVerification(userID uint, appID string) error
+	CompleteLoginWithMfa(userID uint, publicAppID string) (response.TokenResponse, error)
+	CompleteAdminLoginWithMfa(userID uint) (string, int, error)
 }
 
 type userService struct {
@@ -138,6 +140,38 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 		}
 	}
 
+	// 3.6 Validar MFA_POLICY y MfaEnabled
+	mfaRequiredByPolicy := false
+	mfaDisabledByPolicy := false
+	for _, r := range rules {
+		if r.Code == "MFA_POLICY" {
+			policy, err := util.ParseMfaPolicy(r.Value)
+			if err == nil {
+				if policy.Mode == "REQUIRED" {
+					mfaRequiredByPolicy = true
+				} else if policy.Mode == "DISABLED" {
+					mfaDisabledByPolicy = true
+				}
+			}
+		}
+	}
+
+	// Si se requiere por política pero el usuario no tiene MFA habilitado, o si el usuario
+	// tiene MFA habilitado y la política no lo prohíbe, detonamos el flujo MFA.
+	shouldTriggerMFA := (mfaRequiredByPolicy && !user.MfaEnabled) || (user.MfaEnabled && !mfaDisabledByPolicy)
+
+	if shouldTriggerMFA {
+		mfaToken, err := s.tokenManager.GenerateMFAPendingToken(user.ID, user.Email, publicAppID)
+		if err != nil {
+			return response.TokenResponse{}, fmt.Errorf("error al generar token MFA: %w", err)
+		}
+		return response.TokenResponse{
+			MfaRequired:      true,
+			MfaSetupRequired: !user.MfaEnabled,
+			MfaToken:         mfaToken,
+		}, nil
+	}
+
 	// 3.5 Obtener roles para el JWT
 	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
 	roles := make([]string, len(roleModels))
@@ -172,6 +206,7 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	return response.TokenResponse{
 		AccessToken:  token,
 		RefreshToken: plainRT,
+		ExpiresIn:    int(duration.Seconds()),
 	}, nil
 }
 
@@ -430,17 +465,17 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 }
 
 // AdminLogin valida credenciales y permisos para acceder al panel administrativo.
-func (s *userService) AdminLogin(email, password string) (string, int, error) {
+func (s *userService) AdminLogin(email, password string) (string, int, bool, bool, string, error) {
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		// Mitigación de timing attack y user enumeration
 		util.CheckPasswordHash("dummy", "$2a$10$FKTUgxnqSnUp8kDjnTFlyOn3s165yiYmcLxXeNv7NavMY3DH19IIq")
-		return "", 0, fmt.Errorf("las credenciales de administrador son inválidas")
+		return "", 0, false, false, "", fmt.Errorf("las credenciales de administrador son inválidas")
 	}
 
 	peakApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
 	if err != nil {
-		return "", 0, fmt.Errorf("error interno del sistema")
+		return "", 0, false, false, "", fmt.Errorf("error interno del sistema")
 	}
 
 	maxFails := 5
@@ -494,7 +529,7 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 	}
 
 	if !canAccessPanel {
-		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
+		return "", 0, false, false, "", fmt.Errorf("el usuario no tiene permisos administrativos")
 	}
 
 	// 2. Aplicar política de intentos fallidos (solo si NO es ROOT)
@@ -508,13 +543,13 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 				if daysLeft < 1 {
 					daysLeft = 1
 				}
-				return "", 0, fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
+				return "", 0, false, false, "", fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
 			}
 		}
 	}
 
 	if !user.IsVerified {
-		return "", 0, fmt.Errorf("la cuenta no está verificada")
+		return "", 0, false, false, "", fmt.Errorf("la cuenta no está verificada")
 	}
 
 	// 3. Verificar password
@@ -522,20 +557,46 @@ func (s *userService) AdminLogin(email, password string) (string, int, error) {
 		if !isRoot {
 			s.userRepo.UpdateColumn("failed_logins", user.FailedLogins+1, user.ID)
 		}
-		return "", 0, fmt.Errorf("las credenciales son inválidas")
+		return "", 0, false, false, "", fmt.Errorf("las credenciales son inválidas")
 	}
 
 	s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
+
+	// Validar MFA_POLICY para la app de administración (peak-auth)
+	mfaRequiredByPolicy := false
+	mfaDisabledByPolicy := false
+	for _, r := range rules {
+		if r.Code == "MFA_POLICY" {
+			policy, err := util.ParseMfaPolicy(r.Value)
+			if err == nil {
+				if policy.Mode == "REQUIRED" {
+					mfaRequiredByPolicy = true
+				} else if policy.Mode == "DISABLED" {
+					mfaDisabledByPolicy = true
+				}
+			}
+		}
+	}
+
+	shouldTriggerMFA := (mfaRequiredByPolicy && !user.MfaEnabled) || (user.MfaEnabled && !mfaDisabledByPolicy)
+
+	if shouldTriggerMFA {
+		mfaToken, err := s.tokenManager.GenerateMFAPendingToken(user.ID, user.Email, peakApp.AppID)
+		if err != nil {
+			return "", 0, false, false, "", err
+		}
+		return "", expireMinutes, true, !user.MfaEnabled, mfaToken, nil
+	}
 
 	duration := time.Duration(expireMinutes) * time.Minute
 
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration)
 	if err != nil {
-		return "", 0, err
+		return "", 0, false, false, "", err
 	}
 
 	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
-	return token, expireMinutes, nil
+	return token, expireMinutes, false, false, "", nil
 }
 
 func (s *userService) FindUserByAppID(appID string) ([]response.UserAppRow, error) {
@@ -635,6 +696,7 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 	return response.TokenResponse{
 		AccessToken:  newAT,
 		RefreshToken: plainRT,
+		ExpiresIn:    int(duration.Seconds()),
 	}, nil
 }
 
@@ -686,4 +748,112 @@ func (s *userService) ResendVerification(userID uint, appID string) error {
 	}
 
 	return s.emailService.SendVerificationEmail(user.Email, plainToken, app.Name)
+}
+
+func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (response.TokenResponse, error) {
+	user, err := s.userRepo.FindById(userID)
+	if err != nil {
+		return response.TokenResponse{}, fmt.Errorf("usuario no encontrado")
+	}
+	app, err := s.appRepo.FindByAppID(publicAppID)
+	if err != nil {
+		return response.TokenResponse{}, fmt.Errorf("aplicación no encontrada")
+	}
+
+	// 1. Validar reglas de autorización (AUTHZ_POLICY)
+	if err := s.ruleService.ValidateLogin(app.ID, user.ID); err != nil {
+		return response.TokenResponse{}, err
+	}
+
+	// 2. Aplicar duración de sesión (SESSION_POLICY)
+	duration := time.Hour * 24
+	rules, err := s.ruleService.FindRulesByAppID(app.ID)
+	if err == nil {
+		for _, r := range rules {
+			if r.Code == "SESSION_POLICY" {
+				sess, err := util.ParseSessionPolicy(r.Value)
+				if err == nil && sess.TokenExpirationMinutes > 0 {
+					duration = time.Duration(sess.TokenExpirationMinutes) * time.Minute
+				}
+			}
+		}
+	}
+
+	// 3. Obtener roles para el JWT
+	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
+	roles := make([]string, len(roleModels))
+	for i, r := range roleModels {
+		roles[i] = r.Name
+	}
+
+	// 4. Generar Token JWT
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration)
+	if err != nil {
+		return response.TokenResponse{}, err
+	}
+
+	// 5. Generar y Almacenar Refresh Token
+	plainRT, rtHash, err := util.GenerateToken(64)
+	if err != nil {
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
+	}
+	rt := model.RefreshToken{
+		UserID:        user.ID,
+		ApplicationID: app.ID,
+		Token:         hex.EncodeToString(rtHash),
+		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+	}
+	if err := s.refreshTokenRepo.Create(&rt); err != nil {
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
+	}
+
+	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
+
+	return response.TokenResponse{
+		AccessToken:  token,
+		RefreshToken: plainRT,
+		ExpiresIn:    int(duration.Seconds()),
+	}, nil
+}
+
+func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error) {
+	user, err := s.userRepo.FindById(userID)
+	if err != nil {
+		return "", 0, fmt.Errorf("usuario no encontrado")
+	}
+	peakApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
+	if err != nil {
+		return "", 0, fmt.Errorf("error interno del sistema")
+	}
+
+	expireMinutes := 720
+	rules, err := s.ruleService.FindRulesByAppID(peakApp.ID)
+	if err == nil {
+		for _, r := range rules {
+			if r.Code == "SESSION_POLICY" {
+				sess, err := util.ParseSessionPolicy(r.Value)
+				if err == nil && sess.TokenExpirationMinutes > 0 {
+					expireMinutes = sess.TokenExpirationMinutes
+				}
+			}
+		}
+	}
+
+	roleModels, err := s.uarRepo.FindRolesByUserAndApp(user.ID, peakApp.ID)
+	var roles []string
+	if err == nil && len(roleModels) > 0 {
+		roles = make([]string, len(roleModels))
+		for i, r := range roleModels {
+			roles[i] = r.Name
+		}
+	}
+
+	duration := time.Duration(expireMinutes) * time.Minute
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration)
+	if err != nil {
+		return "", 0, err
+	}
+
+	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
+	return token, expireMinutes, nil
 }

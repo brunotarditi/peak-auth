@@ -11,6 +11,7 @@ type TxRepository interface {
 	Rules() ApplicationRuleRepository
 	EmailVerifications() EmailVerificationRepository
 	RefreshTokens() RefreshTokenRepository
+	Mfa() MfaRepository
 }
 
 type TransactionManager interface {
@@ -56,6 +57,10 @@ func (u *unitOfWork) EmailVerifications() EmailVerificationRepository {
 
 func (u *unitOfWork) RefreshTokens() RefreshTokenRepository {
 	return NewRefreshTokenRepository(u.db)
+}
+
+func (u *unitOfWork) Mfa() MfaRepository {
+	return NewMfaRepository(u.db)
 }
 
 type transactionManager struct {

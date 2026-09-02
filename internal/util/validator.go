@@ -28,6 +28,10 @@ type AuthzPolicy struct {
 	EnableRoles bool `json:"enable_roles"`
 }
 
+type MfaPolicy struct {
+	Mode string `json:"mode"` // "OPTIONAL", "REQUIRED", "DISABLED"
+}
+
 // ValidateRegistrationPolicy parses the policy and validates whether self register is allowed.
 // Returns the parsed policy to allow retrieving the DefaultRole or Verification rule.
 func ValidateRegistrationPolicy(raw []byte) (*RegistrationPolicy, error) {
@@ -107,6 +111,15 @@ func ParseAuthzPolicy(raw []byte) (*AuthzPolicy, error) {
 	var r AuthzPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
 		return nil, fmt.Errorf("invalid AUTHZ_POLICY rule: %w", err)
+	}
+	return &r, nil
+}
+
+// ParseMfaPolicy extracts MFA constraints
+func ParseMfaPolicy(raw []byte) (*MfaPolicy, error) {
+	var r MfaPolicy
+	if err := json.Unmarshal(raw, &r); err != nil {
+		return nil, fmt.Errorf("invalid MFA_POLICY rule: %w", err)
 	}
 	return &r, nil
 }

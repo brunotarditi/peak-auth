@@ -129,3 +129,34 @@ func (m *JWTManager) verify(tokenString string, expectedAudience string) (*Custo
 
 	return claims, nil
 }
+
+// GenerateMFAPendingToken genera un token temporal (5 minutos) que indica que el login
+// con contraseña fue exitoso pero está pendiente de verificar el segundo factor.
+func (m *JWTManager) GenerateMFAPendingToken(userID uint, username string, appID string) (string, error) {
+	claims := CustomClaims{
+		Username: username,
+		AppID:    appID,
+		Roles:    []string{"MFA_PENDING"},
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   fmt.Sprintf("%d", userID),
+			Issuer:    tokenIssuer(),
+			Audience:  jwt.ClaimStrings{appID},
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	return token.SignedString(m.privateKey)
+}
+
+// VerifyMFAPendingToken verifica que el token temporal de MFA sea válido.
+func (m *JWTManager) VerifyMFAPendingToken(tokenString string, expectedAppID string) (*CustomClaims, error) {
+	claims, err := m.verify(tokenString, expectedAppID)
+	if err != nil {
+		return nil, err
+	}
+	if len(claims.Roles) != 1 || claims.Roles[0] != "MFA_PENDING" {
+		return nil, fmt.Errorf("token inválido para verificación MFA")
+	}
+	return claims, nil
+}
