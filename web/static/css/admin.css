@@ -269,4 +269,160 @@ body {
 }
 .policy-row:last-child {
     border-bottom: none;
+}/* --- App Created View --- */
+.created-shell {
+    max-width: 42rem;
+    margin: 4rem auto;
+    text-align: center;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-2xl);
+    padding: 3rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.created-hero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 9999px;
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--emerald-500);
+    margin-bottom: 1.5rem;
+}
+
+.created-title {
+    font-size: 1.875rem;
+    font-weight: 900;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    letter-spacing: -0.025em;
+}
+
+.created-copy {
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 2.5rem;
+}
+
+.created-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: left;
+}
+
+.created-credential {
+    background-color: var(--bg-surface-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    position: relative;
+}
+
+.created-secret {
+    background: linear-gradient(145deg, var(--amber-50), transparent);
+    border: 1px solid var(--amber-200);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    position: relative;
+}
+.dark .created-secret {
+    background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), transparent);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.created-credential-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+}
+
+.created-credential-row {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.dark .created-secret .created-credential-row {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.created-credential-value {
+    flex: 1;
+    padding: 1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.created-credential-value::-webkit-scrollbar {
+    display: none;
+}
+
+.created-credential-code {
+    font-family: monospace;
+    font-size: 1rem;
+    white-space: nowrap;
+}
+
+.created-credential-button {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-left: 1px solid var(--border-light);
+    background-color: var(--bg-surface-secondary);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.created-credential-button:hover {
+    background-color: var(--bg-surface-tertiary);
+    color: var(--brand-600);
+}
+
+.created-secret .created-credential-button {
+    border-left-color: var(--amber-200);
+    background-color: var(--amber-50);
+}
+.dark .created-secret .created-credential-button {
+    border-left-color: rgba(245, 158, 11, 0.3);
+    background-color: rgba(245, 158, 11, 0.1);
+}
+
+.created-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--amber-600);
+}
+
+.created-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2rem;
+    background-color: var(--brand-600);
+    color: white;
+    font-weight: 600;
+    border-radius: var(--radius-xl);
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+.created-primary:hover {
+    background-color: var(--brand-500);
 }
