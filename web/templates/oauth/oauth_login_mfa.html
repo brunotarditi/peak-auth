@@ -1,0 +1,193 @@
+{{ define "oauth_login_mfa.html" }}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación de Seguridad - Peak Auth</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0fdf4', 100: '#dcfce7', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 900: '#14532d' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+    <script src="/static/js/common.js"></script>
+</head>
+
+<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-300 antialiased relative overflow-hidden">
+    <!-- Fondos dinámicos -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-brand-400/20 dark:bg-brand-900/30 blur-[120px] mix-blend-multiply dark:mix-blend-lighten"></div>
+        <div class="absolute top-[20%] -right-[10%] w-[40%] h-[60%] rounded-full bg-blue-400/10 dark:bg-blue-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-lighten"></div>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <div class="w-full max-w-md relative z-10">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-brand-100 dark:shadow-none mb-4 border border-slate-100 dark:border-slate-700">
+                <img src="/static/img/logo.svg" alt="Peak Auth" class="w-10 h-10">
+            </div>
+            <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Verificación</h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">Confirma tu identidad para continuar</p>
+        </div>
+
+        <div class="glass-panel rounded-[2rem] p-8 shadow-2xl shadow-slate-200/50 dark:shadow-none">
+            <div id="totp-container">
+                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 text-center">Ingresa el código de tu Authenticator</h3>
+                <input type="text" id="totp-code"
+                    class="w-full bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all text-center text-2xl tracking-[0.5em] font-mono mb-4"
+                    placeholder="••••••" maxlength="6" autocomplete="one-time-code" autofocus>
+
+                <button onclick="verifyTotp()" id="totp-btn"
+                    class="w-full bg-brand-600 text-white font-bold py-4 rounded-xl hover:bg-brand-700 transition shadow-lg shadow-brand-100 dark:shadow-none flex items-center justify-center gap-2 mb-4">
+                    <span>Verificar Código</span>
+                </button>
+            </div>
+
+            <div class="relative flex items-center mb-6">
+                <div class="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+                <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-widest">o usa</span>
+                <div class="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+            </div>
+
+            <button onclick="loginWebAuthn()"
+                class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition shadow-lg shadow-slate-200 dark:shadow-none flex items-center justify-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                <span>Llave de Seguridad (Passkey)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden form for redirect -->
+    <form id="redirect-form" action="/oauth/authorize" method="GET" class="hidden">
+        <input type="hidden" name="client_id" value="{{ .ClientID }}">
+        <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
+        <input type="hidden" name="response_type" value="code">
+        <input type="hidden" name="state" value="{{ .State }}">
+    </form>
+
+    <script>
+        const mfaToken = "{{ .MfaToken }}";
+        const clientID = "{{ .ClientID }}";
+
+        // Establecer cookie temporal en JS (no es seguro pero es la forma de OAuth si el login no puede setear httponly en API cross-domain, pero como estamos en la misma app podemos dejarlo o que el endpoint devuelva el redirect).
+        // Wait, the API endpoint `CompleteLoginWithMfa` doesn't set a cookie, it returns JSON with access_token.
+        // I need to set the `peak_session` cookie!
+        function setCookie(name, value, minutes) {
+            let expires = "";
+            if (minutes) {
+                let date = new Date();
+                date.setTime(date.getTime() + (minutes * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/; samesite=lax";
+        }
+
+        async function verifyTotp() {
+            const code = document.getElementById('totp-code').value;
+            if (!code || code.length !== 6) {
+                Swal.fire('Error', 'Ingresa el código de 6 dígitos', 'error');
+                return;
+            }
+
+            try {
+                // We use X-App-ID to let the API know it's for a specific client
+                const res = await fetch('/api/v1/login/mfa/totp', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-App-ID': clientID
+                    },
+                    body: JSON.stringify({ mfa_token: mfaToken, code: code })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Código incorrecto');
+
+                if (data.access_token) {
+                    setCookie('peak_session', data.access_token, data.expires_in / 60);
+                    document.getElementById('redirect-form').submit();
+                }
+
+            } catch (err) {
+                Swal.fire('Error', err.message, 'error');
+            }
+        }
+
+        async function loginWebAuthn() {
+            try {
+                const res = await fetch('/api/v1/login/mfa/webauthn/begin?mfa_token=' + mfaToken, {
+                    headers: { 'X-App-ID': clientID }
+                });
+                if (!res.ok) throw new Error('Error al iniciar WebAuthn');
+                
+                const options = await res.json();
+                
+                options.publicKey.challenge = base64urlToBuffer(options.publicKey.challenge);
+                if (options.publicKey.allowCredentials) {
+                    options.publicKey.allowCredentials.forEach(cred => {
+                        cred.id = base64urlToBuffer(cred.id);
+                    });
+                }
+
+                const credential = await navigator.credentials.get({ publicKey: options.publicKey });
+
+                const payload = {
+                    id: credential.id,
+                    rawId: bufferToBase64url(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        authenticatorData: bufferToBase64url(credential.response.authenticatorData),
+                        clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+                        signature: bufferToBase64url(credential.response.signature),
+                        userHandle: credential.response.userHandle ? bufferToBase64url(credential.response.userHandle) : null
+                    }
+                };
+
+                const finishRes = await fetch('/api/v1/login/mfa/webauthn/finish?mfa_token=' + mfaToken, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-App-ID': clientID
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await finishRes.json();
+                if (!finishRes.ok) throw new Error(data.error || 'Error al validar credencial');
+
+                if (data.access_token) {
+                    setCookie('peak_session', data.access_token, data.expires_in / 60);
+                    document.getElementById('redirect-form').submit();
+                }
+
+            } catch (err) {
+                Swal.fire('Error', err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+{{ end }}

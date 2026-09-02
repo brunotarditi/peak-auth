@@ -1,0 +1,90 @@
+{{ define "oauth_login.html" }}
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión con Peak Auth</title>
+    <!-- Vanilla CSS -->
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+    <script src="/static/js/common.js"></script>
+</head>
+
+<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-300 antialiased relative overflow-hidden">
+    <!-- Fondos dinámicos -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-brand-400/20 dark:bg-brand-900/30 blur-[120px] mix-blend-multiply dark:mix-blend-lighten"></div>
+        <div class="absolute top-[20%] -right-[10%] w-[40%] h-[60%] rounded-full bg-blue-400/10 dark:bg-blue-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-lighten"></div>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <div class="w-full max-w-md relative z-10">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-brand-100 dark:shadow-none mb-4 border border-slate-100 dark:border-slate-700">
+                <img src="/static/img/logo.svg" alt="Peak Auth" class="w-10 h-10">
+            </div>
+            <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Iniciar Sesión</h1>
+            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">Continuar hacia la aplicación solicitante</p>
+        </div>
+
+        <!-- Tarjeta del Formulario -->
+        <div class="glass-panel rounded-[2rem] p-8 shadow-2xl shadow-slate-200/50 dark:shadow-none">
+            {{ if .Error }}
+            <div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-semibold flex items-center gap-3">
+                <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                <span>{{ .Error }}</span>
+            </div>
+            {{ end }}
+
+            <form action="/oauth/login" method="POST" class="space-y-5">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                <input type="hidden" name="client_id" value="{{ .ClientID }}">
+                <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
+                <input type="hidden" name="state" value="{{ .State }}">
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Correo Electrónico</label>
+                    <input type="email" name="email" required autofocus
+                        class="w-full bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all"
+                        placeholder="tu@email.com">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Contraseña</label>
+                    <input type="password" name="password" required
+                        class="w-full bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all"
+                        placeholder="••••••••">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit"
+                        class="w-full bg-brand-600 text-white font-bold py-4 rounded-xl hover:bg-brand-700 transition shadow-lg shadow-brand-100 dark:shadow-none flex items-center justify-center gap-2 group">
+                        <span>Continuar</span>
+                        <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <p class="text-center text-slate-400 dark:text-slate-500 text-xs mt-8">
+            Autenticado de forma segura por Peak Auth
+        </p>
+    </div>
+</body>
+
+</html>
+{{ end }}

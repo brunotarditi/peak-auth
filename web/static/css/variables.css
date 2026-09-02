@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+    /* Brand Colors (Peak Auth Brand - Blue) */
+    --brand-50: #eff6ff;
+    --brand-100: #dbeafe;
+    --brand-200: #bfdbfe;
+    --brand-300: #93c5fd;
+    --brand-400: #60a5fa;
+    --brand-500: #3b82f6;
+    --brand-600: #2563eb;
+    --brand-700: #1d4ed8;
+    --brand-800: #1e40af;
+    --brand-900: #1e3a8a;
+    --brand-950: #172554;
+
+    /* Slate (Neutrals) */
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+    --slate-950: #020617;
+
+    /* Semantic / Alerts */
+    /* Emerald (Success) */
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-300: #6ee7b7;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --emerald-800: #065f46;
+    --emerald-900: #064e3b;
+    
+    /* Amber (Warning) */
+    --amber-50: #fffbeb;
+    --amber-100: #fef3c7;
+    --amber-300: #fcd34d;
+    --amber-400: #fbbf24;
+    --amber-500: #f59e0b;
+    --amber-600: #d97706;
+    --amber-700: #b45309;
+    --amber-800: #92400e;
+    --amber-900: #78350f;
+    
+    /* Rose (Danger/Error) */
+    --rose-50: #fff1f2;
+    --rose-100: #ffe4e6;
+    --rose-300: #fda4af;
+    --rose-500: #f43f5e;
+    --rose-600: #e11d48;
+    --rose-700: #be123c;
+    --rose-800: #9f1239;
+    --rose-900: #881337;
+    --rose-950: #4c0519;
+
+    /* White / Transparent */
+    --white: #ffffff;
+    --transparent: transparent;
+    --black: #000000;
+
+    /* Theme Tokens (Light Mode - Default) */
+    --bg-body: var(--slate-50);
+    --bg-surface: var(--white);
+    --bg-surface-hover: var(--slate-50);
+    
+    --text-main: var(--slate-900);
+    --text-muted: var(--slate-500);
+    --text-light: var(--slate-400);
+    
+    --border-color: var(--slate-200);
+    --border-light: var(--slate-100);
+    
+    /* Input specifics */
+    --input-bg: var(--white);
+    --input-border: var(--slate-200);
+    --input-text: var(--slate-900);
+    --input-focus-ring: var(--brand-500);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    
+    /* Radius */
+    --radius-sm: 0.125rem;
+    --radius: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+    --radius-3xl: 1.5rem;
+    --radius-full: 9999px;
+}
+
+/* Dark Mode Tokens */
+.dark {
+    --bg-body: var(--slate-950);
+    --bg-surface: var(--slate-900);
+    --bg-surface-hover: var(--slate-800);
+    
+    --text-main: var(--white);
+    --text-muted: var(--slate-400);
+    --text-light: var(--slate-500);
+    
+    --border-color: var(--slate-800);
+    --border-light: var(--slate-800); /* or 900 */
+    
+    /* Input specifics */
+    --input-bg: var(--slate-900);
+    --input-border: var(--slate-800);
+    --input-text: var(--white);
+    --input-focus-ring: var(--brand-500);
+    
+    /* Adjust shadow for dark mode */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+}
