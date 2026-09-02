@@ -1,17 +1,8 @@
-FROM node:22-alpine AS assets
-WORKDIR /app/web
-COPY web/package.json web/package-lock.json ./
-RUN npm ci
-COPY web/static ./static
-COPY web/templates ./templates
-RUN npm run build:css
-
-FROM golang:1.24-alpine AS builder
+FROM golang:1.27-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY --from=assets /app/web/static/css/output.css ./web/static/css/output.css
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o peak-auth
 
 FROM alpine:latest
