@@ -1,17 +1,15 @@
 {{ define "partials/footer_admin" }}
-<footer class="bg-white/50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 py-8 mt-auto">
-    <div
-        class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 dark:text-slate-500 text-sm">
-        <div class="flex items-center gap-2">
-            <span class="font-bold text-slate-600 dark:text-slate-300">Peak Auth</span>
+<footer style="background-color: var(--bg-surface); border-top: 1px solid var(--border-light); padding: 2rem 0; margin-top: auto;">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; color: var(--text-muted); font-size: 0.875rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-weight: 700; color: var(--text-main);">Peak Auth</span>
             <span>&bull;</span>
             <p>&copy; {{ now.Year }} Gestión de Identidades en la Nube.</p>
         </div>
-        <div class="flex gap-6">
-            <a href="/admin/docs" class="hover:text-brand-600 dark:hover:text-brand-400 transition">Documentación</a>
-            <a href="/admin/docs/api" class="hover:text-brand-600 dark:hover:text-brand-400 transition">API</a>
+        <div style="display: flex; gap: 1.5rem;">
+            <a href="/admin/docs" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-500)'" onmouseout="this.style.color='var(--text-muted)'">Documentación</a>
+            <a href="/admin/docs/api" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-500)'" onmouseout="this.style.color='var(--text-muted)'">API</a>
         </div>
     </div>
 </footer>
 {{ end }}
-
