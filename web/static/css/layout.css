@@ -1,1 +1,238 @@
-/* Layout definitions */
+/* layout.css - Estructura de componentes mayores */
+
+/* Global container */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Base Body Layout */
+.bg-pattern {
+    background-image: radial-gradient(var(--border-color) 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+}
+
+.layout-app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.layout-main {
+    flex-grow: 1;
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+}
+
+/* Navbar */
+.navbar {
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.dark .navbar {
+    background-color: rgba(2, 6, 23, 0.8); /* slate-950/80 */
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 4rem;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.navbar-logo-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar-logo-wrapper {
+    padding: 0.25rem;
+    border-radius: var(--radius-lg);
+    transition: transform 0.2s;
+}
+
+.navbar-logo-link:hover .navbar-logo-wrapper {
+    transform: scale(1.05);
+}
+
+.navbar-logo-text {
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.025em;
+    color: var(--text-main);
+}
+
+.navbar-breadcrumbs {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+}
+
+@media (min-width: 768px) {
+    .navbar-breadcrumbs {
+        display: flex;
+    }
+}
+
+.navbar-user-info {
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-right: 0.5rem;
+    user-select: none;
+}
+
+@media (min-width: 640px) {
+    .navbar-user-info {
+        display: flex;
+    }
+}
+
+.navbar-user-role {
+    font-size: 0.5625rem; /* 9px */
+    font-weight: 900;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.navbar-user-email {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+/* Icon Buttons in Navbar */
+.icon-btn {
+    padding: 0.5rem;
+    color: var(--text-muted);
+    border-radius: var(--radius-xl);
+    transition: all 0.2s;
+    background: transparent;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.icon-btn:hover {
+    color: var(--brand-600);
+    background-color: var(--brand-50);
+}
+
+.dark .icon-btn:hover {
+    color: var(--brand-300);
+    background-color: var(--slate-800);
+}
+
+.icon-btn-danger:hover {
+    color: var(--rose-600);
+    background-color: var(--rose-50);
+}
+
+.dark .icon-btn-danger:hover {
+    color: var(--rose-400);
+    background-color: rgba(136, 19, 55, 0.2); /* rose-900/20 */
+}
+
+.icon-btn svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+
+/* Auth Layout (Login, MFA, OAuth) */
+.layout-auth {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Background blobs for Auth Layout */
+.auth-bg-shapes {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.auth-blob-1 {
+    position: absolute;
+    top: -20%;
+    left: -10%;
+    width: 50%;
+    height: 50%;
+    border-radius: 9999px;
+    background-color: rgba(96, 165, 250, 0.2); /* brand-400/20 */
+    filter: blur(120px);
+    mix-blend-mode: multiply;
+}
+
+.auth-blob-2 {
+    position: absolute;
+    top: 20%;
+    right: -10%;
+    width: 40%;
+    height: 60%;
+    border-radius: 9999px;
+    background-color: rgba(96, 165, 250, 0.1); /* blue-400/10 */
+    filter: blur(120px);
+    mix-blend-mode: multiply;
+}
+
+.dark .auth-blob-1, .dark .auth-blob-2 {
+    mix-blend-mode: lighten;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 28rem; /* 448px */
+    position: relative;
+    z-index: 10;
+}
+
+/* Glass Panel for Auth Cards */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: var(--radius-2xl);
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.dark .glass-panel {
+    background: rgba(15, 23, 42, 0.6); /* slate-900/60 */
+    border-color: rgba(255, 255, 255, 0.05);
+}

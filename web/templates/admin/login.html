@@ -6,66 +6,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Acceso Admin</title>
     <script src="{{ js "config.js" }}"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/admin.css" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/output.css" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ js "login.js" }}"></script>
     <script src="{{ js "common.js" }}"></script>
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
 </head>
 
-<body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900">
-    <div class="max-w-md w-full animate-slide-in-right">
-        <div class="text-center mb-10">
-            <img src="{{ asset " /static/img/logo.svg" }}" alt="Peak Auth" class="h-16 mx-auto mb-4">
-            <h1 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Peak <span
-                    class="text-brand-600">Auth</span></h1>
-            <p class="text-slate-400 mt-2 font-medium">Panel de Control de Identidad</p>
+<body class="layout-auth bg-pattern">
+    <div class="auth-container" style="max-width: 28rem;">
+        <div style="text-align: center; margin-bottom: 2.5rem;">
+            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="height: 4rem; margin: 0 auto 1rem;">
+            <h1 style="font-size: 2.25rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Peak <span style="color: var(--brand-600);">Auth</span></h1>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-weight: 500;">Panel de Control de Identidad</p>
         </div>
 
-        <div
-            class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800">
-            <h2 class="text-xl font-bold mb-8 text-slate-800 dark:text-white">Bienvenido al Panel</h2>
+        <div class="peak-card" style="padding: 2.5rem;">
+            <h2 class="peak-card-title" style="margin-bottom: 2rem;">Bienvenido al Panel</h2>
 
-            <form action="/admin/login" method="POST" class="space-y-6">
+            <form action="/admin/login" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                <div>
-                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Email
-                        Administrador</label>
-                    <input type="email" name="email" required placeholder="admin@ejemplo.com"
-                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Email Administrador</label>
+                    <input type="email" name="email" required placeholder="admin@ejemplo.com" class="peak-input">
                 </div>
 
-                <div class="relative">
-                    <label
-                        class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Contraseña</label>
-                    <div class="relative">
-                        <input type="password" name="password" id="password_field" required placeholder="••••••••"
-                            class="w-full px-5 py-4 pr-12 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-medium">
-                        <button type="button" onclick="toggleLoginPassword('password_field')"
-                            class="absolute inset-y-0 right-0 px-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Contraseña</label>
+                    <div style="position: relative;">
+                        <input type="password" name="password" id="password_field" required placeholder="••••••••" class="peak-input" style="padding-right: 3rem;">
+                        <button type="button" onclick="toggleLoginPassword('password_field')" style="position: absolute; right: 0; top: 0; bottom: 0; padding: 0 1rem; color: var(--text-muted); background: transparent; border: none; cursor: pointer;">
                             {{template "icon-eye"}}
                         </button>
                     </div>
                 </div>
 
-                <button type="submit"
-                    class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-brand-700 transition shadow-xl shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3 group">
+                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; margin-top: 0.5rem;">
                     <span>Entrar al Panel</span>
                     {{template "icon-arrow-forward"}}
                 </button>
             </form>
 
-            <div class="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800 text-center">
-                <p class="text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-widest">Acceso
-                    restringido para personal autorizado.</p>
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light); text-align: center;">
+                <a href="/admin/reset-password" style="font-size: 0.75rem; font-weight: 700; color: var(--brand-600); text-decoration: none;">¿Olvidaste tu contraseña?</a>
             </div>
         </div>
-
-        <p class="text-center text-slate-400 dark:text-slate-600 text-xs mt-10 font-medium">
-            &copy; {{ year }} Peak Auth &bull; v{{ version }}
-        </p>
     </div>
 </body>
 

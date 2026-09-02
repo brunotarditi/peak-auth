@@ -19,9 +19,9 @@
     <script src="{{ js "common.js" }}"></script>
 </head>
 
-<body class="bg-pattern flex flex-col min-h-screen text-slate-900">
+<body class="bg-pattern layout-app">
     {{ template "partials/nav_admin" . }}
-    <main class="container mx-auto py-10 px-4 flex-grow">
+    <main class="container layout-main">
         {{ block "content" . }}{{ end }}
     </main>
     {{ template "partials/footer_admin" . }}

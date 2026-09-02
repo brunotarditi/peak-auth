@@ -1,57 +1,49 @@
 {{ define "partials/nav_admin" }}
-<nav
-    class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800">
-    <div class="container mx-auto px-4">
-        <div class="flex justify-between items-center h-16">
-            <div class="flex items-center gap-6">
-                <a href="/admin" class="group flex items-center gap-2">
-                    <div class="p-1 rounded-lg transition-transform duration-200 group-hover:scale-105">
-                        <img src="{{ asset " /static/img/logo.svg" }}" alt="Peak Auth" class="w-8 h-8">
+<nav class="navbar">
+    <div class="container">
+        <div class="navbar-container">
+            <div class="navbar-left">
+                <a href="/admin" class="navbar-logo-link">
+                    <div class="navbar-logo-wrapper">
+                        <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 2rem; height: 2rem;">
                     </div>
-                    <span class="font-bold text-xl tracking-tight text-slate-800 dark:text-white">
+                    <span class="navbar-logo-text">
                         Peak Auth
                     </span>
                 </a>
-                <div class="hidden md:flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                <div class="navbar-breadcrumbs">
                     {{ range .Breadcrumbs }}
-                    <span class="text-brand-300 dark:text-brand-600">/</span>
+                    <span style="color: var(--brand-300);">/</span>
                     {{ if .URL }}
-                    <a href="{{ .URL }}" class="text-xs hover:text-brand-400 transition font-medium">{{ .Label
-                        }}</a>
+                    <a href="{{ .URL }}" style="font-size: 0.75rem; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-400)'" onmouseout="this.style.color='inherit'">{{ .Label }}</a>
                     {{ else }}
-                    <span class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ .Label }}</span>
+                    <span style="font-size: 0.875rem; font-weight: 500; color: var(--text-main);">{{ .Label }}</span>
                     {{ end }}
                     {{ end }}
                 </div>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="navbar-right">
                 <!-- Dark Mode Toggle -->
-                <button onclick="toggleDarkMode()"
-                    class="p-2 text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-300 hover:bg-brand-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                    title="Alternar Modo Oscuro">
+                <button onclick="toggleDarkMode()" class="icon-btn" title="Alternar Modo Oscuro">
                     {{ template "icon-moon" }}
                     {{ template "icon-sun" }}
                 </button>
 
                 <!-- Configuración 2FA Admin -->
-                <button onclick="openMfaSettings()"
-                    class="p-2 text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-300 hover:bg-brand-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                    title="Configurar Seguridad 2FA">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                <button onclick="openMfaSettings()" class="icon-btn" title="Configurar Seguridad 2FA">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                 </button>
 
                 {{ if .UserEmail }}
-                <div class="hidden sm:flex flex-col items-end text-right mr-2 select-none">
-                    <span class="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5 transition-colors">
+                <div class="navbar-user-info">
+                    <span class="navbar-user-role">
                         Administrador
                     </span>
-                    <span class="text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors">{{ .UserEmail }}</span>
+                    <span class="navbar-user-email">{{ .UserEmail }}</span>
                 </div>
                 {{ end }}
-                <form action="/admin/logout" method="POST" class="inline">
-                    <button type="submit"
-                        class="p-2 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-                        title="Cerrar Sesión">
+                <form action="/admin/logout" method="POST" style="display: inline;">
+                    <button type="submit" class="icon-btn icon-btn-danger" title="Cerrar Sesión">
                         {{ template "logout" }}
                     </button>
                 </form>
