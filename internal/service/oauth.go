@@ -11,6 +11,7 @@ import (
 )
 
 type OAuthService interface {
+	ValidateClientRedirect(clientID, redirectURI string) error
 	GenerateAuthorizationCode(userID uint, clientID, redirectURI string) (string, error)
 	ExchangeCodeForToken(clientID, clientSecret, codeStr string) (uint, error)
 	StartCleanupTask(interval time.Duration)
@@ -28,17 +29,25 @@ func NewOAuthService(oauthRepo repo.OAuthRepository, appRepo repo.ApplicationRep
 	}
 }
 
-func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirectURI string) (string, error) {
-	// Verificar que el app existe y que la redirect URI coincide exactamente
+func (s *oauthService) ValidateClientRedirect(clientID, redirectURI string) error {
 	app, err := s.appRepo.FindByAppID(clientID)
 	if err != nil {
-		return "", errors.New("client_id inválido")
+		return errors.New("client_id inválido")
 	}
 
 	cleanAppURL := strings.TrimRight(strings.TrimSpace(app.RedirectURL), "/")
 	cleanReqURL := strings.TrimRight(strings.TrimSpace(redirectURI), "/")
 	if cleanAppURL != cleanReqURL {
-		return "", errors.New("redirect_uri no coincide con la registrada")
+		return errors.New("redirect_uri no coincide con la registrada")
+	}
+
+	return nil
+}
+
+func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirectURI string) (string, error) {
+	// Verificar que el app existe y que la redirect URI coincide exactamente
+	if err := s.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		return "", err
 	}
 
 	// Generar código aleatorio seguro (32 bytes = 43 caracteres base64)
@@ -65,14 +74,10 @@ func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirect
 }
 
 func (s *oauthService) ExchangeCodeForToken(clientID, clientSecret, codeStr string) (uint, error) {
-	// 1. Validar las credenciales del cliente (app)
-	app, err := s.appRepo.FindByAppID(clientID)
+	// 1. Validar las credenciales del cliente (app) usando hashing constante de secreto
+	_, err := s.appRepo.ValidateSecret(clientID, clientSecret)
 	if err != nil {
-		return 0, errors.New("client_id inválido")
-	}
-
-	if app.SecretKey != clientSecret {
-		return 0, errors.New("client_secret inválido")
+		return 0, errors.New("credenciales de cliente inválidas")
 	}
 
 	// 2. Obtener y consumir el código de un solo uso (One-Time Use Transactional)

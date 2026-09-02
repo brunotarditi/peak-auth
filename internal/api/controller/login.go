@@ -254,7 +254,8 @@ func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
+	c.SetSameSite(http.SameSiteLaxMode)
+	isSecure := util.IsProduction()
 	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Login exitoso", "redirect": "/admin"})
@@ -294,7 +295,7 @@ func (ctrl *LoginController) VerifyTOTPSetupAdmin(c *gin.Context) {
 	}
 
 	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
+	isSecure := util.IsProduction()
 	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -344,7 +345,7 @@ func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
 	}
 
 	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
+	isSecure := util.IsProduction()
 	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
 
 	c.JSON(http.StatusOK, gin.H{

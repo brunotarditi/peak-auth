@@ -11,22 +11,12 @@ async function handleReset(e) {
     const confirm = document.getElementById('confirm_password_field')?.value;
 
     if (!token || !password) {
-        Swal.fire({
-            title: 'Atención',
-            text: 'Por favor, complete todos los campos requeridos.',
-            icon: 'warning',
-            confirmButtonColor: '#4f46e5'
-        });
+        peakAlert('Atención', 'Por favor, complete todos los campos requeridos.', 'warning');
         return;
     }
 
     if (password !== confirm) {
-        Swal.fire({
-            title: 'Error',
-            text: 'Las contraseñas no coinciden.',
-            icon: 'error',
-            confirmButtonColor: '#4f46e5'
-        });
+        peakAlert('Error', 'Las contraseñas no coinciden.', 'error');
         return;
     }
 
@@ -47,24 +37,22 @@ async function handleReset(e) {
         const text = await response.text();
 
         if (response.ok) {
-            await Swal.fire({
+            Swal.fire({
                 title: '¡Cuenta Activada!',
                 text: text,
                 icon: 'success',
-                confirmButtonColor: '#4f46e5',
-                timer: 3000
+                timer: 3000,
+                showConfirmButton: false,
+                background: window.getPeakThemeConfig ? window.getPeakThemeConfig().background : '#fff',
+                color: window.getPeakThemeConfig ? window.getPeakThemeConfig().color : '#0f172a'
+            }).then(() => {
+                window.location.href = "/admin/login";
             });
-            window.location.href = "/admin/login";
         } else {
             throw new Error(text || 'Ocurrió un error al procesar la solicitud');
         }
     } catch (err) {
-        Swal.fire({
-            title: 'Error',
-            text: err.message,
-            icon: 'error',
-            confirmButtonColor: '#4f46e5'
-        });
+        peakAlert('Error', err.message, 'error');
     } finally {
         submitBtn.disabled = false;
     }

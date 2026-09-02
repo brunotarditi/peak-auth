@@ -8,6 +8,7 @@ import (
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
 	"sync"
+	"time"
 
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
@@ -43,25 +44,54 @@ func getWebAuthn() (*webauthn.WebAuthn, error) {
 	return wa, nil
 }
 
-// In-memory cache for WebAuthn sessions (since this is an MVP without Redis)
+// In-memory cache for WebAuthn sessions with automatic TTL expiration
+type expiringWebAuthnSession struct {
+	data      *webauthn.SessionData
+	expiresAt time.Time
+}
+
 var (
-	waSessionCache = make(map[string]*webauthn.SessionData)
+	waSessionCache = make(map[string]expiringWebAuthnSession)
 	waSessionMutex sync.RWMutex
 )
 
-// StoreWebAuthnSession guarda la sesión de WebAuthn temporalmente
+func init() {
+	go cleanupWebAuthnSessions()
+}
+
+func cleanupWebAuthnSessions() {
+	ticker := time.NewTicker(5 * time.Minute)
+	for range ticker.C {
+		waSessionMutex.Lock()
+		now := time.Now()
+		for k, v := range waSessionCache {
+			if now.After(v.expiresAt) {
+				delete(waSessionCache, k)
+			}
+		}
+		waSessionMutex.Unlock()
+	}
+}
+
+// StoreWebAuthnSession guarda la sesión de WebAuthn temporalmente con TTL de 5 minutos
 func StoreWebAuthnSession(key string, session *webauthn.SessionData) {
 	waSessionMutex.Lock()
 	defer waSessionMutex.Unlock()
-	waSessionCache[key] = session
+	waSessionCache[key] = expiringWebAuthnSession{
+		data:      session,
+		expiresAt: time.Now().Add(5 * time.Minute),
+	}
 }
 
-// GetWebAuthnSession recupera la sesión de WebAuthn
+// GetWebAuthnSession recupera la sesión de WebAuthn si no ha expirado
 func GetWebAuthnSession(key string) (*webauthn.SessionData, bool) {
 	waSessionMutex.RLock()
 	defer waSessionMutex.RUnlock()
 	session, exists := waSessionCache[key]
-	return session, exists
+	if !exists || time.Now().After(session.expiresAt) {
+		return nil, false
+	}
+	return session.data, true
 }
 
 // DeleteWebAuthnSession elimina la sesión de WebAuthn
