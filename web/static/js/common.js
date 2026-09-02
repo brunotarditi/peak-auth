@@ -107,10 +107,12 @@ async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'dan
         background: themeConfig.background,
         color: themeConfig.color,
         reverseButtons: true,
+        buttonsStyling: false,
         customClass: {
-            popup: 'rounded-3xl',
-            confirmButton: 'rounded-xl font-bold',
-            cancelButton: 'rounded-xl font-bold'
+            popup: 'peak-card',
+            confirmButton: 'peak-btn peak-btn-primary',
+            cancelButton: 'peak-btn peak-btn-secondary',
+            actions: 'swal2-actions-custom'
         }
     });
 
@@ -141,9 +143,10 @@ function peakAlert(title, text, icon = 'error') {
         confirmButtonColor: colorMap[icon] || palette.secondary,
         background: themeConfig.background,
         color: themeConfig.color,
+        buttonsStyling: false,
         customClass: {
-            popup: 'rounded-3xl',
-            confirmButton: 'rounded-xl font-bold'
+            popup: 'peak-card',
+            confirmButton: 'peak-btn peak-btn-primary'
         }
     });
 }

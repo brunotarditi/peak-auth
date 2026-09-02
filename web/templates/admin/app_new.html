@@ -33,16 +33,16 @@
                     class="peak-input" style="resize: vertical;">{{ if .App }}{{ .App.Description }}{{ end }}</textarea>
             </div>
 
-            <div style="background-color: var(--brand-50); border: 1px solid var(--brand-200); padding: 1.5rem; border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: space-between;">
+            <div style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 1.5rem; border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center;">
                     <input type="checkbox" name="is_active" {{ if or (not .App) .App.IsActive }}checked{{ end }}
                         id="is_active" {{ if .IsActive }}checked{{ end }} data-locked="{{ .IsLocked }}"
-                        style="width: 1.25rem; height: 1.25rem; accent-color: var(--brand-600); cursor: pointer;">
-                    <label for="is_active" style="margin-left: 0.75rem; font-size: 0.875rem; font-weight: 700; color: var(--brand-800); cursor: pointer;">
+                        class="peak-checkbox">
+                    <label for="is_active" style="margin-left: 0.75rem; font-size: 0.875rem; font-weight: 700; color: var(--brand-500); cursor: pointer;">
                         {{ .StatusApp }}
                     </label>
                 </div>
-                <div style="color: var(--brand-400);">
+                <div style="color: var(--brand-500);">
                     {{ template "icon-lightning" }}
                 </div>
             </div>

@@ -134,7 +134,7 @@ svg {
 .absolute { position: absolute; }
 .block { display: block; }
 .inline-block { display: inline-block; }
-.hidden { display: none; }
+.hidden { display: none !important; }
 .overflow-hidden { overflow: hidden; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .line-clamp-2 {
