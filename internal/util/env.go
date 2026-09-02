@@ -67,8 +67,8 @@ func normalizeHost(host string) string {
 		port := host[idx+1:]
 		base := host[:idx]
 
-		// Si es puerto por defecto, lo removemos
-		if port == "80" || port == "443" || port == "3000" || port == "8080" {
+		// Si es puerto estándar por defecto HTTP/HTTPS, lo removemos
+		if port == "80" || port == "443" {
 			return base
 		}
 	}

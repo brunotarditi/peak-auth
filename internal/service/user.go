@@ -61,6 +61,8 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	// 1. Validar Usuario y Aplicación
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
+		// Mitigación de timing attack y user enumeration
+		util.CheckPasswordHash("dummy", "$2a$10$FKTUgxnqSnUp8kDjnTFlyOn3s165yiYmcLxXeNv7NavMY3DH19IIq")
 		return response.TokenResponse{}, fmt.Errorf("credenciales inválidas")
 	}
 

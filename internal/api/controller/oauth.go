@@ -7,6 +7,7 @@ import (
 	"peak-auth/internal/api/request"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
+	"peak-auth/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,6 +28,12 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 	if clientID == "" || redirectURI == "" || responseType != "code" {
 		// No podemos redirigir a un lugar seguro si faltan parámetros clave
 		ctx.String(http.StatusBadRequest, "Parámetros de autorización inválidos")
+		return
+	}
+
+	// 0. Validar de antemano que la aplicación exista y que redirect_uri coincida con la registrada (prevención Open Redirect)
+	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
 		return
 	}
 
@@ -129,6 +136,11 @@ func (c *OAuthController) GetPublicLogin(ctx *gin.Context) {
 		return
 	}
 
+	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
+		return
+	}
+
 	csrf, _ := ctx.Get("csrf_token")
 	ctx.HTML(http.StatusOK, "oauth_login.html", gin.H{
 		"ClientID":    clientID,
@@ -146,6 +158,11 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 	state := ctx.PostForm("state")
 	email := ctx.PostForm("email")
 	password := ctx.PostForm("password")
+
+	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
+		return
+	}
 
 	// Usamos Login (para usuarios finales) en lugar de AdminLogin
 	response, err := c.UserService.Login(request.LoginRequest{
@@ -171,7 +188,8 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 	}
 
 	// Login exitoso sin MFA. Setear cookie y redirigir a authorize
-	isSecure := ctx.Request.TLS != nil || ctx.GetHeader("X-Forwarded-Proto") == "https"
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	isSecure := util.IsProduction()
 	// 5 mins para la cookie temporal de sesión pública (o 24hs)
 	ctx.SetCookie("peak_session", response.AccessToken, response.ExpiresIn*60, "/", "", isSecure, true)
 

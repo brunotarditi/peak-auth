@@ -1,6 +1,7 @@
 package service
 
 import (
+	"crypto/subtle"
 	"errors"
 	"log"
 	"os"
@@ -120,7 +121,7 @@ func (s *setupService) InitializeSystem(port string) {
 }
 
 func (s *setupService) ValidateSetupToken(token string) error {
-	if s.ephemeralToken == "" || s.ephemeralToken != token {
+	if s.ephemeralToken == "" || token == "" || subtle.ConstantTimeCompare([]byte(s.ephemeralToken), []byte(token)) != 1 {
 		return errors.New("token de instalación inválido")
 	}
 

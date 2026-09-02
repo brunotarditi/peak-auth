@@ -63,7 +63,8 @@ func handleUnauthorized(c *gin.Context) {
 
 func handleAuthError(c *gin.Context, err error) {
 	if strings.HasPrefix(c.Request.URL.Path, "/admin") {
-		c.SetCookie("admin_token", "", -1, "/", "", false, true)
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("admin_token", "", -1, "/", "", util.IsProduction(), true)
 		c.Redirect(http.StatusSeeOther, "/admin/login")
 	} else {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token inválido o expirado"})
