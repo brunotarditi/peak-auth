@@ -16,6 +16,7 @@ type UserController struct {
 	AppService  service.ApplicationService
 	RuleService service.ApplicationRuleService
 	RoleService service.RoleService
+	MfaService  service.MfaService
 }
 
 // GetResetPassword muestra el formulario de cambio de contraseña
@@ -202,4 +203,144 @@ func (ctrl *UserController) PostUnlockUser(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"message": "Usuario desbloqueado correctamente"})
+}
+
+// SetupTOTP inicia el enrolamiento de TOTP para el usuario autenticado
+func (ctrl *UserController) SetupTOTP(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	// Obtener email del usuario desde el contexto
+	emailVal, _ := c.Get("user_email")
+	email := emailVal.(string)
+
+	resp, err := ctrl.MfaService.SetupTOTP(userID, email)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// VerifyTOTP valida el código TOTP enviado para activar el factor
+func (ctrl *UserController) VerifyTOTP(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	var req struct {
+		Code string `json:"code" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Código es requerido"})
+		return
+	}
+
+	recoveryCodes, err := ctrl.MfaService.VerifyAndActivateTOTP(userID, req.Code)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":        "TOTP activado con éxito",
+		"recovery_codes": recoveryCodes,
+	})
+}
+
+// DisableMFA desactiva el segundo factor para el usuario autenticado
+func (ctrl *UserController) DisableMFA(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	if err := ctrl.MfaService.DisableMFA(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "MFA desactivado correctamente"})
+}
+
+// BeginWebAuthnRegistration inicia el registro de una Passkey
+func (ctrl *UserController) BeginWebAuthnRegistration(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+	emailVal, _ := c.Get("user_email")
+	email := emailVal.(string)
+
+	options, sessionData, err := ctrl.MfaService.BeginWebAuthnRegistration(userID, email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Guardar sesión en caché usando el userID como clave (para un solo registro a la vez por usuario)
+	sessionKey := fmt.Sprintf("wa_reg_%d", userID)
+	service.StoreWebAuthnSession(sessionKey, sessionData)
+
+	c.JSON(http.StatusOK, options)
+}
+
+// FinishWebAuthnRegistration finaliza el registro de una Passkey
+func (ctrl *UserController) FinishWebAuthnRegistration(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	sessionKey := fmt.Sprintf("wa_reg_%d", userID)
+	sessionData, exists := service.GetWebAuthnSession(sessionKey)
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesión WebAuthn expirada o no encontrada"})
+		return
+	}
+
+	if err := ctrl.MfaService.FinishWebAuthnRegistration(userID, sessionData, c.Request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Si queremos devolver los códigos de recuperación para mostrarlos tras configurar
+	status, _ := ctrl.MfaService.GetMfaStatus(userID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Passkey configurada correctamente",
+		"status":  status,
+	})
+}
+
+// GetMfaStatus retorna el estado de MFA para el usuario autenticado
+func (ctrl *UserController) GetMfaStatus(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	status, err := ctrl.MfaService.GetMfaStatus(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, status)
 }

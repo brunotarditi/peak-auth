@@ -189,6 +189,7 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 	var pwdPolicy *util.PasswordPolicy
 	var sessionPolicy *util.SessionPolicy
 	var authzPolicy *util.AuthzPolicy
+	var mfaPolicy *util.MfaPolicy
 
 	for _, r := range rules {
 		switch r.Code {
@@ -203,7 +204,13 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 			sessionPolicy, _ = util.ParseSessionPolicy(r.Value)
 		case "AUTHZ_POLICY":
 			authzPolicy, _ = util.ParseAuthzPolicy(r.Value)
+		case "MFA_POLICY":
+			mfaPolicy, _ = util.ParseMfaPolicy(r.Value)
 		}
+	}
+
+	if mfaPolicy == nil {
+		mfaPolicy = &util.MfaPolicy{Mode: "OPTIONAL"}
 	}
 
 	isRootVal, _ := c.Get("is_root")
@@ -216,6 +223,7 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 		"PwdPolicy":     pwdPolicy,
 		"SessionPolicy": sessionPolicy,
 		"AuthzPolicy":   authzPolicy,
+		"MfaPolicy":     mfaPolicy,
 		"UserCount":     len(users),
 		"Roles":         roles,
 		"IsRoot":        isRoot,

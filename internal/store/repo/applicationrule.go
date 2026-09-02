@@ -35,6 +35,7 @@ func (r *applicationRuleRepository) CreateDefaultRules(appID uint) error {
 		{ApplicationID: appID, Code: "PWD_POLICY", Value: []byte(`{"min_length": 8, "require_uppercase": true, "require_numbers": true, "require_symbols": true}`), IsActive: true},
 		{ApplicationID: appID, Code: "SESSION_POLICY", Value: []byte(`{"token_expiration_minutes": 1440, "max_failed_logins": 5}`), IsActive: true},
 		{ApplicationID: appID, Code: "AUTHZ_POLICY", Value: []byte(`{"enable_roles": true}`), IsActive: true},
+		{ApplicationID: appID, Code: "MFA_POLICY", Value: []byte(`{"mode": "OPTIONAL"}`), IsActive: true},
 	}
 	for _, d := range defs {
 		if err := r.db.Create(&d).Error; err != nil {

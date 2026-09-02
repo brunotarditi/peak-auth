@@ -82,16 +82,48 @@ type User struct {
 	IsActive     bool      `gorm:"default:true" json:"is_active"`
 	IsVerified   bool      `gorm:"default:false" json:"is_verified"`
 	FailedLogins uint      `gorm:"default:0" json:"failed_logins"`
+	MfaEnabled   bool      `gorm:"default:false" json:"mfa_enabled"`
 	LastLogin    time.Time `json:"last_login"`
 	Profile      Profile   `gorm:"foreignKey:UserID"`
 }
 
 type UserApplicationRole struct {
 	gorm.Model
-	UserID        uint        `gorm:"not null;index:idx_uar_unique,unique"`
-	ApplicationID uint        `gorm:"not null;index:idx_uar_unique,unique"`
-	RoleID        uint        `gorm:"not null;index:idx_uar_unique,unique"`
+	UserID        uint        `gorm:"not null"`
+	ApplicationID uint        `gorm:"not null"`
+	RoleID        uint        `gorm:"not null"`
 	User          User        `gorm:"foreignKey:UserID"`
 	Application   Application `gorm:"foreignKey:ApplicationID"`
 	Role          Role        `gorm:"foreignKey:RoleID"`
+}
+
+// UserMfaCredential almacena las credenciales MFA del usuario (TOTP o WebAuthn).
+type UserMfaCredential struct {
+	gorm.Model
+	UserID   uint   `gorm:"not null;index" json:"user_id"`
+	Type     string `gorm:"type:varchar(20);not null" json:"type"` // "TOTP" o "WEBAUTHN"
+	Name     string `gorm:"type:varchar(100)" json:"name"`         // Ej: "Google Authenticator", "Mi YubiKey"
+	Secret   string `gorm:"type:text;not null" json:"-"`           // TOTP: AES-256-GCM encrypted secret; WebAuthn: credential JSON
+	IsActive bool   `gorm:"default:false" json:"is_active"`       // Se activa tras la primera verificación exitosa
+	User     User   `gorm:"foreignKey:UserID" json:"-"`
+}
+
+// UserRecoveryCode almacena los códigos de recuperación hasheados del usuario.
+type UserRecoveryCode struct {
+	gorm.Model
+	UserID   uint   `gorm:"not null;index" json:"user_id"`
+	CodeHash string `gorm:"type:varchar(255);not null" json:"-"` // Bcrypt hash
+	IsUsed   bool   `gorm:"default:false" json:"is_used"`
+	User     User   `gorm:"foreignKey:UserID" json:"-"`
+}
+
+// OAuthCode almacena los códigos de autorización de corta vida para el flujo OAuth2.
+type OAuthCode struct {
+	gorm.Model
+	Code        string    `gorm:"type:varchar(100);uniqueIndex;not null"`
+	UserID      uint      `gorm:"not null;index"`
+	ClientID    string    `gorm:"type:varchar(255);not null"`
+	RedirectURI string    `gorm:"type:text;not null"`
+	ExpiresAt   time.Time `gorm:"index;not null"`
+	User        User      `gorm:"foreignKey:UserID"`
 }

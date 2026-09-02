@@ -126,7 +126,7 @@ func (r *userApplicationRoleRepository) GetUsersWithRolesByApp(appID uint) ([]re
 	var rows []response.UserAppRow
 
 	err := r.db.Table("users").
-		Select("users.id, users.email, users.is_verified, users.is_active, profiles.first_name, profiles.last_name, roles.name as role_name").
+		Select("users.id, users.email, users.is_verified, users.is_active, users.mfa_enabled, profiles.first_name, profiles.last_name, roles.name as role_name").
 		Joins("JOIN profiles ON profiles.user_id = users.id").
 		Joins("JOIN user_application_roles uar ON uar.user_id = users.id").
 		Joins("JOIN roles ON roles.id = uar.role_id").
@@ -156,8 +156,8 @@ func (r *userApplicationRoleRepository) GetUsersWithRolesByAppPaginated(appID ui
 
 	// Realizar la consulta con paginación agrupando por usuario para juntar sus roles
 	err := baseQuery.
-		Select("users.id, users.email, users.is_verified, users.is_active, users.failed_logins, profiles.first_name, profiles.last_name, string_agg(roles.name, ', ') as role_name").
-		Group("users.id, users.email, users.is_verified, users.is_active, users.failed_logins, profiles.first_name, profiles.last_name").
+		Select("users.id, users.email, users.is_verified, users.is_active, users.failed_logins, users.mfa_enabled, profiles.first_name, profiles.last_name, string_agg(roles.name, ', ') as role_name").
+		Group("users.id, users.email, users.is_verified, users.is_active, users.failed_logins, users.mfa_enabled, profiles.first_name, profiles.last_name").
 		Order("users.email ASC").
 		Offset(offset).
 		Limit(limit).

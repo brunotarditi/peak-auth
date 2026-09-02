@@ -79,3 +79,27 @@ func TestVerifyToken_WrongIssuer(t *testing.T) {
 		t.Fatal("se esperaba error por issuer incorrecto")
 	}
 }
+
+func TestMFAPendingToken(t *testing.T) {
+	m := newTestManager(t)
+	tok, err := m.GenerateMFAPendingToken(42, "user@example.com", "mi-app")
+	if err != nil {
+		t.Fatalf("GenerateMFAPendingToken falló: %v", err)
+	}
+
+	claims, err := m.VerifyMFAPendingToken(tok, "mi-app")
+	if err != nil {
+		t.Fatalf("VerifyMFAPendingToken falló: %v", err)
+	}
+
+	if claims.Subject != "42" || claims.AppID != "mi-app" || len(claims.Roles) != 1 || claims.Roles[0] != "MFA_PENDING" {
+		t.Fatalf("claims incorrectos para MFA_PENDING: %+v", claims)
+	}
+
+	// Un token de MFA no debería validar como un token normal si el validador exige otros roles,
+	// pero además, VerifyMFAPendingToken debe rechazar tokens normales sin rol MFA_PENDING.
+	normalTok, _ := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour)
+	if _, err := m.VerifyMFAPendingToken(normalTok, "mi-app"); err == nil {
+		t.Fatal("VerifyMFAPendingToken debería rechazar un token normal")
+	}
+}
