@@ -20,7 +20,7 @@
             </div>
 
             <form id="assignUserForm" action="/admin/apps/{{.App.AppID}}/users" method="POST"
-                onsubmit="assignUser(event, '{{.App.AppID}}')" class="space-y-5">
+                onsubmit="event.preventDefault(); assignUser(event, '{{.App.AppID}}');" class="space-y-5">
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email del
                         usuario</label>
@@ -106,6 +106,13 @@
                                         class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800 w-max">
                                         <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
                                         Pendiente
+                                    </span>
+                                    {{end}}
+
+                                    {{if .MfaEnabled}}
+                                    <span
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/20 rounded border border-brand-100 dark:border-brand-900/50 w-max select-none">
+                                        2FA Activo
                                     </span>
                                     {{end}}
 
@@ -242,7 +249,7 @@
                         aplicación.</p>
                 </div>
 
-                <form id="roleForm" onsubmit="createRole(event, '{{.App.AppID}}')" class="space-y-6">
+                <form id="roleForm" onsubmit="event.preventDefault(); createRole(event, '{{.App.AppID}}');" class="space-y-6">
                     <div>
                         <label
                             class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Identificador

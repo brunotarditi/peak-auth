@@ -262,6 +262,15 @@ function updateAuthz() {
 }
 
 /**
+ * Actualiza la política de MFA
+ */
+function updateMfa() {
+	saveRule('MFA_POLICY', {
+		mode: document.getElementById('mfa_mode').value
+	});
+}
+
+/**
  * Cambia la pestaña activa en la vista de configuración
  * @param {string} tabName 
  */
