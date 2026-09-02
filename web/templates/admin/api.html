@@ -1,8 +1,7 @@
 {{ define "content" }}
 <div style="display: flex; gap: 2rem; width: 100%; padding: 1rem 0;">
     <!-- Sidebar Navegación -->
-    <aside
-        style="width: 16rem; flex-shrink: 0; border-right: 1px solid var(--border-light); padding-right: 1.5rem; display: none;">
+    <aside class="api-sidebar">
         <nav style="position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem;">
             <div>
                 <h4
@@ -58,13 +57,7 @@
             </div>
         </nav>
     </aside>
-    <style>
-        @media (min-width: 768px) {
-            aside {
-                display: block !important;
-            }
-        }
-    </style>
+
 
     <!-- Contenido Principal -->
     <main style="flex: 1; max-width: 48rem;">
