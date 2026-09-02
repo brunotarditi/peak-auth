@@ -6,132 +6,133 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Setup Inicial</title>
     <script src="{{ js "config.js" }}"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/output.css" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/admin.css" }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+    <style>
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--slate-400);
+            transition: all 0.3s;
+        }
+        .checklist-item .status-icon {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            border: 2px solid currentColor;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .checklist-item.text-emerald-500 {
+            color: var(--emerald-500) !important;
+        }
+        .checklist-item.text-rose-500 {
+            color: var(--rose-500) !important;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 
-<body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900">
-    <div class="max-w-md w-full animate-slide-in-right">
-        <div class="text-center mb-10">
-            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" class="h-14 mx-auto mb-4">
-            <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Setup <span
-                    class="text-brand-600">Peak Auth</span></h1>
-            <p class="text-slate-400 mt-2 font-medium uppercase tracking-[0.2em] text-[10px]">Paso Final de Instalación
-            </p>
+<body class="bg-pattern layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
+    </div>
+
+    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; border-radius: 1rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 1rem; border: 1px solid var(--border-light);">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
+            </div>
+            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Setup <span style="color: var(--brand-600);">Peak Auth</span></h1>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em;">Paso Final de Instalación</p>
         </div>
 
-        <div
-            class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800">
-            <div class="mb-8">
-                <h2 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Usuario Maestro</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">Crea la cuenta de
-                    administrador con control total sobre todos los recursos.</p>
+        <div class="glass-panel" style="padding: 2.5rem 2rem;">
+            <div style="margin-bottom: 2rem;">
+                <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Usuario Maestro</h2>
+                <p style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; line-height: 1.625;">Crea la cuenta de administrador con control total sobre todos los recursos.</p>
             </div>
 
-            <form id="setupForm" action="/setup" method="POST" class="space-y-6" novalidate>
+            <form id="setupForm" action="/setup" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;" novalidate>
                 <input type="hidden" name="token" value="{{.SetupToken}}">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 
-                <div>
-                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Email del
-                        Root</label>
-                    <input type="email" id="email" name="email" required placeholder="admin@proyectopeak.com"
-                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-medium">
-                    <span id="emailError" class="hidden text-[10px] text-rose-600 font-bold mt-2 ml-1">Introduzca un
-                        email válido</span>
+                <div class="form-group mb-0">
+                    <label style="display: block; font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;">Email del Root</label>
+                    <input type="email" id="email" name="email" required placeholder="admin@proyectopeak.com" class="peak-input" style="padding: 1rem;">
+                    <span id="emailError" class="hidden" style="font-size: 0.625rem; color: var(--rose-600); font-weight: 700; margin-top: 0.5rem; margin-left: 0.25rem; display: block;">Introduzca un email válido</span>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Contraseña
-                        Maestra</label>
-                    <input type="password" id="password" name="password" required placeholder="••••••••"
-                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-medium">
+                <div class="form-group mb-0">
+                    <label style="display: block; font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;">Contraseña Maestra</label>
+                    <input type="password" id="password" name="password" required placeholder="••••••••" class="peak-input" style="padding: 1rem;">
 
                     <!-- Checklist Dinámica Mejorada -->
-                    <div
-                        class="mt-4 p-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-[1.5rem] space-y-3">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Requisitos de
-                            Seguridad</p>
+                    <div style="margin-top: 1rem; padding: 1.25rem; background-color: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                        <p style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Requisitos de Seguridad</p>
 
                         <!-- Requisito Largo -->
-                        <div id="req-length" class="flex items-center gap-2 text-slate-400 transition-all duration-300">
-                            <div
-                                class="status-icon w-4 h-4 rounded-full border-2 border-current flex items-center justify-center">
-                                <svg class="check-icon w-2.5 h-2.5 hidden" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                                        d="M5 13l4 4L19 7"></path>
+                        <div id="req-length" class="checklist-item">
+                            <div class="status-icon">
+                                <svg class="check-icon hidden" style="width: 0.625rem; height: 0.625rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon w-2 h-2 hidden" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                                        d="M6 18L18 6M6 6l12 12"></path>
+                                <svg class="error-icon hidden" style="width: 0.5rem; height: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
-                            <span class="text-[11px] font-bold">Mínimo 8 caracteres</span>
+                            <span style="font-size: 0.6875rem; font-weight: 700;">Mínimo 8 caracteres</span>
                         </div>
 
                         <!-- Requisito Mayúscula -->
-                        <div id="req-upper" class="flex items-center gap-2 text-slate-400 transition-all duration-300">
-                            <div
-                                class="status-icon w-4 h-4 rounded-full border-2 border-current flex items-center justify-center">
-                                <svg class="check-icon w-2.5 h-2.5 hidden" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                                        d="M5 13l4 4L19 7"></path>
+                        <div id="req-upper" class="checklist-item">
+                            <div class="status-icon">
+                                <svg class="check-icon hidden" style="width: 0.625rem; height: 0.625rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon w-2 h-2 hidden" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                                        d="M6 18L18 6M6 6l12 12"></path>
+                                <svg class="error-icon hidden" style="width: 0.5rem; height: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
-                            <span class="text-[11px] font-bold">Al menos una MAYÚSCULA</span>
+                            <span style="font-size: 0.6875rem; font-weight: 700;">Al menos una MAYÚSCULA</span>
                         </div>
 
                         <!-- Requisito Número -->
-                        <div id="req-number" class="flex items-center gap-2 text-slate-400 transition-all duration-300">
-                            <div
-                                class="status-icon w-4 h-4 rounded-full border-2 border-current flex items-center justify-center">
-                                <svg class="check-icon w-2.5 h-2.5 hidden" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                                        d="M5 13l4 4L19 7"></path>
+                        <div id="req-number" class="checklist-item">
+                            <div class="status-icon">
+                                <svg class="check-icon hidden" style="width: 0.625rem; height: 0.625rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon w-2 h-2 hidden" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                                        d="M6 18L18 6M6 6l12 12"></path>
+                                <svg class="error-icon hidden" style="width: 0.5rem; height: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
-                            <span class="text-[11px] font-bold">Al menos un número (0-9)</span>
+                            <span style="font-size: 0.6875rem; font-weight: 700;">Al menos un número (0-9)</span>
                         </div>
 
                         <!-- Requisito Símbolo -->
-                        <div id="req-symbol" class="flex items-center gap-2 text-slate-400 transition-all duration-300">
-                            <div
-                                class="status-icon w-4 h-4 rounded-full border-2 border-current flex items-center justify-center">
-                                <svg class="check-icon w-2.5 h-2.5 hidden" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                                        d="M5 13l4 4L19 7"></path>
+                        <div id="req-symbol" class="checklist-item">
+                            <div class="status-icon">
+                                <svg class="check-icon hidden" style="width: 0.625rem; height: 0.625rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon w-2 h-2 hidden" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                                        d="M6 18L18 6M6 6l12 12"></path>
+                                <svg class="error-icon hidden" style="width: 0.5rem; height: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
-                            <span class="text-[11px] font-bold">Un símbolo (@$!%*?&#)</span>
+                            <span style="font-size: 0.6875rem; font-weight: 700;">Un símbolo (@$!%*?&#)</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="pt-2">
-                    <button type="submit" id="submitBtn"
-                        class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-brand-700 transition shadow-xl shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3 group">
+                <div style="padding-top: 0.5rem;">
+                    <button type="submit" id="submitBtn" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem;">
                         <span>Finalizar Instalación</span>
                         {{template "icon-check"}}
                     </button>
@@ -139,11 +140,10 @@
             </form>
         </div>
 
-        <div class="mt-10 flex items-center justify-center gap-6">
-            <div class="h-px bg-slate-200 dark:bg-slate-800 w-12"></div>
-            <p class="text-[10px] text-slate-400 dark:text-slate-600 font-black uppercase tracking-widest">Paso 1 de 1
-            </p>
-            <div class="h-px bg-slate-200 dark:bg-slate-800 w-12"></div>
+        <div style="margin-top: 2.5rem; display: flex; align-items: center; justify-content: center; gap: 1.5rem;">
+            <div style="height: 1px; background-color: var(--border-light); width: 3rem;"></div>
+            <p style="font-size: 0.625rem; color: var(--slate-400); font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;">Paso 1 de 1</p>
+            <div style="height: 1px; background-color: var(--border-light); width: 3rem;"></div>
         </div>
     </div>
 
