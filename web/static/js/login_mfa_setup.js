@@ -1,4 +1,4 @@
-const mfaToken = "{{ .MfaToken }}";
+const mfaToken = window.MFA_TOKEN;
 
         document.addEventListener('DOMContentLoaded', async () => {
             // Load QR code
@@ -9,7 +9,16 @@ const mfaToken = "{{ .MfaToken }}";
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    document.getElementById('qr-code-box').innerHTML = `<img src="${data.qr_code}" alt="QR" style="width: 100%; height: 100%; object-fit: contain;">`;
+                    const img = document.createElement('img');
+                    img.src = data.qr_code;
+                    img.alt = 'QR Code';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'contain';
+                    
+                    const box = document.getElementById('qr-code-box');
+                    box.innerHTML = '';
+                    box.appendChild(img);
                 } else {
                     document.getElementById('qr-code-box').innerHTML = `<p style="color:var(--rose-600)">Error al cargar QR</p>`;
                 }
@@ -68,8 +77,6 @@ const mfaToken = "{{ .MfaToken }}";
                     confirmButton: 'peak-btn peak-btn-primary'
                 }
             }).then(() => {
-                // Post to setup/complete or just redirect if auth cookie is set. 
-                // The /verify endpoint already sets the cookie.
                 window.location.href = "/admin";
             });
         }
