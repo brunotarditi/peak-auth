@@ -10,11 +10,11 @@
 
     <div class="created-stack">
         <div class="created-credential">
-            <label class="created-credential-label text-slate-400">App ID
+            <label class="created-credential-label" style="color: var(--slate-400);">App ID
                 (Público)</label>
             <div class="created-credential-row">
                 <div class="created-credential-value">
-                    <code class="created-credential-code text-brand-600">{{.App.AppID}}</code>
+                    <code class="created-credential-code" style="color: var(--brand-600);">{{.App.AppID}}</code>
                 </div>
                 <button type="button" data-text="{{.App.AppID}}"
                     onclick="copyToClipboard(this.getAttribute('data-text'), this)"
@@ -25,14 +25,14 @@
         </div>
 
         <div class="created-secret">
-            <div class="absolute -top-4 -right-4 p-2 opacity-10 pointer-events-none">
+            <div style="position: absolute; top: -1rem; right: -1rem; padding: 0.5rem; opacity: 0.1; pointer-events: none;">
                 {{ template "icon-key" }}
             </div>
-            <label class="created-credential-label text-amber-600">Secret Key
+            <label class="created-credential-label" style="color: var(--amber-600);">Secret Key
                 (Privado)</label>
-            <div class="created-credential-row bg-white/60 border-amber-100/50">
+            <div class="created-credential-row" style="background-color: rgba(255, 255, 255, 0.6); border-color: rgba(254, 243, 199, 0.5);">
                 <div class="created-credential-value">
-                    <code class="created-credential-code text-amber-900 tracking-tight">{{.PlainSecret}}</code>
+                    <code class="created-credential-code" style="color: var(--amber-900); letter-spacing: -0.025em;">{{.PlainSecret}}</code>
                 </div>
                 <button type="button" data-text="{{.PlainSecret}}"
                     onclick="copyToClipboard(this.getAttribute('data-text'), this)"
@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    <div class="mt-12">
+    <div style="margin-top: 3rem;">
         <a href="/admin" class="created-primary">
             Ir al Dashboard
         </a>

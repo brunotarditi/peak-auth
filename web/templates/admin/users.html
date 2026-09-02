@@ -18,7 +18,7 @@
             </div>
 
             <form id="assignUserForm" action="/admin/apps/{{.App.AppID}}/users" method="POST"
-                onsubmit="event.preventDefault(); assignUser(event, '{{.App.AppID}}');" class="flex flex-col gap-4">
+                onsubmit="event.preventDefault(); assignUser(event, '{{.App.AppID}}');" style="display: flex; flex-direction: column; gap: 1rem;">
                 <div class="form-group mb-0">
                     <label class="form-label">Email del usuario</label>
                     <input type="email" name="email" placeholder="ejemplo@correo.com" required autocomplete="off"
@@ -81,7 +81,7 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="flex flex-col items-start gap-2">
+                                <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
                                     {{if .IsVerified}}
                                     <span class="peak-badge peak-badge-success">
                                         <span class="peak-badge-indicator" style="animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"></span>
@@ -218,7 +218,7 @@
                 <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Define un nuevo rol propio de esta aplicación.</p>
             </div>
 
-            <form id="roleForm" onsubmit="event.preventDefault(); createRole(event, '{{.App.AppID}}');" class="flex flex-col gap-6">
+            <form id="roleForm" onsubmit="event.preventDefault(); createRole(event, '{{.App.AppID}}');" style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <div class="form-group mb-0">
                     <label class="form-label">Identificador del Rol</label>
                     <input type="text" id="roleName" name="name" placeholder="Ej: EDITOR, VIEWER, ADMIN" required

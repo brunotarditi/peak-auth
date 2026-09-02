@@ -1,129 +1,87 @@
 {{ define "oauth_login_mfa_setup.html" }}
 <!DOCTYPE html>
-<html lang="es" class="h-full">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración de Seguridad - Peak Auth</title>
-    <!-- Tailwind CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: { 50: '#f0fdf4', 100: '#dcfce7', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 900: '#14532d' }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-        }
-
-        .dark .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            border-color: rgba(255, 255, 255, 0.05);
-        }
-    </style>
     <script src="/static/js/common.js"></script>
 </head>
 
-<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-300 antialiased relative overflow-hidden">
-    <!-- Fondos dinámicos -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-brand-400/20 dark:bg-brand-900/30 blur-[120px] mix-blend-multiply dark:mix-blend-lighten"></div>
-        <div class="absolute top-[20%] -right-[10%] w-[40%] h-[60%] rounded-full bg-blue-400/10 dark:bg-blue-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-lighten"></div>
+<body class="bg-pattern layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
     </div>
 
-    <!-- Contenedor Principal -->
-    <div class="w-full max-w-md relative z-10">
-        <!-- Logo -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-brand-100 dark:shadow-none mb-4 border border-slate-100 dark:border-slate-700">
-                <img src="/static/img/logo.svg" alt="Peak Auth" class="w-10 h-10">
+    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; border-radius: 1rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 1rem; border: 1px solid var(--border-light);">
+                <img src="/static/img/logo.svg" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
             </div>
-            <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Acceso Restringido</h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">Por política de seguridad, debes configurar el Segundo Factor (MFA) obligatoriamente antes de continuar.</p>
+            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Acceso Restringido</h1>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Por política de seguridad, debes configurar el Segundo Factor (MFA) obligatoriamente antes de continuar.</p>
         </div>
 
-        <!-- Tarjeta del Formulario -->
-        <div class="glass-panel rounded-[2rem] p-8 shadow-2xl shadow-slate-200/50 dark:shadow-none">
-            <!-- Opción 1: App Authenticator -->
-            <div id="totp-setup-container" class="text-center">
-                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">1. App de Autenticación</h3>
-                <p class="text-xs text-slate-500 mb-4">Escanea el código QR con Google Authenticator o Authy.</p>
-                <div id="qr-code-box" class="flex justify-center mb-4 min-h-[200px] items-center bg-white p-4 rounded-xl border border-slate-200">
-                    <div class="animate-pulse flex space-x-4">
-                        <div class="rounded-full bg-slate-200 h-10 w-10"></div>
-                        <div class="flex-1 space-y-6 py-1">
-                          <div class="h-2 bg-slate-200 rounded"></div>
-                          <div class="space-y-3">
-                            <div class="grid grid-cols-3 gap-4">
-                              <div class="h-2 bg-slate-200 rounded col-span-2"></div>
-                              <div class="h-2 bg-slate-200 rounded col-span-1"></div>
-                            </div>
-                            <div class="h-2 bg-slate-200 rounded"></div>
-                          </div>
-                        </div>
-                    </div>
+        <div class="glass-panel" style="padding: 2.5rem 2rem;">
+            <div id="totp-setup-container" style="text-align: center;">
+                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">1. App de Autenticación</h3>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Escanea el código QR con Google Authenticator o Authy.</p>
+                <div id="qr-code-box" style="display: flex; justify-content: center; align-items: center; min-height: 200px; background-color: white; padding: 1rem; border-radius: var(--radius-xl); border: 1px solid var(--slate-200); margin-bottom: 1rem;">
+                    <div style="color: var(--text-muted);">Cargando QR...</div>
                 </div>
                 
                 <input type="text" id="totp-code" name="code" required
-                    class="w-full bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all font-mono tracking-widest text-center text-xl mb-4"
-                    placeholder="000 000" autocomplete="off" maxlength="6">
+                    class="peak-input"
+                    style="font-family: monospace; text-align: center; font-size: 1.5rem; letter-spacing: 0.5em; padding: 1rem; margin-bottom: 1rem;"
+                    placeholder="••••••" autocomplete="off" maxlength="6">
 
-                <button type="button" onclick="verifyTotp()"
-                    class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition shadow-lg shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3">
+                <button type="button" onclick="verifyTotp()" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center;">
                     <span>Verificar y Continuar</span>
                 </button>
             </div>
 
-            <div class="mt-6">
-                <div class="relative flex items-center mb-6">
-                    <div class="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
-                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-widest">o usar</span>
-                    <div class="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+            <div style="position: relative; margin: 1.5rem 0;">
+                <div style="position: absolute; inset: 0; display: flex; align-items: center;">
+                    <div style="width: 100%; border-top: 1px solid var(--border-color);"></div>
                 </div>
-                
-                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 text-center">2. Llave de Seguridad FÍSICA</h3>
-                <p class="text-xs text-slate-500 mb-4 text-center">Usa Windows Hello, TouchID, FaceID o YubiKey.</p>
-                <button type="button" onclick="registerWebAuthn()"
-                    class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition shadow-lg shadow-slate-200 dark:shadow-none flex items-center justify-center gap-3">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                    <span>Vincular Passkey</span>
-                </button>
+                <div style="position: relative; display: flex; justify-content: center; font-size: 0.75rem;">
+                    <span style="background-color: var(--bg-surface); padding: 0 1rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">o usa</span>
+                </div>
             </div>
+            
+            <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; text-align: center;">2. Llave de Seguridad FÍSICA</h3>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; text-align: center;">Usa Windows Hello, TouchID, FaceID o YubiKey.</p>
+            <button type="button" onclick="registerWebAuthn()" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem;">
+                <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                <span>Vincular Passkey</span>
+            </button>
         </div>
     </div>
 
     <!-- Modal de Códigos de Recuperación -->
-    <div id="recovery-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-8 shadow-2xl border border-slate-200 dark:border-slate-700">
-            <h2 class="text-2xl font-bold mb-4 text-slate-800 dark:text-white">¡MFA Configurado!</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Guarda estos códigos de recuperación en un lugar seguro. Solo se mostrarán una vez.</p>
-            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl font-mono text-sm mb-6 grid grid-cols-2 gap-2 text-slate-700 dark:text-slate-300" id="recovery-codes-list">
+    <div id="recovery-modal" style="display: none; position: fixed; inset: 0; z-index: 50; background-color: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="background-color: var(--bg-surface); border-radius: var(--radius-2xl); max-width: 28rem; width: 100%; padding: 2rem; box-shadow: var(--shadow-2xl); border: 1px solid var(--border-light);">
+            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">¡MFA Configurado!</h2>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Guarda estos códigos de recuperación en un lugar seguro. Solo se mostrarán una vez.</p>
+            <div id="recovery-codes-list" style="background-color: var(--slate-100); padding: 1rem; border-radius: var(--radius-xl); font-family: monospace; font-size: 0.875rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; color: var(--text-main);">
             </div>
             
-            <button onclick="downloadRecoveryCodes()" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl hover:opacity-80 transition mb-3">
+            <button onclick="downloadRecoveryCodes()" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; margin-bottom: 0.75rem;">
                 📥 Descargar Códigos (.txt)
             </button>
-            <button onclick="continueOAuth()" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition">
+            <button onclick="continueOAuth()" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem;">
                 Ya los guardé. Continuar.
             </button>
         </div>
     </div>
 
     <!-- Hidden form for redirect -->
-    <form id="redirect-form" action="/oauth/authorize" method="GET" class="hidden">
+    <form id="redirect-form" action="/oauth/authorize" method="GET" style="display: none;">
         <input type="hidden" name="client_id" value="{{ .ClientID }}">
         <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
         <input type="hidden" name="response_type" value="code">
@@ -133,6 +91,7 @@
     <script>
         const mfaToken = "{{ .MfaToken }}";
         const clientID = "{{ .ClientID }}";
+        let generatedCodes = [];
 
         function setCookie(name, value, minutes) {
             let expires = "";
@@ -154,10 +113,10 @@
                 if (!res.ok) throw new Error('No se pudo cargar el QR');
                 const data = await res.json();
                 
-                document.getElementById('qr-code-box').innerHTML = `<img src="${data.qr_code}" alt="QR Code" class="max-w-[200px] h-auto rounded-lg mx-auto">`;
+                document.getElementById('qr-code-box').innerHTML = `<img src="${data.qr_code}" alt="QR Code" style="max-width: 200px; height: auto; border-radius: 0.5rem; margin: 0 auto;">`;
             } catch (err) {
                 console.error(err);
-                document.getElementById('qr-code-box').innerHTML = '<p class="text-red-500 text-sm">Error cargando el código QR</p>';
+                document.getElementById('qr-code-box').innerHTML = '<p style="color: var(--rose-500); font-size: 0.875rem;">Error cargando el código QR</p>';
             }
         });
 
@@ -169,7 +128,7 @@
             }
 
             try {
-                const res = await fetch('/api/v1/login/mfa/totp/verify', {
+                const res = await fetch('/api/v1/login/mfa/totp', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -181,14 +140,11 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Código incorrecto');
 
-                if (data.auth && data.auth.access_token) {
-                    setCookie('peak_session', data.auth.access_token, data.auth.expires_in / 60);
+                if (data.access_token) {
+                    setCookie('peak_session', data.access_token, data.expires_in / 60);
+                    generatedCodes = data.recovery_codes || [];
+                    showRecoveryCodes(generatedCodes);
                 }
-
-                // Mostrar modal con códigos
-                const list = document.getElementById('recovery-codes-list');
-                list.innerHTML = data.recovery_codes.map(c => `<div>${c}</div>`).join('');
-                document.getElementById('recovery-modal').classList.remove('hidden');
 
             } catch (err) {
                 Swal.fire('Error', err.message, 'error');
@@ -198,81 +154,89 @@
         async function registerWebAuthn() {
             try {
                 const res = await fetch('/api/v1/login/mfa/webauthn/register/begin?mfa_token=' + mfaToken, {
+                    method: 'POST',
                     headers: { 'X-App-ID': clientID }
                 });
-                if (!res.ok) throw new Error('Error al iniciar registro');
+                if (!res.ok) throw new Error('Error al iniciar WebAuthn');
                 
                 const options = await res.json();
-                
                 options.publicKey.challenge = base64urlToBuffer(options.publicKey.challenge);
                 options.publicKey.user.id = base64urlToBuffer(options.publicKey.user.id);
-                if (options.publicKey.excludeCredentials) {
-                    options.publicKey.excludeCredentials.forEach(cred => {
-                        cred.id = base64urlToBuffer(cred.id);
-                    });
-                }
 
                 const credential = await navigator.credentials.create({ publicKey: options.publicKey });
-
-                const payload = {
+                
+                const credentialData = {
                     id: credential.id,
                     rawId: bufferToBase64url(credential.rawId),
                     type: credential.type,
                     response: {
                         attestationObject: bufferToBase64url(credential.response.attestationObject),
-                        clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+                        clientDataJSON: bufferToBase64url(credential.response.clientDataJSON)
                     }
                 };
 
-                const finishRes = await fetch('/api/v1/login/mfa/webauthn/register/finish?mfa_token=' + mfaToken, {
+                const finishRes = await fetch('/api/v1/login/mfa/webauthn/register/finish', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'X-App-ID': clientID
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ mfa_token: mfaToken, credential: credentialData })
                 });
-
-                const data = await finishRes.json();
-                if (!finishRes.ok) throw new Error(data.error || 'Error al validar registro');
-
-                if (data.auth && data.auth.access_token) {
-                    setCookie('peak_session', data.auth.access_token, data.auth.expires_in / 60);
+                
+                const finishData = await finishRes.json();
+                if (!finishRes.ok) throw new Error(finishData.error || 'Fallo de WebAuthn');
+                
+                if (finishData.access_token) {
+                    setCookie('peak_session', finishData.access_token, finishData.expires_in / 60);
+                    generatedCodes = finishData.recovery_codes || [];
+                    showRecoveryCodes(generatedCodes);
                 }
 
-                Swal.fire({
-                    title: '¡Éxito!',
-                    text: 'Llave de seguridad configurada correctamente.',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                }).then(() => {
-                    continueOAuth();
-                });
-
             } catch (err) {
+                console.error(err);
                 Swal.fire('Error', err.message, 'error');
             }
+        }
+
+        function showRecoveryCodes(codes) {
+            const list = document.getElementById('recovery-codes-list');
+            list.innerHTML = codes.map(c => `<div>${c}</div>`).join('');
+            document.getElementById('recovery-modal').style.display = 'flex';
+        }
+
+        function downloadRecoveryCodes() {
+            const content = `Peak Auth - Códigos de Recuperación\n\nGuardá este archivo en un lugar seguro.\n\n${generatedCodes.join('\n')}`;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'peak_auth_recovery_codes.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function continueOAuth() {
             document.getElementById('redirect-form').submit();
         }
 
-        function downloadRecoveryCodes() {
-            const list = document.getElementById('recovery-codes-list');
-            const divs = list.getElementsByTagName('div');
-            let codes = [];
-            for (let i = 0; i < divs.length; i++) {
-                codes.push(divs[i].innerText);
-            }
-            const blob = new Blob([codes.join('\n')], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'peak_auth_recovery_codes.txt';
-            a.click();
-            window.URL.revokeObjectURL(url);
+        function bufferToBase64url(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let str = '';
+            for (let charCode of bytes) str += String.fromCharCode(charCode);
+            const base64String = btoa(str);
+            return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        function base64urlToBuffer(base64url) {
+            const padding = '='.repeat((4 - base64url.length % 4) % 4);
+            const base64 = (base64url + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = atob(base64);
+            const buffer = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) buffer[i] = rawData.charCodeAt(i);
+            return buffer.buffer;
         }
     </script>
 </body>
