@@ -1,16 +1,16 @@
 {{ define "content" }}
-<div class="mb-8">
+<div style="margin-bottom: 2rem;">
     <a href="/admin" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
         {{ template "icon-arrow-back" }}
         Volver al Panel
     </a>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="layout-grid-3">
     <!-- Formulario de Vincular Usuario -->
     <div style="grid-column: span 1;">
         <div class="peak-card" style="position: sticky; top: 6rem;">
-            <div class="flex justify-between items-center peak-card-header">
+            <div class="peak-card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 class="peak-card-title">Vincular Usuario</h2>
                 <button type="button" id="openRoleModalBtn" class="peak-btn peak-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em;">
                     + Roles
@@ -48,7 +48,7 @@
     <!-- Users List -->
     <div style="grid-column: span 2 / span 2;">
         <div class="table-container">
-            <div class="flex justify-between items-center p-6 border-b" style="border-color: var(--border-light); background-color: rgba(248, 250, 252, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid var(--border-light);" style="border-color: var(--border-light); background-color: var(--bg-surface-secondary);">
                 <h3 class="font-bold text-main">Listado de Usuarios</h3>
                 <span class="peak-badge" style="background-color: var(--bg-surface); color: var(--text-muted); border-color: var(--border-light);">
                     Total: {{.TotalCount}}
@@ -107,7 +107,7 @@
                                             Bloqueado
                                         </span>
                                         {{ else }}
-                                        <span class="peak-badge" style="background-color: var(--slate-100); color: var(--text-muted); border-color: var(--border-light);">
+                                        <span class="peak-badge" style="background-color: var(--bg-surface-secondary); color: var(--text-muted); border-color: var(--border-light);">
                                             Intentos: {{.FailedLogins}}/{{$max}}
                                         </span>
                                         {{ end }}
@@ -134,7 +134,7 @@
 
                                     {{ if ne .RoleName "ROOT" }}
                                     <button onclick="sendResetPassword('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="peak-badge" style="cursor: pointer; background-color: var(--slate-100); color: var(--text-muted); border-color: var(--border-light);"
+                                        class="peak-badge" style="cursor: pointer; background-color: var(--bg-surface-secondary); color: var(--text-muted); border-color: var(--border-light);"
                                         title="Enviar email de recuperación">
                                         Reset
                                     </button>
@@ -167,7 +167,7 @@
 
             <!-- Paginación -->
             {{ if gt .TotalPages 1 }}
-            <div style="padding: 1.5rem; border-top: 1px solid var(--border-light); background-color: rgba(248, 250, 252, 0.1); display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <div style="padding: 1.5rem; border-top: 1px solid var(--border-light); background-color: var(--bg-surface-secondary); display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                 {{ if gt .CurrentPg 1 }}
                 <a href="?page={{ .PrevPg }}" class="icon-btn" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl);">
                     {{ template "icon-back" }}
@@ -240,7 +240,7 @@
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 12rem; overflow-y: auto;">
                     {{range .Roles}}
                     {{ if .ApplicationID }}
-                    <div class="group" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--slate-50); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+                    <div class="group" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                         <span style="font-size: 0.875rem; font-weight: 700; color: var(--text-main);">{{.Name}}</span>
                         <button type="button" onclick="deleteRole('{{.Name}}', '{{$.App.AppID}}')" class="icon-btn icon-btn-danger" style="padding: 0.25rem;" title="Eliminar Rol">
                             {{ template "icon-delete" }}

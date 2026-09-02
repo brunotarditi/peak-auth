@@ -326,3 +326,23 @@
 .dark .peak-checkbox {
     accent-color: var(--brand-400);
 }
+
+.settings-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    white-space: nowrap;
+    padding-bottom: 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.settings-tab-btn.active-tab {
+    color: var(--text-main);
+    border-bottom-color: var(--brand-600);
+}
