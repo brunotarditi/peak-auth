@@ -21,6 +21,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		UserService: app.UserService,
 		RuleService: app.RuleService,
 		RoleService: app.RoleService,
+		MfaService:  app.MfaService,
 	}
 
 	setupCtrl := &controller.SetupController{
@@ -41,7 +42,9 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	}
 
 	loginCtrl := &controller.LoginController{
-		UserService: app.UserService,
+		UserService:  app.UserService,
+		MfaService:   app.MfaService,
+		TokenManager: app.TokenManager,
 	}
 
 	registerCtrl := &controller.RegisterController{
@@ -59,13 +62,33 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		AppService:  app.AppService,
 	}
 
+	oauthCtrl := &controller.OAuthController{
+		OAuthService: app.OAuthService,
+		UserService:  app.UserService,
+		TokenManager: app.TokenManager,
+	}
+
+	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
+	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
+	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
+
+	// --- OAUTH2 ENDPOINTS ---
+	oauth := r.Group("/oauth")
+	{
+		oauth.GET("/authorize", oauthCtrl.AuthorizeEndpoint)
+		oauth.POST("/token", oauthCtrl.TokenEndpoint) // S2S, might need basic auth or just form body
+
+		// Flujo público de login para Web
+		oauth.GET("/login", oauthCtrl.GetPublicLogin)
+		oauth.POST("/login", loginLimiter, oauthCtrl.PostPublicLogin)
+		oauth.GET("/login/mfa", oauthCtrl.GetPublicLoginMfa)
+		oauth.GET("/login/mfa/setup", oauthCtrl.GetPublicLoginMfaSetup)
+	}
+
 	docsCtrl := &controller.DocsController{}
 
 	// --- SETUP & USER ACTIONS (App inicial) ---
-	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
-	// (También protege cuentas privilegiadas como ROOT, que no se bloquean por diseño.)
-	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
-	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
+	// Estas rutas también usan protección CSRF (double-submit cookie).
 
 	// Estas rutas también usan protección CSRF (double-submit cookie).
 	r.GET("/setup", middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
@@ -79,8 +102,27 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	api.Use(middleware.CORSMiddleware())
 	{
 		api.POST("/login", loginLimiter, loginCtrl.Login)
+		api.POST("/login/mfa/totp", loginLimiter, loginCtrl.VerifyMfaTotp)
+		api.POST("/login/mfa/recovery", loginLimiter, loginCtrl.VerifyMfaRecovery)
+		api.POST("/login/mfa/totp/setup", loginLimiter, loginCtrl.SetupTOTPLogin)
+		api.POST("/login/mfa/totp/verify", loginLimiter, loginCtrl.VerifyTOTPLogin)
+		api.GET("/login/mfa/webauthn/register/begin", loginLimiter, loginCtrl.BeginWebAuthnRegistrationLogin)
+		api.POST("/login/mfa/webauthn/register/finish", loginLimiter, loginCtrl.FinishWebAuthnRegistrationLogin)
 		api.POST("/register", loginLimiter, middleware.AppAuthMiddleware(app.AppRepo), registerCtrl.Register)
 		api.POST("/refresh", loginLimiter, userCtrl.Refresh)
+	}
+
+	// --- API V1 Protegida (MFA configuration) ---
+	apiPrivate := r.Group("/api/v1")
+	apiPrivate.Use(middleware.CORSMiddleware())
+	apiPrivate.Use(middleware.AuthMiddleware(app.TokenManager))
+	{
+		apiPrivate.POST("/mfa/totp/setup", userCtrl.SetupTOTP)
+		apiPrivate.POST("/mfa/totp/verify", userCtrl.VerifyTOTP)
+		apiPrivate.POST("/mfa/webauthn/setup", userCtrl.BeginWebAuthnRegistration)
+		apiPrivate.POST("/mfa/webauthn/verify", userCtrl.FinishWebAuthnRegistration)
+		apiPrivate.POST("/mfa/totp/disable", userCtrl.DisableMFA)
+		apiPrivate.GET("/mfa/status", userCtrl.GetMfaStatus)
 	}
 
 	// --- RUTAS PÚBLICAS DE ADMINISTRACIÓN ---
@@ -89,6 +131,13 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	{
 		adminPublic.GET("/login", loginCtrl.GetLoginForm)
 		adminPublic.POST("/login", loginLimiter, loginCtrl.PostLoginForm)
+
+		// Rutas para MFA en la administración
+		adminPublic.GET("/login/mfa", loginCtrl.GetAdminMfaForm)
+		adminPublic.POST("/login/mfa", loginLimiter, middleware.AdminCSRFMiddleware(), loginCtrl.PostAdminMfa)
+		adminPublic.GET("/login/mfa/setup", loginCtrl.GetAdminMfaSetupForm)
+		adminPublic.GET("/login/mfa/webauthn/begin", loginLimiter, loginCtrl.BeginWebAuthnLogin)
+		adminPublic.POST("/login/mfa/webauthn/finish", loginLimiter, middleware.AdminCSRFMiddleware(), loginCtrl.FinishWebAuthnLoginAdmin)
 
 		// El setup también es accesible desde /admin/setup
 		adminPublic.GET("/setup", setupCtrl.ShowSetup)
@@ -101,7 +150,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	adminPrivate.Use(middleware.AdminCSRFMiddleware())
 	adminPrivate.Use(middleware.AuthMiddleware(app.TokenManager))
 	{
-		adminPrivate.GET("/", dashboardCtrl.Dashboard)
+		adminPrivate.GET("/", middleware.PlatformScopeMiddleware(app.UarRepo, app.AppRepo), dashboardCtrl.Dashboard)
 		adminPrivate.POST("/logout", loginCtrl.PostLogout)
 
 		// Gestión de Apps (crear/listar = solo plataforma)
