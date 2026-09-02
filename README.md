@@ -1,6 +1,6 @@
 # 🏔️ Peak Auth - Sistema de Autenticación SSO
 
-![Go Version](https://img.shields.io/badge/go-1.24.0-blue.svg)
+![Go Version](https://img.shields.io/badge/go-1.27.0-blue.svg)
 ![Gin Framework](https://img.shields.io/badge/gin-v1.11.0-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgresql-v1.6.0-blue.svg)
 
@@ -14,26 +14,26 @@
 - 👥 **Gestión de roles y permisos** por aplicación
 - 🛡️ **Contraseñas robustas** con hash criptográfico (bcrypt)
 - ⚙️ **Reglas de autorización** configurables por aplicación
-- 🖥️ **Interfaz administrativa** con HTML + Tailwind CSS
+- 🖥️ **Interfaz administrativa** con HTML + CSS Vanilla
 - 🏢 **Sistema multi-tenancy** (múltiples aplicaciones pueden usar el SSO)
 - 📧 **Verificación de email** y recuperación de contraseña (Resend)
 - 🔄 **Refresh tokens** para renovación segura de sesiones
 
 ## 🛠️ Stack Tecnológico
 
-- **Lenguaje**: Go (1.24.0)
+- **Lenguaje**: Go (1.27.0)
 - **Web Framework**: Gin
 - **ORM**: GORM
 - **Base de Datos**: PostgreSQL
 - **Seguridad**: JWT (golang-jwt), RSA-256, bcrypt
-- **Frontend**: HTML + Tailwind CSS
+- **Frontend**: HTML + CSS Vanilla
 - **Email**: Resend
 
 ## 🚀 Instalación y Desarrollo Local
 
 ### Requisitos Previos
 
-- Go 1.24.0+
+- Go 1.27.0+
 - PostgreSQL 13+
 - OpenSSL (para generar claves RSA)
 
