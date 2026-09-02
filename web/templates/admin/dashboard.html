@@ -25,7 +25,12 @@
                 <span style="font-size: 1.25rem; font-weight: 900; text-transform: uppercase;">{{ safe_slice .Name 0 1 }}</span>
             </div>
 
-            <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">{{ .Name }}</h3>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0;">{{ .Name }}</h3>
+                {{ if not .IsActive }}
+                <span style="font-size: 0.625rem; font-weight: 800; padding: 0.125rem 0.5rem; background-color: var(--danger-50); color: var(--danger-600); border: 1px solid var(--danger-200); border-radius: 9999px; text-transform: uppercase;">Inactiva</span>
+                {{ end }}
+            </div>
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
                 <code style="font-size: 0.75rem; background-color: var(--bg-surface-secondary); padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; color: var(--text-muted);">{{ .AppID }}</code>
                 <button onclick="copyToClipboard('{{ .AppID }}', this)" class="icon-btn" style="padding: 0.25rem;">

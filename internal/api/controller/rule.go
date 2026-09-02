@@ -45,7 +45,7 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 	id := c.Param("id")
 	code := c.Param("code")
 
-	if id == util.AppIdPeakAuth && code != "SESSION_POLICY" && code != "MFA_POLICY" {
+	if id == util.AppIdPeakAuth && code != "SESSION_POLICY" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "No está permitido modificar esta política para la aplicación principal (Peak Auth Raíz)"})
 		return
 	}

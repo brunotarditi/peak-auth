@@ -345,3 +345,11 @@
     background-color: var(--brand-500);
 }
 
+/* --- SweetAlert2 Customizations --- */
+.swal2-actions-custom {
+    display: flex !important;
+    gap: 1rem !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin-top: 1.5rem !important;
+}
