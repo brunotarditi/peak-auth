@@ -1,6 +1,6 @@
 {{ define "content" }}
 
-<div class="flex flex-col gap-8">
+<div style="display: flex; flex-direction: column; gap: 2rem;">
     <!-- Top Bar -->
     <div class="flex items-center justify-between">
         <a href="/admin" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
@@ -28,7 +28,7 @@
     </div>
     
     <!-- Main Content -->
-    <div class="flex flex-col gap-8">
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
         <div class="peak-card" style="padding: 2rem;">
             <div class="flex justify-between items-start mb-8">
                 <div>
@@ -43,7 +43,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="flex flex-col gap-2">
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <label style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem;">Application ID</label>
                     <div class="flex items-center gap-2">
                         <code style="flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ .App.AppID }}</code>
@@ -54,7 +54,7 @@
                 </div>
 
                 {{ if ne .App.AppID "peak-auth" }}
-                <div class="flex flex-col gap-2">
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <label style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem;">Client Secret</label>
                     <div class="flex items-center gap-2">
                         <div class="relative grow">
@@ -70,7 +70,7 @@
         </div>
 
         <div class="space-y-6">
-            <div class="flex flex-col gap-1">
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                 <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); letter-spacing: -0.025em;">Políticas de Seguridad</h2>
                 <p style="font-size: 0.875rem; font-weight: 500; color: var(--text-muted);">Configuración actual de seguridad y del motor de reglas</p>
             </div>
@@ -124,7 +124,7 @@
             <h3 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin-bottom: 0.75rem;">¿Regenerar Secreto?</h3>
             <p style="font-size: 0.875rem; line-height: 1.625; color: var(--text-muted); margin-bottom: 2rem;">Esta acción invalidará el secreto actual <strong>de inmediato</strong>. Cualquier aplicación que use las credenciales antiguas dejará de autenticarse.</p>
 
-            <div class="flex flex-col gap-3">
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <form action="/admin/apps/{{.App.AppID}}/secret" method="POST">
                     <button type="submit" class="peak-btn peak-btn-block" style="background-color: var(--rose-600); color: white; padding: 1rem;">
                         Sí, Regenerar Ahora
