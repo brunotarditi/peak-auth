@@ -248,3 +248,17 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
+
+/* API Docs Sidebar */
+.api-sidebar {
+    width: 16rem;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-light);
+    padding-right: 1.5rem;
+    display: none;
+}
+@media (min-width: 768px) {
+    .api-sidebar {
+        display: block;
+    }
+}

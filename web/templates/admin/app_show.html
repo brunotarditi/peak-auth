@@ -30,7 +30,7 @@
     <!-- Main Content -->
     <div style="display: flex; flex-direction: column; gap: 2rem;">
         <div class="peak-card" style="padding: 2rem;">
-            <div class="flex justify-between items-start mb-8">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
                 <div>
                     <h2 style="font-size: 1.875rem; font-weight: 900; color: var(--text-main); letter-spacing: -0.025em; margin-bottom: 0.5rem;">{{ .App.Name }}</h2>
                     <p style="font-weight: 500; color: var(--text-muted);">{{ .App.Description }}</p>
@@ -42,10 +42,10 @@
                 {{ end }}
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <label style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem;">Application ID</label>
-                    <div class="flex items-center gap-2">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <code style="flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ .App.AppID }}</code>
                         <button onclick="copyToClipboard('{{ .App.AppID }}', this)" class="icon-btn" style="padding: 0.75rem;" title="Copiar App ID">
                             {{template "icon-copy"}}
@@ -56,8 +56,8 @@
                 {{ if ne .App.AppID "peak-auth" }}
                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <label style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem;">Client Secret</label>
-                    <div class="flex items-center gap-2">
-                        <div class="relative grow">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="position: relative; flex-grow: 1;">
                             <input type="password" readonly value="********************************" autocomplete="new-password" data-bwignore data-1p-ignore style="width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--slate-400); outline: none;">
                         </div>
                         <button onclick="openRevokeModal()" class="icon-btn icon-btn-danger" style="padding: 0.75rem;" title="Revocar Secreto">
@@ -69,7 +69,7 @@
             </div>
         </div>
 
-        <div class="space-y-6">
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                 <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); letter-spacing: -0.025em;">Políticas de Seguridad</h2>
                 <p style="font-size: 0.875rem; font-weight: 500; color: var(--text-muted);">Configuración actual de seguridad y del motor de reglas</p>
@@ -87,7 +87,7 @@
                         Accesos
                     </button>
                     <button onclick="switchTab('sesiones')" id="tab_sesiones" class="settings-tab-btn">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1em; height: 1em;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1em; height: 1em;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         Sesiones
                     </button>
                     <button onclick="switchTab('autorizacion')" id="tab_autorizacion" class="settings-tab-btn">
@@ -95,7 +95,7 @@
                         Autorización
                     </button>
                     <button onclick="switchTab('mfa')" id="tab_mfa" class="settings-tab-btn">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1em; height: 1em;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                        <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1em; height: 1em;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                         MFA
                     </button>
                 </nav>
