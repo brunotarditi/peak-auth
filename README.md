@@ -2,7 +2,7 @@
 
 ![Go Version](https://img.shields.io/badge/go-1.27.0-blue.svg)
 ![Gin Framework](https://img.shields.io/badge/gin-v1.11.0-blue.svg)
-![PostgreSQL](https://img.shields.io/badge/postgresql-v1.6.0-blue.svg)
+![PostgreSQL](https://img.shields.io/badge/postgresql-16--alpine-blue.svg)
 
 **Peak Auth** es un proveedor de identidad y autenticación (SSO) que permite que múltiples aplicaciones se autentiquen de forma centralizada mediante **JWT asimétrico (RSA-256)**. El sistema maneja roles, contraseñas robustas y reglas de autorización para controlar el acceso a través de diferentes aplicaciones.
 
@@ -34,7 +34,7 @@
 ### Requisitos Previos
 
 - Go 1.27.0+
-- PostgreSQL 13+
+- PostgreSQL 16 (Alpine)
 - OpenSSL (para generar claves RSA)
 
 ### Pasos de instalación
