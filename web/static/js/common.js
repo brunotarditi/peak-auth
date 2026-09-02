@@ -194,23 +194,28 @@ async function openMfaSettings() {
 
         if (status.enabled) {
             let activeMethodsHtml = '';
-            if (status.totp_configured) activeMethodsHtml += `<div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold mb-2">Autenticador TOTP Activo</div>`;
-            if (status.webauthn_configured) activeMethodsHtml += `<div class="p-3 bg-brand-50 text-brand-600 rounded-xl text-xs font-bold mb-2">Llave de Seguridad (Passkey) Activa</div>`;
+            if (status.totp_configured) activeMethodsHtml += `<div style="padding: 0.75rem; background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-600); border-radius: var(--radius-xl); font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem;">Autenticador TOTP Activo</div>`;
+            if (status.webauthn_configured) activeMethodsHtml += `<div style="padding: 0.75rem; background-color: rgba(8, 61, 105, 0.1); color: var(--brand-600); border-radius: var(--radius-xl); font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem;">Llave de Seguridad (Passkey) Activa</div>`;
             
             const confirmDisable = await Swal.fire({
                 title: 'Seguridad 2FA Activa',
                 html: `
-                    <p class="text-sm text-slate-500 mb-4">Su cuenta está protegida con verificación de doble factor.</p>
+                    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Su cuenta está protegida con verificación de doble factor.</p>
                     ${activeMethodsHtml}
                 `,
                 icon: 'success',
                 showCancelButton: true,
                 confirmButtonText: 'Desactivar 2FA',
                 cancelButtonText: 'Cerrar',
-                confirmButtonColor: palette.error,
-                cancelButtonColor: palette.cancel,
                 background: themeConfig.background,
-                color: themeConfig.color
+                color: themeConfig.color,
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'peak-card',
+                    confirmButton: 'peak-btn peak-btn-danger',
+                    cancelButton: 'peak-btn peak-btn-secondary',
+                    actions: 'swal2-actions-custom'
+                }
             });
 
             if (confirmDisable.isConfirmed) {
@@ -231,20 +236,20 @@ async function openMfaSettings() {
             const startSetup = await Swal.fire({
                 title: 'Activar Seguridad 2FA',
                 html: `
-                    <p class="text-sm text-slate-500 mb-6">Elija el método que desea usar para su segundo factor:</p>
-                    <div class="flex flex-col gap-3 text-left">
-                        <label class="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                            <input type="radio" name="mfa_type" value="totp" class="w-4 h-4 text-brand-600 focus:ring-brand-500" checked>
+                    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">Elija el método que desea usar para su segundo factor:</p>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; text-align: left;">
+                        <label style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-2xl); cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--bg-surface-secondary)'" onmouseout="this.style.backgroundColor='transparent'">
+                            <input type="radio" name="mfa_type" value="totp" style="width: 1rem; height: 1rem; accent-color: var(--brand-600);" checked>
                             <div>
-                                <span class="block font-bold text-sm">App Authenticator</span>
-                                <span class="block text-xs text-slate-500">Google Auth, Authy, etc.</span>
+                                <span style="display: block; font-weight: 700; font-size: 0.875rem;">App Authenticator</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Google Auth, Authy, etc.</span>
                             </div>
                         </label>
-                        <label class="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-                            <input type="radio" name="mfa_type" value="webauthn" class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                        <label style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-2xl); cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--bg-surface-secondary)'" onmouseout="this.style.backgroundColor='transparent'">
+                            <input type="radio" name="mfa_type" value="webauthn" style="width: 1rem; height: 1rem; accent-color: var(--brand-600);">
                             <div>
-                                <span class="block font-bold text-sm">Llave de Seguridad / Passkey</span>
-                                <span class="block text-xs text-slate-500">TouchID, FaceID o YubiKey</span>
+                                <span style="display: block; font-weight: 700; font-size: 0.875rem;">Llave de Seguridad / Passkey</span>
+                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">TouchID, FaceID o YubiKey</span>
                             </div>
                         </label>
                     </div>
@@ -254,6 +259,13 @@ async function openMfaSettings() {
                 cancelButtonText: 'Cancelar',
                 background: themeConfig.background,
                 color: themeConfig.color,
+                buttonsStyling: false,
+                customClass: {
+                    popup: 'peak-card',
+                    confirmButton: 'peak-btn peak-btn-primary',
+                    cancelButton: 'peak-btn peak-btn-secondary',
+                    actions: 'swal2-actions-custom'
+                },
                 preConfirm: () => {
                     return document.querySelector('input[name="mfa_type"]:checked').value;
                 }
@@ -280,12 +292,22 @@ async function setupTotp(palette, themeConfig) {
     const verifyCode = await Swal.fire({
         title: 'Escanear Código QR',
         html: `
-            <p class="text-xs text-slate-500 mb-4">Escanee el código QR con su aplicación.</p>
-            <img src="${setupData.qr_code}" class="mx-auto my-4 w-48 h-48 border rounded-3xl p-3 bg-white" />
-            <input id="totp-verification-code" type="text" placeholder="000000" class="w-full px-4 py-3 bg-slate-50 border rounded-xl font-mono text-center text-lg tracking-widest font-bold outline-none" />
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Escanee el código QR con su aplicación.</p>
+            <img src="${setupData.qr_code}" style="margin: 1rem auto; width: 12rem; height: 12rem; border: 1px solid var(--border-color); border-radius: 1.5rem; padding: 0.75rem; background-color: white;" />
+            <input id="totp-verification-code" type="text" placeholder="000000" style="width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-xl); font-family: monospace; text-align: center; font-size: 1.125rem; letter-spacing: 0.1em; font-weight: 700; outline: none;" />
         `,
         showCancelButton: true,
         confirmButtonText: 'Validar y Activar',
+        cancelButtonText: 'Cancelar',
+        background: themeConfig.background,
+        color: themeConfig.color,
+        buttonsStyling: false,
+        customClass: {
+            popup: 'peak-card',
+            confirmButton: 'peak-btn peak-btn-primary',
+            cancelButton: 'peak-btn peak-btn-secondary',
+            actions: 'swal2-actions-custom'
+        },
         preConfirm: () => document.getElementById('totp-verification-code').value.trim()
     });
 
@@ -350,14 +372,14 @@ async function setupWebAuthn(palette, themeConfig) {
 
 async function showRecoveryCodes(codes, palette, themeConfig) {
     const rawCodes = codes.join('\n');
-    const recoveryHtml = codes.map(c => `<div class="bg-slate-100 dark:bg-slate-800 p-2 rounded font-mono text-sm dark:text-slate-200">${c}</div>`).join('');
+    const recoveryHtml = codes.map(c => `<div style="background-color: var(--bg-surface-secondary); padding: 0.5rem; border-radius: var(--radius); font-family: monospace; font-size: 0.875rem; border: 1px solid var(--border-light);">${c}</div>`).join('');
     
     await Swal.fire({
         title: '¡MFA Activado!',
         html: `
-            <p class="mb-4 text-sm text-slate-500">Guarde estos códigos de recuperación en un lugar seguro:</p>
-            <div class="grid grid-cols-2 gap-2 mb-4">${recoveryHtml}</div>
-            <button id="download-codes" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-2 rounded-xl transition hover:opacity-80">
+            <p style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-muted);">Guarde estos códigos de recuperación en un lugar seguro:</p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem;">${recoveryHtml}</div>
+            <button id="download-codes" class="peak-btn peak-btn-primary peak-btn-block">
                 📥 Descargar Códigos (.txt)
             </button>
         `,
@@ -365,6 +387,12 @@ async function showRecoveryCodes(codes, palette, themeConfig) {
         confirmButtonText: 'Entendido',
         background: themeConfig.background,
         color: themeConfig.color,
+        buttonsStyling: false,
+        customClass: {
+            popup: 'peak-card',
+            confirmButton: 'peak-btn peak-btn-secondary',
+            actions: 'swal2-actions-custom'
+        },
         didOpen: () => {
             document.getElementById('download-codes').addEventListener('click', () => {
                 const blob = new Blob([rawCodes], { type: 'text/plain' });

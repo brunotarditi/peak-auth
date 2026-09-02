@@ -297,3 +297,16 @@ function switchTab(tabName) {
 }
 
 
+document.addEventListener('DOMContentLoaded', () => {
+    const checkbox = document.getElementById('is_active');
+    const label = document.querySelector('label[for="is_active"]');
+    if (checkbox && label) {
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                label.innerText = 'Estado de la Aplicación (Activa)';
+            } else {
+                label.innerText = 'Estado de la Aplicación (Inactiva)';
+            }
+        });
+    }
+});

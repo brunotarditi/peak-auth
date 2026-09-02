@@ -5,17 +5,19 @@
             <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Autenticación en Dos Pasos (MFA)</h3>
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Configura el requisito de segundo factor (TOTP) para esta aplicación.</p>
         </div>
+        {{ if ne .App.AppID "peak-auth" }}
         <button onclick="toggleEdit('mfa', 'brand')" id="btn_edit_mfa" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
             <span>Editar</span>
             <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
+        {{ end }}
     </div>
 
     <fieldset id="fs_mfa" disabled style="padding-top: 0.5rem; transition: opacity 0.3s; opacity: 0.8; cursor: not-allowed; border: none; margin: 0; padding: 0;">
         <div style="display: flex; flex-direction: column; gap: 1rem;">
             <!-- Política de MFA -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
-                <div style="display: flex; flex-direction: column; gap: 0.25rem; max-width: 70%;">
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
                     <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Modo de Verificación</span>
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">
                         Determina si el inicio de sesión exige un segundo factor.

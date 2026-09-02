@@ -136,6 +136,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		adminPublic.GET("/login/mfa", loginCtrl.GetAdminMfaForm)
 		adminPublic.POST("/login/mfa", loginLimiter, middleware.AdminCSRFMiddleware(), loginCtrl.PostAdminMfa)
 		adminPublic.GET("/login/mfa/setup", loginCtrl.GetAdminMfaSetupForm)
+		adminPublic.POST("/mfa/setup", loginLimiter, loginCtrl.PostAdminMfaSetup)
+		adminPublic.POST("/mfa/verify", loginLimiter, loginCtrl.PostAdminMfaVerifySetup)
 		adminPublic.GET("/login/mfa/webauthn/begin", loginLimiter, loginCtrl.BeginWebAuthnLogin)
 		adminPublic.POST("/login/mfa/webauthn/finish", loginLimiter, middleware.AdminCSRFMiddleware(), loginCtrl.FinishWebAuthnLoginAdmin)
 

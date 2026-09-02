@@ -5,6 +5,7 @@ type AppStatsResponse struct {
 	Name        string `json:"name"`
 	AppID       string `json:"app_id"`
 	Description string `json:"description"`
+	IsActive    bool   `json:"is_active"`
 	UserCount   int64  `json:"user_count"`
 }
 

@@ -573,3 +573,74 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 		"auth":    response,
 	})
 }
+
+
+// PostAdminMfaSetup genera el QR para configurar TOTP forzosamente en el panel admin
+func (ctrl *LoginController) PostAdminMfaSetup(c *gin.Context) {
+	mfaToken := c.GetHeader("Authorization")
+	if len(mfaToken) > 7 && mfaToken[:7] == "Bearer " {
+		mfaToken = mfaToken[7:]
+	}
+	if mfaToken == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token requerido"})
+		return
+	}
+
+	claims, err := ctrl.TokenManager.VerifyMFAPendingToken(mfaToken, util.AppIdPeakAuth)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+		return
+	}
+
+	var userID uint
+	fmt.Sscanf(claims.Subject, "%d", &userID)
+	resp, err := ctrl.MfaService.SetupTOTP(userID, claims.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
+
+// PostAdminMfaVerifySetup verifica y activa TOTP forzosamente en el panel admin
+func (ctrl *LoginController) PostAdminMfaVerifySetup(c *gin.Context) {
+	mfaToken := c.GetHeader("Authorization")
+	if len(mfaToken) > 7 && mfaToken[:7] == "Bearer " {
+		mfaToken = mfaToken[7:]
+	}
+	
+	var req struct {
+		Code string `json:"code" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato inválido"})
+		return
+	}
+
+	claims, err := ctrl.TokenManager.VerifyMFAPendingToken(mfaToken, util.AppIdPeakAuth)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+		return
+	}
+
+	var userID uint
+	fmt.Sscanf(claims.Subject, "%d", &userID)
+
+	recoveryCodes, err := ctrl.MfaService.VerifyAndActivateTOTP(userID, req.Code)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token, expireMinutes, err := ctrl.UserService.CompleteAdminLoginWithMfa(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.SetSameSite(http.SameSiteLaxMode)
+	isSecure := util.IsProduction()
+	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "TOTP activado", "recovery_codes": recoveryCodes})
+}

@@ -51,6 +51,11 @@ func (ctrl *ApplicationController) GetEditApp(c *gin.Context) {
 		c.String(http.StatusNotFound, "App no encontrada")
 		return
 	}
+	statusText := "Estado de la Aplicación (Inactiva)"
+	if app.IsActive {
+		statusText = "Estado de la Aplicación (Activa)"
+	}
+
 	ctrl.renderAdmin(c, "app_new.html", gin.H{
 		"App":        app,
 		"FormAction": "/admin/apps/" + app.AppID,
@@ -67,10 +72,10 @@ func (ctrl *ApplicationController) GetEditApp(c *gin.Context) {
 		"NameDisabled":   true,
 		"NameClass":      "opacity-60 cursor-not-allowed",
 		"HelpText":       "El nombre no puede modificarse después de la creación",
-		"IsActive":       true,
-		"IsLocked":       false,
+		"IsActive":       app.IsActive,
+		"IsLocked":       app.AppID == util.AppIdPeakAuth,
 		"SubmitDisabled": true,
-		"StatusApp":      "Estado de la Aplicación (Activa)",
+		"StatusApp":      statusText,
 	})
 }
 
