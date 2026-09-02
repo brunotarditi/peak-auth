@@ -69,6 +69,7 @@
     --bg-body: var(--slate-50);
     --bg-surface: var(--white);
     --bg-surface-hover: var(--slate-50);
+    --bg-surface-secondary: var(--slate-50);
     
     --text-main: var(--slate-900);
     --text-muted: var(--slate-500);
@@ -107,6 +108,7 @@
     --bg-body: var(--slate-950);
     --bg-surface: var(--slate-900);
     --bg-surface-hover: var(--slate-800);
+    --bg-surface-secondary: var(--slate-800);
     
     --text-main: var(--white);
     --text-muted: var(--slate-400);

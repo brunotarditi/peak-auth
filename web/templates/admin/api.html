@@ -1,113 +1,168 @@
 {{ define "content" }}
 <div style="display: flex; gap: 2rem; width: 100%; padding: 1rem 0;">
     <!-- Sidebar Navegación -->
-    <aside style="width: 16rem; flex-shrink: 0; border-right: 1px solid var(--border-light); padding-right: 1.5rem; display: none;">
+    <aside
+        style="width: 16rem; flex-shrink: 0; border-right: 1px solid var(--border-light); padding-right: 1.5rem; display: none;">
         <nav style="position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem;">
             <div>
-                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Conceptos Core</h4>
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                <h4
+                    style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                    Conceptos Core</h4>
+                <ul
+                    style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
                     <li>
-                        <a href="/admin/docs" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">
-                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <a href="/admin/docs"
+                            style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; transition: color 0.2s;"
+                            onmouseover="this.style.color='var(--brand-600)'"
+                            onmouseout="this.style.color='var(--text-muted)'">
+                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
                             Introducción
                         </a>
                     </li>
                 </ul>
             </div>
             <div>
-                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Desarrollo</h4>
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                <h4
+                    style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                    Desarrollo</h4>
+                <ul
+                    style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
                     <li>
-                        <a href="/admin/docs/api" style="color: var(--brand-600); font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
-                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        <a href="/admin/docs/api"
+                            style="color: var(--brand-600); font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                            </svg>
                             API Endpoints
                         </a>
                     </li>
-                    <li><a href="#login" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Autenticar Usuario</a></li>
-                    <li><a href="#refresh" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Refresh Tokens</a></li>
-                    <li><a href="#validation" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Validación de Firma</a></li>
+                    <li><a href="#login"
+                            style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;"
+                            onmouseover="this.style.color='var(--brand-600)'"
+                            onmouseout="this.style.color='var(--text-muted)'">Autenticar Usuario</a></li>
+                    <li><a href="#refresh"
+                            style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;"
+                            onmouseover="this.style.color='var(--brand-600)'"
+                            onmouseout="this.style.color='var(--text-muted)'">Refresh Tokens</a></li>
+                    <li><a href="#validation"
+                            style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;"
+                            onmouseover="this.style.color='var(--brand-600)'"
+                            onmouseout="this.style.color='var(--text-muted)'">Validación de Firma</a></li>
                 </ul>
             </div>
         </nav>
     </aside>
     <style>
         @media (min-width: 768px) {
-            aside { display: block !important; }
+            aside {
+                display: block !important;
+            }
         }
     </style>
 
     <!-- Contenido Principal -->
     <main style="flex: 1; max-width: 48rem;">
         <div style="margin-bottom: 3rem;">
-            <h1 style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); margin-bottom: 1rem; letter-spacing: -0.025em;">Referencia de API</h1>
+            <h1
+                style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); margin-bottom: 1rem; letter-spacing: -0.025em;">
+                Referencia de API</h1>
             <p style="font-size: 1.125rem; color: var(--text-muted); line-height: 1.625;">
-                Endpoints de integración pública para interactuar con Peak Auth desde tus microservicios y aplicaciones cliente.
+                Endpoints de integración pública para interactuar con Peak Auth desde tus microservicios y aplicaciones
+                cliente.
             </p>
         </div>
 
         <section id="login" style="margin-bottom: 3rem;">
-            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
-                <span style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
+            <h2
+                style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span
+                    style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
                 /api/v1/login
             </h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
-                Autentica a un usuario y genera un JWT firmado mediante criptografía asimétrica. Requiere las credenciales del cliente (App).
+                Autentica a un usuario y genera un JWT firmado mediante criptografía asimétrica. Requiere las
+                credenciales del cliente (App).
             </p>
-            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
-<pre style="margin: 0;"><code>{
-  "email": "user@example.com",
-  "password": "SecurePassword123!",
-  "client_id": "mi-app-id",
-  "client_secret": "secret-de-la-app"
-}</code></pre>
+            <div
+                style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
+                <pre style="margin: 0;">
+                    <code>{
+                        "email": "user@example.com",
+                        "password": "SecurePassword123!",
+                        "client_id": "mi-app-id",
+                        "client_secret": "secret-de-la-app"
+                    }</code>
+                </pre>
             </div>
             <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Respuesta Exitosa</h4>
-            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--emerald-500); font-family: monospace;">
-<pre style="margin: 0;"><code>{
-  "access_token": "eyJhbGciOiJSUzI1NiIsInR5c...",
-  "refresh_token": "rt_28f2j9fj28f...",
-  "expires_in": 3600
-}</code></pre>
+            <div
+                style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--emerald-500); font-family: monospace;">
+                <pre style="margin: 0;">
+                    <code>{
+                        "access_token": "eyJhbGciOiJSUzI1NiIsInR5c...",
+                        "refresh_token": "rt_28f2j9fj28f...",
+                        "expires_in": 3600
+                    }</code>
+                </pre>
             </div>
         </section>
 
         <section id="refresh" style="margin-bottom: 3rem;">
-            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
-                <span style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
+            <h2
+                style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span
+                    style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
                 /api/v1/refresh
             </h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
-                Obtiene un nuevo Access Token enviando un Refresh Token válido, sin necesidad de pedir usuario y contraseña de nuevo. Aplica rotación de tokens (el viejo muere, uno nuevo nace).
+                Obtiene un nuevo Access Token enviando un Refresh Token válido, sin necesidad de pedir usuario y
+                contraseña de nuevo. Aplica rotación de tokens (el viejo muere, uno nuevo nace).
             </p>
-            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
-<pre style="margin: 0;"><code>{
-  "refresh_token": "rt_28f2j9fj28f..."
-}</code></pre>
+            <div
+                style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
+                <pre style="margin: 0;">
+                    <code>{
+                        "refresh_token": "rt_28f2j9fj28f..."
+                    }</code>
+                </pre>
             </div>
         </section>
 
         <section id="validation" style="margin-bottom: 3rem;">
-            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Validación en tu Aplicación</h2>
+            <h2
+                style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+                Validación en tu Aplicación</h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
-                Tu aplicación NO necesita llamar a Peak Auth para validar cada request. En su lugar, usa el archivo público <code>jwt_public.pem</code>.
+                Tu aplicación NO necesita llamar a Peak Auth para validar cada request. En su lugar, usa el archivo
+                público <code>jwt_public.pem</code>.
             </p>
-            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
-<pre style="margin: 0;"><code>// Ejemplo en Node.js
-const jwt = require("jsonwebtoken");
-const fs = require("fs");
+            <div
+                style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
+                <pre style="margin: 0;">
+                    <code>// Ejemplo en Node.js
+                        const jwt = require("jsonwebtoken");
+                        const fs = require("fs");
 
-const publicKey = fs.readFileSync("./jwt_public.pem", "utf-8");
+                        const publicKey = fs.readFileSync("./jwt_public.pem", "utf-8");
 
-app.get("/recurso-protegido", (req, res) => {
-    const token = req.headers.authorization.split(" ")[1];
-    try {
-        // Validación local (sin latencia de red)
-        const decoded = jwt.verify(token, publicKey, { algorithms: ["RS256"] });
-        res.json({ user: decoded.email });
-    } catch (err) {
-        res.status(401).send("Token Inválido");
-    }
-});</code></pre>
+                        app.get("/recurso-protegido", (req, res) => {
+                            const token = req.headers.authorization.split(" ")[1];
+                            try {
+                                // Validación local (sin latencia de red)
+                                const decoded = jwt.verify(token, publicKey, { algorithms: ["RS256"] });
+                                res.json({ user: decoded.email });
+                            } catch (err) {
+                                res.status(401).send("Token Inválido");
+                            }
+                        });
+                    </code>
+                </pre>
             </div>
         </section>
 
