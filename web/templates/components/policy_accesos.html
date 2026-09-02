@@ -17,7 +17,7 @@
     <fieldset id="fs_pwd" disabled style="padding-top: 0.5rem; transition: opacity 0.3s; opacity: 0.8; cursor: not-allowed; border: none; margin: 0; padding: 0;">
         <div style="display: flex; flex-direction: column; gap: 1rem;">
             <!-- Largo Mínimo -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--slate-50); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.25rem; max-width: 70%;">
                     <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Largo Mínimo de Contraseña</span>
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Especifica la cantidad mínima de caracteres requeridos para una contraseña válida.</span>
@@ -32,7 +32,7 @@
             </div>
 
             <!-- Requisitos de Caracteres -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--slate-50); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.25rem; max-width: 70%;">
                     <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Complejidad de Contraseña</span>
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Obliga la inclusión de ciertos tipos de caracteres (mayúsculas, números y símbolos).</span>
@@ -41,17 +41,17 @@
                     <!-- Tailwind toggle classes removed in favor of direct JS class toggling or explicit styles -->
                     <!-- We use standard checkboxes for simplicity in vanilla CSS instead of pill toggles to avoid complex JS logic here -->
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="pwd_require_uppercase" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireUppercase }}checked{{ end }} style="width: 1rem; height: 1rem; accent-color: var(--rose-600); cursor: pointer;">
+                        <input type="checkbox" id="pwd_require_uppercase" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireUppercase }}checked{{ end }} class="peak-checkbox">
                         <label for="pwd_require_uppercase" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Mayús</label>
                     </div>
                     
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="pwd_require_numbers" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireNumbers }}checked{{ end }} style="width: 1rem; height: 1rem; accent-color: var(--rose-600); cursor: pointer;">
+                        <input type="checkbox" id="pwd_require_numbers" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireNumbers }}checked{{ end }} class="peak-checkbox">
                         <label for="pwd_require_numbers" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Núms</label>
                     </div>
                     
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="pwd_require_symbols" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireSymbols }}checked{{ end }} style="width: 1rem; height: 1rem; accent-color: var(--rose-600); cursor: pointer;">
+                        <input type="checkbox" id="pwd_require_symbols" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireSymbols }}checked{{ end }} class="peak-checkbox">
                         <label for="pwd_require_symbols" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Símb</label>
                     </div>
                 </div>
