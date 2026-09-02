@@ -6,41 +6,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Email Verificado</title>
     <script src="{{ js "config.js" }}"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/admin.css" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/output.css" }}">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
 </head>
 
-<body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900 bg-slate-50 dark:bg-slate-950">
-    <div class="max-w-md w-full animate-slide-in-right">
-        <div
-            class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 text-center">
-            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" class="h-24 mx-auto mb-10">
+<body class="bg-pattern layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
+    </div>
 
-            <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-4">¡Email <span
-                    class="text-emerald-500">Verificado!</span></h1>
-            <p class="text-slate-400 font-medium leading-relaxed mb-10">Tu dirección de correo electrónico ha sido
-                confirmada con éxito. Ya puedes acceder a todas las funciones de tu aplicación.</p>
+    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
+        <div class="glass-panel" style="padding: 3rem 2rem; text-align: center;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 2rem; border: 1px solid var(--border-light);">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 4rem; height: 4rem;">
+            </div>
+
+            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main); margin-bottom: 1rem;">¡Email <span style="color: var(--emerald-500);">Verificado!</span></h1>
+            
+            <p style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; line-height: 1.625; margin-bottom: 2.5rem;">
+                Tu dirección de correo electrónico ha sido confirmada con éxito. Ya puedes acceder a todas las funciones de tu aplicación.
+            </p>
 
             {{ if .NeedsPassword }}
-            <a href="/reset-password?token={{ .ResetToken }}"
-                class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-brand-700 transition shadow-xl shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3 group">
+            <a href="/reset-password?token={{ .ResetToken }}" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; text-decoration: none;">
                 <span>Establecer Contraseña</span>
                 {{template "icon-forward"}}
             </a>
             {{ else }}
-            <a href="/admin/login"
-                class="w-full bg-slate-900 dark:bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 dark:hover:bg-brand-700 transition shadow-xl shadow-slate-100 dark:shadow-none flex items-center justify-center gap-3 group">
+            <a href="/admin/login" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; background-color: var(--text-main); color: var(--bg-surface); text-decoration: none; border: none;">
                 <span>Ir al Inicio de Sesión</span>
                 {{template "icon-forward"}}
             </a>
             {{ end }}
         </div>
 
-        <p
-            class="text-center text-slate-400 dark:text-slate-600 text-[10px] mt-10 font-black uppercase tracking-widest">
+        <p style="text-align: center; color: var(--slate-400); font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2.5rem;">
             Peak Auth Security Protocol Verified
         </p>
     </div>

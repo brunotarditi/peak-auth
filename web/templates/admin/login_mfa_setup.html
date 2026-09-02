@@ -1,262 +1,156 @@
-{{ define "login_mfa_setup.html" }}
 <!DOCTYPE html>
-<html lang="es" class="h-full">
+<html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración de Seguridad - Peak Auth</title>
-    <!-- Tailwind CSS -->
-    <link rel="stylesheet" href="/static/css/main.css">
-    <!-- SweetAlert2 -->
+    <script src="{{ js "config.js" }}"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: { 50: '#f0fdf4', 100: '#dcfce7', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 900: '#14532d' }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-        }
-
-        .dark .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            border-color: rgba(255, 255, 255, 0.05);
-        }
-    </style>
-    <script src="/static/js/common.js"></script>
+    <script src="{{ js "common.js" }}"></script>
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
 </head>
 
-<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-300 antialiased relative overflow-hidden">
-    <!-- Fondos dinámicos -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-brand-400/20 dark:bg-brand-900/30 blur-[120px] mix-blend-multiply dark:mix-blend-lighten"></div>
-        <div class="absolute top-[20%] -right-[10%] w-[40%] h-[60%] rounded-full bg-blue-400/10 dark:bg-blue-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-lighten"></div>
+<body class="bg-pattern layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
     </div>
 
-    <!-- Contenedor Principal -->
-    <div class="w-full max-w-md relative z-10">
-        <!-- Logo -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-brand-100 dark:shadow-none mb-4 border border-slate-100 dark:border-slate-700">
-                <img src="/static/img/logo.svg" alt="Peak Auth" class="w-10 h-10">
+    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; border-radius: 1rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 1rem; border: 1px solid var(--border-light);">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
             </div>
-            <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Acceso Restringido</h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-2 text-sm font-medium">Por política de seguridad, debes configurar el Segundo Factor (MFA) obligatoriamente antes de continuar.</p>
+            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Acceso Restringido</h1>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Por política de seguridad, debes configurar el Segundo Factor (MFA) obligatoriamente antes de continuar.</p>
         </div>
 
-        <!-- Tarjeta del Formulario -->
-        <div class="glass-panel rounded-[2rem] p-8 shadow-2xl shadow-slate-200/50 dark:shadow-none">
+        <div class="glass-panel" style="padding: 2rem;">
             {{ if .Error }}
-            <div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-semibold flex items-center gap-3">
-                <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background-color: var(--rose-50); border: 1px solid var(--rose-100); border-radius: var(--radius-xl); display: flex; align-items: center; gap: 0.75rem; color: var(--rose-600); font-size: 0.75rem; font-weight: 700;">
+                <svg style="width: 1.25rem; height: 1.25rem; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 <span>{{ .Error }}</span>
             </div>
             {{ end }}
 
-            <!-- Opción 1: App Authenticator -->
-            <div id="totp-setup-container" class="text-center">
-                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">1. App de Autenticación</h3>
-                <p class="text-xs text-slate-500 mb-4">Escanea el código QR con Google Authenticator o Authy.</p>
-                <div id="qr-code-box" class="flex justify-center mb-4 min-h-[200px] items-center bg-white p-4 rounded-xl border border-slate-200">
-                    <div class="animate-pulse flex space-x-4">
-                        <div class="rounded-full bg-slate-200 h-10 w-10"></div>
-                        <div class="flex-1 space-y-6 py-1">
-                          <div class="h-2 bg-slate-200 rounded"></div>
-                          <div class="space-y-3">
-                            <div class="grid grid-cols-3 gap-4">
-                              <div class="h-2 bg-slate-200 rounded col-span-2"></div>
-                              <div class="h-2 bg-slate-200 rounded col-span-1"></div>
-                            </div>
-                            <div class="h-2 bg-slate-200 rounded"></div>
-                          </div>
-                        </div>
-                    </div>
+            <div id="totp-setup-container" style="text-align: center;">
+                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">1. App de Autenticación</h3>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Escanea el código QR con Google Authenticator o Authy.</p>
+                <div id="qr-code-box" style="display: flex; justify-content: center; align-items: center; min-height: 200px; background-color: white; padding: 1rem; border-radius: var(--radius-xl); border: 1px solid var(--slate-200); margin-bottom: 1rem;">
+                    <div style="color: var(--text-muted);">Cargando QR...</div>
                 </div>
                 
                 <input type="text" id="totp-code" name="code" required
-                    class="w-full bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 transition-all font-mono tracking-widest text-center text-xl mb-4"
+                    class="peak-input"
+                    style="font-family: monospace; text-align: center; font-size: 1.25rem; letter-spacing: 0.2em; padding: 1rem; margin-bottom: 1rem;"
                     placeholder="000 000" autocomplete="off" maxlength="6">
 
-                <button type="button" onclick="verifyTotp()"
-                    class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition shadow-lg shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3">
+                <button type="button" onclick="verifyTotp()" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center;">
                     <span>Verificar y Entrar</span>
                 </button>
             </div>
 
-            <div class="mt-6">
-                <div class="relative flex items-center mb-6">
-                    <div class="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
-                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-widest">o usar</span>
-                    <div class="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+            <div style="margin-top: 1.5rem;">
+                <div style="position: relative; margin-bottom: 1.5rem;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center;">
+                        <div style="width: 100%; border-top: 1px solid var(--border-color);"></div>
+                    </div>
+                    <div style="position: relative; display: flex; justify-content: center; font-size: 0.75rem;">
+                        <span style="background-color: var(--bg-surface); padding: 0 1rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">o usar</span>
+                    </div>
                 </div>
-                
-                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 text-center">2. Llave de Seguridad FÍSICA</h3>
-                <p class="text-xs text-slate-500 mb-4 text-center">Usa Windows Hello, TouchID, FaceID o YubiKey.</p>
-                <button type="button" onclick="registerWebAuthn()"
-                    class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 transition shadow-lg shadow-slate-200 dark:shadow-none flex items-center justify-center gap-3">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                    <span>Vincular Passkey</span>
+
+                <button type="button" id="btn-webauthn-register" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
+                    <span>Registrar Llave de Seguridad (Passkey)</span>
                 </button>
             </div>
+
+            <!-- Recovery Codes Modal triggers when successful -->
         </div>
     </div>
 
-    <!-- Modal de Códigos de Recuperación -->
-    <div id="recovery-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-8 shadow-2xl border border-slate-200 dark:border-slate-700">
-            <h2 class="text-2xl font-bold mb-4 text-slate-800 dark:text-white">¡MFA Configurado!</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Guarda estos códigos de recuperación en un lugar seguro. Solo se mostrarán una vez.</p>
-            <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl font-mono text-sm mb-6 grid grid-cols-2 gap-2 text-slate-700 dark:text-slate-300" id="recovery-codes-list">
-            </div>
-            
-            <button onclick="downloadRecoveryCodes()" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-xl hover:opacity-80 transition mb-3">
-                📥 Descargar Códigos (.txt)
-            </button>
-            <button onclick="continueToDashboard()" class="w-full bg-brand-600 text-white font-bold py-3 rounded-xl hover:bg-brand-700 transition">
-                Ya los guardé. Entrar.
-            </button>
-        </div>
-    </div>
-
+    <!-- Modales y scripts -->
     <script>
         const mfaToken = "{{ .MfaToken }}";
 
-        // Inicializar TOTP Setup
         document.addEventListener('DOMContentLoaded', async () => {
+            // Load QR code
             try {
-                const res = await fetch('/api/v1/login/mfa/totp/setup?mfa_token=' + mfaToken, { method: 'POST' });
-                if (!res.ok) throw new Error('No se pudo cargar el QR');
-                const data = await res.json();
-                
-                document.getElementById('qr-code-box').innerHTML = `<img src="${data.qr_code}" alt="QR Code" class="max-w-[200px] h-auto rounded-lg mx-auto">`;
+                const res = await fetch('/admin/mfa/setup', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + mfaToken }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('qr-code-box').innerHTML = `<img src="${data.qr_code}" alt="QR" class="w-full h-full object-contain">`;
+                } else {
+                    document.getElementById('qr-code-box').innerHTML = `<p style="color:var(--rose-600)">Error al cargar QR</p>`;
+                }
             } catch (err) {
                 console.error(err);
-                document.getElementById('qr-code-box').innerHTML = '<p class="text-red-500 text-sm">Error cargando el código QR</p>';
             }
         });
 
         async function verifyTotp() {
             const code = document.getElementById('totp-code').value;
-            if (!code || code.length !== 6) {
-                Swal.fire('Error', 'Ingresa el código de 6 dígitos', 'error');
-                return;
-            }
-
+            if (code.length < 6) return;
+            
             try {
-                const res = await fetch('/api/v1/login/mfa/totp/verify', {
+                const res = await fetch('/admin/mfa/verify', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mfa_token: mfaToken, code: code })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + mfaToken 
+                    },
+                    body: JSON.stringify({ code: code, is_setup: true })
                 });
 
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Código incorrecto');
-
-                // Si fue desde panel de admin, loguearlo directamente.
-                // Guardar la cookie o token que vino en data.auth si es necesario.
-                if (data.auth && data.auth.access_token) {
-                    // Si el backend expidió token de API, podríamos guardarlo,
-                    // pero para admin usamos cookies, por lo que el controller
-                    // de admin debería manejarlo de otra forma.
-                }
-
-                // Mostrar modal con códigos
-                const list = document.getElementById('recovery-codes-list');
-                list.innerHTML = data.recovery_codes.map(c => `<div>${c}</div>`).join('');
-                document.getElementById('recovery-modal').classList.remove('hidden');
-
-            } catch (err) {
-                Swal.fire('Error', err.message, 'error');
-            }
-        }
-
-        async function registerWebAuthn() {
-            try {
-                const res = await fetch('/api/v1/login/mfa/webauthn/register/begin?mfa_token=' + mfaToken);
-                if (!res.ok) throw new Error('Error al iniciar registro');
-                
-                const options = await res.json();
-                
-                options.publicKey.challenge = base64urlToBuffer(options.publicKey.challenge);
-                options.publicKey.user.id = base64urlToBuffer(options.publicKey.user.id);
-                if (options.publicKey.excludeCredentials) {
-                    options.publicKey.excludeCredentials.forEach(cred => {
-                        cred.id = base64urlToBuffer(cred.id);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.recovery_codes) {
+                        showRecoveryCodesAndRedirect(data.recovery_codes);
+                    } else {
+                        window.location.href = "/admin";
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Código incorrecto',
+                        text: 'Verifica el código e intenta de nuevo'
                     });
                 }
-
-                const credential = await navigator.credentials.create({ publicKey: options.publicKey });
-
-                const payload = {
-                    id: credential.id,
-                    rawId: bufferToBase64url(credential.rawId),
-                    type: credential.type,
-                    response: {
-                        attestationObject: bufferToBase64url(credential.response.attestationObject),
-                        clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
-                    }
-                };
-
-                const finishRes = await fetch('/api/v1/login/mfa/webauthn/register/finish?mfa_token=' + mfaToken, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await finishRes.json();
-                if (!finishRes.ok) throw new Error(data.error || 'Error al validar registro');
-
-                Swal.fire({
-                    title: '¡Éxito!',
-                    text: 'Llave de seguridad configurada correctamente.',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                }).then(() => {
-                    window.location.href = data.auth?.redirect || '/admin';
-                });
-
             } catch (err) {
-                Swal.fire('Error', err.message, 'error');
+                console.error(err);
             }
         }
 
-        function continueToDashboard() {
-            // El API CompleteLoginWithMfa devuelve el token.
-            // Para el panel admin, esto es insuficiente porque requiere cookie `admin_token`.
-            // Wait, CompleteLoginWithMfa is an API endpoint, how does the admin get the cookie?
-            // Haremos una petición al endpoint de completado de admin para setear la cookie.
-            // O podemos hacer que verifyTotp redirija a un endpoint especial.
-            window.location.href = '/admin'; 
-        }
+        function showRecoveryCodesAndRedirect(codes) {
+            let html = `<div style="text-align:left; background:var(--bg-surface); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-color); font-family:monospace; margin-bottom:1rem;">
+                <ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">`;
+            codes.forEach(c => html += `<li>${c}</li>`);
+            html += `</ul></div>
+                <p style="color:var(--rose-600); font-size:0.875rem; font-weight:700;">Guarda estos códigos en un lugar seguro. Solo se mostrarán esta vez.</p>`;
 
-        function downloadRecoveryCodes() {
-            const list = document.getElementById('recovery-codes-list');
-            const divs = list.getElementsByTagName('div');
-            let codes = [];
-            for (let i = 0; i < divs.length; i++) {
-                codes.push(divs[i].innerText);
-            }
-            const blob = new Blob([codes.join('\n')], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'peak_auth_recovery_codes.txt';
-            a.click();
-            window.URL.revokeObjectURL(url);
+            Swal.fire({
+                title: 'Códigos de Recuperación',
+                html: html,
+                icon: 'success',
+                confirmButtonText: 'Los he guardado, continuar',
+                allowOutsideClick: false,
+                customClass: {
+                    confirmButton: 'peak-btn peak-btn-primary'
+                }
+            }).then(() => {
+                // Post to setup/complete or just redirect if auth cookie is set. 
+                // The /verify endpoint already sets the cookie.
+                window.location.href = "/admin";
+            });
         }
     </script>
 </body>
+
 </html>
-{{ end }}

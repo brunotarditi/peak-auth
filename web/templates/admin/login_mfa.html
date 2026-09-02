@@ -6,127 +6,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Verificación MFA</title>
     <script src="{{ js "config.js" }}"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/admin.css" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/output.css" }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{ js "common.js" }}"></script>
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
 </head>
 
-<body class="bg-pattern flex items-center justify-center min-h-screen p-4 text-slate-900">
-    <div class="max-w-md w-full animate-slide-in-right">
-        <div class="text-center mb-10">
-            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" class="h-16 mx-auto mb-4">
-            <h1 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Peak <span
-                    class="text-brand-600">Auth</span></h1>
-            <p class="text-slate-400 mt-2 font-medium">Verificación de Doble Factor</p>
+<body class="bg-pattern layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
+    </div>
+
+    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
+        <div style="text-align: center; margin-bottom: 2.5rem;">
+            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="height: 4rem; margin: 0 auto 1rem;">
+            <h1 style="font-size: 2.25rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Peak <span style="color: var(--brand-600);">Auth</span></h1>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-weight: 500;">Verificación de Doble Factor</p>
         </div>
 
-        <div
-            class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800">
-            <h2 class="text-xl font-bold mb-4 text-slate-800 dark:text-white">Seguridad de la Cuenta</h2>
-            <p class="text-xs text-slate-400 mb-8 font-medium leading-relaxed">
+        <div class="glass-panel">
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">Seguridad de la Cuenta</h2>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2rem; font-weight: 500; line-height: 1.625;">
                 Su cuenta está protegida con verificación de doble factor. Ingrese el código de su aplicación authenticator o un código de recuperación.
             </p>
 
             {{ if .Error }}
-            <div class="mb-6 p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/50 rounded-2xl flex items-center gap-3 text-rose-600 dark:text-rose-400 text-xs font-bold">
-                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background-color: var(--rose-50); border: 1px solid var(--rose-100); border-radius: var(--radius-xl); display: flex; align-items: center; gap: 0.75rem; color: var(--rose-600); font-size: 0.75rem; font-weight: 700;">
+                <svg style="width: 1.25rem; height: 1.25rem; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <span>{{ .Error }}</span>
             </div>
             {{ end }}
 
-            <form action="/admin/login/mfa" method="POST" class="space-y-6">
+            <form action="/admin/login/mfa" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                 <input type="hidden" name="mfa_token" value="{{ .MfaToken }}">
                 
-                <div>
-                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Código de Seguridad</label>
-                    <input type="text" name="code" required autocomplete="one-time-code" placeholder="000000 o XXXX-XXXX" autofocus
-                        class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition text-slate-900 dark:text-white font-mono text-center text-xl tracking-widest font-bold placeholder:font-sans placeholder:text-sm placeholder:tracking-normal">
+                <div class="form-group mb-0">
+                    <label style="display: block; font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;">Código de Seguridad</label>
+                    <input type="text" name="code" required autocomplete="one-time-code" placeholder="000000 o XXXX-XXXX" autofocus class="peak-input" style="padding: 1rem 1.25rem; font-family: monospace; text-align: center; font-size: 1.25rem; letter-spacing: 0.1em; font-weight: 700;">
                 </div>
 
-                <button type="submit"
-                    class="w-full bg-brand-600 text-white font-bold py-4 rounded-2xl hover:bg-brand-700 transition shadow-xl shadow-brand-100 dark:shadow-none flex items-center justify-center gap-3 group">
+                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem;">
                     <span>Verificar y Entrar</span>
                     {{template "icon-arrow-forward"}}
                 </button>
             </form>
 
             {{ if .HasWebAuthn }}
-            <div class="mt-6">
-                <div class="relative flex items-center mb-6">
-                    <div class="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
-                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase tracking-widest">o usar</span>
-                    <div class="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+            <div style="margin-top: 1.5rem;">
+                <div style="position: relative; margin-bottom: 1.5rem;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center;">
+                        <div style="width: 100%; border-top: 1px solid var(--border-color);"></div>
+                    </div>
+                    <div style="position: relative; display: flex; justify-content: center; font-size: 0.75rem;">
+                        <span style="background-color: var(--bg-surface); padding: 0 1rem; color: var(--text-muted); font-weight: 500;">o utiliza</span>
+                    </div>
                 </div>
-                
-                <button type="button" onclick="loginWithWebAuthn('{{ .MfaToken }}')"
-                    class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-4 rounded-2xl hover:bg-slate-800 dark:hover:bg-slate-100 transition shadow-xl shadow-slate-200 dark:shadow-none flex items-center justify-center gap-3">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+
+                <button type="button" id="btn-webauthn" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem;">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
                     <span>Llave de Seguridad (Passkey)</span>
                 </button>
             </div>
-
-            <script>
-                async function loginWithWebAuthn(mfaToken) {
-                    try {
-                        const beginRes = await fetch('/admin/login/mfa/webauthn/begin?mfa_token=' + mfaToken);
-                        if (!beginRes.ok) {
-                            const err = await beginRes.json();
-                            throw new Error(err.error || 'Error al iniciar WebAuthn');
-                        }
-                        
-                        const options = await beginRes.json();
-                        options.publicKey.challenge = base64urlToBuffer(options.publicKey.challenge);
-                        options.publicKey.allowCredentials.forEach(cred => {
-                            cred.id = base64urlToBuffer(cred.id);
-                        });
-
-                        const credential = await navigator.credentials.get({ publicKey: options.publicKey });
-
-                        const payload = {
-                            id: credential.id,
-                            rawId: bufferToBase64url(credential.rawId),
-                            type: credential.type,
-                            response: {
-                                authenticatorData: bufferToBase64url(credential.response.authenticatorData),
-                                clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
-                                signature: bufferToBase64url(credential.response.signature),
-                                userHandle: credential.response.userHandle ? bufferToBase64url(credential.response.userHandle) : null
-                            }
-                        };
-
-                        const finishRes = await fetch('/admin/login/mfa/webauthn/finish?mfa_token=' + mfaToken, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const finishData = await finishRes.json();
-                        if (!finishRes.ok) throw new Error(finishData.error || 'Error al validar la llave');
-
-                        window.location.href = finishData.redirect || '/admin';
-                    } catch (e) {
-                        Swal.fire('Error', e.message, 'error');
-                    }
-                }
-            </script>
             {{ end }}
-
-            <div class="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800 text-center">
-                <a href="/admin/login" class="text-xs font-bold text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-                    Volver al inicio de sesión
-                </a>
-            </div>
         </div>
-
-        <p class="text-center text-slate-400 dark:text-slate-600 text-xs mt-10 font-medium">
-            &copy; {{ year }} Peak Auth &bull; v{{ version }}
-        </p>
     </div>
 </body>
 
