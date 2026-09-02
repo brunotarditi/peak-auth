@@ -1,33 +1,31 @@
 {{ define "components/policy_mfa" }}
-<div id="content_mfa" class="tab-content hidden space-y-6">
-    <div class="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+<div id="content_mfa" class="tab-content hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
         <div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-white">Autenticación en Dos Pasos (MFA)</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Configura el requisito de segundo factor (TOTP) para esta aplicación.</p>
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Autenticación en Dos Pasos (MFA)</h3>
+            <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Configura el requisito de segundo factor (TOTP) para esta aplicación.</p>
         </div>
-        <button onclick="toggleEdit('mfa', 'brand')" id="btn_edit_mfa"
-            class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs transition border border-slate-200 dark:border-slate-700 cursor-pointer">
+        <button onclick="toggleEdit('mfa', 'brand')" id="btn_edit_mfa" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
             <span>Editar</span>
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
     </div>
 
-    <fieldset id="fs_mfa" disabled class="pt-2 transition-all duration-300 opacity-80 cursor-not-allowed">
-        <div class="divide-y divide-slate-100 dark:divide-slate-800">
+    <fieldset id="fs_mfa" disabled style="padding-top: 0.5rem; transition: opacity 0.3s; opacity: 0.8; cursor: not-allowed; border: none; margin: 0; padding: 0;">
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
             <!-- Política de MFA -->
-            <div class="policy-row">
-                <div class="flex flex-col gap-0.5 max-w-[70%]">
-                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Modo de Verificación</span>
-                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--slate-50); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+                <div style="display: flex; flex-direction: column; gap: 0.25rem; max-width: 70%;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Modo de Verificación</span>
+                    <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">
                         Determina si el inicio de sesión exige un segundo factor.
                     </span>
                 </div>
                 <div class="relative group">
-                    <select id="mfa_mode" onchange="updateMfa()"
-                        class="custom-select px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl outline-none transition bg-slate-50/50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200">
-                        <option value="OPTIONAL" {{ if eq .MfaPolicy.Mode "OPTIONAL" }}selected{{ end }}>OPCIONAL (Habilitado si el usuario lo activa)</option>
-                        <option value="REQUIRED" {{ if eq .MfaPolicy.Mode "REQUIRED" }}selected{{ end }}>REQUERIDO (Obligatorio para todos)</option>
-                        <option value="DISABLED" {{ if eq .MfaPolicy.Mode "DISABLED" }}selected{{ end }}>DESHABILITADO (MFA desactivado para la app)</option>
+                    <select id="mfa_mode" onchange="updateMfa()" class="peak-input" style="padding: 0.5rem 1rem; font-size: 0.75rem; background-color: var(--bg-surface); cursor: pointer; text-transform: uppercase;">
+                        <option value="OPTIONAL" {{ if eq .MfaPolicy.Mode "OPTIONAL" }}selected{{ end }}>OPCIONAL (Si el usuario lo activa)</option>
+                        <option value="REQUIRED" {{ if eq .MfaPolicy.Mode "REQUIRED" }}selected{{ end }}>REQUERIDO (Para todos)</option>
+                        <option value="DISABLED" {{ if eq .MfaPolicy.Mode "DISABLED" }}selected{{ end }}>DESHABILITADO</option>
                     </select>
                 </div>
             </div>

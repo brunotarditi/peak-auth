@@ -1,57 +1,58 @@
 {{ define "content" }}
-<div class="app-page">
-    <div class="app-card">
-        <div class="app-header">
-            <a href="/admin" class="app-back-link">
+<div style="max-width: 48rem; margin: 0 auto;">
+    <div class="peak-card">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+            <a href="/admin" class="icon-btn" style="border: 1px solid var(--border-color);">
                 {{ template "icon-arrow-back" }}
             </a>
-            <h2 class="app-title">{{ .Title }}</h2>
+            <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main);">{{ .Title }}</h2>
         </div>
 
-        <form id="appForm" action="{{ .FormAction }}" method="POST" class="space-y-8" data-edit="{{ .IsEdit }}">
-            <div>
-                <label class="app-label">Nombre de la
-                    aplicación</label>
+        <form id="appForm" action="{{ .FormAction }}" method="POST" style="display: flex; flex-direction: column; gap: 2rem;" data-edit="{{ .IsEdit }}">
+            <div class="form-group mb-0">
+                <label class="form-label">Nombre de la aplicación</label>
                 <input type="text" name="name" value="{{ .NameValue }}" placeholder="Ej: Mi nueva app" required {{
                     if .NameReadonly }}readonly{{ end }} {{ if .NameDisabled }}disabled{{ end }}
-                    class="app-input {{ .NameClass }}">
+                    class="peak-input {{ .NameClass }}">
                 {{ if .Error }}
-                <p class="text-xs text-rose-600 font-bold mt-2 flex items-center gap-1">
+                <p style="font-size: 0.75rem; color: var(--rose-600); font-weight: 700; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
                     {{ template "icon-warning" }}
                     {{ .Error }}
                 </p>
                 {{ else }}
-                <p class="app-helper">
-                    {{ template "icon-info" }}
+                <p style="font-size: 0.75rem; color: var(--text-light); font-weight: 500; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <span style="color: var(--brand-500);">{{ template "icon-info" }}</span>
                     {{ .HelpText }}
                 </p>
                 {{ end }}
             </div>
 
-            <div>
-                <label class="app-label">Descripción</label>
+            <div class="form-group mb-0">
+                <label class="form-label">Descripción</label>
                 <textarea name="description" rows="4" placeholder="Describe brevemente tu aplicación..."
-                    class="app-textarea">{{ if .App }}{{ .App.Description }}{{ end }}</textarea>
+                    class="peak-input" style="resize: vertical;">{{ if .App }}{{ .App.Description }}{{ end }}</textarea>
             </div>
 
-            <div class="app-toggle-panel">
-                <div class="flex items-center">
+            <div style="background-color: var(--brand-50); border: 1px solid var(--brand-200); padding: 1.5rem; border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
                     <input type="checkbox" name="is_active" {{ if or (not .App) .App.IsActive }}checked{{ end }}
                         id="is_active" {{ if .IsActive }}checked{{ end }} data-locked="{{ .IsLocked }}"
-                        class="h-5 w-5 text-brand-600 dark:text-brand-400 border-slate-300 dark:border-slate-600 rounded-md focus:ring-brand-500 transition cursor-pointer">
-                    <label for="is_active" class="ml-3 text-sm text-brand-900 dark:text-slate-100 font-bold cursor-pointer">
+                        style="width: 1.25rem; height: 1.25rem; accent-color: var(--brand-600); cursor: pointer;">
+                    <label for="is_active" style="margin-left: 0.75rem; font-size: 0.875rem; font-weight: 700; color: var(--brand-800); cursor: pointer;">
                         {{ .StatusApp }}
                     </label>
                 </div>
-                {{ template "icon-lightning" }}
+                <div style="color: var(--brand-400);">
+                    {{ template "icon-lightning" }}
+                </div>
             </div>
 
-            <div class="app-actions">
-                <a href="/admin" class="app-btn-secondary">
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+                <a href="/admin" class="peak-btn peak-btn-secondary" style="text-decoration: none;">
                     Cancelar
                 </a>
                 <button type="submit" id="submitBtn" {{ if .SubmitDisabled }}disabled{{ end }}
-                    class="app-btn-primary">
+                    class="peak-btn peak-btn-primary">
                     <span>{{ .Action }}</span>
                     {{ template "icon-arrow-forward" }}
                 </button>
