@@ -1,4 +1,19 @@
 /**
+ * Sanitiza una cadena para prevenir inyecciones HTML (XSS).
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+    if (!str && str !== 0) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
  * Muestra una notificación visual tipo toast.
  * @param {string} message 
  * @param {string} type - 'success', 'error', 'warning'
@@ -288,12 +303,15 @@ async function setupTotp(palette, themeConfig) {
     const setupRes = await fetch('/api/v1/mfa/totp/setup', { method: 'POST' });
     if (!setupRes.ok) throw new Error('Error al iniciar configuración TOTP');
     const setupData = await setupRes.json();
+    const qrCode = (typeof setupData.qr_code === 'string' && setupData.qr_code.startsWith('data:image/')) 
+        ? setupData.qr_code 
+        : '';
 
     const verifyCode = await Swal.fire({
         title: 'Escanear Código QR',
         html: `
             <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Escanee el código QR con su aplicación.</p>
-            <img src="${setupData.qr_code}" style="margin: 1rem auto; width: 12rem; height: 12rem; border: 1px solid var(--border-color); border-radius: 1.5rem; padding: 0.75rem; background-color: white;" />
+            ${qrCode ? `<img src="${qrCode}" alt="QR Code" style="margin: 1rem auto; width: 12rem; height: 12rem; border: 1px solid var(--border-color); border-radius: 1.5rem; padding: 0.75rem; background-color: white;" />` : ''}
             <input id="totp-verification-code" type="text" placeholder="000000" style="width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-xl); font-family: monospace; text-align: center; font-size: 1.125rem; letter-spacing: 0.1em; font-weight: 700; outline: none;" />
         `,
         showCancelButton: true,
@@ -371,8 +389,9 @@ async function setupWebAuthn(palette, themeConfig) {
 }
 
 async function showRecoveryCodes(codes, palette, themeConfig) {
-    const rawCodes = codes.join('\n');
-    const recoveryHtml = codes.map(c => `<div style="background-color: var(--bg-surface-secondary); padding: 0.5rem; border-radius: var(--radius); font-family: monospace; font-size: 0.875rem; border: 1px solid var(--border-light);">${c}</div>`).join('');
+    const safeCodes = Array.isArray(codes) ? codes.map(c => escapeHtml(String(c))) : [];
+    const rawCodes = Array.isArray(codes) ? codes.join('\n') : '';
+    const recoveryHtml = safeCodes.map(c => `<div style="background-color: var(--bg-surface-secondary); padding: 0.5rem; border-radius: var(--radius); font-family: monospace; font-size: 0.875rem; border: 1px solid var(--border-light);">${c}</div>`).join('');
     
     await Swal.fire({
         title: '¡MFA Activado!',
