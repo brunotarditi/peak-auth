@@ -1,27 +1,26 @@
 {{ define "components/policy_autorizacion" }}
 {{ if .AuthzPolicy }}
-<div id="content_autorizacion" class="tab-content hidden space-y-6">
-    <div class="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+<div id="content_autorizacion" class="tab-content hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
         <div>
-            <h3 class="text-base font-bold text-slate-900 dark:text-white">Políticas de Autorización (RBAC)</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Administra cómo se aplican los roles y permisos en la aplicación.</p>
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Políticas de Autorización (RBAC)</h3>
+            <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Administra cómo se aplican los roles y permisos en la aplicación.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
-        <button onclick="toggleEdit('authz', 'emerald')" id="btn_edit_authz"
-            class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs transition border border-slate-200 dark:border-slate-700 cursor-pointer">
+        <button onclick="toggleEdit('authz', 'emerald')" id="btn_edit_authz" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
             <span>Editar</span>
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
         {{ end }}
     </div>
 
-    <fieldset id="fs_authz" disabled class="pt-2 transition-all duration-300 opacity-80 cursor-not-allowed">
-        <div class="divide-y divide-slate-100 dark:divide-slate-800">
+    <fieldset id="fs_authz" disabled style="padding-top: 0.5rem; transition: opacity 0.3s; opacity: 0.8; cursor: not-allowed; border: none; margin: 0; padding: 0;">
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
             <!-- Activar Control de Acceso (RBAC) -->
-            <div class="policy-row">
-                <div class="flex flex-col gap-0.5 max-w-[70%]">
-                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Activar Control de Acceso (RBAC)</span>
-                    <span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium leading-relaxed shadow-none border-none" id="authz_description">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--slate-50); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+                <div style="display: flex; flex-direction: column; gap: 0.25rem; max-width: 70%;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Activar Control de Acceso (RBAC)</span>
+                    <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400); line-height: 1.5;" id="authz_description">
                         {{ if .AuthzPolicy.EnableRoles }}
                         Los accesos de los usuarios están supeditados a los roles y permisos asignados.
                         {{ else }}
@@ -30,15 +29,7 @@
                     </span>
                 </div>
                 <div>
-                    <label
-                        class="w-8 h-5 {{ if .AuthzPolicy.EnableRoles }}bg-emerald-500{{ else }}bg-slate-300 dark:bg-slate-600{{ end }} rounded-full flex items-center px-1 {{ if ne .App.AppID "peak-auth" }}cursor-pointer{{ else }}cursor-not-allowed opacity-50{{ end }} transition-colors"
-                        id="authz_roles_wrapper">
-                        <input type="checkbox" id="authz_enable_roles" class="sr-only"
-                            {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                            onchange="toggleUI(this, 'authz_roles_wrapper'); updateAuthz()" {{ if
-                            .AuthzPolicy.EnableRoles }}checked{{ end }}>
-                        <div class="w-3 h-3 bg-white rounded-full {{ if .AuthzPolicy.EnableRoles }}translate-x-3{{ end }} transition-transform"></div>
-                    </label>
+                    <input type="checkbox" id="authz_enable_roles" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} onchange="updateAuthz()" {{ if .AuthzPolicy.EnableRoles }}checked{{ end }} style="width: 1.25rem; height: 1.25rem; accent-color: var(--brand-600); cursor: pointer;">
                 </div>
             </div>
         </div>
