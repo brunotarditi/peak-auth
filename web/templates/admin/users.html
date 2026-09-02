@@ -1,52 +1,43 @@
 {{ define "content" }}
-<div class="mb-10">
-    <a href="/admin"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-300 rounded-xl font-bold text-sm hover:bg-brand-100 dark:hover:bg-brand-900/30 transition shadow-sm group border border-brand-100 dark:border-brand-800">
+<div class="mb-8">
+    <a href="/admin" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
         {{ template "icon-arrow-back" }}
         Volver al Panel
     </a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <div class="lg:col-span-1">
-        <div
-            class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800 sticky top-24">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Vincular Usuario</h2>
-                <button type="button" id="openRoleModalBtn"
-                    class="text-[10px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 px-3 py-1.5 rounded-lg transition border border-slate-100 dark:border-slate-700">
+    <!-- Formulario de Vincular Usuario -->
+    <div style="grid-column: span 1;">
+        <div class="peak-card" style="position: sticky; top: 6rem;">
+            <div class="flex justify-between items-center peak-card-header">
+                <h2 class="peak-card-title">Vincular Usuario</h2>
+                <button type="button" id="openRoleModalBtn" class="peak-btn peak-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em;">
                     + Roles
                 </button>
             </div>
 
             <form id="assignUserForm" action="/admin/apps/{{.App.AppID}}/users" method="POST"
-                onsubmit="event.preventDefault(); assignUser(event, '{{.App.AppID}}');" class="space-y-5">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email del
-                        usuario</label>
+                onsubmit="event.preventDefault(); assignUser(event, '{{.App.AppID}}');" class="flex flex-col gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">Email del usuario</label>
                     <input type="email" name="email" placeholder="ejemplo@correo.com" required autocomplete="off"
-                        data-bwignore data-1p-ignore
-                        class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 focus:bg-white text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500">
+                        data-bwignore data-1p-ignore class="peak-input">
                 </div>
 
-                <div class="relative">
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Rol en la
-                        App</label>
-                    <div class="relative group">
-                        <select name="role" required
-                            class="custom-select w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition bg-slate-50/50 dark:bg-slate-800/70 dark:focus:bg-slate-800 focus:bg-white text-slate-700 dark:text-slate-200 font-medium">
-                            <option value="" disabled selected>Selecciona un rol</option>
-                            {{range .Roles}}
-                            {{ if ne .Name "ROOT" }}
-                            <option value="{{.Name}}">{{.Name}}</option>
-                            {{ end }}
-                            {{end}}
-                        </select>
-                    </div>
+                <div class="form-group mb-0 relative">
+                    <label class="form-label">Rol en la App</label>
+                    <select name="role" required class="peak-input" style="appearance: none; cursor: pointer; text-transform: uppercase;">
+                        <option value="" disabled selected>Selecciona un rol</option>
+                        {{range .Roles}}
+                        {{ if ne .Name "ROOT" }}
+                        <option value="{{.Name}}">{{.Name}}</option>
+                        {{ end }}
+                        {{end}}
+                    </select>
                 </div>
 
-                <button type="submit"
-                    class="w-full bg-brand-600 dark:bg-brand-500 text-white py-3.5 rounded-xl font-bold hover:bg-brand-700 dark:hover:bg-brand-400 transition shadow-lg shadow-brand-100 dark:shadow-none flex items-center justify-center gap-2 group">
+                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block mt-2">
                     {{ template "icon-user-add" }}
                     Asignar Acceso
                 </button>
@@ -55,63 +46,56 @@
     </div>
 
     <!-- Users List -->
-    <div class="lg:col-span-2">
-        <div
-            class="bg-white dark:bg-slate-900 rounded-3xl shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden">
-            <div
-                class="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/30 dark:bg-slate-800/30">
-                <h3 class="font-bold text-slate-800 dark:text-white">Listado de Usuarios</h3>
-                <span
-                    class="px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400 dark:text-slate-300 rounded-full uppercase tracking-wider">Total:
-                    {{.TotalCount}}</span>
+    <div style="grid-column: span 2 / span 2;">
+        <div class="table-container">
+            <div class="flex justify-between items-center p-6 border-b" style="border-color: var(--border-light); background-color: rgba(248, 250, 252, 0.3);">
+                <h3 class="font-bold text-main">Listado de Usuarios</h3>
+                <span class="peak-badge" style="background-color: var(--bg-surface); color: var(--text-muted); border-color: var(--border-light);">
+                    Total: {{.TotalCount}}
+                </span>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left">
+                <table class="peak-table">
                     <thead>
-                        <tr
-                            class="text-slate-400 dark:text-slate-500 uppercase text-[10px] font-black tracking-widest border-b border-slate-50 dark:border-slate-800">
-                            <th class="px-8 py-5">Usuario</th>
-                            <th class="px-8 py-5">Estado</th>
-                            <th class="px-8 py-5 text-right">Acciones</th>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Estado</th>
+                            <th class="text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+                    <tbody>
                         {{range .Users}}
-                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors group">
-                            <td class="px-8 py-5">
+                        <tr class="group">
+                            <td>
                                 <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 rounded-full flex items-center justify-center font-bold text-xs uppercase">
+                                    <div style="width: 2.5rem; height: 2.5rem; border-radius: 9999px; background-color: var(--brand-50); color: var(--brand-600); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
                                         {{ safe_slice .Email 0 2 }}
                                     </div>
                                     <div>
-                                        <div class="font-bold text-slate-900 dark:text-white">{{.Email}}</div>
-                                        <div
-                                            class="text-[10px] font-black text-brand-500 dark:text-brand-300 uppercase tracking-widest mt-0.5">
-                                            {{.RoleName}}</div>
+                                        <div style="font-weight: 700; color: var(--text-main);">{{.Email}}</div>
+                                        <div style="font-size: 0.625rem; font-weight: 900; color: var(--brand-500); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.125rem;">
+                                            {{.RoleName}}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-8 py-5">
-                                <div class="flex flex-col gap-1.5">
+                            <td>
+                                <div class="flex flex-col items-start gap-2">
                                     {{if .IsVerified}}
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 dark:border-emerald-800 w-max">
-                                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                    <span class="peak-badge peak-badge-success">
+                                        <span class="peak-badge-indicator" style="animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"></span>
                                         Verificado
                                     </span>
                                     {{else}}
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800 w-max">
-                                        <span class="w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                                    <span class="peak-badge peak-badge-warning">
+                                        <span class="peak-badge-indicator"></span>
                                         Pendiente
                                     </span>
                                     {{end}}
 
                                     {{if .MfaEnabled}}
-                                    <span
-                                        class="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/20 rounded border border-brand-100 dark:border-brand-900/50 w-max select-none">
+                                    <span class="peak-badge peak-badge-brand">
                                         2FA Activo
                                     </span>
                                     {{end}}
@@ -119,23 +103,22 @@
                                     {{ $max := $.MaxFailedLogins }}
                                     {{ if gt .FailedLogins 0 }}
                                         {{ if ge .FailedLogins $max }}
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 rounded border border-rose-100 dark:border-rose-900/50 w-max select-none">
+                                        <span class="peak-badge peak-badge-error">
                                             Bloqueado
                                         </span>
                                         {{ else }}
-                                        {{ $left := sub $max .FailedLogins }}
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 w-max select-none">
-                                            Intentos: {{.FailedLogins}}/{{$max}} (Restan: {{$left}})
+                                        <span class="peak-badge" style="background-color: var(--slate-100); color: var(--text-muted); border-color: var(--border-light);">
+                                            Intentos: {{.FailedLogins}}/{{$max}}
                                         </span>
                                         {{ end }}
                                     {{ end }}
                                 </div>
                             </td>
-                            <td class="px-8 py-5 text-right">
+                            <td class="text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     {{ if gt .FailedLogins 0 }}
                                     <button onclick="unlockUser('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-300 px-2 py-1 rounded-lg font-black uppercase tracking-widest hover:bg-amber-100 dark:hover:bg-amber-900/30 transition border border-amber-100 dark:border-amber-800"
+                                        class="peak-badge peak-badge-warning" style="cursor: pointer; border: 1px solid var(--amber-200);"
                                         title="Resetear intentos fallidos">
                                         Habilitar
                                     </button>
@@ -143,7 +126,7 @@
 
                                     {{ if and (not .IsVerified) (ne .RoleName "ROOT") }}
                                     <button onclick="resendVerification('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="text-[9px] bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-300 px-2 py-1 rounded-lg font-black uppercase tracking-widest hover:bg-brand-100 dark:hover:bg-brand-900/30 transition border border-brand-100 dark:border-brand-800"
+                                        class="peak-badge peak-badge-brand" style="cursor: pointer;"
                                         title="Reenviar email de activación">
                                         Reenviar
                                     </button>
@@ -151,7 +134,7 @@
 
                                     {{ if ne .RoleName "ROOT" }}
                                     <button onclick="sendResetPassword('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="text-[9px] bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300 px-2 py-1 rounded-lg font-black uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-slate-700 transition border border-slate-100 dark:border-slate-700"
+                                        class="peak-badge" style="cursor: pointer; background-color: var(--slate-100); color: var(--text-muted); border-color: var(--border-light);"
                                         title="Enviar email de recuperación">
                                         Reset
                                     </button>
@@ -159,24 +142,22 @@
 
                                     {{if ne .RoleName "ROOT"}}
                                     <button onclick="revokeAccess('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-red-600 transition">
+                                        style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); background: none; border: none; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--rose-600)'" onmouseout="this.style.color='var(--text-muted)'">
                                         Revocar
                                     </button>
                                     {{else}}
-                                    <span
-                                        class="text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-600 italic">Sistema</span>
+                                    <span style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate-300); font-style: italic;">Sistema</span>
                                     {{end}}
                                 </div>
                             </td>
                         </tr>
                         {{else}}
                         <tr>
-                            <td colspan="3" class="px-8 py-20 text-center">
-                                <div class="text-slate-300 dark:text-slate-600 mb-2">
+                            <td colspan="3" class="text-center py-8">
+                                <div style="color: var(--text-light); margin-bottom: 0.5rem; display: flex; justify-content: center;">
                                     {{ template "icon-user-empty" }}
                                 </div>
-                                <p class="text-slate-400 dark:text-slate-500 font-medium">No hay usuarios vinculados.
-                                </p>
+                                <p style="color: var(--text-muted); font-weight: 500;">No hay usuarios vinculados.</p>
                             </td>
                         </tr>
                         {{end}}
@@ -186,30 +167,25 @@
 
             <!-- Paginación -->
             {{ if gt .TotalPages 1 }}
-            <div
-                class="p-6 border-t border-slate-50 dark:border-slate-800 bg-slate-50/10 dark:bg-slate-800/20 flex items-center justify-center gap-2">
+            <div style="padding: 1.5rem; border-top: 1px solid var(--border-light); background-color: rgba(248, 250, 252, 0.1); display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                 {{ if gt .CurrentPg 1 }}
-                <a href="?page={{ .PrevPg }}"
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-300 hover:text-brand-600 hover:border-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors">
+                <a href="?page={{ .PrevPg }}" class="icon-btn" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl);">
                     {{ template "icon-back" }}
                 </a>
                 {{ else }}
-                <span
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-800/30 cursor-not-allowed">
+                <span class="icon-btn" style="border: 1px solid var(--border-light); border-radius: var(--radius-xl); color: var(--text-light); opacity: 0.5; cursor: not-allowed;">
                     {{ template "icon-back" }}
                 </span>
                 {{ end }}
 
-                <div class="flex items-center gap-1.5 px-2">
+                <div class="flex items-center gap-2 px-2">
                     {{ range .Pages }}
                     {{ if eq . $.CurrentPg }}
-                    <span
-                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-brand-600 dark:bg-brand-500 text-white font-bold shadow-md shadow-brand-100 dark:shadow-none cursor-default">
+                    <span style="width: 2.5rem; height: 2.5rem; display: flex; items-center justify-content: center; align-items: center; border-radius: var(--radius-xl); background-color: var(--brand-600); color: white; font-weight: 700; box-shadow: var(--shadow-sm); cursor: default;">
                         {{ . }}
                     </span>
                     {{ else }}
-                    <a href="?page={{ . }}"
-                        class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium hover:border-brand-200 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors">
+                    <a href="?page={{ . }}" class="icon-btn" style="width: 2.5rem; height: 2.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-xl); font-weight: 500;">
                         {{ . }}
                     </a>
                     {{ end }}
@@ -217,13 +193,11 @@
                 </div>
 
                 {{ if lt .CurrentPg .TotalPages }}
-                <a href="?page={{ .NextPg }}"
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-300 hover:text-brand-600 hover:border-brand-200 hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors">
+                <a href="?page={{ .NextPg }}" class="icon-btn" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl);">
                     {{ template "icon-forward" }}
                 </a>
                 {{ else }}
-                <span
-                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-100 dark:border-slate-800 text-slate-300 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-800/30 cursor-not-allowed">
+                <span class="icon-btn" style="border: 1px solid var(--border-light); border-radius: var(--radius-xl); color: var(--text-light); opacity: 0.5; cursor: not-allowed;">
                     {{ template "icon-forward" }}
                 </span>
                 {{ end }}
@@ -234,69 +208,56 @@
 </div>
 
 <!-- Role Modal -->
-<div id="roleModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog"
-    aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" id="roleModalBackdrop"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div
-            class="relative z-10 inline-block align-bottom bg-white dark:bg-slate-900 rounded-3xl text-left overflow-hidden shadow-2xl dark:shadow-none transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-100 dark:border-slate-800">
-            <div class="bg-white dark:bg-slate-900 p-8">
-                <div class="mb-6">
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white" id="modal-title">Nuevo Rol de
-                        Aplicación</h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Define un nuevo rol propio de esta
-                        aplicación.</p>
+<div id="roleModal" class="hidden" style="position: fixed; inset: 0; z-index: 50; overflow-y: auto;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div style="display: flex; align-items: flex-end; justify-content: center; min-height: 100vh; padding: 1rem 1rem 5rem 1rem; text-align: center;">
+        <div style="position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);" id="roleModalBackdrop"></div>
+        
+        <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 32rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="modal-title">Nuevo Rol de Aplicación</h3>
+                <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Define un nuevo rol propio de esta aplicación.</p>
+            </div>
+
+            <form id="roleForm" onsubmit="event.preventDefault(); createRole(event, '{{.App.AppID}}');" class="flex flex-col gap-6">
+                <div class="form-group mb-0">
+                    <label class="form-label">Identificador del Rol</label>
+                    <input type="text" id="roleName" name="name" placeholder="Ej: EDITOR, VIEWER, ADMIN" required
+                        class="peak-input" style="text-transform: uppercase; font-weight: 700;">
                 </div>
 
-                <form id="roleForm" onsubmit="event.preventDefault(); createRole(event, '{{.App.AppID}}');" class="space-y-6">
-                    <div>
-                        <label
-                            class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Identificador
-                            del Rol</label>
-                        <input type="text" id="roleName" name="name" placeholder="Ej: EDITOR, VIEWER, ADMIN" required
-                            class="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition uppercase font-bold bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
-                    </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" id="closeRoleModalBtn" class="peak-btn peak-btn-secondary peak-btn-block">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="submitRoleBtn" class="peak-btn peak-btn-primary peak-btn-block">
+                        Crear Rol
+                    </button>
+                </div>
+            </form>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <button type="button" id="closeRoleModalBtn"
-                            class="w-full px-8 py-3 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-xl font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
-                            Cancelar
-                        </button>
-                        <button type="submit" id="submitRoleBtn"
-                            class="w-full px-8 py-3 bg-brand-600 dark:bg-brand-500 text-white rounded-xl font-bold hover:bg-brand-700 dark:hover:bg-brand-400 transition shadow-lg shadow-brand-100 dark:shadow-none">
-                            Crear Rol
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-light);">
+                <h4 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">Roles Existentes</h4>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 12rem; overflow-y: auto;">
+                    {{range .Roles}}
+                    {{ if .ApplicationID }}
+                    <div class="group" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--slate-50); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+                        <span style="font-size: 0.875rem; font-weight: 700; color: var(--text-main);">{{.Name}}</span>
+                        <button type="button" onclick="deleteRole('{{.Name}}', '{{$.App.AppID}}')" class="icon-btn icon-btn-danger" style="padding: 0.25rem;" title="Eliminar Rol">
+                            {{ template "icon-delete" }}
                         </button>
                     </div>
-                </form>
-
-                <div class="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
-                    <h4 class="text-sm font-bold text-slate-800 dark:text-white mb-4">Roles Existentes</h4>
-                    <div class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                        {{range .Roles}}
-                        {{ if .ApplicationID }}
-                        <div
-                            class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-700 group">
-                            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{.Name}}</span>
-                            <button type="button" onclick="deleteRole('{{.Name}}', '{{$.App.AppID}}')"
-                                class="text-rose-400 dark:text-rose-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition opacity-0 group-hover:opacity-100 cursor-pointer"
-                                title="Eliminar Rol">
-                                {{ template "icon-delete" }}
-                            </button>
+                    {{ else }}
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-xl); border: 1px solid var(--border-light); opacity: 0.6;">
+                        <div class="flex items-center gap-2">
+                            <span style="font-size: 0.875rem; font-weight: 700; color: var(--text-main);">{{.Name}}</span>
+                            <span class="peak-badge peak-badge-brand">Sistema</span>
                         </div>
-                        {{ else }}
-                        <div
-                            class="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-700 opacity-60">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm font-bold text-slate-700 dark:text-slate-200">{{.Name}}</span>
-                                <span
-                                    class="text-[9px] font-black uppercase text-brand-500 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 px-1.5 py-0.5 rounded-md">Sistema</span>
-                            </div>
+                        <div style="color: var(--text-light);">
                             {{ template "icon-lock" }}
                         </div>
-                        {{ end }}
-                        {{end}}
                     </div>
+                    {{ end }}
+                    {{end}}
                 </div>
             </div>
         </div>
