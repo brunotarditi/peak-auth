@@ -1,7 +1,10 @@
-/**
- * users.js - Gestión de usuarios y roles dentro de una aplicación.
- * Permite asignar, revocar y configurar permisos de forma asíncrona.
- */
+(() => {
+    'use strict';
+
+    /**
+     * users.js - Gestión de usuarios y roles dentro de una aplicación.
+     * Permite asignar, revocar y configurar permisos de forma asíncrona.
+     */
 
 // Abrir el modal de roles
 function openRoleModal() {
@@ -20,7 +23,9 @@ async function createRole(event, appID) {
     event.preventDefault();
     const btn = document.getElementById('submitRoleBtn');
     const roleNameInput = document.getElementById('roleName');
-    const roleName = roleNameInput.value.toUpperCase();
+    const roleName = roleNameInput.value.toUpperCase().trim();
+
+    if (!roleName) return;
 
     btn.disabled = true;
     btn.innerText = 'Creando...';
@@ -33,13 +38,42 @@ async function createRole(event, appID) {
         });
 
         if (response.ok) {
+            // Actualizar select del formulario
             const select = document.querySelector('select[name="role"]');
-            const option = new Option(roleName, roleName);
-            select.add(option);
-            select.value = roleName;
+            if (select) {
+                const option = new Option(roleName, roleName);
+                select.add(option);
+                select.value = roleName;
+            }
+
+            // Agregar al listado de roles del modal dinámicamente
+            const modalList = document.getElementById('modal-roles-list');
+            if (modalList) {
+                const item = document.createElement('div');
+                item.id = `modal-role-item-${roleName}`;
+                item.className = 'group';
+                item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light); transition: all 0.2s ease;';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.style.cssText = 'font-size: 0.875rem; font-weight: 700; color: var(--text-main);';
+                nameSpan.textContent = roleName;
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'icon-btn icon-btn-danger';
+                delBtn.style.padding = '0.25rem';
+                delBtn.title = 'Eliminar Rol';
+                delBtn.setAttribute('aria-label', `Eliminar rol ${roleName}`);
+                delBtn.innerHTML = '<svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>';
+                delBtn.onclick = () => deleteRole(roleName, appID);
+
+                item.appendChild(nameSpan);
+                item.appendChild(delBtn);
+                modalList.appendChild(item);
+            }
+
             closeRoleModal();
             showToast('Rol creado con éxito');
-            setTimeout(() => window.location.reload(), 800);
         } else {
             const data = await response.json();
             peakAlert('Error', data.error || 'No se pudo crear el rol', 'error');
@@ -73,7 +107,21 @@ async function deleteRole(roleName, appID) {
 
         if (response.ok) {
             showToast('Rol eliminado con éxito');
-            setTimeout(() => window.location.reload(), 800);
+
+            // Remover del modal con animación
+            const item = document.getElementById(`modal-role-item-${roleName}`);
+            if (item) {
+                item.style.opacity = '0';
+                item.style.transform = 'scale(0.95)';
+                setTimeout(() => item.remove(), 200);
+            }
+
+            // Remover del select de asignación
+            const select = document.querySelector('select[name="role"]');
+            if (select) {
+                const opt = select.querySelector(`option[value="${roleName}"]`);
+                if (opt) opt.remove();
+            }
         } else {
             peakAlert('No se puede eliminar', data.error, 'warning');
         }
@@ -99,7 +147,44 @@ async function revokeAccess(appID, userID) {
 
             if (response.ok) {
                 showToast('Acceso revocado');
-                setTimeout(() => window.location.reload(), 800);
+
+                // Animar y remover la fila del DOM
+                const row = document.getElementById(`user-row-${userID}`);
+                if (row) {
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateY(-6px)';
+                    setTimeout(() => {
+                        row.remove();
+
+                        // Decrementar el contador
+                        const totalBadge = document.getElementById('user-total-count');
+                        if (totalBadge) {
+                            const match = totalBadge.textContent.match(/\d+/);
+                            if (match) {
+                                const newCount = Math.max(0, parseInt(match[0], 10) - 1);
+                                totalBadge.textContent = `Total: ${newCount}`;
+                            }
+                        }
+
+                        // Verificar si la tabla quedó sin usuarios
+                        const tbody = document.getElementById('users-table-body');
+                        if (tbody && tbody.querySelectorAll('tr').length === 0) {
+                            tbody.innerHTML = `
+                                <tr id="empty-users-row">
+                                    <td colspan="3" style="text-align: center; padding: 4rem 1.5rem;">
+                                        <div style="width: 3.5rem; height: 3.5rem; border-radius: 9999px; background-color: var(--bg-surface-secondary); border: 1px solid var(--border-light); color: var(--text-light); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                                            <svg style="width: 1.75rem; height: 1.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                        </div>
+                                        <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No hay usuarios vinculados</h4>
+                                        <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 22rem; margin: 0 auto; line-height: 1.5;">Utiliza el formulario de la izquierda para vincular el primer usuario a esta aplicación.</p>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    }, 300);
+                }
             } else {
                 peakAlert('Error', 'No se pudo revocar el acceso', 'error');
             }
@@ -131,8 +216,9 @@ async function assignUser(event, appID) {
         });
 
         if (response.ok) {
-            await peakAlert('Éxito', 'Usuario y Rol vinculados correctamente a esta aplicación.', 'success');
-            window.location.reload();
+            showToast('Usuario vinculado con éxito');
+            // Recargar suavemente para reflejar la paginación y datos de auditoría
+            setTimeout(() => window.location.reload(), 500);
         } else {
             let msg = 'Error al vincular usuario';
             try {
@@ -159,7 +245,23 @@ async function unlockUser(appID, userID) {
 
         if (response.ok) {
             showToast('Usuario habilitado correctamente');
-            setTimeout(() => window.location.reload(), 800);
+
+            // Remover badge de intentos y botón de desbloqueo dinámicamente
+            const badge = document.getElementById(`user-failed-badge-${userID}`);
+            if (badge) {
+                badge.style.opacity = '0';
+                badge.style.transform = 'scale(0.8)';
+                badge.style.transition = 'all 0.2s ease';
+                setTimeout(() => badge.remove(), 200);
+            }
+
+            const btn = document.getElementById(`btn-unlock-${userID}`);
+            if (btn) {
+                btn.style.opacity = '0';
+                btn.style.transform = 'scale(0.8)';
+                btn.style.transition = 'all 0.2s ease';
+                setTimeout(() => btn.remove(), 200);
+            }
         } else {
             peakAlert('Error', 'No se pudo habilitar al usuario', 'error');
         }
@@ -222,3 +324,15 @@ document.addEventListener('DOMContentLoaded', () => {
         roleBackdrop.addEventListener('click', closeRoleModal);
     }
 });
+
+    // Exportar funciones para eventos HTML inline inmediatamente
+    window.openRoleModal = openRoleModal;
+    window.closeRoleModal = closeRoleModal;
+    window.createRole = createRole;
+    window.deleteRole = deleteRole;
+    window.revokeAccess = revokeAccess;
+    window.assignUser = assignUser;
+    window.unlockUser = unlockUser;
+    window.resendVerification = resendVerification;
+    window.sendResetPassword = sendResetPassword;
+})();

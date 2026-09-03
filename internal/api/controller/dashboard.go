@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"peak-auth/internal/api/middleware"
 	"peak-auth/internal/api/response"
@@ -21,9 +20,7 @@ type DashboardController struct {
 func (ctrl *DashboardController) Dashboard(c *gin.Context) {
 	scopeVal, exists := c.Get("platform_scope")
 	if !exists {
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"error": "Error al obtener privilegios",
-		})
+		ctrl.renderError(c, http.StatusInternalServerError, "Error", "Error al obtener privilegios.")
 		return
 	}
 
@@ -40,8 +37,7 @@ func (ctrl *DashboardController) Dashboard(c *gin.Context) {
 	}
 
 	if err != nil {
-		log.Printf("[error] Dashboard stats: %v", err)
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{"error": "No se pudieron cargar las estadísticas"})
+		ctrl.internalErrorHTML(c, "Dashboard.GetDashboardStats", err, "No se pudieron cargar las estadísticas.")
 		return
 	}
 

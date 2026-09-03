@@ -1,3 +1,6 @@
+(() => {
+    'use strict';
+
 /**
  * Abre el modal de revocación
  */
@@ -310,3 +313,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+    // Exportar funciones utilizadas por eventos inline en HTML inmediatamente
+    window.openRevokeModal = openRevokeModal;
+    window.closeRevokeModal = closeRevokeModal;
+    window.toggleEdit = toggleEdit;
+    window.toggleUI = toggleUI;
+    window.togglePill = togglePill;
+    window.confirmDeleteApp = confirmDeleteApp;
+    window.saveRule = saveRule;
+    window.updateRegistration = updateRegistration;
+    window.updatePassword = updatePassword;
+    window.updateSession = updateSession;
+    window.updateAuthz = updateAuthz;
+    window.updateMfa = updateMfa;
+    window.switchTab = switchTab;
+})();

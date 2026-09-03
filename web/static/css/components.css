@@ -342,7 +342,14 @@
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
 }
-.settings-tab-btn.active-tab {
+.settings-tab-btn:hover {
     color: var(--text-main);
+}
+.settings-tab-btn.active-tab {
+    color: var(--brand-600);
     border-bottom-color: var(--brand-600);
+}
+.dark .settings-tab-btn.active-tab {
+    color: var(--brand-400);
+    border-bottom-color: var(--brand-400);
 }

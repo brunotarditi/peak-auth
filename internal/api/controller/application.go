@@ -48,7 +48,7 @@ func (ctrl *ApplicationController) GetEditApp(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
 	if err != nil {
-		c.String(http.StatusNotFound, "App no encontrada")
+		ctrl.renderError(c, http.StatusNotFound, "No Encontrada", "La aplicación solicitada no existe.")
 		return
 	}
 	statusText := "Estado de la Aplicación (Inactiva)"
@@ -86,7 +86,7 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 	isActive := c.PostForm("is_active") == "on"
 
 	if name == "" {
-		c.String(http.StatusBadRequest, "name requerido")
+		ctrl.renderError(c, http.StatusBadRequest, "Datos Inválidos", "El nombre de la aplicación es requerido.")
 		return
 	}
 
@@ -102,14 +102,14 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 
 	app, plainSecret, err := ctrl.AppService.CreateApp(name, description, isActive)
 	if err != nil {
-		c.String(500, "Error creando app: %v", err)
+		ctrl.internalErrorHTML(c, "PostFormApp.CreateApp", err, "No se pudo crear la aplicación. Intente nuevamente.")
 		return
 	}
 
 	// Crear las reglas por defecto (Starter Pack) para la app recién nacida
 	if err := ctrl.RuleService.CreateDefaultRules(app.ID); err != nil {
 		// Log error pero continuamos porque la app ya fue creada exitosamente. El admin puede crear las reglas manualmente desde el dashboard.
-		c.String(500, "App creada pero error generando políticas base: %v", err)
+		ctrl.internalErrorHTML(c, "PostFormApp.CreateDefaultRules", err, "La aplicación fue creada pero hubo un error generando las políticas base. Puede configurarlas manualmente.")
 		return
 	}
 
@@ -142,7 +142,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 	}
 
 	if err := ctrl.AppService.UpdateApp(id, description, isActive); err != nil {
-		c.String(http.StatusInternalServerError, "Error actualizando app: %v", err)
+		ctrl.internalErrorHTML(c, "UpdateFormApp", err, "No se pudo actualizar la aplicación.")
 		return
 	}
 
@@ -154,7 +154,7 @@ func (ctrl *ApplicationController) PostDeleteApp(c *gin.Context) {
 	id := c.Param("id")
 
 	if id == util.AppIdPeakAuth {
-		c.String(http.StatusBadRequest, "La aplicación principal (Peak Auth Raíz) no puede ser eliminada")
+		ctrl.renderError(c, http.StatusBadRequest, "Operación Bloqueada", "La aplicación principal (Peak Auth Raíz) no puede ser eliminada.")
 		return
 	}
 
@@ -163,12 +163,12 @@ func (ctrl *ApplicationController) PostDeleteApp(c *gin.Context) {
 	isRoot, _ := isRootVal.(bool)
 
 	if !isRoot {
-		c.String(http.StatusForbidden, "Se requiere rol ROOT para eliminar aplicaciones de manera permanente de la vista")
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "Se requiere rol ROOT para eliminar aplicaciones.")
 		return
 	}
 
 	if err := ctrl.AppService.DeleteApp(id); err != nil {
-		c.String(http.StatusInternalServerError, "Error eliminando app: %v", err)
+		ctrl.internalErrorHTML(c, "PostDeleteApp", err, "No se pudo eliminar la aplicación.")
 		return
 	}
 
@@ -183,7 +183,7 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 	id := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(id)
 	if err != nil {
-		c.String(http.StatusNotFound, "app no encontrada: %v", err)
+		ctrl.renderError(c, http.StatusNotFound, "No Encontrada", "La aplicación solicitada no existe o fue eliminada.")
 		return
 	}
 	rules, _ := ctrl.RuleService.FindRulesByAppID(app.ID)
@@ -245,7 +245,7 @@ func (ctrl *ApplicationController) PostRegenerateSecret(c *gin.Context) {
 	id := c.Param("id")
 	plainSecret, err := ctrl.AppService.RegenerateSecret(id)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "error regenerando secreto: %v", err)
+		ctrl.internalErrorHTML(c, "PostRegenerateSecret", err, "No se pudo regenerar el secreto de la aplicación.")
 		return
 	}
 

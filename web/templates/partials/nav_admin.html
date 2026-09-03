@@ -24,13 +24,13 @@
             </div>
             <div class="navbar-right">
                 <!-- Dark Mode Toggle -->
-                <button onclick="toggleDarkMode()" class="icon-btn" title="Alternar Modo Oscuro">
+                <button onclick="toggleDarkMode()" class="icon-btn" title="Alternar Modo Oscuro" aria-label="Alternar Modo Oscuro">
                     {{ template "icon-moon" }}
                     {{ template "icon-sun" }}
                 </button>
 
                 <!-- Configuración 2FA Admin -->
-                <button onclick="openMfaSettings()" class="icon-btn" title="Configurar Seguridad 2FA">
+                <button onclick="openMfaSettings()" class="icon-btn" title="Configurar Seguridad 2FA" aria-label="Configurar Seguridad 2FA">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                 </button>
 
@@ -43,7 +43,7 @@
                 </div>
                 {{ end }}
                 <form action="/admin/logout" method="POST" style="display: inline;">
-                    <button type="submit" class="icon-btn icon-btn-danger" title="Cerrar Sesión">
+                    <button type="submit" class="icon-btn icon-btn-danger" title="Cerrar Sesión" aria-label="Cerrar Sesión">
                         {{ template "logout" }}
                     </button>
                 </form>

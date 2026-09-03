@@ -10,8 +10,8 @@
 
         <form id="appForm" action="{{ .FormAction }}" method="POST" style="display: flex; flex-direction: column; gap: 2rem;" data-edit="{{ .IsEdit }}">
             <div style="margin-bottom: 0;" class="form-group">
-                <label class="form-label">Nombre de la aplicación</label>
-                <input type="text" name="name" value="{{ .NameValue }}" placeholder="Ej: Mi nueva app" required {{
+                <label class="form-label" for="app_name">Nombre de la aplicación</label>
+                <input type="text" id="app_name" name="name" value="{{ .NameValue }}" placeholder="Ej: Mi nueva app" required {{
                     if .NameReadonly }}readonly{{ end }} {{ if .NameDisabled }}disabled{{ end }}
                     class="peak-input {{ .NameClass }}">
                 {{ if .Error }}
@@ -28,8 +28,8 @@
             </div>
 
             <div style="margin-bottom: 0;" class="form-group">
-                <label class="form-label">Descripción</label>
-                <textarea name="description" rows="4" placeholder="Describe brevemente tu aplicación..."
+                <label class="form-label" for="app_description">Descripción</label>
+                <textarea id="app_description" name="description" rows="4" placeholder="Describe brevemente tu aplicación..."
                     class="peak-input" style="resize: vertical;">{{ if .App }}{{ .App.Description }}{{ end }}</textarea>
             </div>
 

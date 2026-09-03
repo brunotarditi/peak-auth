@@ -92,57 +92,29 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: var(--slate-300);
     border-radius: 10px;
     border: 2px solid transparent;
     background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--slate-400);
     background-clip: content-box;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: var(--slate-700);
     background-clip: content-box;
 }
 
-.settings-tab-btn {
-    position: relative;
-    padding-bottom: 0.75rem;
-    font-weight: 700;
-    font-size: 0.875rem;
-    color: #64748b;
-    transition: all 0.2s ease;
-    border-bottom: 2px solid transparent;
-}
-.dark .settings-tab-btn {
-    color: #94a3b8;
-}
-.settings-tab-btn:hover {
-    color: #0f172a;
-}
-.dark .settings-tab-btn:hover {
-    color: #ffffff;
-}
-.settings-tab-btn.active-tab {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
-}
-.dark .settings-tab-btn.active-tab {
-    color: #38a9f8;
-    border-bottom-color: #38a9f8;
-}
+
 .policy-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1.25rem 0;
-    border-bottom: 1px solid #f1f5f9;
-}
-.dark .policy-row {
-    border-bottom-color: #1e293b;
+    border-bottom: 1px solid var(--border-light);
 }
 .policy-row:last-child {
     border-bottom: none;
@@ -265,7 +237,7 @@
 }
 
 .created-credential-button:hover {
-    background-color: var(--bg-surface-tertiary);
+    background-color: var(--bg-surface-hover);
     color: var(--brand-600);
 }
 
@@ -305,10 +277,10 @@
 }
 
 /* --- SweetAlert2 Customizations --- */
-.swal2-actions-custom {
-    display: flex !important;
-    gap: 1rem !important;
-    justify-content: center !important;
-    width: 100% !important;
-    margin-top: 1.5rem !important;
+.swal2-container .swal2-actions.swal2-actions-custom {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    width: 100%;
+    margin-top: 1.5rem;
 }

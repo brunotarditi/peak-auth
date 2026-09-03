@@ -27,15 +27,15 @@
             <form action="/admin/login" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                 <div class="form-group" style="margin: 0;">
-                    <label class="form-label">Email Administrador</label>
-                    <input type="email" name="email" required placeholder="admin@ejemplo.com" class="peak-input">
+                    <label class="form-label" for="login_email">Email Administrador</label>
+                    <input type="email" id="login_email" name="email" required placeholder="admin@ejemplo.com" class="peak-input">
                 </div>
 
                 <div class="form-group" style="margin: 0;">
-                    <label class="form-label">Contraseña</label>
+                    <label class="form-label" for="password_field">Contraseña</label>
                     <div style="position: relative;">
                         <input type="password" name="password" id="password_field" required placeholder="••••••••" class="peak-input" style="padding-right: 3rem;">
-                        <button type="button" onclick="toggleLoginPassword('password_field')" style="position: absolute; right: 0; top: 0; bottom: 0; padding: 0 1rem; color: var(--text-muted); background: transparent; border: none; cursor: pointer;">
+                        <button type="button" onclick="toggleLoginPassword('password_field')" aria-label="Mostrar u ocultar contraseña" style="position: absolute; right: 0; top: 0; bottom: 0; padding: 0 1rem; color: var(--text-muted); background: transparent; border: none; cursor: pointer;">
                             {{template "icon-eye"}}
                         </button>
                     </div>
@@ -48,7 +48,7 @@
             </form>
 
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light); text-align: center;">
-                <a href="javascript:void(0)" onclick="peakAlert('Recuperación no disponible', 'Para recuperar su contraseña de administración, póngase en contacto con otro administrador o utilice las herramientas de CLI de Peak Auth.', 'info')" style="font-size: 0.75rem; font-weight: 700; color: var(--brand-600); text-decoration: none;">¿Olvidaste tu contraseña?</a>
+                <a href="javascript:void(0)" onclick="peakAlert('Seguridad de Cuentas Administrativas', 'Por políticas de seguridad, las cuentas con privilegios de administración no admiten restablecimiento público por correo. Para recuperar su acceso, comuníquese con otro administrador de la plataforma o utilice la CLI de Peak Auth en el servidor.', 'info')" style="font-size: 0.75rem; font-weight: 700; color: var(--brand-600); text-decoration: none;">¿Olvidaste tu contraseña?</a>
             </div>
         </div>
     </div>

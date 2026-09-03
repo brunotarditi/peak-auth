@@ -9,16 +9,20 @@ const mfaToken = window.MFA_TOKEN;
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    const img = document.createElement('img');
-                    img.src = data.qr_code;
-                    img.alt = 'QR Code';
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.objectFit = 'contain';
-                    
-                    const box = document.getElementById('qr-code-box');
-                    box.innerHTML = '';
-                    box.appendChild(img);
+                    if (typeof data.qr_code === 'string' && data.qr_code.startsWith('data:image/')) {
+                        const img = document.createElement('img');
+                        img.src = data.qr_code;
+                        img.alt = 'QR Code';
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'contain';
+                        
+                        const box = document.getElementById('qr-code-box');
+                        box.innerHTML = '';
+                        box.appendChild(img);
+                    } else {
+                        document.getElementById('qr-code-box').innerHTML = `<p style="color:var(--rose-600)">QR inválido</p>`;
+                    }
                 } else {
                     document.getElementById('qr-code-box').innerHTML = `<p style="color:var(--rose-600)">Error al cargar QR</p>`;
                 }

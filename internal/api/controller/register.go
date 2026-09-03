@@ -66,13 +66,19 @@ func (ctrl *RegisterController) PostUsersInApp(c *gin.Context) {
 func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 	token := ctx.Query("token")
 	if token == "" {
-		ctx.String(400, "Token requerido")
+		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"Title":   "Token Requerido",
+			"Message": "El token de verificación es requerido.",
+		})
 		return
 	}
 
 	userID, appID, err := c.UserService.VerifyEmail(token)
 	if err != nil {
-		ctx.String(400, "El enlace de verificación es inválido o ha expirado")
+		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"Title":   "Verificación Fallida",
+			"Message": "El enlace de verificación es inválido o ha expirado.",
+		})
 		return
 	}
 

@@ -11,6 +11,7 @@ import (
 )
 
 type SetupController struct {
+	BaseController
 	SetupService service.SetupService
 	TokenManager *auth.JWTManager
 }
@@ -24,7 +25,7 @@ func (ctrl *SetupController) ShowSetup(c *gin.Context) {
 
 	token := c.Query("token")
 	if err := ctrl.SetupService.ValidateSetupToken(token); err != nil {
-		c.String(403, "Token de setup inválido")
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "El token de inicialización (setup) es inválido o ha expirado.")
 		return
 	}
 	csrf, _ := c.Get("csrf_token")
@@ -44,19 +45,19 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 	token := c.PostForm("token")
 
 	if email == "" || password == "" || token == "" {
-		c.String(http.StatusBadRequest, "email, password y token son requeridos")
+		ctrl.renderError(c, http.StatusBadRequest, "Datos Incompletos", "Email, contraseña y token son requeridos para completar la configuración inicial.")
 		return
 	}
 
 	user, err := ctrl.SetupService.CreateRootUser(email, password, token)
 	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
+		ctrl.renderError(c, http.StatusBadRequest, "Error de Configuración", "No se pudo crear el usuario administrador inicial. Verifique los datos ingresados.")
 		return
 	}
 
 	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, "System Root", util.AppIdPeakAuth, []string{"ROOT"}, 24*time.Hour)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error al generar sesión")
+		ctrl.renderError(c, http.StatusInternalServerError, "Error del Sistema", "No se pudo generar la sesión administrativa.")
 		return
 	}
 

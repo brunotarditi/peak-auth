@@ -15,6 +15,7 @@ import (
 )
 
 type LoginController struct {
+	BaseController
 	UserService  service.UserService
 	MfaService   service.MfaService
 	TokenManager *auth.JWTManager
