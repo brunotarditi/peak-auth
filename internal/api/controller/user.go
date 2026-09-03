@@ -23,7 +23,7 @@ type UserController struct {
 func (c *UserController) GetResetPassword(ctx *gin.Context) {
 	token := ctx.Query("token")
 	if token == "" {
-		ctx.String(400, "Token requerido")
+		c.renderError(ctx, http.StatusBadRequest, "Token Requerido", "El token de restablecimiento es requerido.")
 		return
 	}
 
@@ -120,7 +120,7 @@ func (ctrl *UserController) GetAppUsers(c *gin.Context) {
 
 	app, err := ctrl.AppService.GetAppDetails(appIDParam)
 	if err != nil {
-		c.String(http.StatusNotFound, "Aplicación no encontrada")
+		ctrl.renderError(c, http.StatusNotFound, "No Encontrada", "Aplicación no encontrada.")
 		return
 	}
 
@@ -133,13 +133,13 @@ func (ctrl *UserController) GetAppUsers(c *gin.Context) {
 
 	users, total, err := ctrl.UserService.FindUserByAppIDPaginated(app, page, limit)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error al cargar los usuarios")
+		ctrl.internalErrorHTML(c, "GetAppUsers.FindUserByAppIDPaginated", err, "Error al cargar los usuarios.")
 		return
 	}
 
 	roles, err := ctrl.RoleService.FindVisibleForApp(app.ID)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error al cargar los roles")
+		ctrl.internalErrorHTML(c, "GetAppUsers.FindVisibleForApp", err, "Error al cargar los roles.")
 		return
 	}
 

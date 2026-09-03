@@ -47,7 +47,7 @@
                     <label style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem;">Application ID</label>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <code style="flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ .App.AppID }}</code>
-                        <button onclick="copyToClipboard('{{ .App.AppID }}', this)" class="icon-btn" style="padding: 0.75rem;" title="Copiar App ID">
+                        <button onclick="copyToClipboard('{{ .App.AppID }}', this)" class="icon-btn" style="padding: 0.75rem;" title="Copiar App ID" aria-label="Copiar Application ID">
                             {{template "icon-copy"}}
                         </button>
                     </div>
@@ -60,7 +60,7 @@
                         <div style="position: relative; flex-grow: 1;">
                             <input type="password" readonly value="********************************" autocomplete="new-password" data-bwignore data-1p-ignore style="width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--slate-400); outline: none;">
                         </div>
-                        <button onclick="openRevokeModal()" class="icon-btn icon-btn-danger" style="padding: 0.75rem;" title="Revocar Secreto">
+                        <button onclick="openRevokeModal()" class="icon-btn icon-btn-danger" style="padding: 0.75rem;" title="Revocar Secreto" aria-label="Revocar Secreto">
                             {{template "icon-reload"}}
                         </button>
                     </div>

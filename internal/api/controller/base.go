@@ -33,3 +33,26 @@ func (ctrl *BaseController) renderAdmin(c *gin.Context, templateName string, dat
 
 	c.HTML(http.StatusOK, templateName, data)
 }
+
+// renderError renderiza la plantilla error.html con el layout admin completo
+// (inyecta UserEmail, CSRFToken, Title) y el código de estado HTTP indicado.
+func (ctrl *BaseController) renderError(c *gin.Context, status int, title, message string) {
+	data := gin.H{
+		"Title":   title,
+		"Message": message,
+	}
+	if email, exists := c.Get("user_email"); exists {
+		data["UserEmail"] = email
+	}
+	if token, exists := c.Get("csrf_token"); exists {
+		data["CSRFToken"] = token
+	}
+	c.HTML(status, "error.html", data)
+}
+
+// internalErrorHTML loguea el error real y muestra una página de error genérica,
+// evitando filtrar detalles internos (queries GORM, stack traces, etc.).
+func (ctrl *BaseController) internalErrorHTML(c *gin.Context, context string, err error, userMessage string) {
+	log.Printf("[error] %s: %v", context, err)
+	ctrl.renderError(c, http.StatusInternalServerError, "Error", userMessage)
+}

@@ -1,7 +1,12 @@
-const setupForm = document.getElementById('setupForm');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const emailError = document.getElementById('emailError');
+(() => {
+    'use strict';
+
+    const setupForm = document.getElementById('setupForm');
+    if (!setupForm) return;
+
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const emailError = document.getElementById('emailError');
 
 const requirements = {
     length: { regex: /.{8,}/, el: document.getElementById('req-length') },
@@ -72,8 +77,9 @@ setupForm.addEventListener('submit', (e) => {
         e.preventDefault();
     }
 
-    if (!isPasswordValid) {
-        passwordInput.classList.add('border-danger', 'ring-danger');
-        e.preventDefault();
-    }
-});
+        if (!isPasswordValid) {
+            passwordInput.classList.add('border-danger', 'ring-danger');
+            e.preventDefault();
+        }
+    });
+})();

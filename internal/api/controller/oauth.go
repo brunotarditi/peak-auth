@@ -13,6 +13,7 @@ import (
 )
 
 type OAuthController struct {
+	BaseController
 	OAuthService service.OAuthService
 	UserService  service.UserService
 	TokenManager *auth.JWTManager
@@ -27,13 +28,13 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 
 	if clientID == "" || redirectURI == "" || responseType != "code" {
 		// No podemos redirigir a un lugar seguro si faltan parámetros clave
-		ctx.String(http.StatusBadRequest, "Parámetros de autorización inválidos")
+		c.renderError(ctx, http.StatusBadRequest, "Parámetros Inválidos", "Parámetros de autorización OAuth inválidos o incompletos.")
 		return
 	}
 
 	// 0. Validar de antemano que la aplicación exista y que redirect_uri coincida con la registrada (prevención Open Redirect)
 	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
-		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
+		c.renderError(ctx, http.StatusBadRequest, "Solicitud No Permitida", "Redirect URI o Client ID inválidos.")
 		return
 	}
 
