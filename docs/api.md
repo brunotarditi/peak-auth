@@ -26,7 +26,7 @@ Valida las credenciales de un usuario y retorna un Access Token y un Refresh Tok
 **Response (200 OK):**
 ```json
 {
-  "access_token": "<token_jwt_firmado>",
+  "access_token": "<TU_TOKEN_JWT_AQUI>",
   "refresh_token": "rt_8f7d6a5b4c...",
   "expires_in": 3600,
   "token_type": "Bearer"
