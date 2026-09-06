@@ -93,18 +93,8 @@
         const clientID = "{{ .ClientID }}";
         let generatedCodes = [];
 
-        function setCookie(name, value, minutes) {
-            let expires = "";
-            if (minutes) {
-                let date = new Date();
-                date.setTime(date.getTime() + (minutes * 60 * 1000));
-                expires = "; expires=" + date.toUTCString();
-            }
-            document.cookie = name + "=" + (value || "")  + expires + "; path=/; samesite=lax";
-        }
-
-        // Inicializar TOTP Setup
         document.addEventListener('DOMContentLoaded', async () => {
+            const box = document.getElementById('qr-code-box');
             try {
                 const res = await fetch('/api/v1/login/mfa/totp/setup?mfa_token=' + mfaToken, { 
                     method: 'POST',
@@ -113,10 +103,21 @@
                 if (!res.ok) throw new Error('No se pudo cargar el QR');
                 const data = await res.json();
                 
-                document.getElementById('qr-code-box').innerHTML = `<img src="${data.qr_code}" alt="QR Code" style="max-width: 200px; height: auto; border-radius: 0.5rem; margin: 0 auto;">`;
+                const img = document.createElement('img');
+                img.src = data.qr_code;
+                img.alt = 'QR Code';
+                img.style.maxWidth = '200px';
+                img.style.height = 'auto';
+                img.style.borderRadius = '0.5rem';
+                img.style.margin = '0 auto';
+                box.replaceChildren(img);
             } catch (err) {
                 console.error(err);
-                document.getElementById('qr-code-box').innerHTML = '<p style="color: var(--rose-500); font-size: 0.875rem;">Error cargando el código QR</p>';
+                const p = document.createElement('p');
+                p.style.color = 'var(--rose-500)';
+                p.style.fontSize = '0.875rem';
+                p.textContent = 'Error cargando el código QR';
+                box.replaceChildren(p);
             }
         });
 
@@ -128,11 +129,10 @@
             }
 
             try {
-                const res = await fetch('/api/v1/login/mfa/totp', {
+                const res = await fetch('/oauth/login/mfa/setup/verify', {
                     method: 'POST',
                     headers: { 
-                        'Content-Type': 'application/json',
-                        'X-App-ID': clientID
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ mfa_token: mfaToken, code: code })
                 });
@@ -140,12 +140,8 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Código incorrecto');
 
-                if (data.access_token) {
-                    setCookie('peak_session', data.access_token, data.expires_in / 60);
-                    generatedCodes = data.recovery_codes || [];
-                    showRecoveryCodes(generatedCodes);
-                }
-
+                generatedCodes = data.recovery_codes || [];
+                showRecoveryCodes(generatedCodes);
             } catch (err) {
                 Swal.fire('Error', err.message, 'error');
             }
@@ -175,11 +171,10 @@
                     }
                 };
 
-                const finishRes = await fetch('/api/v1/login/mfa/webauthn/register/finish', {
+                const finishRes = await fetch('/oauth/login/mfa/setup/webauthn/finish', {
                     method: 'POST',
                     headers: { 
-                        'Content-Type': 'application/json',
-                        'X-App-ID': clientID
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ mfa_token: mfaToken, credential: credentialData })
                 });
@@ -187,12 +182,12 @@
                 const finishData = await finishRes.json();
                 if (!finishRes.ok) throw new Error(finishData.error || 'Fallo de WebAuthn');
                 
-                if (finishData.access_token) {
-                    setCookie('peak_session', finishData.access_token, finishData.expires_in / 60);
-                    generatedCodes = finishData.recovery_codes || [];
+                generatedCodes = finishData.recovery_codes || [];
+                if (generatedCodes.length > 0) {
                     showRecoveryCodes(generatedCodes);
+                } else {
+                    document.getElementById('redirect-form').submit();
                 }
-
             } catch (err) {
                 console.error(err);
                 Swal.fire('Error', err.message, 'error');
@@ -201,7 +196,11 @@
 
         function showRecoveryCodes(codes) {
             const list = document.getElementById('recovery-codes-list');
-            list.innerHTML = codes.map(c => `<div>${c}</div>`).join('');
+            list.replaceChildren(...codes.map(c => {
+                const d = document.createElement('div');
+                d.textContent = c;
+                return d;
+            }));
             document.getElementById('recovery-modal').style.display = 'flex';
         }
 

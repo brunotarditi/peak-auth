@@ -35,6 +35,8 @@ func newRateLimiter(limit int, window time.Duration) *rateLimiter {
 	return rl
 }
 
+const maxVisitors = 50000
+
 // allow registra un golpe para la clave y devuelve si está dentro del límite,
 // junto con los segundos a esperar (Retry-After) si fue bloqueado.
 func (rl *rateLimiter) allow(key string) (bool, int) {
@@ -44,6 +46,22 @@ func (rl *rateLimiter) allow(key string) (bool, int) {
 	now := time.Now()
 	v, ok := rl.visitors[key]
 	if !ok || now.After(v.windowEnd) {
+		// Control de memoria: si la tabla está al tope por spoofing de IPs
+		if len(rl.visitors) >= maxVisitors {
+			for k, item := range rl.visitors {
+				if now.After(item.windowEnd) {
+					delete(rl.visitors, k)
+				}
+			}
+			// Si aún sigue al tope, desalojar una entrada para admitir la nueva
+			if len(rl.visitors) >= maxVisitors {
+				for k := range rl.visitors {
+					delete(rl.visitors, k)
+					break
+				}
+			}
+		}
+
 		rl.visitors[key] = &visitor{count: 1, windowEnd: now.Add(rl.window)}
 		return true, 0
 	}
@@ -61,7 +79,7 @@ func (rl *rateLimiter) allow(key string) (bool, int) {
 }
 
 func (rl *rateLimiter) cleanupLoop() {
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 	for range ticker.C {
 		rl.mu.Lock()

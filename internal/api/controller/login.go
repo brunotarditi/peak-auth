@@ -62,52 +62,53 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 	token, expireMinutes, mfaRequired, mfaSetupRequired, mfaToken, err := ctrl.UserService.AdminLogin(email, password)
 	if err != nil {
 		audit.EventResult(c, "admin.login", "email="+email, false, err.Error())
-		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape(err.Error()))
+		// Sanitizar mensaje para el usuario evitando filtrar detalles internos
+		userErrMsg := "Credenciales inválidas"
+		if strings.Contains(strings.ToLower(err.Error()), "inactiva") || strings.Contains(strings.ToLower(err.Error()), "bloqueada") {
+			userErrMsg = err.Error()
+		}
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape(userErrMsg))
 		return
 	}
 
 	if mfaRequired {
+		// Guardar token temporal en cookie HttpOnly para no exponerlo en la URL
+		ctrl.setMfaCookie(c, mfaToken)
 		if mfaSetupRequired {
-			c.Redirect(http.StatusSeeOther, "/admin/login/mfa/setup?mfa_token="+url.QueryEscape(mfaToken))
+			c.Redirect(http.StatusSeeOther, "/admin/login/mfa/setup")
 		} else {
-			c.Redirect(http.StatusSeeOther, "/admin/login/mfa?mfa_token="+url.QueryEscape(mfaToken))
+			c.Redirect(http.StatusSeeOther, "/admin/login/mfa")
 		}
 		return
 	}
 
 	audit.EventResult(c, "admin.login", "email="+email, true, "")
 
-	// Configuración de cookie segura
-	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := util.IsProduction()
-
-	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
+	ctrl.setAdminCookie(c, token, expireMinutes*60)
 	c.Redirect(http.StatusSeeOther, "/admin")
 }
 
 // PostLogout cierra la sesión
 func (ctrl *LoginController) PostLogout(c *gin.Context) {
-	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := util.IsProduction()
-	c.SetCookie("admin_token", "", -1, "/", "", isSecure, true)
+	ctrl.clearAdminCookie(c)
+	ctrl.clearMfaCookie(c)
 	c.Redirect(http.StatusSeeOther, "/admin/login")
 }
 
 // GetAdminMfaForm renderiza la vista para que el administrador valide su MFA
 func (ctrl *LoginController) GetAdminMfaForm(c *gin.Context) {
-	mfaToken := c.Query("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
-		c.Redirect(http.StatusSeeOther, "/admin/login?error=" + url.QueryEscape("Acceso no autorizado"))
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("Acceso no autorizado"))
 		return
 	}
 
 	csrf, _ := c.Get("csrf_token")
-	
+
 	// Verificar si tiene WebAuthn configurado
 	hasWebAuthn := false
 	if claims, err := ctrl.TokenManager.VerifyMFAPendingToken(mfaToken, ""); err == nil {
-		var userID uint
-		if _, err := fmt.Sscanf(claims.Subject, "%d", &userID); err == nil {
+		if userID, err := parseUserIDFromSubject(claims.Subject); err == nil {
 			if status, err := ctrl.MfaService.GetMfaStatus(userID); err == nil {
 				hasWebAuthn = status.WebAuthnConfigured
 			}
@@ -124,9 +125,9 @@ func (ctrl *LoginController) GetAdminMfaForm(c *gin.Context) {
 
 // GetAdminMfaSetupForm renderiza la vista para configurar forzosamente el MFA
 func (ctrl *LoginController) GetAdminMfaSetupForm(c *gin.Context) {
-	mfaToken := c.Query("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
-		c.Redirect(http.StatusSeeOther, "/admin/login?error=" + url.QueryEscape("Acceso no autorizado"))
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("Acceso no autorizado"))
 		return
 	}
 
@@ -140,22 +141,25 @@ func (ctrl *LoginController) GetAdminMfaSetupForm(c *gin.Context) {
 
 // PostAdminMfa valida el código MFA (TOTP o de recuperación) para acceso administrativo
 func (ctrl *LoginController) PostAdminMfa(c *gin.Context) {
-	mfaToken := c.PostForm("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	code := strings.TrimSpace(c.PostForm("code"))
 
 	if mfaToken == "" || code == "" {
-		c.Redirect(http.StatusSeeOther, "/admin/login?error=" + url.QueryEscape("Acceso no autorizado"))
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("Acceso no autorizado"))
 		return
 	}
 
 	claims, err := ctrl.TokenManager.VerifyMFAPendingToken(mfaToken, "")
 	if err != nil {
-		c.Redirect(http.StatusSeeOther, "/admin/login?error=" + url.QueryEscape("Sesión expirada. Inicie sesión nuevamente"))
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("Sesión expirada. Inicie sesión nuevamente"))
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("Token de autenticación inválido"))
+		return
+	}
 
 	// Determinar el tipo de código: TOTP (6 dígitos) o Código de recuperación
 	isRecovery := len(strings.ReplaceAll(code, "-", "")) != 6
@@ -169,7 +173,7 @@ func (ctrl *LoginController) PostAdminMfa(c *gin.Context) {
 
 	if mfaErr != nil {
 		audit.EventResult(c, "admin.login.mfa_failed", fmt.Sprintf("userID=%d", userID), false, mfaErr.Error())
-		c.Redirect(http.StatusSeeOther, fmt.Sprintf("/admin/login/mfa?mfa_token=%s&error=%s", url.QueryEscape(mfaToken), url.QueryEscape(mfaErr.Error())))
+		c.Redirect(http.StatusSeeOther, "/admin/login/mfa?error="+url.QueryEscape("Código de verificación inválido"))
 		return
 	}
 
@@ -177,22 +181,20 @@ func (ctrl *LoginController) PostAdminMfa(c *gin.Context) {
 	token, expireMinutes, err := ctrl.UserService.CompleteAdminLoginWithMfa(userID)
 	if err != nil {
 		audit.EventResult(c, "admin.login.mfa_failed", fmt.Sprintf("userID=%d", userID), false, err.Error())
-		c.Redirect(http.StatusSeeOther, "/admin/login?error=" + url.QueryEscape(err.Error()))
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("No se pudo completar el inicio de sesión"))
 		return
 	}
 
 	audit.EventResult(c, "admin.login.mfa_success", fmt.Sprintf("userID=%d", userID), true, "")
 
-	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := util.IsProduction()
-
-	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
+	ctrl.clearMfaCookie(c)
+	ctrl.setAdminCookie(c, token, expireMinutes*60)
 	c.Redirect(http.StatusSeeOther, "/admin")
 }
 
 // BeginWebAuthnLogin inicia el login WebAuthn (Admin o API)
 func (ctrl *LoginController) BeginWebAuthnLogin(c *gin.Context) {
-	mfaToken := c.Query("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})
 		return
@@ -204,8 +206,11 @@ func (ctrl *LoginController) BeginWebAuthnLogin(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	options, sessionData, err := ctrl.MfaService.BeginWebAuthnLogin(userID)
 	if err != nil {
@@ -221,7 +226,7 @@ func (ctrl *LoginController) BeginWebAuthnLogin(c *gin.Context) {
 
 // FinishWebAuthnLoginAdmin finaliza el login WebAuthn para el panel de administración
 func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
-	mfaToken := c.Query("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})
 		return
@@ -233,8 +238,11 @@ func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	sessionKey := fmt.Sprintf("wa_login_%s", mfaToken)
 	sessionData, exists := service.GetWebAuthnSession(sessionKey)
@@ -255,9 +263,8 @@ func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := util.IsProduction()
-	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
+	ctrl.clearMfaCookie(c)
+	ctrl.setAdminCookie(c, token, expireMinutes*60)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Login exitoso", "redirect": "/admin"})
 }
@@ -265,7 +272,7 @@ func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
 // VerifyTOTPSetupAdmin valida el código TOTP enviado para activar el factor durante el login del admin
 func (ctrl *LoginController) VerifyTOTPSetupAdmin(c *gin.Context) {
 	var req struct {
-		MfaToken string `json:"mfa_token" binding:"required"`
+		MfaToken string `json:"mfa_token"`
 		Code     string `json:"code" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -273,14 +280,26 @@ func (ctrl *LoginController) VerifyTOTPSetupAdmin(c *gin.Context) {
 		return
 	}
 
-	claims, err := ctrl.TokenManager.VerifyMFAPendingToken(req.MfaToken, "")
+	mfaToken := req.MfaToken
+	if mfaToken == "" {
+		mfaToken = ctrl.extractMfaToken(c)
+	}
+	if mfaToken == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})
+		return
+	}
+
+	claims, err := ctrl.TokenManager.VerifyMFAPendingToken(mfaToken, "")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido o expirado"})
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	recoveryCodes, err := ctrl.MfaService.VerifyAndActivateTOTP(userID, req.Code)
 	if err != nil {
@@ -295,9 +314,8 @@ func (ctrl *LoginController) VerifyTOTPSetupAdmin(c *gin.Context) {
 		return
 	}
 
-	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := util.IsProduction()
-	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
+	ctrl.clearMfaCookie(c)
+	ctrl.setAdminCookie(c, token, expireMinutes*60)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":        "TOTP activado con éxito",
@@ -308,7 +326,7 @@ func (ctrl *LoginController) VerifyTOTPSetupAdmin(c *gin.Context) {
 
 // FinishWebAuthnSetupAdmin finaliza el registro de WebAuthn durante el login del admin
 func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
-	mfaToken := c.Query("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})
 		return
@@ -320,8 +338,11 @@ func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	sessionKey := fmt.Sprintf("wa_reg_%s", mfaToken)
 	sessionData, exists := service.GetWebAuthnSession(sessionKey)
@@ -345,12 +366,11 @@ func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
 		return
 	}
 
-	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := util.IsProduction()
-	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
+	ctrl.clearMfaCookie(c)
+	ctrl.setAdminCookie(c, token, expireMinutes*60)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Llave de seguridad vinculada con éxito",
+		"message":  "Llave de seguridad vinculada con éxito",
 		"redirect": "/admin",
 	})
 }
@@ -374,8 +394,11 @@ func (ctrl *LoginController) VerifyMfaTotp(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	if err := ctrl.MfaService.ValidateTOTPCode(userID, req.Code); err != nil {
 		audit.EventResult(c, "api.login.mfa_totp_failed", fmt.Sprintf("userID=%d", userID), false, err.Error())
@@ -412,8 +435,11 @@ func (ctrl *LoginController) VerifyMfaRecovery(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	if err := ctrl.MfaService.ValidateRecoveryCode(userID, req.Code); err != nil {
 		audit.EventResult(c, "api.login.mfa_recovery_failed", fmt.Sprintf("userID=%d", userID), false, err.Error())
@@ -445,8 +471,11 @@ func (ctrl *LoginController) SetupTOTPLogin(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	resp, err := ctrl.MfaService.SetupTOTP(userID, claims.Username)
 	if err != nil {
@@ -475,8 +504,11 @@ func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	recoveryCodes, err := ctrl.MfaService.VerifyAndActivateTOTP(userID, req.Code)
 	if err != nil {
@@ -513,8 +545,11 @@ func (ctrl *LoginController) BeginWebAuthnRegistrationLogin(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	options, sessionData, err := ctrl.MfaService.BeginWebAuthnRegistration(userID, claims.Username)
 	if err != nil {
@@ -544,8 +579,11 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	_, _ = fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
 
 	sessionKey := fmt.Sprintf("wa_reg_%s", mfaToken)
 	sessionData, exists := service.GetWebAuthnSession(sessionKey)
@@ -575,13 +613,9 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 	})
 }
 
-
 // PostAdminMfaSetup genera el QR para configurar TOTP forzosamente en el panel admin
 func (ctrl *LoginController) PostAdminMfaSetup(c *gin.Context) {
-	mfaToken := c.GetHeader("Authorization")
-	if len(mfaToken) > 7 && mfaToken[:7] == "Bearer " {
-		mfaToken = mfaToken[7:]
-	}
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token requerido"})
 		return
@@ -593,8 +627,12 @@ func (ctrl *LoginController) PostAdminMfaSetup(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+		return
+	}
+
 	resp, err := ctrl.MfaService.SetupTOTP(userID, claims.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -605,11 +643,12 @@ func (ctrl *LoginController) PostAdminMfaSetup(c *gin.Context) {
 
 // PostAdminMfaVerifySetup verifica y activa TOTP forzosamente en el panel admin
 func (ctrl *LoginController) PostAdminMfaVerifySetup(c *gin.Context) {
-	mfaToken := c.GetHeader("Authorization")
-	if len(mfaToken) > 7 && mfaToken[:7] == "Bearer " {
-		mfaToken = mfaToken[7:]
+	mfaToken := ctrl.extractMfaToken(c)
+	if mfaToken == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token requerido"})
+		return
 	}
-	
+
 	var req struct {
 		Code string `json:"code" binding:"required"`
 	}
@@ -624,8 +663,11 @@ func (ctrl *LoginController) PostAdminMfaVerifySetup(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	fmt.Sscanf(claims.Subject, "%d", &userID)
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+		return
+	}
 
 	recoveryCodes, err := ctrl.MfaService.VerifyAndActivateTOTP(userID, req.Code)
 	if err != nil {
@@ -639,9 +681,7 @@ func (ctrl *LoginController) PostAdminMfaVerifySetup(c *gin.Context) {
 		return
 	}
 
-	c.SetSameSite(http.SameSiteLaxMode)
-	isSecure := util.IsProduction()
-	c.SetCookie("admin_token", token, expireMinutes*60, "/", "", isSecure, true)
+	ctrl.setAdminCookie(c, token, expireMinutes*60)
 
 	c.JSON(http.StatusOK, gin.H{"message": "TOTP activado", "recovery_codes": recoveryCodes})
 }

@@ -120,10 +120,12 @@ type UserRecoveryCode struct {
 // OAuthCode almacena los códigos de autorización de corta vida para el flujo OAuth2.
 type OAuthCode struct {
 	gorm.Model
-	Code        string    `gorm:"type:varchar(100);uniqueIndex;not null"`
-	UserID      uint      `gorm:"not null;index"`
-	ClientID    string    `gorm:"type:varchar(255);not null"`
-	RedirectURI string    `gorm:"type:text;not null"`
-	ExpiresAt   time.Time `gorm:"index;not null"`
-	User        User      `gorm:"foreignKey:UserID"`
+	Code                string    `gorm:"type:varchar(100);uniqueIndex;not null"`
+	UserID              uint      `gorm:"not null;index"`
+	ClientID            string    `gorm:"type:varchar(255);not null"`
+	RedirectURI         string    `gorm:"type:text;not null"`
+	ExpiresAt           time.Time `gorm:"index;not null"`
+	CodeChallenge       string    `gorm:"type:varchar(255)"`
+	CodeChallengeMethod string    `gorm:"type:varchar(20)"`
+	User                User      `gorm:"foreignKey:UserID"`
 }

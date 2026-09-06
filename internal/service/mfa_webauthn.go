@@ -50,6 +50,8 @@ type expiringWebAuthnSession struct {
 	expiresAt time.Time
 }
 
+const maxWaSessionCacheSize = 10000
+
 var (
 	waSessionCache = make(map[string]expiringWebAuthnSession)
 	waSessionMutex sync.RWMutex
@@ -60,7 +62,7 @@ func init() {
 }
 
 func cleanupWebAuthnSessions() {
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(1 * time.Minute)
 	for range ticker.C {
 		waSessionMutex.Lock()
 		now := time.Now()
@@ -73,10 +75,29 @@ func cleanupWebAuthnSessions() {
 	}
 }
 
-// StoreWebAuthnSession guarda la sesión de WebAuthn temporalmente con TTL de 5 minutos
+// StoreWebAuthnSession guarda la sesión de WebAuthn temporalmente con TTL de 5 minutos y límite de capacidad
 func StoreWebAuthnSession(key string, session *webauthn.SessionData) {
 	waSessionMutex.Lock()
 	defer waSessionMutex.Unlock()
+
+	// Control de memoria contra ataques DoS (agotamiento de RAM)
+	if len(waSessionCache) >= maxWaSessionCacheSize {
+		now := time.Now()
+		// Purgar expirados primero
+		for k, v := range waSessionCache {
+			if now.After(v.expiresAt) {
+				delete(waSessionCache, k)
+			}
+		}
+		// Si aún supera el umbral, desalojar la primera entrada arbitraria
+		if len(waSessionCache) >= maxWaSessionCacheSize {
+			for k := range waSessionCache {
+				delete(waSessionCache, k)
+				break
+			}
+		}
+	}
+
 	waSessionCache[key] = expiringWebAuthnSession{
 		data:      session,
 		expiresAt: time.Now().Add(5 * time.Minute),
@@ -108,7 +129,7 @@ type webAuthnUserWrapper struct {
 }
 
 func (u *webAuthnUserWrapper) WebAuthnID() []byte {
-	return []byte(fmt.Sprintf("%d", u.user.ID))
+	return fmt.Appendf(nil, "%d", u.user.ID)
 }
 
 func (u *webAuthnUserWrapper) WebAuthnName() string {
@@ -172,6 +193,10 @@ func (s *mfaService) BeginWebAuthnRegistration(userID uint, userEmail string) (*
 
 // FinishWebAuthnRegistration finaliza el registro, guarda la credencial y activa MFA
 func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request) error {
+	if session == nil {
+		return fmt.Errorf("sesión WebAuthn inválida o expirada")
+	}
+
 	wa, err := getWebAuthn()
 	if err != nil {
 		return fmt.Errorf("error inicializando WebAuthn: %w", err)
@@ -288,6 +313,10 @@ func (s *mfaService) FinishWebAuthnLogin(userID uint, session *webauthn.SessionD
 	wUser := &webAuthnUserWrapper{
 		user:        &user,
 		credentials: waCreds,
+	}
+
+	if session == nil {
+		return fmt.Errorf("sesión WebAuthn inválida o expirada")
 	}
 
 	_, err = wa.FinishLogin(wUser, *session, r)

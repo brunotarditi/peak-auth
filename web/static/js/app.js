@@ -179,6 +179,15 @@ async function confirmDeleteApp() {
     }
 }
 
+function getAppID() {
+    if (window.appID) return window.appID;
+    const container = document.getElementById('appDetailsContainer');
+    if (container && container.dataset.appId) {
+        return container.dataset.appId;
+    }
+    return '';
+}
+
 /**
  * Guarda una regla
  * @param {*} code 
@@ -186,12 +195,13 @@ async function confirmDeleteApp() {
  * @returns 
  */
 async function saveRule(code, data) {
-    if (!window.appID) {
-        console.error("window.appID no definido");
+    const currentAppID = getAppID();
+    if (!currentAppID) {
+        console.error("appID no definido");
         return;
     }
     try {
-        const response = await fetch(`/admin/apps/${window.appID}/rules/${code}`, {
+        const response = await fetch(`/admin/apps/${currentAppID}/rules/${code}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)

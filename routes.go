@@ -65,6 +65,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	oauthCtrl := &controller.OAuthController{
 		OAuthService: app.OAuthService,
 		UserService:  app.UserService,
+		MfaService:   app.MfaService,
 		TokenManager: app.TokenManager,
 	}
 
@@ -82,7 +83,12 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		oauth.GET("/login", oauthCtrl.GetPublicLogin)
 		oauth.POST("/login", loginLimiter, oauthCtrl.PostPublicLogin)
 		oauth.GET("/login/mfa", oauthCtrl.GetPublicLoginMfa)
+		oauth.POST("/login/mfa/totp", loginLimiter, oauthCtrl.PostPublicLoginMfaTotp)
+		oauth.POST("/login/mfa/recovery", loginLimiter, oauthCtrl.PostPublicLoginMfaRecovery)
+		oauth.POST("/login/mfa/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaWebAuthnFinish)
 		oauth.GET("/login/mfa/setup", oauthCtrl.GetPublicLoginMfaSetup)
+		oauth.POST("/login/mfa/setup/verify", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupVerify)
+		oauth.POST("/login/mfa/setup/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupWebAuthnFinish)
 	}
 
 	docsCtrl := &controller.DocsController{}

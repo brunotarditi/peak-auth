@@ -62,6 +62,15 @@ func SameOriginRequest(origin, requestHost string) bool {
 	return strings.EqualFold(originHost, requestHostNormalized)
 }
 
+// AssetsDir retorna el directorio base para los archivos estáticos.
+// Prioriza ASSETS_DIR si está definida; de lo contrario usa "web" por defecto.
+func AssetsDir() string {
+	if dir := strings.TrimSpace(os.Getenv("ASSETS_DIR")); dir != "" {
+		return dir
+	}
+	return "web"
+}
+
 func normalizeHost(host string) string {
 	if idx := strings.LastIndex(host, ":"); idx != -1 {
 		port := host[idx+1:]

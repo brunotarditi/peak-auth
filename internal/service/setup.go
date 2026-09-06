@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"strings"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
@@ -80,15 +81,14 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 		}
 
 		// 3. Asignación final
-		if err := tx.UAR().AssignRole(user.ID, rootApp.ID, rootRole.ID); err != nil {
-			return err
-		}
-
-		// 4. Si llegamos acá, limpiamos el token en memoria
-		s.CompleteSetup(user)
-		return err
-
+		return tx.UAR().AssignRole(user.ID, rootApp.ID, rootRole.ID)
 	})
+
+	if err == nil {
+		// Limpiamos el token en memoria únicamente si la transacción persistió correctamente
+		s.CompleteSetup(user)
+	}
+
 	return user, err
 }
 
@@ -112,6 +112,9 @@ func (s *setupService) InitializeSystem(port string) {
 	if host == "" {
 		host = "localhost"
 	}
+
+	host = strings.ReplaceAll(strings.ReplaceAll(host, "\n", ""), "\r", "")
+	port = strings.ReplaceAll(strings.ReplaceAll(port, "\n", ""), "\r", "")
 
 	log.Printf("================================================================")
 	log.Printf("⚠️  PEAK-AUTH: MODO INSTALACIÓN ACTIVADO")

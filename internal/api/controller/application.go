@@ -83,6 +83,7 @@ func (ctrl *ApplicationController) GetEditApp(c *gin.Context) {
 func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 	name := c.PostForm("name")
 	description := c.PostForm("description")
+	redirectURL := c.PostForm("redirect_url")
 	isActive := c.PostForm("is_active") == "on"
 
 	if name == "" {
@@ -100,7 +101,7 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 		return
 	}
 
-	app, plainSecret, err := ctrl.AppService.CreateApp(name, description, isActive)
+	app, plainSecret, err := ctrl.AppService.CreateApp(name, description, redirectURL, isActive)
 	if err != nil {
 		ctrl.internalErrorHTML(c, "PostFormApp.CreateApp", err, "No se pudo crear la aplicación. Intente nuevamente.")
 		return
@@ -129,6 +130,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 	id := c.Param("id")
 	_ = c.PostForm("name")
 	description := c.PostForm("description")
+	redirectURL := c.PostForm("redirect_url")
 	isActive := c.PostForm("is_active") == "on"
 
 	// La app raíz no puede desactivarse.
@@ -141,7 +143,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.AppService.UpdateApp(id, description, isActive); err != nil {
+	if err := ctrl.AppService.UpdateApp(id, description, redirectURL, isActive); err != nil {
 		ctrl.internalErrorHTML(c, "UpdateFormApp", err, "No se pudo actualizar la aplicación.")
 		return
 	}

@@ -8,37 +8,40 @@ import (
 
 // contentSecurityPolicy define la CSP de la aplicación.
 //
-// Nota: se permite 'unsafe-inline' en scripts y estilos porque la UI actual usa
-// manejadores inline (onclick=...) y estilos inline de Tailwind. Endurecer esto
-// a nonces requeriría refactorizar todas las plantillas. Aun así, se restringe
-// default-src, object-src y frame-ancestors para mitigar clickjacking e inyección.
+// Nota: se permite 'unsafe-inline' temporalmente por scripts/estilos dinámicos.
+// default-src, object-src y frame-ancestors se restringen estrictamente para
+// mitigar clickjacking e inyección.
 const contentSecurityPolicy = "default-src 'self'; " +
-	"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; " +
+	"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
 	"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
 	"font-src 'self' https://fonts.gstatic.com data:; " +
 	"img-src 'self' data: https:; " +
 	"connect-src 'self'; " +
+	"form-action 'self'; " +
 	"object-src 'none'; " +
 	"base-uri 'self'; " +
-	"form-action 'self'; " +
-	"frame-ancestors 'none'; " +
-	"upgrade-insecure-requests"
+	"frame-ancestors 'none';"
 
 // BaseSecurityHeaders aplica cabeceras de seguridad a TODAS las respuestas
 // (incluidas las páginas públicas de login, setup y reset).
 func BaseSecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		csp := contentSecurityPolicy
+		if util.IsProduction() {
+			csp += " upgrade-insecure-requests;"
+		}
+
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
-		c.Header("Content-Security-Policy", contentSecurityPolicy)
+		c.Header("Content-Security-Policy", csp)
 		c.Header("Cross-Origin-Opener-Policy", "same-origin")
 		c.Header("Cross-Origin-Resource-Policy", "same-origin")
 		c.Header("X-Permitted-Cross-Domain-Policies", "none")
 
 		// HSTS solo en producción (requiere HTTPS para tener sentido y no romper dev).
 		if util.IsProduction() {
-			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 		}
 
 		c.Next()
