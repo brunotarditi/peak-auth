@@ -61,16 +61,7 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		return
 	}
 
-	isSecure := util.IsProduction()
-	c.SetCookie(
-		"admin_token", // Nombre
-		tokenString,   // Valor (JWT)
-		86400,         // MaxAge en segundos (1 día)
-		"/",           // Path
-		"",            // Domain
-		isSecure,      // Secure: En true solo con HTTPS (importante en prod)
-		true,          // HttpOnly: TRUE para que JS no pueda robarlo (XSS)
-	)
+	ctrl.setAdminCookie(c, tokenString, 86400) // 1 día
 
 	c.Redirect(http.StatusSeeOther, "/admin/login")
 }

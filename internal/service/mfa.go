@@ -2,10 +2,14 @@ package service
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"image/png"
 	"net/http"
+	"peak-auth/internal/api/response"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
@@ -16,10 +20,41 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
+func hashRecoveryCode(code string) string {
+	normalized := strings.ToUpper(strings.ReplaceAll(code, "-", ""))
+	normalized = strings.TrimSpace(normalized)
+	if len(normalized) == 8 {
+		normalized = normalized[:4] + "-" + normalized[4:]
+	}
+	h := sha256.Sum256([]byte(normalized))
+	return "sha256:" + hex.EncodeToString(h[:])
+}
+
+func verifyRecoveryCodeHash(inputCode, storedHash string) bool {
+	if strings.TrimSpace(inputCode) == "" || strings.TrimSpace(storedHash) == "" {
+		return false
+	}
+
+	normalized := strings.ToUpper(strings.ReplaceAll(inputCode, "-", ""))
+	normalized = strings.TrimSpace(normalized)
+	if len(normalized) == 8 {
+		normalized = normalized[:4] + "-" + normalized[4:]
+	}
+
+	if strings.HasPrefix(storedHash, "sha256:") {
+		h := sha256.Sum256([]byte(normalized))
+		expectedHash := "sha256:" + hex.EncodeToString(h[:])
+		return subtle.ConstantTimeCompare([]byte(expectedHash), []byte(storedHash)) == 1
+	}
+
+	// Fallback para códigos legados hasheados previamente con bcrypt
+	return util.CheckPasswordHash(normalized, storedHash)
+}
+
 // MfaService gestiona la configuración y validación de MFA.
 type MfaService interface {
 	// TOTP
-	SetupTOTP(userID uint, userEmail string) (*TOTPSetupResponse, error)
+	SetupTOTP(userID uint, userEmail string) (*response.TOTPSetupResponse, error)
 	VerifyAndActivateTOTP(userID uint, code string) ([]string, error)
 	ValidateTOTPCode(userID uint, code string) error
 
@@ -36,23 +71,7 @@ type MfaService interface {
 	// Gestión general
 	DisableMFA(userID uint) error
 	IsMfaEnabled(userID uint) bool
-	GetMfaStatus(userID uint) (*MfaStatusResponse, error)
-}
-
-// TOTPSetupResponse contiene los datos necesarios para configurar TOTP en el authenticator.
-type TOTPSetupResponse struct {
-	Secret  string `json:"secret"`   // Solo se muestra durante el setup
-	QRCode  string `json:"qr_code"` // Imagen QR en base64 (data URI)
-	OTPAuth string `json:"otpauth"` // URI otpauth:// para copiar manualmente
-}
-
-// MfaStatusResponse indica el estado actual del MFA de un usuario.
-type MfaStatusResponse struct {
-	Enabled           bool   `json:"enabled"`
-	TOTPConfigured    bool   `json:"totp_configured"`
-	WebAuthnConfigured bool  `json:"webauthn_configured"`
-	TOTPName          string `json:"totp_name,omitempty"`
-	RecoveryCodesLeft int    `json:"recovery_codes_left"`
+	GetMfaStatus(userID uint) (*response.MfaStatusResponse, error)
 }
 
 type mfaService struct {
@@ -66,7 +85,7 @@ func NewMfaService(mfaRepo repo.MfaRepository, userRepo repo.UserRepository) Mfa
 
 // SetupTOTP genera un nuevo secreto TOTP para el usuario.
 // La credencial se guarda como INACTIVA hasta que el usuario la verifique.
-func (s *mfaService) SetupTOTP(userID uint, userEmail string) (*TOTPSetupResponse, error) {
+func (s *mfaService) SetupTOTP(userID uint, userEmail string) (*response.TOTPSetupResponse, error) {
 	// Verificar que no tenga ya un TOTP activo
 	existing, err := s.mfaRepo.FindActiveCredentialByUserAndType(userID, "TOTP")
 	if err == nil && existing != nil {
@@ -118,7 +137,7 @@ func (s *mfaService) SetupTOTP(userID uint, userEmail string) (*TOTPSetupRespons
 
 	qrBase64 := "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
 
-	return &TOTPSetupResponse{
+	return &response.TOTPSetupResponse{
 		Secret:  key.Secret(),
 		QRCode:  qrBase64,
 		OTPAuth: key.URL(),
@@ -189,16 +208,8 @@ func (s *mfaService) ValidateRecoveryCode(userID uint, code string) error {
 		return fmt.Errorf("no hay códigos de recuperación disponibles")
 	}
 
-	// Normalizar: quitar guiones y pasar a mayúsculas
-	normalized := strings.ToUpper(strings.ReplaceAll(code, "-", ""))
-	normalized = strings.TrimSpace(normalized)
-	// Reconstruir formato XXXX-XXXX para comparar con el hash
-	if len(normalized) == 8 {
-		normalized = normalized[:4] + "-" + normalized[4:]
-	}
-
 	for _, rc := range codes {
-		if util.CheckPasswordHash(normalized, rc.CodeHash) {
+		if verifyRecoveryCodeHash(code, rc.CodeHash) {
 			return s.mfaRepo.MarkRecoveryCodeUsed(rc.ID)
 		}
 	}
@@ -236,13 +247,13 @@ func (s *mfaService) IsMfaEnabled(userID uint) bool {
 }
 
 // GetMfaStatus retorna el estado detallado del MFA del usuario.
-func (s *mfaService) GetMfaStatus(userID uint) (*MfaStatusResponse, error) {
+func (s *mfaService) GetMfaStatus(userID uint) (*response.MfaStatusResponse, error) {
 	user, err := s.userRepo.FindById(userID)
 	if err != nil {
 		return nil, fmt.Errorf("usuario no encontrado")
 	}
 
-	status := &MfaStatusResponse{
+	status := &response.MfaStatusResponse{
 		Enabled: user.MfaEnabled,
 	}
 
@@ -283,10 +294,7 @@ func (s *mfaService) generateAndSaveRecoveryCodes(userID uint) ([]string, error)
 	// Hashear y guardar
 	var dbCodes []model.UserRecoveryCode
 	for _, code := range plainCodes {
-		hash, err := util.HashPassword(code)
-		if err != nil {
-			return nil, fmt.Errorf("error hasheando código de recuperación: %w", err)
-		}
+		hash := hashRecoveryCode(code)
 		dbCodes = append(dbCodes, model.UserRecoveryCode{
 			UserID:   userID,
 			CodeHash: hash,

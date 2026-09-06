@@ -29,3 +29,19 @@ type UserAppRow struct {
 	MfaEnabled   bool
 	FailedLogins uint
 }
+
+// TOTPSetupResponse contiene los datos necesarios para configurar TOTP en el authenticator.
+type TOTPSetupResponse struct {
+	Secret  string `json:"secret"`  // Solo se muestra durante el setup
+	QRCode  string `json:"qr_code"` // Imagen QR en base64 (data URI)
+	OTPAuth string `json:"otpauth"` // URI otpauth:// para copiar manualmente
+}
+
+// MfaStatusResponse indica el estado actual del MFA de un usuario.
+type MfaStatusResponse struct {
+	Enabled            bool   `json:"enabled"`
+	TOTPConfigured     bool   `json:"totp_configured"`
+	WebAuthnConfigured bool   `json:"webauthn_configured"`
+	TOTPName           string `json:"totp_name,omitempty"`
+	RecoveryCodesLeft  int    `json:"recovery_codes_left"`
+}

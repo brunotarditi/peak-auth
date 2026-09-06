@@ -43,6 +43,8 @@
                 <input type="hidden" name="client_id" value="{{ .ClientID }}">
                 <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
                 <input type="hidden" name="state" value="{{ .State }}">
+                <input type="hidden" name="code_challenge" value="{{ .CodeChallenge }}">
+                <input type="hidden" name="code_challenge_method" value="{{ .CodeChallengeMethod }}">
 
                 <div class="form-group">
                     <label class="form-label">Correo Electrónico</label>

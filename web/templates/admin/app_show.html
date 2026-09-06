@@ -1,6 +1,6 @@
 {{ define "content" }}
 
-<div style="display: flex; flex-direction: column; gap: 2rem;">
+<div id="appDetailsContainer" data-app-id="{{ .App.AppID }}" style="display: flex; flex-direction: column; gap: 2rem;">
     <!-- Top Bar -->
     <div style="display: flex; align-items: center; justify-content: space-between;">
         <a href="/admin" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
@@ -14,6 +14,7 @@
             </a>
             {{ if and (ne .App.AppID "peak-auth") .IsRoot }}
             <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" style="margin: 0; display: flex;">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                 <button type="button" onclick="confirmDeleteApp()" title="Eliminar Aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--rose-600);">
                     {{template "icon-delete"}}
                     Eliminar
@@ -50,6 +51,13 @@
                         <button onclick="copyToClipboard('{{ .App.AppID }}', this)" class="icon-btn" style="padding: 0.75rem;" title="Copiar App ID" aria-label="Copiar Application ID">
                             {{template "icon-copy"}}
                         </button>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem;">Redirect URL</label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <code style="flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ if .App.RedirectURL }}{{ .App.RedirectURL }}{{ else }}<span style="color:var(--text-muted);font-style:italic;">No configurada</span>{{ end }}</code>
                     </div>
                 </div>
 
@@ -126,6 +134,7 @@
 
             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <form action="/admin/apps/{{.App.AppID}}/secret" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                     <button type="submit" class="peak-btn peak-btn-block" style="background-color: var(--rose-600); color: white; padding: 1rem;">
                         Sí, Regenerar Ahora
                     </button>
@@ -141,9 +150,6 @@
 {{ end }}
 
 {{ define "scripts" }}
-<script>
-    window.appID = "{{ .App.AppID }}";
-</script>
 <script src="{{ js "app.js" }}"></script>
 {{ end }}
 

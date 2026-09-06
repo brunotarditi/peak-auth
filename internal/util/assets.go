@@ -15,17 +15,28 @@ var (
 	cacheMutex sync.RWMutex
 )
 
-// GetAssetHash calcula un hash SHA256 corto basado en el contenido de un archivo
-func GetAssetHash(filePath string) string {
+// GetAssetHash calcula un hash SHA256 corto basado en el contenido de un archivo usando os.Root para evitar Path Traversal
+func GetAssetHash(baseDir, relativePath string) string {
+	// Identificador único para el caché combinando ambos
+	cacheKey := filepath.Join(baseDir, relativePath)
+	
 	cacheMutex.RLock()
-	hash, exists := assetCache[filePath]
+	hash, exists := assetCache[cacheKey]
 	cacheMutex.RUnlock()
 
 	if exists {
 		return hash
 	}
 
-	file, err := os.Open(filePath)
+	// Abrir el directorio base de forma segura (mitigación absoluta de Path Traversal)
+	root, err := os.OpenRoot(baseDir)
+	if err != nil {
+		return "1"
+	}
+	defer root.Close()
+
+	// Abrir el archivo relativo usando el entorno acotado (chroot-like)
+	file, err := root.Open(relativePath)
 	if err != nil {
 		return "1"
 	}
@@ -40,7 +51,7 @@ func GetAssetHash(filePath string) string {
 	calculatedHash := fmt.Sprintf("%x", hashObj.Sum(nil))[:8]
 
 	cacheMutex.Lock()
-	assetCache[filePath] = calculatedHash
+	assetCache[cacheKey] = calculatedHash
 	cacheMutex.Unlock()
 
 	return calculatedHash
@@ -48,11 +59,11 @@ func GetAssetHash(filePath string) string {
 
 // Asset retorna la ruta de un asset con un hash de versión (ej: /static/css/style.css?v=abcdef12)
 func Asset(path string) string {
+	baseDir := AssetsDir()
 	cleanPath := strings.TrimSpace(path)
-	// Normalizar ruta para encontrar el archivo en el sistema de archivos
-	filePath := filepath.Join("web", strings.TrimPrefix(cleanPath, "/"))
+	relativePath := strings.TrimPrefix(cleanPath, "/")
 
-	hash := GetAssetHash(filePath)
+	hash := GetAssetHash(baseDir, relativePath)
 	return fmt.Sprintf("%s?v=%s", cleanPath, hash)
 }
 

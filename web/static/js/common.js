@@ -73,12 +73,26 @@ async function copyToClipboard(text, btn) {
     try {
         await navigator.clipboard.writeText(text);
 
-        const originalHTML = btn.innerHTML;
-        btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+        const originalNodes = Array.from(btn.childNodes);
+        
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("class", "w-5 h-5");
+        svg.setAttribute("fill", "none");
+        svg.setAttribute("stroke", "currentColor");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        const path = document.createElementNS(svgNS, "path");
+        path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("stroke-linejoin", "round");
+        path.setAttribute("stroke-width", "2");
+        path.setAttribute("d", "M5 13l4 4L19 7");
+        svg.appendChild(path);
+
+        btn.replaceChildren(svg);
         showToast('Copiado con éxito', 'success', 2000);
 
         setTimeout(() => {
-            btn.innerHTML = originalHTML;
+            btn.replaceChildren(...originalNodes);
         }, 2000);
     } catch (err) {
         console.error('Error al copiar:', err);

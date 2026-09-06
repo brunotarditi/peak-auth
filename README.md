@@ -60,7 +60,6 @@
    ```
    **Variables Críticas:**
    - `DATABASE_URL`: URL de conexión a PostgreSQL.
-   - `JWT_PRIVATE_KEY_PATH`: Ruta a la clave privada (`./jwt_private.pem`) o contenido directo en `JWT_PRIVATE_KEY`.
    - `ENV`: `development` o `production` (Habilita cookies `Secure`).
    - `RESEND_API_KEY`: API Key para el envío de correos de verificación y reseteos.
 
@@ -84,8 +83,7 @@ También puedes ejecutar Peak Auth usando Docker:
 docker build -t peak-auth .
 docker run -p 8080:8080 \
   -e DATABASE_URL=postgres://... \
-  -e JWT_PRIVATE_KEY_PATH=/keys/jwt_private.pem \
-  -v /path/to/keys:/keys \
+  -e JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----" \
   peak-auth
 ```
 

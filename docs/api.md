@@ -17,17 +17,17 @@ Valida las credenciales de un usuario y retorna un Access Token y un Refresh Tok
 **Request Body (JSON):**
 ```json
 {
-  "email": "usuario@email.com",
-  "password": "MiPasswordSeguro123",
-  "client_id": "app_client_id_opcional"
+  "email": "<EMAIL>",
+  "password": "<PASSWORD>",
+  "client_id": "<CLIENT_ID>"
 }
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "access_token": "<TU_TOKEN_JWT_AQUI>",
-  "refresh_token": "rt_8f7d6a5b4c...",
+  "access_token": "<ACCESS_TOKEN>",
+  "refresh_token": "<REFRESH_TOKEN>",
   "expires_in": 3600,
   "token_type": "Bearer"
 }
@@ -37,8 +37,8 @@ Valida las credenciales de un usuario y retorna un Access Token y un Refresh Tok
 *(Si la cuenta tiene MFA activado)*
 ```json
 {
-  "error": "MFA_REQUIRED",
-  "mfa_token": "temp_token_for_mfa_verification"
+  "error": "<MFA_REQUIRED>",
+  "mfa_token": "<MFA_TOKEN>"
 }
 ```
 
@@ -46,13 +46,13 @@ Valida las credenciales de un usuario y retorna un Access Token y un Refresh Tok
 `POST /api/v1/mfa/verify`
 
 **Headers:**
-`Authorization: Bearer <mfa_token>`
+`Authorization: Bearer <MFA_TOKEN>`
 
 **Request Body (JSON):**
 ```json
 {
-  "code": "123456",
-  "client_id": "app_client_id_opcional"
+  "code": "<CODE>",
+  "client_id": "<CLIENT_ID>"
 }
 ```
 
@@ -64,8 +64,8 @@ Genera un nuevo Access Token utilizando un Refresh Token válido.
 **Request Body (JSON):**
 ```json
 {
-  "refresh_token": "rt_8f7d6a5b4c...",
-  "client_id": "app_client_id_opcional"
+  "refresh_token": "<REFRESH_TOKEN>",
+  "client_id": "<CLIENT_ID>"
 }
 ```
 
@@ -77,8 +77,8 @@ Crea una nueva cuenta de usuario (depende de la política de `ALLOW_REGISTRATION
 **Request Body (JSON):**
 ```json
 {
-  "email": "nuevo@usuario.com",
-  "password": "PasswordFuerte123"
+  "email": "<EMAIL>",
+  "password": "<PASSWORD>"
 }
 ```
 
@@ -98,7 +98,7 @@ Retorna la información del perfil y los roles asociados a la aplicación desde 
 ```json
 {
   "id": 105,
-  "email": "usuario@email.com",
+  "email": "<EMAIL>",
   "roles": ["ADMIN", "EDITOR"],
   "is_active": true
 }

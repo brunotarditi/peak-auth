@@ -20,7 +20,6 @@ func newTestManager(t *testing.T) *JWTManager {
 	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: der})
 
 	t.Setenv("JWT_PRIVATE_KEY", string(pemBytes))
-	t.Setenv("JWT_PRIVATE_KEY_PATH", "")
 	t.Setenv("JWT_ISSUER", "peak-auth")
 
 	m, err := NewJWTManager()

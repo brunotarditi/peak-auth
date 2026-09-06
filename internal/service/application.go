@@ -11,8 +11,8 @@ import (
 )
 
 type ApplicationService interface {
-	CreateApp(name, description string, isActive bool) (model.Application, string, error)
-	UpdateApp(appID string, description string, isActive bool) error
+	CreateApp(name, description, redirectURL string, isActive bool) (model.Application, string, error)
+	UpdateApp(appID string, description, redirectURL string, isActive bool) error
 	ValidateAppNameUnique(name string) error
 	RegenerateSecret(appID string) (string, error)
 	RegisterUserInApp(userEmail, roleName string, app *model.Application) error
@@ -37,7 +37,7 @@ func NewApplicationService(repo repo.ApplicationRepository, userRepo repo.UserRe
 	return &applicationService{repo: repo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo}
 }
 
-func (s *applicationService) CreateApp(name, description string, isActive bool) (model.Application, string, error) {
+func (s *applicationService) CreateApp(name, description, redirectURL string, isActive bool) (model.Application, string, error) {
 	plainSecret, _, err := util.GenerateToken(32)
 	if err != nil {
 		return model.Application{}, "", err
@@ -66,6 +66,7 @@ func (s *applicationService) CreateApp(name, description string, isActive bool) 
 		AppID:       slugID,
 		Name:        name,
 		Description: description,
+		RedirectURL: redirectURL,
 		SecretKey:   hashedSecret,
 		IsActive:    isActive,
 	}
@@ -166,7 +167,7 @@ func (s *applicationService) GetAppDetails(publicAppID string) (model.Applicatio
 	return s.repo.FindByAppID(publicAppID)
 }
 
-func (s *applicationService) UpdateApp(appID string, description string, isActive bool) error {
+func (s *applicationService) UpdateApp(appID string, description, redirectURL string, isActive bool) error {
 	if appID == util.AppIdPeakAuth {
 		isActive = true
 	}
@@ -177,6 +178,7 @@ func (s *applicationService) UpdateApp(appID string, description string, isActiv
 	}
 
 	app.Description = description
+	app.RedirectURL = redirectURL
 	app.IsActive = isActive
 
 	return s.repo.Update(&app)

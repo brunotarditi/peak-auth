@@ -38,23 +38,14 @@ type CustomClaims struct {
 func NewJWTManager() (*JWTManager, error) {
 	privKeyPEM := os.Getenv("JWT_PRIVATE_KEY")
 	if privKeyPEM == "" {
-		path := os.Getenv("JWT_PRIVATE_KEY_PATH")
-		if path == "" {
-			return nil, fmt.Errorf("la variable de entorno JWT_PRIVATE_KEY o JWT_PRIVATE_KEY_PATH no está definida")
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("no se pudo leer el archivo de clave privada '%s': %w", path, err)
-		}
-		privKeyPEM = string(data)
-	} else {
-		privKeyPEM = strings.ReplaceAll(privKeyPEM, "\\n", "\n")
-		privKeyPEM = strings.Trim(privKeyPEM, "\"")
+		return nil, fmt.Errorf("la variable de entorno JWT_PRIVATE_KEY no está definida")
 	}
+	privKeyPEM = strings.ReplaceAll(privKeyPEM, "\\n", "\n")
+	privKeyPEM = strings.Trim(privKeyPEM, "\"")
 
 	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyPEM))
 	if err != nil {
-		return nil, fmt.Errorf("no se pudo parsear la clave privada RSA desde PEM; asegúrate de que JWT_PRIVATE_KEY o JWT_PRIVATE_KEY_PATH apunten a una clave PEM válida: %w", err)
+		return nil, fmt.Errorf("no se pudo parsear la clave privada RSA desde PEM; asegúrate de que JWT_PRIVATE_KEY apunten a una clave PEM válida: %w", err)
 	}
 
 	return &JWTManager{
