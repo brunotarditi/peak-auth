@@ -23,9 +23,15 @@ func Scheme() string {
 
 // BaseURL construye la URL base pública de la aplicación.
 // Prioriza APP_BASE_URL si está definida; de lo contrario la deriva de HOST/PORT.
+// En entornos productivos (IsProduction() == true) garantiza siempre el uso de https://
+// para evitar la degradación a HTTP inseguro al generar enlaces con credenciales/tokens.
 func BaseURL() string {
 	if base := strings.TrimSpace(os.Getenv("APP_BASE_URL")); base != "" {
-		return strings.TrimRight(base, "/")
+		cleaned := strings.TrimRight(base, "/")
+		if IsProduction() && strings.HasPrefix(strings.ToLower(cleaned), "http://") {
+			cleaned = "https://" + cleaned[7:]
+		}
+		return cleaned
 	}
 
 	host := strings.TrimSpace(os.Getenv("HOST"))

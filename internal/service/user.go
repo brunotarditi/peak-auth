@@ -182,7 +182,7 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	}
 
 	// 4. Generar Token JWT
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, true)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -592,7 +592,7 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 
 	duration := time.Duration(expireMinutes) * time.Minute
 
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true)
 	if err != nil {
 		return "", 0, false, false, "", err
 	}
@@ -666,7 +666,7 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 	}
 
 	// 2. Generar nuevo Access Token
-	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration)
+	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration, true)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -789,7 +789,7 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (res
 	}
 
 	// 4. Generar Token JWT
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, true)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -851,7 +851,7 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 	}
 
 	duration := time.Duration(expireMinutes) * time.Minute
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true)
 	if err != nil {
 		return "", 0, err
 	}

@@ -27,9 +27,9 @@ func (ctrl *ApplicationController) GetFormApp(c *gin.Context) {
 		"IsEdit":     false,
 		"Breadcrumbs": []gin.H{
 			{"Label": "Apps", "URL": "/admin"},
-			{"Label": "Nueva Aplicación"},
+			{"Label": "Nueva aplicación"},
 		},
-		"Title":          "Nueva Aplicación",
+		"Title":          "Nueva aplicación",
 		"Action":         "Crear aplicación",
 		"NameValue":      "",
 		"NameReadonly":   false,
@@ -95,8 +95,8 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 	if err := ctrl.AppService.ValidateAppNameUnique(name); err != nil {
 		ctrl.renderAdmin(c, "app_new.html", gin.H{
 			"Error":       err.Error(),
-			"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva Aplicación"}},
-			"Title":       "Nueva Aplicación",
+			"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva aplicación"}},
+			"Title":       "Nueva aplicación",
 		})
 		return
 	}
@@ -119,8 +119,8 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 	ctrl.renderAdmin(c, "app_created.html", gin.H{
 		"App":         app,
 		"PlainSecret": plainSecret,
-		"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva Aplicación"}, {"Label": "Creada"}},
-		"Title":       "Aplicación Creada",
+		"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva aplicación"}, {"Label": "Creada"}},
+		"Title":       "Aplicación creada",
 	})
 }
 
@@ -137,7 +137,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 	if !isActive && id == util.AppIdPeakAuth {
 		ctrl.renderAdmin(c, "error.html", gin.H{
 			"error":       "La aplicación principal (Peak Auth Raíz) no puede ser desactivada. Es el núcleo del sistema SSO.",
-			"Title":       "Operación Bloqueada",
+			"Title":       "Operación bloqueada",
 			"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Error"}},
 		})
 		return
@@ -261,9 +261,9 @@ func (ctrl *ApplicationController) PostRegenerateSecret(c *gin.Context) {
 		"Breadcrumbs": []gin.H{
 			{"Label": "Apps", "URL": "/admin"},
 			{"Label": app.Name, "URL": "/admin/apps/" + id},
-			{"Label": "Nuevo Secreto"},
+			{"Label": "Nuevo secreto"},
 		},
-		"Title": "Nuevo Secreto - " + app.Name,
+		"Title": "Nuevo secreto - " + app.Name,
 	})
 }
 

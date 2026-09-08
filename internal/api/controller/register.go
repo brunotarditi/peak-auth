@@ -67,7 +67,7 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 	token := ctx.Query("token")
 	if token == "" {
 		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
-			"Title":   "Token Requerido",
+			"Title":   "Token requerido",
 			"Message": "El token de verificación es requerido.",
 		})
 		return
@@ -76,7 +76,7 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 	userID, appID, err := c.UserService.VerifyEmail(token)
 	if err != nil {
 		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
-			"Title":   "Verificación Fallida",
+			"Title":   "Verificación fallida",
 			"Message": "El enlace de verificación es inválido o ha expirado.",
 		})
 		return

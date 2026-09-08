@@ -54,6 +54,19 @@ func TestEnvHelpers(t *testing.T) {
 	if got := BaseURL(); got != "https://auth.example.com" {
 		t.Fatalf("BaseURL incorrecto: %q", got)
 	}
+
+	// Forzar https aunque APP_BASE_URL tenga http:// en producción
+	t.Setenv("APP_BASE_URL", "http://auth.example.com")
+	if got := BaseURL(); got != "https://auth.example.com" {
+		t.Fatalf("BaseURL debería forzar https en producción, obtuvo: %q", got)
+	}
+
+	// En desarrollo respeta http
+	t.Setenv("ENV", "development")
+	if got := BaseURL(); got != "http://auth.example.com" {
+		t.Fatalf("BaseURL debería mantener http en desarrollo, obtuvo: %q", got)
+	}
+
 	if !SameOriginRequest("https://auth.example.com/x", "auth.example.com") {
 		t.Fatal("mismo host debería ser same-origin")
 	}

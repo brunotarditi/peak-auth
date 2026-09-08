@@ -458,7 +458,7 @@ func (ctrl *LoginController) VerifyMfaRecovery(c *gin.Context) {
 
 // SetupTOTPLogin permite configurar TOTP durante el login forzoso
 func (ctrl *LoginController) SetupTOTPLogin(c *gin.Context) {
-	mfaToken := c.Query("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})
 		return
@@ -489,7 +489,7 @@ func (ctrl *LoginController) SetupTOTPLogin(c *gin.Context) {
 // VerifyTOTPLogin valida el código TOTP enviado para activar el factor durante el login
 func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 	var req struct {
-		MfaToken string `json:"mfa_token" binding:"required"`
+		MfaToken string `json:"mfa_token"`
 		Code     string `json:"code" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -497,8 +497,17 @@ func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 		return
 	}
 
+	mfaToken := req.MfaToken
+	if mfaToken == "" {
+		mfaToken = ctrl.extractMfaToken(c)
+	}
+	if mfaToken == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})
+		return
+	}
+
 	appID := c.GetHeader("X-App-ID")
-	claims, err := ctrl.TokenManager.VerifyMFAPendingToken(req.MfaToken, appID)
+	claims, err := ctrl.TokenManager.VerifyMFAPendingToken(mfaToken, appID)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido o expirado"})
 		return
@@ -532,7 +541,7 @@ func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 
 // BeginWebAuthnRegistrationLogin inicia el registro de WebAuthn durante el login forzoso
 func (ctrl *LoginController) BeginWebAuthnRegistrationLogin(c *gin.Context) {
-	mfaToken := c.Query("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})
 		return
