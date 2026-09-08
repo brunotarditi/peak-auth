@@ -66,7 +66,7 @@ type RefreshToken struct {
 
 type Role struct {
 	gorm.Model
-	Name string `gorm:"type:varchar(100);index:idx_role_name_app,unique;not null"`
+	Name string `gorm:"type:varchar(100);index:idx_role_name_app,unique;index:idx_role_name_global,unique,where:application_id IS NULL AND deleted_at IS NULL;not null"`
 	// ApplicationID define el alcance del rol:
 	//   - nil  -> rol GLOBAL del sistema (ROOT, ADMIN, USER), visible para todas las apps.
 	//   - !nil -> rol PROPIO de una aplicación, visible/asignable solo dentro de esa app.
@@ -89,9 +89,9 @@ type User struct {
 
 type UserApplicationRole struct {
 	gorm.Model
-	UserID        uint        `gorm:"not null"`
-	ApplicationID uint        `gorm:"not null"`
-	RoleID        uint        `gorm:"not null"`
+	UserID        uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
+	ApplicationID uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
+	RoleID        uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
 	User          User        `gorm:"foreignKey:UserID"`
 	Application   Application `gorm:"foreignKey:ApplicationID"`
 	Role          Role        `gorm:"foreignKey:RoleID"`
@@ -128,4 +128,11 @@ type OAuthCode struct {
 	CodeChallenge       string    `gorm:"type:varchar(255)"`
 	CodeChallengeMethod string    `gorm:"type:varchar(20)"`
 	User                User      `gorm:"foreignKey:UserID"`
+}
+
+// Migration registra los scripts de migraciones SQL ya ejecutados
+type Migration struct {
+	ID        uint      `gorm:"primaryKey"`
+	Name      string    `gorm:"type:varchar(255);uniqueIndex;not null"`
+	CreatedAt time.Time
 }

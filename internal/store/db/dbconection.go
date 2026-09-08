@@ -79,29 +79,12 @@ func AutoMigrate() {
 		&model.UserMfaCredential{},
 		&model.UserRecoveryCode{},
 		&model.OAuthCode{},
+		&model.Migration{},
 	)
 	if err != nil {
 		log.Printf("⚠️ Error durante AutoMigrate: %v", err)
 	} else {
 		log.Println("✅ AutoMigrate completado correctamente")
-	}
-
-	// Índice único parcial para roles globales (solo se crea una vez)
-	if err := postgresqlDB.Exec(`
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_role_name_global 
-        ON roles (name) 
-        WHERE application_id IS NULL AND deleted_at IS NULL
-    `).Error; err != nil {
-		log.Printf("⚠️ No se pudo crear el índice idx_role_name_global: %v", err)
-	}
-
-	// Índice único parcial para vinculación de roles de usuario (evita duplicados activos)
-	if err := postgresqlDB.Exec(`
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_uar_unique
-        ON user_application_roles (user_id, application_id, role_id)
-        WHERE deleted_at IS NULL
-    `).Error; err != nil {
-		log.Printf("⚠️ No se pudo crear el índice idx_uar_unique: %v", err)
 	}
 
 	RunSQLMigrations()
@@ -110,16 +93,9 @@ func AutoMigrate() {
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
-// Migration model para la auditoría de scripts ejecutados
-type Migration struct {
-	ID        uint      `gorm:"primaryKey"`
-	Name      string    `gorm:"type:varchar(255);uniqueIndex;not null"`
-	CreatedAt time.Time
-}
-
 // RunSQLMigrations lee y ejecuta los scripts SQL embebidos en migrations/
 func RunSQLMigrations() {
-	if err := postgresqlDB.AutoMigrate(&Migration{}); err != nil {
+	if err := postgresqlDB.AutoMigrate(&model.Migration{}); err != nil {
 		log.Printf("⚠️ Error migrando tabla de migrations: %v", err)
 		return
 	}
@@ -141,7 +117,7 @@ func RunSQLMigrations() {
 		}
 
 		var count int64
-		postgresqlDB.Model(&Migration{}).Where("name = ?", entry.Name()).Count(&count)
+		postgresqlDB.Model(&model.Migration{}).Where("name = ?", entry.Name()).Count(&count)
 
 		if count > 0 {
 			continue // Ya ejecutado previamente
@@ -159,7 +135,7 @@ func RunSQLMigrations() {
 			if err := tx.Exec(string(content)).Error; err != nil {
 				return err
 			}
-			return tx.Create(&Migration{Name: entry.Name()}).Error
+			return tx.Create(&model.Migration{Name: entry.Name()}).Error
 		})
 
 		if err != nil {
