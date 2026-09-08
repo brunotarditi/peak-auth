@@ -1,6 +1,10 @@
 package middleware
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,6 +12,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"peak-auth/internal/auth"
+	"peak-auth/internal/util"
 )
 
 func init() { gin.SetMode(gin.TestMode) }
@@ -148,5 +155,58 @@ func TestRateLimit_BlocksAfterLimit(t *testing.T) {
 	}
 	if code := doReq(); code != http.StatusTooManyRequests {
 		t.Fatalf("la 4ª petición debería ser 429, got %d", code)
+	}
+}
+
+func TestAuthMiddleware_RejectsMfaPendingToken(t *testing.T) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("no se pudo generar clave RSA: %v", err)
+	}
+	der := x509.MarshalPKCS1PrivateKey(key)
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: der})
+
+	t.Setenv("JWT_PRIVATE_KEY", string(pemBytes))
+	t.Setenv("JWT_ISSUER", "peak-auth")
+
+	manager, err := auth.NewJWTManager()
+	if err != nil {
+		t.Fatalf("error creando JWTManager: %v", err)
+	}
+
+	r := gin.New()
+	r.Use(AuthMiddleware(manager))
+	r.GET("/protected", func(c *gin.Context) {
+		c.String(http.StatusOK, "welcome")
+	})
+
+	// 1. Probar con token pendiente de MFA -> DEBE ser rechazado (403 Forbidden)
+	mfaPendingToken, err := manager.GenerateMFAPendingToken(123, "admin@peakauth.com", util.AppIdPeakAuth)
+	if err != nil {
+		t.Fatalf("error generando mfaPendingToken: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+mfaPendingToken)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("se esperaba status 403 Forbidden para token MFA-pending, se obtuvo %d", w.Code)
+	}
+
+	// 2. Probar con token verificado -> DEBE ser aceptado (200 OK)
+	validToken, err := manager.GenerateToken(123, "admin@peakauth.com", util.AppIdPeakAuth, []string{"ADMIN"}, time.Hour, true)
+	if err != nil {
+		t.Fatalf("error generando validToken: %v", err)
+	}
+
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest("GET", "/protected", nil)
+	req2.Header.Set("Authorization", "Bearer "+validToken)
+	r.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("se esperaba status 200 OK para token verificado, se obtuvo %d", w2.Code)
 	}
 }

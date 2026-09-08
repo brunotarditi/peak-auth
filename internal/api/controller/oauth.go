@@ -210,13 +210,18 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		if strings.Contains(strings.ToLower(err.Error()), "inactiva") || strings.Contains(strings.ToLower(err.Error()), "bloqueada") {
 			userErrMsg = err.Error()
 		}
-		redirectURL := fmt.Sprintf("/oauth/login?client_id=%s&redirect_uri=%s&state=%s&error=%s",
-			url.QueryEscape(clientID), url.QueryEscape(redirectURI), url.QueryEscape(state), url.QueryEscape(userErrMsg))
+		redirectURL := url.URL{Path: "/oauth/login"}
+		query := redirectURL.Query()
+		query.Set("client_id", clientID)
+		query.Set("redirect_uri", redirectURI)
+		query.Set("state", state)
+		query.Set("error", userErrMsg)
 		if codeChallenge != "" {
-			redirectURL += fmt.Sprintf("&code_challenge=%s&code_challenge_method=%s",
-				url.QueryEscape(codeChallenge), url.QueryEscape(codeChallengeMethod))
+			query.Set("code_challenge", codeChallenge)
+			query.Set("code_challenge_method", codeChallengeMethod)
 		}
-		ctx.Redirect(http.StatusSeeOther, redirectURL)
+		redirectURL.RawQuery = query.Encode()
+		ctx.Redirect(http.StatusSeeOther, redirectURL.String())
 		return
 	}
 
@@ -226,13 +231,17 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		if response.MfaSetupRequired {
 			targetURL = "/oauth/login/mfa/setup"
 		}
-		mfaRedirect := fmt.Sprintf("%s?client_id=%s&redirect_uri=%s&state=%s",
-			targetURL, url.QueryEscape(clientID), url.QueryEscape(redirectURI), url.QueryEscape(state))
+		url := url.URL{Path: targetURL}
+		query := url.Query()
+		query.Set("client_id", clientID)
+		query.Set("redirect_uri", redirectURI)
+		query.Set("state", state)
 		if codeChallenge != "" {
-			mfaRedirect += fmt.Sprintf("&code_challenge=%s&code_challenge_method=%s",
-				url.QueryEscape(codeChallenge), url.QueryEscape(codeChallengeMethod))
+			query.Set("code_challenge", codeChallenge)
+			query.Set("code_challenge_method", codeChallengeMethod)
 		}
-		ctx.Redirect(http.StatusSeeOther, mfaRedirect)
+		url.RawQuery = query.Encode()
+		ctx.Redirect(http.StatusSeeOther, url.String())
 		return
 	}
 
@@ -247,7 +256,7 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "Identificador de usuario inválido.")
 		return
 	}
-	ssoJWT, err := c.TokenManager.GenerateToken(uid, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour)
+	ssoJWT, err := c.TokenManager.GenerateToken(uid, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
 		c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "No se pudo generar la sesión SSO.")
 		return
@@ -334,7 +343,7 @@ func (c *OAuthController) PostPublicLoginMfaTotp(ctx *gin.Context) {
 		return
 	}
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour)
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
@@ -384,7 +393,7 @@ func (c *OAuthController) PostPublicLoginMfaRecovery(ctx *gin.Context) {
 		return
 	}
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour)
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
@@ -439,7 +448,7 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 
 	service.DeleteWebAuthnSession(sessionKey)
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour)
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
@@ -490,7 +499,7 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 		return
 	}
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour)
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
@@ -549,7 +558,7 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 
 	service.DeleteWebAuthnSession(sessionKey)
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour)
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return

@@ -27,9 +27,11 @@ type JWTManager struct {
 
 // CustomClaims define qué info viajará en el token
 type CustomClaims struct {
-	Username string   `json:"username"`
-	AppID    string   `json:"app_id"`
-	Roles    []string `json:"roles"`
+	Username    string   `json:"username"`
+	AppID       string   `json:"app_id"`
+	Roles       []string `json:"roles"`
+	MfaVerified bool     `json:"mfa_verified"`
+	TokenType   string   `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
@@ -57,11 +59,13 @@ func NewJWTManager() (*JWTManager, error) {
 // GenerateToken crea un nuevo token JWT para un usuario y aplicación específicos.
 // El token incluye el issuer (Peak Auth) y la audiencia (app_id), de modo que cada
 // aplicación pueda validar que el token fue emitido específicamente para ella.
-func (m *JWTManager) GenerateToken(userID uint, username string, appID string, roles []string, duration time.Duration) (string, error) {
+func (m *JWTManager) GenerateToken(userID uint, username string, appID string, roles []string, duration time.Duration, mfaVerified bool) (string, error) {
 	claims := CustomClaims{
-		Username: username,
-		AppID:    appID,
-		Roles:    roles,
+		Username:    username,
+		AppID:       appID,
+		Roles:       roles,
+		MfaVerified: mfaVerified,
+		TokenType:   "access",
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   fmt.Sprintf("%d", userID),
 			Issuer:    tokenIssuer(),
@@ -123,30 +127,33 @@ func (m *JWTManager) verify(tokenString string, expectedAudience string) (*Custo
 
 // GenerateMFAPendingToken genera un token temporal (5 minutos) que indica que el login
 // con contraseña fue exitoso pero está pendiente de verificar el segundo factor.
+// No contiene roles de aplicación ya que el login no ha finalizado.
 func (m *JWTManager) GenerateMFAPendingToken(userID uint, username string, appID string) (string, error) {
 	claims := CustomClaims{
-		Username: username,
-		AppID:    appID,
-		Roles:    []string{"MFA_PENDING"},
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   fmt.Sprintf("%d", userID),
-			Issuer:    tokenIssuer(),
-			Audience:  jwt.ClaimStrings{appID},
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
+		Username:    username,
+		AppID:       appID,
+		Roles:       []string{},
+		MfaVerified: false,
+		TokenType:   "mfa_pending",
+	}
+	claims.RegisteredClaims = jwt.RegisteredClaims{
+		Subject:   fmt.Sprintf("%d", userID),
+		Issuer:    tokenIssuer(),
+		Audience:  jwt.ClaimStrings{appID},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	return token.SignedString(m.privateKey)
 }
 
-// VerifyMFAPendingToken verifica que el token temporal de MFA sea válido.
+// VerifyMFAPendingToken verifica que el token temporal de MFA sea válido y de tipo 'mfa_pending'.
 func (m *JWTManager) VerifyMFAPendingToken(tokenString string, expectedAppID string) (*CustomClaims, error) {
 	claims, err := m.verify(tokenString, expectedAppID)
 	if err != nil {
 		return nil, err
 	}
-	if len(claims.Roles) != 1 || claims.Roles[0] != "MFA_PENDING" {
+	if claims.TokenType != "mfa_pending" || claims.MfaVerified {
 		return nil, fmt.Errorf("token inválido para verificación MFA")
 	}
 	return claims, nil

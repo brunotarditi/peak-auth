@@ -25,6 +25,13 @@ func AuthMiddleware(manager *auth.JWTManager) gin.HandlerFunc {
 			return
 		}
 
+		if !jsonToken.MfaVerified || jsonToken.TokenType != "access" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "se requiere completar la verificación MFA",
+			})
+			return
+		}
+
 		userID, err := strconv.ParseUint(jsonToken.Subject, 10, 32)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token con formato inválido"})
@@ -61,7 +68,7 @@ func handleUnauthorized(c *gin.Context) {
 	c.Abort()
 }
 
-func handleAuthError(c *gin.Context, err error) {
+func handleAuthError(c *gin.Context, _ error) {
 	if strings.HasPrefix(c.Request.URL.Path, "/admin") {
 		c.SetSameSite(http.SameSiteLaxMode)
 		c.SetCookie("admin_token", "", -1, "/", "", util.IsProduction(), true)

@@ -4,12 +4,11 @@ import (
 	"crypto/subtle"
 	"errors"
 	"log"
-	"os"
-	"strings"
+	"time"
+
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
-	"time"
 )
 
 type SetupService interface {
@@ -108,18 +107,18 @@ func (s *setupService) InitializeSystem(port string) {
 	s.ephemeralToken = token
 	s.tokenExpiry = time.Now().Add(2 * time.Hour) // Expira en 2 horas
 
-	host := os.Getenv("HOST")
-	if host == "" {
-		host = "localhost"
-	}
-
-	host = strings.ReplaceAll(strings.ReplaceAll(host, "\n", ""), "\r", "")
-	port = strings.ReplaceAll(strings.ReplaceAll(port, "\n", ""), "\r", "")
+	baseURL := util.BaseURL()
 
 	log.Printf("================================================================")
 	log.Printf("⚠️  PEAK-AUTH: MODO INSTALACIÓN ACTIVADO")
-	log.Printf("Token efímero (solo memoria): %s", s.ephemeralToken)
-	log.Printf("URL de Setup: http://%s:%s/setup?token=%s", host, port, s.ephemeralToken)
+	if util.IsProduction() {
+		log.Printf("Token efímero de inicialización generado (validez: 2 horas).")
+		log.Printf("URL de Setup segura: %s/setup", baseURL)
+		log.Printf("Configure la cuenta inicial proporcionando el token efímero asignado.")
+	} else {
+		log.Printf("Token efímero (solo memoria): %s", s.ephemeralToken)
+		log.Printf("URL de Setup: %s/setup?token=%s", baseURL, s.ephemeralToken)
+	}
 	log.Printf("================================================================")
 }
 

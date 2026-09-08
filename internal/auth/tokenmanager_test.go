@@ -31,7 +31,7 @@ func newTestManager(t *testing.T) *JWTManager {
 
 func TestGenerateAndVerifyToken(t *testing.T) {
 	m := newTestManager(t)
-	tok, err := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour)
+	tok, err := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour, true)
 	if err != nil {
 		t.Fatalf("GenerateToken falló: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestGenerateAndVerifyToken(t *testing.T) {
 // Un token emitido para "app-a" no debe validar como audiencia "app-b".
 func TestVerifyTokenForApp_AudienceMismatch(t *testing.T) {
 	m := newTestManager(t)
-	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, time.Hour)
+	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, time.Hour, true)
 
 	if _, err := m.VerifyTokenForApp(tok, "app-b"); err == nil {
 		t.Fatal("se esperaba error por audiencia incorrecta (app-b)")
@@ -61,7 +61,7 @@ func TestVerifyTokenForApp_AudienceMismatch(t *testing.T) {
 // Un token expirado debe ser rechazado.
 func TestVerifyToken_Expired(t *testing.T) {
 	m := newTestManager(t)
-	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, -time.Minute)
+	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, -time.Minute, true)
 	if _, err := m.VerifyToken(tok); err == nil {
 		t.Fatal("se esperaba error por token expirado")
 	}
@@ -70,7 +70,7 @@ func TestVerifyToken_Expired(t *testing.T) {
 // Un token de otro issuer debe ser rechazado.
 func TestVerifyToken_WrongIssuer(t *testing.T) {
 	m := newTestManager(t)
-	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, time.Hour)
+	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, time.Hour, true)
 
 	// Cambiamos el issuer esperado: el token tiene "peak-auth", ahora exigimos otro.
 	t.Setenv("JWT_ISSUER", "otro-emisor")
@@ -91,13 +91,12 @@ func TestMFAPendingToken(t *testing.T) {
 		t.Fatalf("VerifyMFAPendingToken falló: %v", err)
 	}
 
-	if claims.Subject != "42" || claims.AppID != "mi-app" || len(claims.Roles) != 1 || claims.Roles[0] != "MFA_PENDING" {
+	if claims.Subject != "42" || claims.AppID != "mi-app" || claims.TokenType != "mfa_pending" || claims.MfaVerified {
 		t.Fatalf("claims incorrectos para MFA_PENDING: %+v", claims)
 	}
 
-	// Un token de MFA no debería validar como un token normal si el validador exige otros roles,
-	// pero además, VerifyMFAPendingToken debe rechazar tokens normales sin rol MFA_PENDING.
-	normalTok, _ := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour)
+	// VerifyMFAPendingToken debe rechazar tokens normales de acceso
+	normalTok, _ := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour, true)
 	if _, err := m.VerifyMFAPendingToken(normalTok, "mi-app"); err == nil {
 		t.Fatal("VerifyMFAPendingToken debería rechazar un token normal")
 	}
