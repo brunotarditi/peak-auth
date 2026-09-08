@@ -1,11 +1,14 @@
 package db
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
+	"sort"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -99,6 +102,71 @@ func AutoMigrate() {
         WHERE deleted_at IS NULL
     `).Error; err != nil {
 		log.Printf("⚠️ No se pudo crear el índice idx_uar_unique: %v", err)
+	}
+
+	RunSQLMigrations()
+}
+
+//go:embed migrations/*.sql
+var migrationFS embed.FS
+
+// Migration model para la auditoría de scripts ejecutados
+type Migration struct {
+	ID        uint      `gorm:"primaryKey"`
+	Name      string    `gorm:"type:varchar(255);uniqueIndex;not null"`
+	CreatedAt time.Time
+}
+
+// RunSQLMigrations lee y ejecuta los scripts SQL embebidos en migrations/
+func RunSQLMigrations() {
+	if err := postgresqlDB.AutoMigrate(&Migration{}); err != nil {
+		log.Printf("⚠️ Error migrando tabla de migrations: %v", err)
+		return
+	}
+
+	entries, err := migrationFS.ReadDir("migrations")
+	if err != nil {
+		log.Printf("ℹ️ Carpeta de migraciones no encontrada en binario: %v. Saltando.", err)
+		return
+	}
+
+	// Ordenamos alfanuméricamente de forma determinista (001, 002...)
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name() < entries[j].Name()
+	})
+
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".sql" {
+			continue
+		}
+
+		var count int64
+		postgresqlDB.Model(&Migration{}).Where("name = ?", entry.Name()).Count(&count)
+
+		if count > 0 {
+			continue // Ya ejecutado previamente
+		}
+
+		log.Printf("Ejecutando script de BD: %s...", entry.Name())
+		content, err := migrationFS.ReadFile("migrations/" + entry.Name())
+		if err != nil {
+			log.Printf("⚠️ Error leyendo script embebido %s: %v", entry.Name(), err)
+			continue
+		}
+
+		// Ejecutamos en una transacción para atomicidad
+		err = postgresqlDB.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Exec(string(content)).Error; err != nil {
+				return err
+			}
+			return tx.Create(&Migration{Name: entry.Name()}).Error
+		})
+
+		if err != nil {
+			log.Printf("⚠️ Error ejecutando %s: %v", entry.Name(), err)
+		} else {
+			log.Printf("✅ Script %s aplicado con éxito.", entry.Name())
+		}
 	}
 }
 
