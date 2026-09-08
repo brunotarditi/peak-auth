@@ -62,14 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
                 console.error(err);
                 
-                const themeConfig = window.getPeakThemeConfig ? window.getPeakThemeConfig() : { background: '#fff', color: '#0f172a' };
-                Swal.fire({
+                PeakModal.fire({
                     title: 'Error',
                     text: err.message,
                     icon: 'error',
-                    confirmButtonColor: window.PeakPalette ? window.PeakPalette.error : '#b91c1c',
-                    background: themeConfig.background,
-                    color: themeConfig.color
+                    confirmButtonText: 'Entendido'
                 });
                 
                 btnWebAuthn.disabled = false;

@@ -3,25 +3,25 @@
 <div id="appDetailsContainer" data-app-id="{{ .App.AppID }}" style="display: flex; flex-direction: column; gap: 2rem;">
     <!-- Top Bar -->
     <div style="display: flex; align-items: center; justify-content: space-between;">
-        <a href="/admin" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
+        <a href="/admin" class="peak-btn peak-btn-brand-soft" style="font-size: 0.75rem;">
             {{ template "icon-arrow-back" }}
-            Volver al Panel
+            Volver a aplicaciones
         </a>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <a href="/admin/apps/{{.App.AppID}}/edit" title="Editar Aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
+            <a href="/admin/apps/{{.App.AppID}}/edit" title="Editar aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
                 {{ template "icon-edit" }}
                 Editar
             </a>
             {{ if and (ne .App.AppID "peak-auth") .IsRoot }}
             <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" style="margin: 0; display: flex;">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                <button type="button" onclick="confirmDeleteApp()" title="Eliminar Aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--rose-600);">
+                <button type="button" data-action="delete-app" title="Eliminar aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--rose-600);">
                     {{template "icon-delete"}}
                     Eliminar
                 </button>
             </form>
             {{ end }}
-            <a href="/admin/apps/{{.App.AppID}}/users" title="Gestionar Usuarios" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--brand-600);">
+            <a href="/admin/apps/{{.App.AppID}}/users" title="Gestionar usuarios" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--brand-600);">
                 {{ template "icon-users" }}
                 Usuarios ({{.UserCount}})
             </a>
@@ -68,7 +68,7 @@
                         <div style="position: relative; flex-grow: 1;">
                             <input type="password" readonly value="********************************" autocomplete="new-password" data-bwignore data-1p-ignore style="width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--slate-400); outline: none;">
                         </div>
-                        <button onclick="openRevokeModal()" class="icon-btn icon-btn-danger" style="padding: 0.75rem;" title="Revocar Secreto" aria-label="Revocar Secreto">
+                        <button type="button" data-action="revoke-secret" class="icon-btn icon-btn-danger" style="padding: 0.75rem;" title="Revocar Secreto" aria-label="Revocar Secreto">
                             {{template "icon-reload"}}
                         </button>
                     </div>
@@ -79,30 +79,30 @@
 
         <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); letter-spacing: -0.025em;">Políticas de Seguridad</h2>
+                <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); letter-spacing: -0.025em;">Políticas de seguridad</h2>
                 <p style="font-size: 0.875rem; font-weight: 500; color: var(--text-muted);">Configuración actual de seguridad y del motor de reglas</p>
             </div>
 
             <!-- Tabs Navigation -->
             <div style="border-bottom: 1px solid var(--border-light);">
                 <nav style="display: flex; gap: 1.5rem; margin-bottom: -1px; overflow-x: auto; user-select: none;" aria-label="Tabs">
-                    <button onclick="switchTab('registro')" id="tab_registro" class="settings-tab-btn active-tab">
+                    <button type="button" data-tab="registro" id="tab_registro" class="settings-tab-btn active-tab">
                         {{ template "icon-user-add" }}
                         Registro
                     </button>
-                    <button onclick="switchTab('accesos')" id="tab_accesos" class="settings-tab-btn">
+                    <button type="button" data-tab="accesos" id="tab_accesos" class="settings-tab-btn">
                         {{ template "icon-lock" }}
                         Accesos
                     </button>
-                    <button onclick="switchTab('sesiones')" id="tab_sesiones" class="settings-tab-btn">
+                    <button type="button" data-tab="sesiones" id="tab_sesiones" class="settings-tab-btn">
                         <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1em; height: 1em;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         Sesiones
                     </button>
-                    <button onclick="switchTab('autorizacion')" id="tab_autorizacion" class="settings-tab-btn">
+                    <button type="button" data-tab="autorizacion" id="tab_autorizacion" class="settings-tab-btn">
                         {{ template "icon-shield" }}
                         Autorización
                     </button>
-                    <button onclick="switchTab('mfa')" id="tab_mfa" class="settings-tab-btn">
+                    <button type="button" data-tab="mfa" id="tab_mfa" class="settings-tab-btn">
                         <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1em; height: 1em;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                         MFA
                     </button>
@@ -121,31 +121,10 @@
     </div>
 </div>
 
-<!-- Revoke Secret Modal -->
-<div id="revokeModal" class="hidden" style="position: fixed; inset: 0; z-index: 100;">
-    <div style="position: absolute; inset: 0; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);" id="revokeModalBackdrop" onclick="closeRevokeModal()"></div>
-    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; position: relative; z-index: 10;">
-        <div class="peak-card" style="width: 100%; max-width: 28rem; padding: 2rem; box-shadow: var(--shadow-xl);">
-            <div style="width: 4rem; height: 4rem; border-radius: 1rem; background-color: var(--rose-50); color: var(--rose-600); display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                {{ template "icon-warning" }}
-            </div>
-            <h3 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin-bottom: 0.75rem;">¿Regenerar Secreto?</h3>
-            <p style="font-size: 0.875rem; line-height: 1.625; color: var(--text-muted); margin-bottom: 2rem;">Esta acción invalidará el secreto actual <strong>de inmediato</strong>. Cualquier aplicación que use las credenciales antiguas dejará de autenticarse.</p>
-
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <form action="/admin/apps/{{.App.AppID}}/secret" method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                    <button type="submit" class="peak-btn peak-btn-block" style="background-color: var(--rose-600); color: white; padding: 1rem;">
-                        Sí, Regenerar Ahora
-                    </button>
-                </form>
-                <button onclick="closeRevokeModal()" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem;">
-                    Cancelar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Formulario para regenerar secreto (disparado vía peakConfirm en openRevokeModal) -->
+<form id="revokeSecretForm" action="/admin/apps/{{.App.AppID}}/secret" method="POST" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+</form>
 
 {{ end }}
 

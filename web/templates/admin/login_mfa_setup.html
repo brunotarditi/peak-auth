@@ -8,7 +8,7 @@
     <script src="{{ js "config.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ js "modal.js" }}"></script>
     <script src="{{ js "common.js" }}"></script>
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
 </head>
@@ -24,8 +24,8 @@
             <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; border-radius: 1rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 1rem; border: 1px solid var(--border-light);">
                 <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
             </div>
-            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Acceso Restringido</h1>
-            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Por política de seguridad, debes configurar el Segundo Factor (MFA) obligatoriamente antes de continuar.</p>
+            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Acceso restringido</h1>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Por política de seguridad, debes configurar el segundo factor (MFA) obligatoriamente antes de continuar.</p>
         </div>
 
         <div class="glass-panel" style="padding: 2rem;">
@@ -37,7 +37,7 @@
             {{ end }}
 
             <div id="totp-setup-container" style="text-align: center;">
-                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">1. App de Autenticación</h3>
+                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">1. App de autenticación</h3>
                 <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Escanea el código QR con Google Authenticator o Authy.</p>
                 <div id="qr-code-box" style="display: flex; justify-content: center; align-items: center; min-height: 200px; background-color: white; padding: 1rem; border-radius: var(--radius-xl); border: 1px solid var(--slate-200); margin-bottom: 1rem;">
                     <div style="color: var(--text-muted);">Cargando QR...</div>

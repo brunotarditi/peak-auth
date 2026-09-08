@@ -8,7 +8,7 @@
     <script src="{{ js "config.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ js "modal.js" }}"></script>
     <script src="{{ js "common.js" }}"></script>
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
 </head>
@@ -23,11 +23,11 @@
         <div style="text-align: center; margin-bottom: 2.5rem;">
             <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="height: 4rem; margin: 0 auto 1rem;">
             <h1 style="font-size: 2.25rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Peak <span style="color: var(--brand-600);">Auth</span></h1>
-            <p style="color: var(--text-muted); margin-top: 0.5rem; font-weight: 500;">Verificación de Doble Factor</p>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-weight: 500;">Verificación de dos pasos (MFA)</p>
         </div>
 
         <div class="glass-panel">
-            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">Seguridad de la Cuenta</h2>
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">Seguridad de la cuenta</h2>
             <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2rem; font-weight: 500; line-height: 1.625;">
                 Su cuenta está protegida con verificación de doble factor. Ingrese el código de su aplicación authenticator o un código de recuperación.
             </p>

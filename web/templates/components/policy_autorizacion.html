@@ -7,7 +7,7 @@
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Administra cómo se aplican los roles y permisos en la aplicación.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
-        <button onclick="toggleEdit('authz', 'emerald')" id="btn_edit_authz" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+        <button type="button" data-action="toggle-edit" data-section="authz" id="btn_edit_authz" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
             <span>Editar</span>
             <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
@@ -29,7 +29,7 @@
                     </span>
                 </div>
                 <div>
-                    <input type="checkbox" id="authz_enable_roles" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} onchange="updateAuthz()" {{ if .AuthzPolicy.EnableRoles }}checked{{ end }} style="width: 1.25rem; height: 1.25rem; accent-color: var(--brand-600); cursor: pointer;">
+                    <input type="checkbox" id="authz_enable_roles" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} data-policy="authz" {{ if .AuthzPolicy.EnableRoles }}checked{{ end }} style="width: 1.25rem; height: 1.25rem; accent-color: var(--brand-600); cursor: pointer;">
                 </div>
             </div>
         </div>

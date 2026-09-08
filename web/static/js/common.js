@@ -112,36 +112,21 @@ async function copyToClipboard(text, btn) {
  * @returns {Promise<boolean>}
  */
 async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'danger' }) {
-    const palette = window.PeakPalette || { error: '#b91c1c', warning: '#e5e843', secondary: '#3075ad', cancel: '#64748b' };
-    
-    const colorMap = {
-        danger: { confirm: palette.error, iconColor: palette.error },
-        warning: { confirm: palette.warning, iconColor: palette.warning },
-        info: { confirm: palette.secondary, iconColor: palette.secondary }
-    };
-    const colors = colorMap[type] || colorMap.danger;
+    const isDanger = type === 'danger';
+    const confirmBtnClass = isDanger ? 'peak-btn peak-modal-btn-danger' : 'peak-btn peak-btn-primary';
 
-    const themeConfig = window.getPeakThemeConfig ? window.getPeakThemeConfig() : { background: '#fff', color: '#0f172a' };
-
-    const result = await Swal.fire({
+    const result = await PeakModal.fire({
         title: title,
         text: text,
-        icon: type === 'danger' ? 'warning' : type,
+        icon: isDanger ? 'danger' : type,
         showCancelButton: true,
         confirmButtonText: confirmText,
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: colors.confirm,
-        cancelButtonColor: palette.cancel,
-        iconColor: colors.iconColor,
-        background: themeConfig.background,
-        color: themeConfig.color,
         reverseButtons: true,
-        buttonsStyling: false,
         customClass: {
-            popup: 'peak-card',
-            confirmButton: 'peak-btn peak-btn-primary',
-            cancelButton: 'peak-btn peak-btn-secondary',
-            actions: 'swal2-actions-custom'
+            confirmButton: confirmBtnClass,
+            cancelButton: 'peak-btn peak-modal-btn-cancel',
+            actions: 'peak-modal-actions'
         }
     });
 
@@ -155,27 +140,13 @@ async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'dan
  * @param {string} icon - 'error' | 'success' | 'info' | 'warning'
  */
 function peakAlert(title, text, icon = 'error') {
-    const palette = window.PeakPalette || { error: '#b91c1c', warning: '#e5e843', secondary: '#3075ad', success: '#10b981' };
-    const colorMap = {
-        error: palette.error,
-        success: palette.success,
-        info: palette.secondary,
-        warning: palette.warning
-    };
-    const themeConfig = window.getPeakThemeConfig ? window.getPeakThemeConfig() : { background: '#fff', color: '#0f172a' };
-
-    Swal.fire({
+    return PeakModal.fire({
         title: title,
         text: text,
         icon: icon,
         confirmButtonText: 'Entendido',
-        confirmButtonColor: colorMap[icon] || palette.secondary,
-        background: themeConfig.background,
-        color: themeConfig.color,
-        buttonsStyling: false,
         customClass: {
-            popup: 'peak-card',
-            confirmButton: 'peak-btn peak-btn-primary'
+            confirmButton: 'peak-btn peak-modal-btn-confirm'
         }
     });
 }
@@ -226,7 +197,7 @@ async function openMfaSettings() {
             if (status.totp_configured) activeMethodsHtml += `<div style="padding: 0.75rem; background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-600); border-radius: var(--radius-xl); font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem;">Autenticador TOTP Activo</div>`;
             if (status.webauthn_configured) activeMethodsHtml += `<div style="padding: 0.75rem; background-color: rgba(8, 61, 105, 0.1); color: var(--brand-600); border-radius: var(--radius-xl); font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem;">Llave de Seguridad (Passkey) Activa</div>`;
             
-            const confirmDisable = await Swal.fire({
+            const confirmDisable = await PeakModal.fire({
                 title: 'Seguridad 2FA Activa',
                 html: `
                     <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Su cuenta está protegida con verificación de doble factor.</p>
@@ -262,7 +233,7 @@ async function openMfaSettings() {
             }
         } else {
             // Seleccionar método de MFA
-            const startSetup = await Swal.fire({
+            const startSetup = await PeakModal.fire({
                 title: 'Activar Seguridad 2FA',
                 html: `
                     <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">Elija el método que desea usar para su segundo factor:</p>
@@ -321,7 +292,7 @@ async function setupTotp(palette, themeConfig) {
         ? setupData.qr_code 
         : '';
 
-    const verifyCode = await Swal.fire({
+    const verifyCode = await PeakModal.fire({
         title: 'Escanear Código QR',
         html: `
             <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Escanee el código QR con su aplicación.</p>
@@ -407,7 +378,7 @@ async function showRecoveryCodes(codes, palette, themeConfig) {
     const rawCodes = Array.isArray(codes) ? codes.join('\n') : '';
     const recoveryHtml = safeCodes.map(c => `<div style="background-color: var(--bg-surface-secondary); padding: 0.5rem; border-radius: var(--radius); font-family: monospace; font-size: 0.875rem; border: 1px solid var(--border-light);">${c}</div>`).join('');
     
-    await Swal.fire({
+    await PeakModal.fire({
         title: '¡MFA Activado!',
         html: `
             <p style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-muted);">Guarde estos códigos de recuperación en un lugar seguro:</p>
