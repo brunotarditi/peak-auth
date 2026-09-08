@@ -111,6 +111,29 @@
     background-color: var(--slate-700);
 }
 
+.peak-btn-brand-soft {
+    background-color: var(--brand-50);
+    color: var(--brand-600);
+    border-color: var(--brand-200);
+}
+
+.dark .peak-btn-brand-soft {
+    background-color: rgba(37, 99, 235, 0.15);
+    color: var(--brand-300);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.peak-btn-brand-soft:hover {
+    background-color: var(--brand-100);
+    color: var(--brand-700);
+    transform: translateY(-1px);
+}
+
+.dark .peak-btn-brand-soft:hover {
+    background-color: rgba(37, 99, 235, 0.25);
+    color: var(--brand-200);
+}
+
 .peak-btn-danger {
     background-color: var(--rose-50);
     color: var(--rose-600);

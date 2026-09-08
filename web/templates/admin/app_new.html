@@ -2,7 +2,7 @@
 <div style="max-width: 48rem; margin: 0 auto;">
     <div class="peak-card">
         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
-            <a href="/admin" class="icon-btn" style="border: 1px solid var(--border-color);">
+            <a href="/admin" class="icon-btn" style="border: 1px solid var(--border-color);" title="Volver a aplicaciones" aria-label="Volver a aplicaciones">
                 {{ template "icon-arrow-back" }}
             </a>
             <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main);">{{ .Title }}</h2>
@@ -35,7 +35,7 @@
             </div>
 
             <div style="margin-bottom: 0;" class="form-group">
-                <label class="form-label" for="redirect_url">URL de Redirección (OAuth 2.0 Callback)</label>
+                <label class="form-label" for="redirect_url">URL de redirección (OAuth 2.0 callback)</label>
                 <input type="text" id="redirect_url" name="redirect_url" value="{{ if .App }}{{ .App.RedirectURL }}{{ end }}" placeholder="Ej: http://localhost:4200/auth/callback" class="peak-input">
                 <p style="font-size: 0.75rem; color: var(--text-light); font-weight: 500; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
                     <span style="color: var(--brand-500);">{{ template "icon-info" }}</span>

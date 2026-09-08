@@ -7,7 +7,7 @@
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Define la complejidad requerida para las contraseñas de tus usuarios.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
-        <button onclick="toggleEdit('pwd', 'rose')" id="btn_edit_pwd" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+        <button type="button" data-action="toggle-edit" data-section="pwd" id="btn_edit_pwd" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
             <span>Editar</span>
             <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
@@ -24,7 +24,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-lg);">
                     <input type="number" autocomplete="new-password" data-bwignore data-1p-ignore
-                        id="pwd_min_length" onchange="updatePassword()" value="{{ .PwdPolicy.MinLength }}"
+                        id="pwd_min_length" data-policy="password" value="{{ .PwdPolicy.MinLength }}"
                         {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
                         style="width: 2.5rem; text-align: right; background: transparent; font-weight: 900; color: var(--text-main); outline: none; border: none; font-size: 0.75rem;">
                     <span style="font-size: 0.75rem; font-weight: 900; color: var(--text-muted);">Car.</span>
@@ -41,17 +41,17 @@
                     <!-- Tailwind toggle classes removed in favor of direct JS class toggling or explicit styles -->
                     <!-- We use standard checkboxes for simplicity in vanilla CSS instead of pill toggles to avoid complex JS logic here -->
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="pwd_require_uppercase" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireUppercase }}checked{{ end }} class="peak-checkbox">
+                        <input type="checkbox" id="pwd_require_uppercase" data-policy="password" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireUppercase }}checked{{ end }} class="peak-checkbox">
                         <label for="pwd_require_uppercase" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Mayús</label>
                     </div>
                     
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="pwd_require_numbers" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireNumbers }}checked{{ end }} class="peak-checkbox">
+                        <input type="checkbox" id="pwd_require_numbers" data-policy="password" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireNumbers }}checked{{ end }} class="peak-checkbox">
                         <label for="pwd_require_numbers" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Núms</label>
                     </div>
                     
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="pwd_require_symbols" onchange="updatePassword()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireSymbols }}checked{{ end }} class="peak-checkbox">
+                        <input type="checkbox" id="pwd_require_symbols" data-policy="password" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireSymbols }}checked{{ end }} class="peak-checkbox">
                         <label for="pwd_require_symbols" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Símb</label>
                     </div>
                 </div>

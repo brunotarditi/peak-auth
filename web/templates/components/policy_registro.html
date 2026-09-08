@@ -7,7 +7,7 @@
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Controla cómo los nuevos usuarios pueden unirse a tu aplicación.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
-        <button onclick="toggleEdit('reg', 'indigo')" id="btn_edit_reg" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+        <button type="button" data-action="toggle-edit" data-section="reg" id="btn_edit_reg" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
             <span>Editar</span>
             <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
@@ -23,7 +23,7 @@
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Define si la creación de usuarios es pública o restringida a administradores.</span>
                 </div>
                 <div>
-                    <select id="reg_mode" onchange="updateRegistration()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
+                    <select id="reg_mode" data-policy="registration" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
                         class="peak-input" style="padding: 0.5rem 1rem; font-size: 0.75rem; background-color: var(--bg-surface); cursor: pointer; text-transform: uppercase;">
                         {{ if eq .App.AppID "peak-auth" }}
                         <option value="admin_only" selected>Solo Admin</option>
@@ -43,7 +43,7 @@
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Rol que se asigna automáticamente a los nuevos usuarios al registrarse.</span>
                 </div>
                 <div>
-                    <select id="reg_default_role" onchange="updateRegistration()" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
+                    <select id="reg_default_role" data-policy="registration" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
                         class="peak-input" style="padding: 0.5rem 1rem; font-size: 0.75rem; background-color: var(--bg-surface); cursor: pointer; text-transform: uppercase;">
                         {{ if eq .App.AppID "peak-auth" }}
                         <option value="ADMIN" selected>ADMIN</option>
@@ -67,7 +67,7 @@
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Exigir a los usuarios confirmar su correo mediante un token antes de poder iniciar sesión.</span>
                 </div>
                 <div>
-                    <input type="checkbox" id="reg_require_email_verification" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} onchange="updateRegistration()" {{ if .RegPolicy.RequireEmailVerification }}checked{{ end }} style="width: 1.25rem; height: 1.25rem; accent-color: var(--brand-600); cursor: pointer;">
+                    <input type="checkbox" id="reg_require_email_verification" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} data-policy="registration" {{ if .RegPolicy.RequireEmailVerification }}checked{{ end }} style="width: 1.25rem; height: 1.25rem; accent-color: var(--brand-600); cursor: pointer;">
                 </div>
             </div>
         </div>

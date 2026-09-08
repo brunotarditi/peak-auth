@@ -1,6 +1,8 @@
+/* Peak Auth UI Stylesheet */
 @import "variables.css";
 @import "reset.css";
 @import "layout.css";
 @import "components.css";
 @import "utilities.css";
 @import "admin.css";
+@import "modal.css";

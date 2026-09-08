@@ -21,7 +21,7 @@ window.PeakPalette = {
 };
 
 /**
- * Retorna la configuración de fondo y texto base (útil para modales como SweetAlert2)
+ * Retorna la configuración de fondo y texto base (útil para diálogos y canvas dinámicos)
  * evaluando si el modo oscuro está activo actualmente.
  */
 window.getPeakThemeConfig = function() {

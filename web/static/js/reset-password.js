@@ -40,14 +40,12 @@
             const text = await response.text();
 
             if (response.ok) {
-                Swal.fire({
-                    title: '¡Cuenta Activada!',
+                PeakModal.fire({
+                    title: '¡Cuenta activada!',
                     text: text,
                     icon: 'success',
                     timer: 3000,
-                    showConfirmButton: false,
-                    background: window.getPeakThemeConfig ? window.getPeakThemeConfig().background : '#fff',
-                    color: window.getPeakThemeConfig ? window.getPeakThemeConfig().color : '#0f172a'
+                    showConfirmButton: false
                 }).then(() => {
                     window.location.href = "/admin/login";
                 });

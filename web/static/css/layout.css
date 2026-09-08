@@ -86,6 +86,11 @@
     color: var(--text-main);
 }
 
+.navbar-logo-text .brand-accent,
+.navbar-logo-text span {
+    color: var(--brand-600);
+}
+
 .navbar-breadcrumbs {
     display: none;
     align-items: center;

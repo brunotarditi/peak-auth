@@ -8,7 +8,7 @@
     <title>Configuración de Seguridad - Peak Auth</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/static/js/modal.js"></script>
     <script src="/static/js/common.js"></script>
 </head>
 
@@ -89,14 +89,13 @@
     </form>
 
     <script>
-        const mfaToken = "{{ .MfaToken }}";
         const clientID = "{{ .ClientID }}";
         let generatedCodes = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
             const box = document.getElementById('qr-code-box');
             try {
-                const res = await fetch('/api/v1/login/mfa/totp/setup?mfa_token=' + mfaToken, { 
+                const res = await fetch('/api/v1/login/mfa/totp/setup', { 
                     method: 'POST',
                     headers: { 'X-App-ID': clientID }
                 });
@@ -124,7 +123,7 @@
         async function verifyTotp() {
             const code = document.getElementById('totp-code').value;
             if (!code || code.length !== 6) {
-                Swal.fire('Error', 'Ingresa el código de 6 dígitos', 'error');
+                peakAlert('Error', 'Ingresa el código de 6 dígitos', 'error');
                 return;
             }
 
@@ -134,7 +133,7 @@
                     headers: { 
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ mfa_token: mfaToken, code: code })
+                    body: JSON.stringify({ code: code })
                 });
 
                 const data = await res.json();
@@ -143,13 +142,13 @@
                 generatedCodes = data.recovery_codes || [];
                 showRecoveryCodes(generatedCodes);
             } catch (err) {
-                Swal.fire('Error', err.message, 'error');
+                peakAlert('Error', err.message, 'error');
             }
         }
 
         async function registerWebAuthn() {
             try {
-                const res = await fetch('/api/v1/login/mfa/webauthn/register/begin?mfa_token=' + mfaToken, {
+                const res = await fetch('/api/v1/login/mfa/webauthn/register/begin', {
                     method: 'POST',
                     headers: { 'X-App-ID': clientID }
                 });
@@ -176,7 +175,7 @@
                     headers: { 
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ mfa_token: mfaToken, credential: credentialData })
+                    body: JSON.stringify({ credential: credentialData })
                 });
                 
                 const finishData = await finishRes.json();
@@ -190,7 +189,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                Swal.fire('Error', err.message, 'error');
+                peakAlert('Error', err.message, 'error');
             }
         }
 

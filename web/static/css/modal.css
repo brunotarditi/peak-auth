@@ -1,0 +1,326 @@
+/* ==========================================================================
+    Peak Auth - Native Modal & Alert System (CSS Puro)
+    Senior Front-End Architecture - Zero Dependencies
+   ========================================================================== */
+
+/* Bloqueo de scroll cuando el modal está activo */
+body.peak-modal-open {
+    overflow: hidden !important;
+    touch-action: none;
+}
+
+/* Backdrop / Contenedor general */
+.peak-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.peak-modal-backdrop.peak-modal-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Tarjeta / Cuadro de Diálogo */
+.peak-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 28rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 
+                0 10px 10px -5px rgba(0, 0, 0, 0.08),
+                0 0 0 1px rgba(0, 0, 0, 0.03);
+    padding: 2rem;
+    text-align: center;
+    transform: scale(0.92) translateY(8px);
+    opacity: 0;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+.dark .peak-modal-card {
+    box-shadow: 0 25px 35px -5px rgba(0, 0, 0, 0.6), 
+                0 15px 15px -5px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.peak-modal-backdrop.peak-modal-visible .peak-modal-card {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+.peak-modal-backdrop.peak-modal-closing {
+    opacity: 0;
+}
+
+.peak-modal-backdrop.peak-modal-closing .peak-modal-card {
+    transform: scale(0.94) translateY(6px);
+    opacity: 0;
+}
+
+/* Iconos SVG Vibrantes y Animados */
+.peak-modal-icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 5.5rem;
+    height: 5.5rem;
+    margin: 0 auto 1.5rem auto;
+    position: relative;
+    animation: peak-icon-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.peak-modal-icon-wrapper svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* Animación del halo exterior */
+.icon-pulse-halo,
+.icon-halo {
+    transform-origin: 24px 24px;
+    animation: peak-halo-breathe 2.4s infinite ease-in-out;
+}
+
+/* Halos por tipo */
+.peak-modal-icon-success .icon-halo { fill: rgba(16, 185, 129, 0.22); }
+.peak-modal-icon-error .icon-halo,
+.peak-modal-icon-danger .icon-halo { fill: rgba(244, 63, 94, 0.22); }
+.peak-modal-icon-warning .icon-halo { fill: rgba(245, 158, 11, 0.22); }
+.peak-modal-icon-info .icon-halo { fill: rgba(37, 99, 235, 0.22); }
+.peak-modal-icon-question .icon-halo { fill: rgba(99, 102, 241, 0.22); }
+
+/* Badges centrales por tipo */
+.peak-modal-icon-success .icon-badge {
+    fill: var(--emerald-500);
+    filter: drop-shadow(0 4px 10px rgba(5, 150, 105, 0.38));
+}
+.peak-modal-icon-error .icon-badge,
+.peak-modal-icon-danger .icon-badge {
+    fill: var(--rose-500);
+    filter: drop-shadow(0 4px 10px rgba(225, 29, 72, 0.38));
+}
+.peak-modal-icon-warning .icon-badge {
+    fill: #f59e0b;
+    filter: drop-shadow(0 4px 10px rgba(217, 119, 6, 0.38));
+}
+.peak-modal-icon-info .icon-badge {
+    fill: var(--brand-500);
+    filter: drop-shadow(0 4px 10px rgba(37, 99, 235, 0.38));
+}
+.peak-modal-icon-question .icon-badge {
+    fill: #6366f1;
+    filter: drop-shadow(0 4px 10px rgba(79, 70, 229, 0.38));
+}
+
+/* Glifos / Trazos internos */
+.peak-modal-icon-wrapper .icon-glyph {
+    stroke: #ffffff;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+@keyframes peak-halo-breathe {
+    0%, 100% {
+        transform: scale(0.94);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.06);
+        opacity: 1;
+    }
+}
+
+@keyframes peak-icon-pop {
+    0% {
+        transform: scale(0.5) translateY(10px);
+        opacity: 0;
+    }
+    70% {
+        transform: scale(1.08) translateY(-2px);
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+
+/* Tipografía del Modal */
+.peak-modal-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.025em;
+    margin: 0 0 0.75rem 0;
+    line-height: 1.3;
+}
+
+.peak-modal-content {
+    font-size: 0.925rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 0 0 1.75rem 0;
+    word-break: break-word;
+}
+
+.peak-modal-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Botones de Acción */
+.peak-modal-actions,
+.swal2-actions-custom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.875rem;
+    width: 100%;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.peak-modal-actions.peak-modal-actions-reverse {
+    flex-direction: row-reverse;
+}
+
+/* Botón Confirmar Modal */
+.peak-modal-btn-confirm {
+    background-color: var(--brand-600);
+    color: var(--white);
+    box-shadow: var(--shadow-md);
+    min-width: 6.5rem;
+}
+
+.peak-modal-btn-confirm:hover {
+    background-color: var(--brand-700);
+    transform: translateY(-1px);
+}
+
+/* Botón Cancelar Modal */
+.peak-modal-btn-cancel {
+    background-color: var(--slate-100);
+    color: var(--slate-700);
+    border-color: var(--slate-200);
+    min-width: 6.5rem;
+}
+
+.dark .peak-modal-btn-cancel {
+    background-color: var(--slate-800);
+    color: var(--slate-200);
+    border-color: var(--slate-700);
+}
+
+.peak-modal-btn-cancel:hover {
+    background-color: var(--slate-200);
+}
+
+.dark .peak-modal-btn-cancel:hover {
+    background-color: var(--slate-700);
+}
+
+/* Botón de Peligro */
+.peak-modal-btn-danger {
+    background-color: var(--rose-600) !important;
+    color: var(--white) !important;
+}
+
+.peak-modal-btn-danger:hover {
+    background-color: var(--rose-700) !important;
+}
+
+/* Barra de progreso de temporizador */
+.peak-modal-timer-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--brand-500), var(--brand-600));
+    border-bottom-left-radius: var(--radius-2xl);
+    width: 100%;
+    transform-origin: left;
+    transition: width linear;
+}
+
+/* Keyframe Animations */
+@keyframes peak-stroke {
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes peak-pop {
+    0% {
+        transform: scale(0.6);
+        opacity: 0;
+    }
+    70% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes peak-bounce {
+    0% {
+        transform: translateY(-12px) scale(0.9);
+        opacity: 0;
+    }
+    60% {
+        transform: translateY(3px) scale(1.02);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes peak-shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    20%, 60% {
+        transform: translateX(-6px);
+    }
+    40%, 80% {
+        transform: translateX(6px);
+    }
+}
+
+/* Soporte responsive */
+@media (max-width: 480px) {
+    .peak-modal-card {
+        padding: 1.5rem 1.25rem;
+    }
+    .peak-modal-actions {
+        flex-direction: column-reverse;
+        gap: 0.625rem;
+    }
+    .peak-modal-actions.peak-modal-actions-reverse {
+        flex-direction: column;
+    }
+    .peak-modal-actions .peak-btn {
+        width: 100%;
+    }
+}

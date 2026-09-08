@@ -6,7 +6,7 @@
             <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Políticas de Sesión (JWT)</h3>
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Controla la vigencia de los tokens de sesión y bloqueos en login.</p>
         </div>
-        <button onclick="toggleEdit('session', 'amber')" id="btn_edit_session" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+        <button type="button" data-action="toggle-edit" data-section="session" id="btn_edit_session" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
             <span>Editar</span>
             <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
@@ -22,7 +22,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-lg);">
                     <input type="number" min="1" autocomplete="off" id="session_expiration"
-                        onchange="updateSession()" value="{{ .SessionPolicy.TokenExpirationMinutes }}"
+                        data-policy="session" value="{{ .SessionPolicy.TokenExpirationMinutes }}"
                         style="width: 3rem; text-align: right; background: transparent; font-weight: 900; color: var(--text-main); outline: none; border: none; font-size: 0.75rem;">
                     <span style="font-size: 0.75rem; font-weight: 900; color: var(--text-muted);">mins</span>
                 </div>
@@ -36,7 +36,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-lg);">
                     <input type="number" min="1" max="10" autocomplete="off" id="session_max_failed"
-                        onchange="updateSession()" value="{{ .SessionPolicy.MaxFailedLogins }}"
+                        data-policy="session" value="{{ .SessionPolicy.MaxFailedLogins }}"
                         style="width: 2.5rem; text-align: right; background: transparent; font-weight: 900; color: var(--text-main); outline: none; border: none; font-size: 0.75rem;">
                     <span style="font-size: 0.75rem; font-weight: 900; color: var(--text-muted);">intentos</span>
                 </div>
