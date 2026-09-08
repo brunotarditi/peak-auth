@@ -11,7 +11,7 @@ import (
 )
 
 func parseUserIDFromSubject(sub string) (uint, error) {
-	val, err := strconv.ParseUint(sub, 10, 64)
+	val, err := strconv.ParseUint(sub, 10, strconv.IntSize)
 	if err != nil || val == 0 {
 		return 0, fmt.Errorf("identificador de usuario inválido en token")
 	}
