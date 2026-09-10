@@ -2,7 +2,9 @@ package auth
 
 import (
 	"crypto/rsa"
+	"encoding/base64"
 	"fmt"
+	"math/big"
 	"os"
 	"strings"
 	"time"
@@ -18,6 +20,9 @@ func tokenIssuer() string {
 	}
 	return "peak-auth"
 }
+
+// defaultKeyID identifica la clave activa utilizada para la firma de JWTs y en el JWKS.
+const defaultKeyID = "peak-auth-key-1"
 
 // JWTManager gestiona la generación y validación de tokens JWT.
 type JWTManager struct {
@@ -77,6 +82,7 @@ func (m *JWTManager) GenerateToken(userID uint, username string, appID string, r
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = defaultKeyID
 	return token.SignedString(m.privateKey)
 }
 
@@ -144,6 +150,7 @@ func (m *JWTManager) GenerateMFAPendingToken(userID uint, username string, appID
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = defaultKeyID
 	return token.SignedString(m.privateKey)
 }
 
@@ -157,4 +164,26 @@ func (m *JWTManager) VerifyMFAPendingToken(tokenString string, expectedAppID str
 		return nil, fmt.Errorf("token inválido para verificación MFA")
 	}
 	return claims, nil
+}
+// GetJWKS devuelve la clave pública en formato JSON Web Key Set (RFC 7517)
+func (m *JWTManager) GetJWKS() map[string]interface{} {
+	if m.publicKey == nil {
+		return map[string]interface{}{"keys": []interface{}{}}
+	}
+
+	n := base64.RawURLEncoding.EncodeToString(m.publicKey.N.Bytes())
+	e := base64.RawURLEncoding.EncodeToString(big.NewInt(int64(m.publicKey.E)).Bytes())
+
+	return map[string]interface{}{
+		"keys": []map[string]interface{}{
+			{
+				"kty": "RSA",
+				"alg": "RS256",
+				"use": "sig",
+				"kid": defaultKeyID,
+				"n":   n,
+				"e":   e,
+			},
+		},
+	}
 }

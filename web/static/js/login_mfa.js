@@ -13,8 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnWebAuthn.disabled = true;
                 btnWebAuthn.innerHTML = '<span>Verificando...</span>';
 
-                const beginRes = await fetch('/admin/login/mfa/webauthn/begin?mfa_token=' + encodeURIComponent(mfaToken), {
-                    method: 'GET'
+                const beginHeaders = {};
+                if (mfaToken) {
+                    beginHeaders['Authorization'] = 'Bearer ' + mfaToken;
+                }
+
+                const beginRes = await fetch('/admin/login/mfa/webauthn/begin', {
+                    method: 'GET',
+                    headers: beginHeaders
                 });
 
                 if (!beginRes.ok) {
@@ -44,12 +50,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
 
-                const finishRes = await fetch('/admin/login/mfa/webauthn/finish?mfa_token=' + encodeURIComponent(mfaToken), {
+                const finishHeaders = {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                };
+                if (mfaToken) {
+                    finishHeaders['Authorization'] = 'Bearer ' + mfaToken;
+                }
+
+                const finishRes = await fetch('/admin/login/mfa/webauthn/finish', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken
-                    },
+                    headers: finishHeaders,
                     body: JSON.stringify(authData)
                 });
 

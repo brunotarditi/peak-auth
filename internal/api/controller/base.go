@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"peak-auth/internal/util"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,7 +47,7 @@ func (ctrl *BaseController) clearMfaCookie(c *gin.Context) {
 	c.SetCookie("mfa_pending_token", "", -1, "/", "", isSecure, true)
 }
 
-// extractMfaToken obtiene el token MFA pendiente desde la cookie HttpOnly, el formulario, el query param o cabecera
+// extractMfaToken obtiene el token MFA pendiente desde la cookie HttpOnly, el formulario o la cabecera Authorization (evitando URLs/query params por seguridad)
 func (ctrl *BaseController) extractMfaToken(c *gin.Context) string {
 	if cookie, err := c.Cookie("mfa_pending_token"); err == nil && cookie != "" {
 		return cookie
@@ -54,12 +55,9 @@ func (ctrl *BaseController) extractMfaToken(c *gin.Context) string {
 	if form := c.PostForm("mfa_token"); form != "" {
 		return form
 	}
-	if query := c.Query("mfa_token"); query != "" {
-		return query
-	}
 	auth := c.GetHeader("Authorization")
-	if len(auth) > 7 && auth[:7] == "Bearer " {
-		return auth[7:]
+	if len(auth) > 7 && strings.EqualFold(auth[:7], "bearer ") {
+		return strings.TrimSpace(auth[7:])
 	}
 	return ""
 }

@@ -7,6 +7,8 @@ import (
 	"encoding/pem"
 	"testing"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // newTestManager construye un JWTManager con una clave RSA efímera para tests.
@@ -101,3 +103,52 @@ func TestMFAPendingToken(t *testing.T) {
 		t.Fatal("VerifyMFAPendingToken debería rechazar un token normal")
 	}
 }
+
+func TestGetJWKS_And_TokenKidHeader(t *testing.T) {
+	m := newTestManager(t)
+
+	// 1. Verificar que el token emitido incluya el header "kid" correspondiente
+	tok, err := m.GenerateToken(10, "admin@example.com", "app-test", []string{"ADMIN"}, time.Hour, true)
+	if err != nil {
+		t.Fatalf("GenerateToken falló: %v", err)
+	}
+
+	parser := jwt.NewParser()
+	parsedToken, _, err := parser.ParseUnverified(tok, &CustomClaims{})
+	if err != nil {
+		t.Fatalf("no se pudo parsear el token: %v", err)
+	}
+
+	kid, ok := parsedToken.Header["kid"].(string)
+	if !ok || kid != defaultKeyID {
+		t.Fatalf("se esperaba kid '%s' en el header del token, obtenido: '%v'", defaultKeyID, parsedToken.Header["kid"])
+	}
+
+	// 2. Verificar estructura y contenido del JWKS (RFC 7517)
+	jwks := m.GetJWKS()
+	keys, ok := jwks["keys"].([]map[string]interface{})
+	if !ok || len(keys) != 1 {
+		t.Fatalf("se esperaba un array 'keys' con 1 elemento, obtenido: %+v", jwks)
+	}
+
+	firstKey := keys[0]
+	if firstKey["kty"] != "RSA" {
+		t.Errorf("se esperaba kty 'RSA', obtenido: %v", firstKey["kty"])
+	}
+	if firstKey["alg"] != "RS256" {
+		t.Errorf("se esperaba alg 'RS256', obtenido: %v", firstKey["alg"])
+	}
+	if firstKey["use"] != "sig" {
+		t.Errorf("se esperaba use 'sig', obtenido: %v", firstKey["use"])
+	}
+	if firstKey["kid"] != defaultKeyID {
+		t.Errorf("se esperaba kid '%s', obtenido: %v", defaultKeyID, firstKey["kid"])
+	}
+	if n, ok := firstKey["n"].(string); !ok || n == "" {
+		t.Errorf("módulo 'n' inválido o vacío: %v", firstKey["n"])
+	}
+	if e, ok := firstKey["e"].(string); !ok || e == "" {
+		t.Errorf("exponente 'e' inválido o vacío: %v", firstKey["e"])
+	}
+}
+
