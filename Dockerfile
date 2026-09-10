@@ -5,7 +5,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o peak-auth
 
-FROM alpine:3.21
+FROM gcr.io/distroless/static-debian12:nonroot1
 # Certificados CA (para llamadas HTTPS salientes, p. ej. Resend) y zona horaria.
 RUN apk add --no-cache tzdata ca-certificates && \
     adduser -D -H -u 10001 appuser
@@ -19,9 +19,9 @@ COPY --from=builder /app/web/static ./web/static
 # Ejecutar como usuario sin privilegios.
 USER appuser
 
-EXPOSE 8080
+EXPOSE 9009
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/setup || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:9009/setup || exit 1
 
 CMD ["./peak-auth"]
