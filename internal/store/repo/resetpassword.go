@@ -46,7 +46,11 @@ func (r *passwordReset) FindValidPasswordReset(plainToken string) (*model.Passwo
 }
 
 func (r *passwordReset) UpdatePassword(userID uint, hashed string) error {
-	return r.db.Model(&model.User{}).Where("id = ?", userID).UpdateColumn("password", hashed).Error
+	now := time.Now()
+	return r.db.Model(&model.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
+		"password":            hashed,
+		"password_changed_at": &now,
+	}).Error
 }
 
 func (r *passwordReset) MarkPasswordResetUsed(resetID uint, usedAt time.Time) error {

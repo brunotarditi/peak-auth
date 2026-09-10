@@ -17,6 +17,7 @@ type ApplicationService interface {
 	RegenerateSecret(appID string) (string, error)
 	RegisterUserInApp(userEmail, roleName string, app *model.Application) error
 	RevokeUserFromApp(userID, appID uint) error
+	IsRootUser(userID, appID uint) bool
 	GetAppDetails(appID string) (model.Application, error)
 	DeleteApp(appID string) error
 	GetDashboardStats() ([]response.AppStatsResponse, error)
@@ -24,17 +25,18 @@ type ApplicationService interface {
 }
 
 type applicationService struct {
-	repo         repo.ApplicationRepository
-	userRepo     repo.UserRepository
-	roleRepo     repo.RoleRepository
-	uarRepo      repo.UserApplicationRoleRepository
-	txManager    repo.TransactionManager
-	emailService *EmailService
-	passRepo     repo.PasswordResetRepository
+	repo             repo.ApplicationRepository
+	userRepo         repo.UserRepository
+	roleRepo         repo.RoleRepository
+	uarRepo          repo.UserApplicationRoleRepository
+	txManager        repo.TransactionManager
+	emailService     *EmailService
+	passRepo         repo.PasswordResetRepository
+	refreshTokenRepo repo.RefreshTokenRepository
 }
 
-func NewApplicationService(repo repo.ApplicationRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, txManager repo.TransactionManager, emailService *EmailService, passRepo repo.PasswordResetRepository) ApplicationService {
-	return &applicationService{repo: repo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo}
+func NewApplicationService(repo repo.ApplicationRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, txManager repo.TransactionManager, emailService *EmailService, passRepo repo.PasswordResetRepository, refreshTokenRepo repo.RefreshTokenRepository) ApplicationService {
+	return &applicationService{repo: repo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo, refreshTokenRepo: refreshTokenRepo}
 }
 
 func (s *applicationService) CreateApp(name, description, redirectURL string, isActive bool) (model.Application, string, error) {
@@ -159,8 +161,34 @@ func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *
 	})
 }
 
+func (s *applicationService) IsRootUser(userID, appID uint) bool {
+	roles, err := s.uarRepo.GetUserRolesInApp(userID, appID)
+	if err != nil {
+		return false
+	}
+	for _, r := range roles {
+		if strings.EqualFold(r, "ROOT") {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *applicationService) RevokeUserFromApp(userID, appID uint) error {
-	return s.uarRepo.RevokeAccess(userID, appID)
+	app, err := s.repo.FindByID(appID)
+	if err == nil && app.AppID == util.AppIdPeakAuth {
+		if s.IsRootUser(userID, appID) {
+			return fmt.Errorf("no se puede revocar el acceso al usuario ROOT de la plataforma")
+		}
+	}
+
+	if err := s.uarRepo.RevokeAccess(userID, appID); err != nil {
+		return err
+	}
+	if s.refreshTokenRepo != nil {
+		_ = s.refreshTokenRepo.DeleteByUserAndApp(userID, appID)
+	}
+	return nil
 }
 
 func (s *applicationService) GetAppDetails(publicAppID string) (model.Application, error) {

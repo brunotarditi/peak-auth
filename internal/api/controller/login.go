@@ -257,6 +257,9 @@ func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
 		return
 	}
 
+	// Invalida el desafío WebAuthn para prevenir reuso (single-use challenge)
+	service.DeleteWebAuthnSession(sessionKey)
+
 	// Completar login admin
 	token, expireMinutes, err := ctrl.UserService.CompleteAdminLoginWithMfa(userID)
 	if err != nil {

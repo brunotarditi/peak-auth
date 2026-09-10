@@ -18,6 +18,7 @@ type App struct {
 	AppService   service.ApplicationService
 	SetupService service.SetupService
 	RuleService  service.ApplicationRuleService
+	UserRepo     repo.UserRepository
 	UarRepo      repo.UserApplicationRoleRepository
 	AppRepo      repo.ApplicationRepository
 	TokenManager *auth.JWTManager
@@ -53,7 +54,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	ruleService := service.NewApplicationRuleService(ruleRepo, uarRepo, roleRepo, appRepo)
 
 	emailService := service.NewEmailService()
-	appService := service.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo)
+	appService := service.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo, refreshRepo)
 	mfaService := service.NewMfaService(mfaRepo, userRepo)
 	userService := service.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo, emailService, refreshRepo, txManager)
 	setupService := service.NewSetupService(setupRepo, setupToken, txManager)
@@ -70,6 +71,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 		SetupService: setupService,
 		RuleService:  ruleService,
 		TokenManager: jwtManager,
+		UserRepo:     userRepo,
 		UarRepo:      uarRepo,
 		AppRepo:      appRepo,
 		RoleService:  roleService,

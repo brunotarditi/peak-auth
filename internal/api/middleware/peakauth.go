@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"peak-auth/internal/auth"
+	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
 	"strconv"
 	"strings"
@@ -10,7 +12,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(manager *auth.JWTManager) gin.HandlerFunc {
+func AuthMiddleware(manager *auth.JWTManager, userRepo ...repo.UserRepository) gin.HandlerFunc {
+	var uRepo repo.UserRepository
+	if len(userRepo) > 0 {
+		uRepo = userRepo[0]
+	}
+
 	return func(c *gin.Context) {
 		token := extractToken(c)
 
@@ -36,6 +43,21 @@ func AuthMiddleware(manager *auth.JWTManager) gin.HandlerFunc {
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "token con formato inválido"})
 			return
+		}
+
+		if uRepo != nil {
+			user, err := uRepo.FindById(uint(userID))
+			if err != nil || !user.IsActive {
+				handleUnauthorized(c)
+				return
+			}
+			// Si la contraseña fue restablecida con posterioridad a la emisión del token, invalidarlo
+			if user.PasswordChangedAt != nil && jsonToken.IssuedAt != nil {
+				if jsonToken.IssuedAt.Time.Before(*user.PasswordChangedAt) {
+					handleAuthError(c, fmt.Errorf("token invalidado por cambio de contraseña"))
+					return
+				}
+			}
 		}
 
 		c.Set("user_id", uint(userID))
