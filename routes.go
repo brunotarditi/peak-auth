@@ -139,7 +139,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// --- API V1 Protegida (MFA configuration) ---
 	apiPrivate := r.Group("/api/v1")
 	apiPrivate.Use(middleware.CORSMiddleware())
-	apiPrivate.Use(middleware.AuthMiddleware(app.TokenManager))
+	apiPrivate.Use(middleware.AuthMiddleware(app.TokenManager, app.UserRepo))
 	{
 		apiPrivate.POST("/mfa/totp/setup", userCtrl.SetupTOTP)
 		apiPrivate.POST("/mfa/totp/verify", userCtrl.VerifyTOTP)
@@ -174,7 +174,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	adminPrivate := r.Group("/admin")
 	adminPrivate.Use(middleware.SecurityHeaderMiddleware())
 	adminPrivate.Use(middleware.AdminCSRFMiddleware())
-	adminPrivate.Use(middleware.AuthMiddleware(app.TokenManager))
+	adminPrivate.Use(middleware.AuthMiddleware(app.TokenManager, app.UserRepo))
 	{
 		adminPrivate.GET("/", middleware.PlatformScopeMiddleware(app.UarRepo, app.AppRepo), dashboardCtrl.Dashboard)
 		adminPrivate.POST("/logout", loginCtrl.PostLogout)

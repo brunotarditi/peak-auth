@@ -12,6 +12,7 @@ type RefreshTokenRepository interface {
 	FindByToken(token string) (model.RefreshToken, error)
 	DeleteByToken(token string) error
 	DeleteByUser(userID uint) error
+	DeleteByUserAndApp(userID, appID uint) error
 }
 
 type refreshTokenRepository struct {
@@ -38,4 +39,8 @@ func (r *refreshTokenRepository) DeleteByToken(token string) error {
 
 func (r *refreshTokenRepository) DeleteByUser(userID uint) error {
 	return r.db.Where("user_id = ?", userID).Delete(&model.RefreshToken{}).Error
+}
+
+func (r *refreshTokenRepository) DeleteByUserAndApp(userID, appID uint) error {
+	return r.db.Where("user_id = ? AND application_id = ?", userID, appID).Delete(&model.RefreshToken{}).Error
 }

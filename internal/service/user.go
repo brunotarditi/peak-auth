@@ -11,6 +11,7 @@ import (
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -259,8 +260,11 @@ func (s *userService) Register(req request.RegisterRequest) (model.User, error) 
 		user = nu
 	}
 
-	// 4) Asignar rol por reglas
+	// 4) Asignar rol por reglas (defensa: jamás asignar ADMIN o ROOT por auto-registro)
 	if registrationPolicy.DefaultRole != "" {
+		if strings.EqualFold(registrationPolicy.DefaultRole, "ADMIN") || strings.EqualFold(registrationPolicy.DefaultRole, "ROOT") {
+			return model.User{}, fmt.Errorf("el registro público no puede otorgar roles administrativos")
+		}
 		if role, err := s.roleRepo.FindByNameForApp(registrationPolicy.DefaultRole, app.ID); err == nil {
 			if assignErr := s.uarRepo.AssignRole(user.ID, app.ID, role.ID); assignErr != nil {
 				return model.User{}, fmt.Errorf("error al asignar el rol por defecto: %w", assignErr)
@@ -550,6 +554,10 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 		}
 	}
 
+	if !user.IsActive {
+		return "", 0, false, false, "", fmt.Errorf("usuario desactivado")
+	}
+
 	if !user.IsVerified {
 		return "", 0, false, false, "", fmt.Errorf("la cuenta no está verificada")
 	}
@@ -639,9 +647,25 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		return response.TokenResponse{}, fmt.Errorf("usuario no encontrado")
 	}
 
+	if !user.IsActive {
+		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
+		return response.TokenResponse{}, fmt.Errorf("usuario desactivado")
+	}
+
+	if !user.IsVerified {
+		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
+		return response.TokenResponse{}, fmt.Errorf("usuario no verificado")
+	}
+
 	app, err := s.appRepo.FindByID(rt.ApplicationID)
 	if err != nil {
 		return response.TokenResponse{}, fmt.Errorf("aplicación no encontrada")
+	}
+
+	// Validar que el usuario siga teniendo acceso y reglas vigentes en la aplicación
+	if err := s.ruleService.ValidateLogin(app.ID, user.ID); err != nil {
+		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
+		return response.TokenResponse{}, err
 	}
 
 	// 1. Duración según SESSION_POLICY
@@ -660,6 +684,10 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 
 	// 1.5 Obtener roles para el JWT
 	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
+	if len(roleModels) == 0 {
+		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
+		return response.TokenResponse{}, fmt.Errorf("el usuario no tiene acceso a esta aplicación")
+	}
 	roles := make([]string, len(roleModels))
 	for i, r := range roleModels {
 		roles[i] = r.Name
@@ -757,6 +785,15 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (res
 	if err != nil {
 		return response.TokenResponse{}, fmt.Errorf("usuario no encontrado")
 	}
+
+	if !user.IsActive {
+		return response.TokenResponse{}, fmt.Errorf("usuario desactivado")
+	}
+
+	if !user.IsVerified {
+		return response.TokenResponse{}, fmt.Errorf("usuario no verificado")
+	}
+
 	app, err := s.appRepo.FindByAppID(publicAppID)
 	if err != nil {
 		return response.TokenResponse{}, fmt.Errorf("aplicación no encontrada")
@@ -783,6 +820,9 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (res
 
 	// 3. Obtener roles para el JWT
 	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
+	if len(roleModels) == 0 {
+		return response.TokenResponse{}, fmt.Errorf("el usuario no tiene acceso a esta aplicación")
+	}
 	roles := make([]string, len(roleModels))
 	for i, r := range roleModels {
 		roles[i] = r.Name
@@ -823,6 +863,15 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 	if err != nil {
 		return "", 0, fmt.Errorf("usuario no encontrado")
 	}
+
+	if !user.IsActive {
+		return "", 0, fmt.Errorf("usuario desactivado")
+	}
+
+	if !user.IsVerified {
+		return "", 0, fmt.Errorf("usuario no verificado")
+	}
+
 	peakApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
 	if err != nil {
 		return "", 0, fmt.Errorf("error interno del sistema")
@@ -843,11 +892,26 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 
 	roleModels, err := s.uarRepo.FindRolesByUserAndApp(user.ID, peakApp.ID)
 	var roles []string
+	canAccessPanel := false
 	if err == nil && len(roleModels) > 0 {
 		roles = make([]string, len(roleModels))
 		for i, r := range roleModels {
 			roles[i] = r.Name
+			if r.Name == "ROOT" || r.Name == "ADMIN" {
+				canAccessPanel = true
+			}
 		}
+	}
+
+	if !canAccessPanel {
+		hasLocalAdmin, err := s.uarRepo.HasAdminRoleInAnyApp(user.ID)
+		if err == nil && hasLocalAdmin {
+			canAccessPanel = true
+		}
+	}
+
+	if !canAccessPanel {
+		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
 	}
 
 	duration := time.Duration(expireMinutes) * time.Minute

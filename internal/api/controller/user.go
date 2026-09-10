@@ -104,6 +104,12 @@ func (ctrl *UserController) RevokeUserAccess(c *gin.Context) {
 		}
 	}
 
+	// Defensa: ningún administrador de plataforma puede revocar el acceso del usuario ROOT a la app raíz
+	if app.AppID == util.AppIdPeakAuth && ctrl.AppService.IsRootUser(userID, app.ID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "No se puede revocar el acceso al usuario ROOT de la plataforma"})
+		return
+	}
+
 	if err := ctrl.AppService.RevokeUserFromApp(userID, app.ID); err != nil {
 		internalErrorJSON(c, "RevokeUserFromApp", err)
 		return
