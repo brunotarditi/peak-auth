@@ -575,7 +575,7 @@ func (ctrl *LoginController) BeginWebAuthnRegistrationLogin(c *gin.Context) {
 
 // FinishWebAuthnRegistrationLogin finaliza el registro de WebAuthn durante el login forzoso
 func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
-	mfaToken := c.Query("mfa_token")
+	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})
 		return

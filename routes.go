@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	"peak-auth/internal/api/controller"
@@ -72,6 +73,23 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
 	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
+
+	// --- OIDC DISCOVERY ---
+	jwksHandler := func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.JSON(http.StatusOK, app.TokenManager.GetJWKS())
+	}
+	r.GET("/.well-known/jwks.json", jwksHandler)
+	r.OPTIONS("/.well-known/jwks.json", jwksHandler)
 
 	// --- OAUTH2 ENDPOINTS ---
 	oauth := r.Group("/oauth")
