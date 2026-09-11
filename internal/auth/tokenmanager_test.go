@@ -152,3 +152,92 @@ func TestGetJWKS_And_TokenKidHeader(t *testing.T) {
 	}
 }
 
+func TestMultiKeyRotation_GracePeriod(t *testing.T) {
+	// 1. Iniciar con Clave 1
+	m := newTestManager(t)
+
+	// Emitir token con Clave 1
+	tok1, err := m.GenerateToken(1, "user1@example.com", "app-1", []string{"USER"}, time.Hour, true)
+	if err != nil {
+		t.Fatalf("GenerateToken con clave 1 falló: %v", err)
+	}
+
+	claims1, err := m.VerifyToken(tok1)
+	if err != nil {
+		t.Fatalf("VerifyToken tok1 falló antes de la rotación: %v", err)
+	}
+	if claims1.Username != "user1@example.com" {
+		t.Errorf("claims inesperados: %v", claims1)
+	}
+
+	// 2. Generar Clave 2 y rotar en caliente preservando Clave 1 para grace period
+	key2, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("no se pudo generar clave RSA 2: %v", err)
+	}
+	m.SetActiveKey("peak-auth-key-2", key2, true)
+
+	if m.ActiveKeyID() != "peak-auth-key-2" {
+		t.Fatalf("activeKeyID esperado 'peak-auth-key-2', obtenido '%s'", m.ActiveKeyID())
+	}
+
+	// 3. Emitir token con la nueva Clave 2
+	tok2, err := m.GenerateToken(2, "user2@example.com", "app-1", []string{"ADMIN"}, time.Hour, true)
+	if err != nil {
+		t.Fatalf("GenerateToken con clave 2 falló: %v", err)
+	}
+
+	// Verificar token 2 firmado con Clave 2
+	claims2, err := m.VerifyToken(tok2)
+	if err != nil {
+		t.Fatalf("VerifyToken tok2 falló: %v", err)
+	}
+	if claims2.Username != "user2@example.com" {
+		t.Errorf("claims inesperados: %v", claims2)
+	}
+
+	// 4. Token 1 (firmado con Clave 1) DEBE seguir siendo válido durante el período de gracia
+	claims1After, err := m.VerifyToken(tok1)
+	if err != nil {
+		t.Fatalf("VerifyToken tok1 falló durante período de gracia: %v", err)
+	}
+	if claims1After.Username != "user1@example.com" {
+		t.Errorf("claims inesperados tras rotación: %v", claims1After)
+	}
+
+	// 5. El JWKS debe contener ambas claves públicas
+	jwks := m.GetJWKS()
+	keys, ok := jwks["keys"].([]map[string]interface{})
+	if !ok || len(keys) != 2 {
+		t.Fatalf("se esperaban 2 claves en JWKS tras rotación, obtenidas: %d", len(keys))
+	}
+
+	kids := make(map[string]bool)
+	for _, k := range keys {
+		kids[k["kid"].(string)] = true
+	}
+	if !kids[defaultKeyID] || !kids["peak-auth-key-2"] {
+		t.Fatalf("JWKS no contiene las claves esperadas: %+v", kids)
+	}
+
+	// 6. Token con kid desconocido o clave externa no registrada debe fallar (Fail-Closed)
+	key3, _ := rsa.GenerateKey(rand.Reader, 2048)
+	tokForeign := jwt.NewWithClaims(jwt.SigningMethodRS256, CustomClaims{
+		Username: "rogue@example.com",
+		AppID:    "app-1",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   "999",
+			Issuer:    tokenIssuer(),
+			Audience:  jwt.ClaimStrings{"app-1"},
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		},
+	})
+	tokForeign.Header["kid"] = "unknown-kid-999"
+	signedForeign, _ := tokForeign.SignedString(key3)
+
+	if _, err := m.VerifyToken(signedForeign); err == nil {
+		t.Fatal("VerifyToken debería haber fallado para token con kid desconocido / clave no registrada")
+	}
+}
+
+
