@@ -3,10 +3,12 @@ package auth
 import (
 	"crypto/rsa"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -24,10 +26,13 @@ func tokenIssuer() string {
 // defaultKeyID identifica la clave activa utilizada para la firma de JWTs y en el JWKS.
 const defaultKeyID = "peak-auth-key-1"
 
-// JWTManager gestiona la generación y validación de tokens JWT.
+// JWTManager gestiona la generación y validación de tokens JWT con soporte para rotación multi-clave y grace period.
 type JWTManager struct {
-	privateKey *rsa.PrivateKey
-	publicKey  *rsa.PublicKey
+	mu           sync.RWMutex
+	activeKid    string
+	privateKey   *rsa.PrivateKey
+	publicKey    *rsa.PublicKey
+	previousKeys map[string]*rsa.PublicKey
 }
 
 // CustomClaims define qué info viajará en el token
@@ -42,6 +47,7 @@ type CustomClaims struct {
 
 // NewJWTManager crea una nueva instancia de JWTManager.
 // Lee la clave privada RSA (en formato PEM) desde la variable de entorno JWT_PRIVATE_KEY.
+// Opcionalmente lee JWT_KEY_ID (por defecto peak-auth-key-1) y JWT_PREVIOUS_KEYS (JSON de claves en período de gracia).
 func NewJWTManager() (*JWTManager, error) {
 	privKeyPEM := os.Getenv("JWT_PRIVATE_KEY")
 	if privKeyPEM == "" {
@@ -55,10 +61,76 @@ func NewJWTManager() (*JWTManager, error) {
 		return nil, fmt.Errorf("no se pudo parsear la clave privada RSA desde PEM; asegúrate de que JWT_PRIVATE_KEY apunten a una clave PEM válida: %w", err)
 	}
 
-	return &JWTManager{
-		privateKey: privateKey,
-		publicKey:  &privateKey.PublicKey,
-	}, nil
+	activeKid := strings.TrimSpace(os.Getenv("JWT_KEY_ID"))
+	if activeKid == "" {
+		activeKid = defaultKeyID
+	}
+
+	mgr := &JWTManager{
+		activeKid:    activeKid,
+		privateKey:   privateKey,
+		publicKey:    &privateKey.PublicKey,
+		previousKeys: make(map[string]*rsa.PublicKey),
+	}
+
+	// Cargar claves públicas anteriores para período de gracia si están configuradas
+	if prevKeysJSON := strings.TrimSpace(os.Getenv("JWT_PREVIOUS_KEYS")); prevKeysJSON != "" {
+		var entries []struct {
+			Kid       string `json:"kid"`
+			PublicKey string `json:"public_key"`
+		}
+		if err := json.Unmarshal([]byte(prevKeysJSON), &entries); err == nil {
+			for _, entry := range entries {
+				if entry.Kid != "" && entry.PublicKey != "" {
+					_ = mgr.AddPreviousPublicKeyPEM(entry.Kid, []byte(entry.PublicKey))
+				}
+			}
+		}
+	}
+
+	return mgr, nil
+}
+
+// ActiveKeyID devuelve el identificador de la clave activa actual.
+func (m *JWTManager) ActiveKeyID() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.activeKid
+}
+
+// AddPreviousPublicKey registra una clave pública anterior válida durante el período de gracia.
+func (m *JWTManager) AddPreviousPublicKey(kid string, pubKey *rsa.PublicKey) {
+	if kid == "" || pubKey == nil {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.previousKeys[kid] = pubKey
+}
+
+// AddPreviousPublicKeyPEM registra una clave pública anterior parseándola desde formato PEM.
+func (m *JWTManager) AddPreviousPublicKeyPEM(kid string, pemBytes []byte) error {
+	pubKey, err := jwt.ParseRSAPublicKeyFromPEM(pemBytes)
+	if err != nil {
+		return fmt.Errorf("error parseando clave pública RSA previa (%s): %w", kid, err)
+	}
+	m.AddPreviousPublicKey(kid, pubKey)
+	return nil
+}
+
+// SetActiveKey actualiza la clave privada y pública activa (rotación en caliente),
+// permitiendo opcionalmente mantener la clave anterior en previousKeys para el período de gracia.
+func (m *JWTManager) SetActiveKey(newKid string, newPrivKey *rsa.PrivateKey, keepOldAsPrevious bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if keepOldAsPrevious && m.activeKid != "" && m.publicKey != nil {
+		m.previousKeys[m.activeKid] = m.publicKey
+	}
+
+	m.activeKid = newKid
+	m.privateKey = newPrivKey
+	m.publicKey = &newPrivKey.PublicKey
 }
 
 // GenerateToken crea un nuevo token JWT para un usuario y aplicación específicos.
@@ -82,7 +154,7 @@ func (m *JWTManager) GenerateToken(userID uint, username string, appID string, r
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = defaultKeyID
+	token.Header["kid"] = m.ActiveKeyID()
 	return token.SignedString(m.privateKey)
 }
 
@@ -99,9 +171,6 @@ func (m *JWTManager) VerifyTokenForApp(tokenString string, expectedAppID string)
 }
 
 func (m *JWTManager) verify(tokenString string, expectedAudience string) (*CustomClaims, error) {
-	if m.publicKey == nil {
-		return nil, fmt.Errorf("la clave pública no está cargada en el manager")
-	}
 	claims := &CustomClaims{}
 
 	opts := []jwt.ParserOption{
@@ -117,7 +186,13 @@ func (m *JWTManager) verify(tokenString string, expectedAudience string) (*Custo
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("método de firma inesperado: %v", token.Header["alg"])
 		}
-		return m.publicKey, nil
+
+		kid, _ := token.Header["kid"].(string)
+		pubKey, err := m.resolvePublicKey(kid)
+		if err != nil {
+			return nil, err
+		}
+		return pubKey, nil
 	}, opts...)
 
 	if err != nil {
@@ -129,6 +204,28 @@ func (m *JWTManager) verify(tokenString string, expectedAudience string) (*Custo
 	}
 
 	return claims, nil
+}
+
+// resolvePublicKey busca la clave pública correspondiente al kid:
+// primero revisa la clave activa y luego las claves en período de gracia.
+func (m *JWTManager) resolvePublicKey(kid string) (*rsa.PublicKey, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Si no trae kid (compatibilidad con tokens anteriores) o coincide con la clave activa
+	if kid == "" || kid == m.activeKid {
+		if m.publicKey == nil {
+			return nil, fmt.Errorf("la clave pública activa no está cargada en el manager")
+		}
+		return m.publicKey, nil
+	}
+
+	// Buscar en claves del período de gracia
+	if prevKey, exists := m.previousKeys[kid]; exists && prevKey != nil {
+		return prevKey, nil
+	}
+
+	return nil, fmt.Errorf("clave pública con kid %q no encontrada en Peak Auth", kid)
 }
 
 // GenerateMFAPendingToken genera un token temporal (5 minutos) que indica que el login
@@ -150,7 +247,7 @@ func (m *JWTManager) GenerateMFAPendingToken(userID uint, username string, appID
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = defaultKeyID
+	token.Header["kid"] = m.ActiveKeyID()
 	return token.SignedString(m.privateKey)
 }
 
@@ -165,25 +262,39 @@ func (m *JWTManager) VerifyMFAPendingToken(tokenString string, expectedAppID str
 	}
 	return claims, nil
 }
-// GetJWKS devuelve la clave pública en formato JSON Web Key Set (RFC 7517)
+
+// GetJWKS devuelve las claves públicas válidas (activa + anteriores) en formato JSON Web Key Set (RFC 7517).
 func (m *JWTManager) GetJWKS() map[string]interface{} {
-	if m.publicKey == nil {
-		return map[string]interface{}{"keys": []interface{}{}}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var keys []map[string]interface{}
+
+	if m.publicKey != nil {
+		keys = append(keys, m.formatJWK(m.activeKid, m.publicKey))
 	}
 
-	n := base64.RawURLEncoding.EncodeToString(m.publicKey.N.Bytes())
-	e := base64.RawURLEncoding.EncodeToString(big.NewInt(int64(m.publicKey.E)).Bytes())
+	for kid, prevKey := range m.previousKeys {
+		if prevKey != nil {
+			keys = append(keys, m.formatJWK(kid, prevKey))
+		}
+	}
 
 	return map[string]interface{}{
-		"keys": []map[string]interface{}{
-			{
-				"kty": "RSA",
-				"alg": "RS256",
-				"use": "sig",
-				"kid": defaultKeyID,
-				"n":   n,
-				"e":   e,
-			},
-		},
+		"keys": keys,
+	}
+}
+
+func (m *JWTManager) formatJWK(kid string, pubKey *rsa.PublicKey) map[string]interface{} {
+	n := base64.RawURLEncoding.EncodeToString(pubKey.N.Bytes())
+	e := base64.RawURLEncoding.EncodeToString(big.NewInt(int64(pubKey.E)).Bytes())
+
+	return map[string]interface{}{
+		"kty": "RSA",
+		"alg": "RS256",
+		"use": "sig",
+		"kid": kid,
+		"n":   n,
+		"e":   e,
 	}
 }
