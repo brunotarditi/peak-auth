@@ -113,11 +113,11 @@ Parámetros fundamentales en `.env`:
 
 ```env
 # Base de Datos
-DATABASE_URL=postgres://postgres:password@localhost:5432/peak_auth?sslmode=disable
+DATABASE_URL=postgres://usuario:tu_password@localhost:5432/peak_auth?sslmode=disable
 DB_HOST=localhost
 DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=password
+DB_USER=usuario
+DB_PASSWORD=tu_password
 DB_NAME=peak_auth
 DB_SSL_MODE=disable
 
