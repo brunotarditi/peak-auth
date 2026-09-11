@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"peak-auth/internal/api/controller"
@@ -90,6 +93,46 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	}
 	r.GET("/.well-known/jwks.json", jwksHandler)
 	r.OPTIONS("/.well-known/jwks.json", jwksHandler)
+
+	openIDConfigHandler := func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		baseURL := strings.TrimRight(os.Getenv("APP_BASE_URL"), "/")
+		if baseURL == "" {
+			scheme := "http"
+			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
+				scheme = "https"
+			}
+			baseURL = fmt.Sprintf("%s://%s", scheme, c.Request.Host)
+		}
+
+		issuer := os.Getenv("JWT_ISSUER")
+		if issuer == "" {
+			issuer = "peak-auth"
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"issuer":                                issuer,
+			"authorization_endpoint":                baseURL + "/oauth/authorize",
+			"token_endpoint":                        baseURL + "/oauth/token",
+			"jwks_uri":                              baseURL + "/.well-known/jwks.json",
+			"response_types_supported":              []string{"code"},
+			"subject_types_supported":               []string{"public"},
+			"id_token_signing_alg_values_supported": []string{"RS256"},
+			"code_challenge_methods_supported":      []string{"S256"},
+			"token_endpoint_auth_methods_supported": []string{"client_secret_post", "client_secret_basic", "none"},
+		})
+	}
+	r.GET("/.well-known/openid-configuration", openIDConfigHandler)
+	r.OPTIONS("/.well-known/openid-configuration", openIDConfigHandler)
 
 	// --- OAUTH2 ENDPOINTS ---
 	oauth := r.Group("/oauth")

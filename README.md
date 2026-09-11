@@ -127,10 +127,9 @@ ENV=development                  # development | production (habilita cookies Se
 FRONTEND_URL=http://localhost:3000
 ADMIN_URL=http://localhost:8080
 
-# JWT Asimétrico (Ruta al archivo PEM o contenido inline)
-JWT_PRIVATE_KEY_PATH=./jwt_private.pem
-# O alternativamente:
-# JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+# JWT Asimétrico (Contenido PEM en variable de entorno con saltos de línea \n)
+JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+JWT_ISSUER=peak-auth
 
 # Proveedor de Email
 RESEND_API_KEY=re_tu_api_key_aqui
@@ -231,9 +230,9 @@ Peak Auth ofrece flujos integrados tanto para usuarios del portal SSO como para 
 
 ## 🔌 Cómo Integrar tus Aplicaciones
 
-Gracias a los **JWT Asimétricos (RSA-256)** y al endpoint de descubrimiento **JWKS** (`GET /.well-known/jwks.json`), tu aplicación cliente o microservicio puede validar tokens **sin llamadas repetitivas** a Peak Auth y con soporte automático para rotación de claves.
+Gracias a los **JWT Asimétricos (RSA-256)** y a los endpoints estándar de descubrimiento OIDC/OAuth 2.0 (`GET /.well-known/openid-configuration` y `GET /.well-known/jwks.json`), cualquier aplicación cliente, framework o microservicio puede integrarse de forma automática, validando tokens **sin llamadas repetitivas** y con soporte automático para rotación de claves.
 
-### Opción A: Validación automática vía JWKS (Recomendado)
+### Opción A: Validación automática vía JWKS / OIDC (Recomendado)
 
 Peak Auth expone su conjunto de claves públicas en `/.well-known/jwks.json`. Librerías estándar como `jose` en Node/TypeScript pueden descargar y cachear las claves automáticamente:
 
@@ -345,7 +344,7 @@ func RequireAuth(clientID string) gin.HandlerFunc {
 
 ## 🐳 Despliegue con Docker
 
-Peak Auth incluye un `Dockerfile` multi-stage ligero basado en Alpine Linux:
+Peak Auth incluye un `Dockerfile` multi-stage ultra-seguro y ligero basado en **Google Distroless (`gcr.io/distroless/static-debian12:nonroot`)**: sin shell, sin gestores de paquetes y ejecutándose exclusivamente como usuario no privilegiado (`nonroot`):
 
 ```bash
 # Construir la imagen
