@@ -1,0 +1,56 @@
+{
+  "name": "@peak-auth/sdk",
+  "version": "1.0.0",
+  "description": "SDK oficial y liviano de Peak Auth para Node.js, Express y Next.js",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./express": {
+      "import": "./dist/express.mjs",
+      "require": "./dist/express.js",
+      "types": "./dist/express.d.ts"
+    },
+    "./nextjs": {
+      "import": "./dist/nextjs.mjs",
+      "require": "./dist/nextjs.js",
+      "types": "./dist/nextjs.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "keywords": [
+    "peak-auth",
+    "auth",
+    "oauth2",
+    "pkce",
+    "jwt",
+    "jwks",
+    "sso",
+    "oidc"
+  ],
+  "author": "Bruno Tarditi",
+  "license": "MIT",
+  "dependencies": {
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0 || ^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    }
+  }
+}
