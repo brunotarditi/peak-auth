@@ -238,6 +238,40 @@ func TestMultiKeyRotation_GracePeriod(t *testing.T) {
 	if _, err := m.VerifyToken(signedForeign); err == nil {
 		t.Fatal("VerifyToken debería haber fallado para token con kid desconocido / clave no registrada")
 	}
+
+	// 7. Retirar Clave 1 del período de gracia (fin de ventana de gracia)
+	m.RemovePreviousPublicKey(defaultKeyID)
+
+	// Token 1 debe ser rechazado ahora
+	if _, err := m.VerifyToken(tok1); err == nil {
+		t.Fatal("Token 1 debería fallar una vez retirada la clave previa del período de gracia")
+	}
+
+	// Token 2 debe seguir funcionando
+	if _, err := m.VerifyToken(tok2); err != nil {
+		t.Fatalf("Token 2 debería seguir siendo válido: %v", err)
+	}
+
+	// El JWKS ahora solo debe tener la clave activa
+	jwksAfter := m.GetJWKS()
+	keysAfter := jwksAfter["keys"].([]map[string]interface{})
+	if len(keysAfter) != 1 || keysAfter[0]["kid"] != "peak-auth-key-2" {
+		t.Fatalf("se esperaba 1 clave en JWKS tras remover gracia, obtenido: %+v", keysAfter)
+	}
+}
+
+func TestNewJWTManager_MalformedPreviousKeysEnv(t *testing.T) {
+	key, _ := rsa.GenerateKey(rand.Reader, 2048)
+	der := x509.MarshalPKCS1PrivateKey(key)
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: der})
+
+	t.Setenv("JWT_PRIVATE_KEY", string(pemBytes))
+	t.Setenv("JWT_PREVIOUS_KEYS", "not-a-valid-json-string")
+
+	_, err := NewJWTManager()
+	if err == nil {
+		t.Fatal("se esperaba error al iniciar JWTManager con JWT_PREVIOUS_KEYS malformado")
+	}
 }
 
 

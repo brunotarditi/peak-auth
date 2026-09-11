@@ -42,6 +42,8 @@ func main() {
 
 ## 🛡️ Uso con Gin Framework
 
+El middleware de Gin está disponible como un subpaquete independiente para que quienes solo usen `net/http` no arrastren Gin como dependencia obligatoria:
+
 ```go
 package main
 
@@ -50,12 +52,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	peakauth "github.com/brunotarditi/peak-auth/sdk/go"
+	peakauthgin "github.com/brunotarditi/peak-auth/sdk/go/gin"
 )
 
 func main() {
 	client, _ := peakauth.New(peakauth.Config{
 		IssuerURL: "https://auth.tuempresa.com",
 		ClientID:  "mi-aplicacion",
+		// ExpectedIssuer: "peak-auth", // Por defecto es "peak-auth" (coincide con el claim 'iss' del JWT)
 	})
 
 	r := gin.Default()
@@ -66,8 +70,8 @@ func main() {
 	})
 
 	// Ruta protegida (cualquier usuario con token válido)
-	r.GET("/api/profile", client.GinMiddleware(), func(c *gin.Context) {
-		claims, _ := peakauth.ClaimsFromGin(c)
+	r.GET("/api/profile", peakauthgin.Middleware(client), func(c *gin.Context) {
+		claims, _ := peakauthgin.ClaimsFromContext(c)
 		c.JSON(http.StatusOK, gin.H{
 			"user":   claims.Username,
 			"roles":  claims.Roles,
@@ -76,7 +80,7 @@ func main() {
 	})
 
 	// Ruta que requiere rol ADMIN
-	r.GET("/api/admin", client.GinMiddleware("ADMIN"), func(c *gin.Context) {
+	r.GET("/api/admin", peakauthgin.Middleware(client, "ADMIN"), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Acceso de administrador concedido"})
 	})
 

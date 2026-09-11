@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -154,6 +155,9 @@ func setupOAuthControllerTest(t *testing.T) (*gin.Engine, *auth.JWTManager, *tes
 	}
 
 	r := gin.New()
+	tmpl := template.Must(template.New("error.html").Parse("<html>{{.Title}}: {{.Message}}</html>"))
+	r.SetHTMLTemplate(tmpl)
+
 	oauth := r.Group("/oauth")
 	{
 		oauth.GET("/authorize", ctrl.AuthorizeEndpoint)
@@ -372,3 +376,61 @@ func TestOAuth_InvalidClientSecret_Rejected(t *testing.T) {
 		t.Fatalf("se esperaba 400 Bad Request por secreto inválido, obtenido: %d", wToken.Code)
 	}
 }
+
+// TestOAuth_Authorize_RedirectURIMismatch_Rejected comprueba que se rechace un redirect_uri no registrado
+func TestOAuth_Authorize_RedirectURIMismatch_Rejected(t *testing.T) {
+	r, _, _, _ := setupOAuthControllerTest(t)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/oauth/authorize?client_id=client-portal&redirect_uri=https://evil-attacker.com/cb&response_type=code", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("se esperaba 400 Bad Request por redirect_uri ajena, obtenido: %d", w.Code)
+	}
+}
+
+// TestOAuth_Authorize_UnknownClientID_Rejected comprueba que se rechace un client_id inexistente
+func TestOAuth_Authorize_UnknownClientID_Rejected(t *testing.T) {
+	r, _, _, _ := setupOAuthControllerTest(t)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/oauth/authorize?client_id=unknown-client-xyz&redirect_uri=https://portal.client.com/oauth/callback&response_type=code", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("se esperaba 400 Bad Request por client_id desconocido, obtenido: %d", w.Code)
+	}
+}
+
+// TestOAuth_Token_ExpiredCode_Rejected comprueba que un código expirado no pueda canjearse
+func TestOAuth_Token_ExpiredCode_Rejected(t *testing.T) {
+	r, _, oauthRepo, _ := setupOAuthControllerTest(t)
+
+	expiredCode := "expired-test-code-12345"
+	oauthRepo.codes[expiredCode] = &model.OAuthCode{
+		Code:        expiredCode,
+		UserID:      42,
+		ClientID:    "client-portal",
+		RedirectURI: "https://portal.client.com/oauth/callback",
+		ExpiresAt:   time.Now().Add(-10 * time.Minute), // Expirado hace 10m
+	}
+
+	tokenReqBody := url.Values{
+		"grant_type":    {"authorization_code"},
+		"client_id":     {"client-portal"},
+		"client_secret": {"client-portal-secret-12345"},
+		"code":          {expiredCode},
+		"redirect_uri":  {"https://portal.client.com/oauth/callback"},
+	}
+
+	wToken := httptest.NewRecorder()
+	reqToken, _ := http.NewRequest(http.MethodPost, "/oauth/token", strings.NewReader(tokenReqBody.Encode()))
+	reqToken.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(wToken, reqToken)
+
+	if wToken.Code != http.StatusBadRequest {
+		t.Fatalf("se esperaba 400 Bad Request por código expirado, obtenido: %d", wToken.Code)
+	}
+}
+

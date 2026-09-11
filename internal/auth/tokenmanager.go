@@ -79,10 +79,13 @@ func NewJWTManager() (*JWTManager, error) {
 			Kid       string `json:"kid"`
 			PublicKey string `json:"public_key"`
 		}
-		if err := json.Unmarshal([]byte(prevKeysJSON), &entries); err == nil {
-			for _, entry := range entries {
-				if entry.Kid != "" && entry.PublicKey != "" {
-					_ = mgr.AddPreviousPublicKeyPEM(entry.Kid, []byte(entry.PublicKey))
+		if err := json.Unmarshal([]byte(prevKeysJSON), &entries); err != nil {
+			return nil, fmt.Errorf("error al parsear JWT_PREVIOUS_KEYS (debe ser un JSON array válido): %w", err)
+		}
+		for _, entry := range entries {
+			if entry.Kid != "" && entry.PublicKey != "" {
+				if err := mgr.AddPreviousPublicKeyPEM(entry.Kid, []byte(entry.PublicKey)); err != nil {
+					return nil, fmt.Errorf("error cargando clave previa (%s) desde JWT_PREVIOUS_KEYS: %w", entry.Kid, err)
 				}
 			}
 		}
@@ -106,6 +109,13 @@ func (m *JWTManager) AddPreviousPublicKey(kid string, pubKey *rsa.PublicKey) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.previousKeys[kid] = pubKey
+}
+
+// RemovePreviousPublicKey retira una clave del período de gracia una vez expirada la ventana.
+func (m *JWTManager) RemovePreviousPublicKey(kid string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.previousKeys, kid)
 }
 
 // AddPreviousPublicKeyPEM registra una clave pública anterior parseándola desde formato PEM.
@@ -153,9 +163,14 @@ func (m *JWTManager) GenerateToken(userID uint, username string, appID string, r
 		},
 	}
 
+	m.mu.RLock()
+	activeKid := m.activeKid
+	privKey := m.privateKey
+	m.mu.RUnlock()
+
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = m.ActiveKeyID()
-	return token.SignedString(m.privateKey)
+	token.Header["kid"] = activeKid
+	return token.SignedString(privKey)
 }
 
 // VerifyToken comprueba la validez de un token (firma, expiración e issuer) y
@@ -246,9 +261,14 @@ func (m *JWTManager) GenerateMFAPendingToken(userID uint, username string, appID
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}
+	m.mu.RLock()
+	activeKid := m.activeKid
+	privKey := m.privateKey
+	m.mu.RUnlock()
+
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = m.ActiveKeyID()
-	return token.SignedString(m.privateKey)
+	token.Header["kid"] = activeKid
+	return token.SignedString(privKey)
 }
 
 // VerifyMFAPendingToken verifica que el token temporal de MFA sea válido y de tipo 'mfa_pending'.

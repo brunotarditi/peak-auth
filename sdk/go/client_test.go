@@ -12,13 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
-
-func init() {
-	gin.SetMode(gin.TestMode)
-}
 
 func TestGeneratePKCE(t *testing.T) {
 	pkce, err := GeneratePKCE(64)
@@ -181,34 +176,7 @@ func TestGinAndHTTPMiddleware(t *testing.T) {
 	token.Header["kid"] = "k1"
 	tokenStr, _ := token.SignedString(privKey)
 
-	// Test Gin Middleware
-	router := gin.New()
-	router.GET("/admin", client.GinMiddleware("ADMIN"), func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
-	router.GET("/user", client.GinMiddleware("USER"), func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
-
-	// Petición a /admin debe dar 403 Forbidden
-	req, _ := http.NewRequest(http.MethodGet, "/admin", nil)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenStr))
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	if w.Code != http.StatusForbidden {
-		t.Fatalf("se esperaba 403 Forbidden para /admin, obtenido: %d", w.Code)
-	}
-
-	// Petición a /user debe dar 200 OK
-	req2, _ := http.NewRequest(http.MethodGet, "/user", nil)
-	req2.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenStr))
-	w2 := httptest.NewRecorder()
-	router.ServeHTTP(w2, req2)
-	if w2.Code != http.StatusOK {
-		t.Fatalf("se esperaba 200 OK para /user, obtenido: %d", w2.Code)
-	}
-
-	// Test HTTP Middleware
+	// Test HTTP Middleware (Standard Library net/http)
 	stdHandler := client.HTTPMiddleware("USER")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		claims, ok := ClaimsFromContext(r.Context())
 		if !ok || claims.Username != "user1" {
@@ -218,12 +186,26 @@ func TestGinAndHTTPMiddleware(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	w3 := httptest.NewRecorder()
-	req3, _ := http.NewRequest(http.MethodGet, "/", nil)
-	req3.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenStr))
-	stdHandler.ServeHTTP(w3, req3)
+	// 1. Petición con rol adecuado (USER) -> 200 OK
+	w1 := httptest.NewRecorder()
+	req1, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req1.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenStr))
+	stdHandler.ServeHTTP(w1, req1)
 
-	if w3.Code != http.StatusOK {
-		t.Fatalf("se esperaba 200 OK en HTTPMiddleware, obtenido: %d", w3.Code)
+	if w1.Code != http.StatusOK {
+		t.Fatalf("se esperaba 200 OK en HTTPMiddleware, obtenido: %d", w1.Code)
+	}
+
+	// 2. Petición con rol faltante (ADMIN) -> 403 Forbidden
+	adminHandler := client.HTTPMiddleware("ADMIN")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest(http.MethodGet, "/", nil)
+	req2.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tokenStr))
+	adminHandler.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusForbidden {
+		t.Fatalf("se esperaba 403 Forbidden en HTTPMiddleware para rol ADMIN, obtenido: %d", w2.Code)
 	}
 }
