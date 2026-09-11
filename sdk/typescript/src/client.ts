@@ -124,14 +124,20 @@ export class PeakAuthClient {
   /**
    * Renueva el Access Token utilizando un Refresh Token.
    */
-  async refreshToken(refreshToken: string): Promise<TokenResponse> {
+  async refreshToken(refreshToken: string, clientId?: string): Promise<TokenResponse> {
+    const payload: Record<string, string> = { refresh_token: refreshToken };
+    const effectiveClientId = clientId || this.config.clientId;
+    if (effectiveClientId) {
+      payload.client_id = effectiveClientId;
+    }
+
     const res = await fetch(`${this.config.issuerUrl}/api/v1/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {

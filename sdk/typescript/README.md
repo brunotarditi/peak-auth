@@ -1,4 +1,4 @@
-# @peak-auth/sdk
+# @brunotarditi/peak-auth
 
 SDK oficial, universal y ultra-liviano para integrar tus aplicaciones **Node.js, Express y Next.js** con **Peak Auth**.
 
@@ -9,11 +9,11 @@ Construido sobre la biblioteca estándar [`jose`](https://github.com/panva/jose)
 ## 📦 Instalación
 
 ```bash
-npm install @peak-auth/sdk
+npm install @brunotarditi/peak-auth
 # o
-pnpm add @peak-auth/sdk
+pnpm add @brunotarditi/peak-auth
 # o
-yarn add @peak-auth/sdk
+yarn add @brunotarditi/peak-auth
 ```
 
 ---
@@ -23,13 +23,14 @@ yarn add @peak-auth/sdk
 ### 1. Inicializar el cliente
 
 ```typescript
-import { PeakAuthClient } from '@peak-auth/sdk';
+import { PeakAuthClient } from '@brunotarditi/peak-auth';
 
 const peakAuth = new PeakAuthClient({
   issuerUrl: 'https://auth.tuempresa.com', // o http://localhost:8080
   clientId: 'tu_client_id',
   clientSecret: 'tu_client_secret', // Opcional si solo usas PKCE
   redirectUri: 'https://tu-app.com/api/auth/callback',
+  // expectedIssuer: 'peak-auth', // Por defecto "peak-auth" (coincide con claim 'iss' del JWT)
 });
 ```
 
@@ -39,9 +40,12 @@ const peakAuth = new PeakAuthClient({
 
 ### Proteger rutas con el Middleware
 
+Puedes importar el middleware directamente desde el subpath `@brunotarditi/peak-auth/express`:
+
 ```typescript
 import express from 'express';
-import { PeakAuthClient, peakAuthMiddleware } from '@peak-auth/sdk';
+import { PeakAuthClient } from '@brunotarditi/peak-auth';
+import { peakAuthMiddleware } from '@brunotarditi/peak-auth/express';
 
 const app = express();
 const peakAuth = new PeakAuthClient({
@@ -130,7 +134,8 @@ app.get('/api/auth/callback', async (req, res) => {
 
 ```typescript
 import { NextResponse } from 'next/server';
-import { PeakAuthClient, verifyNextRequest } from '@peak-auth/sdk';
+import { PeakAuthClient } from '@brunotarditi/peak-auth';
+import { verifyNextRequest } from '@brunotarditi/peak-auth/nextjs';
 
 const peakAuth = new PeakAuthClient({
   issuerUrl: process.env.PEAK_AUTH_URL!,

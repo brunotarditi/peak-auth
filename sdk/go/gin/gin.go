@@ -1,16 +1,17 @@
-package peakauth
+package peakauthgin
 
 import (
 	"net/http"
 	"strings"
 
+	"github.com/brunotarditi/peak-auth/sdk/go"
 	"github.com/gin-gonic/gin"
 )
 
-// GinMiddleware retorna un middleware para Gin que valida tokens JWT contra Peak Auth.
+// Middleware retorna un middleware para Gin que valida tokens JWT contra Peak Auth.
 // Si se especifican requiredRoles, valida que el usuario posea al menos uno de ellos.
 // Guarda las claims en el contexto con las claves "claims" y "user".
-func (c *Client) GinMiddleware(requiredRoles ...string) gin.HandlerFunc {
+func Middleware(client *peakauth.Client, requiredRoles ...string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" || !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
@@ -22,7 +23,7 @@ func (c *Client) GinMiddleware(requiredRoles ...string) gin.HandlerFunc {
 		}
 
 		tokenStr := strings.TrimSpace(authHeader[7:])
-		claims, err := c.VerifyToken(tokenStr)
+		claims, err := client.VerifyTokenWithContext(ctx.Request.Context(), tokenStr)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "invalid_token",
@@ -60,12 +61,12 @@ func (c *Client) GinMiddleware(requiredRoles ...string) gin.HandlerFunc {
 	}
 }
 
-// ClaimsFromGin recupera los Claims almacenados por el middleware de Gin.
-func ClaimsFromGin(c *gin.Context) (*Claims, bool) {
+// ClaimsFromContext recupera los Claims almacenados por el middleware de Gin.
+func ClaimsFromContext(c *gin.Context) (*peakauth.Claims, bool) {
 	val, exists := c.Get("claims")
 	if !exists {
 		return nil, false
 	}
-	claims, ok := val.(*Claims)
+	claims, ok := val.(*peakauth.Claims)
 	return claims, ok
 }

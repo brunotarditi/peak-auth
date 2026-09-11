@@ -178,6 +178,11 @@ func (c *Client) RefreshToken(ctx context.Context, refreshToken string) (*TokenR
 // VerifyToken valida la firma RSA del JWT utilizando el JWKS en memoria,
 // así como su expiración, emisor (iss) y audiencia (aud).
 func (c *Client) VerifyToken(tokenString string) (*Claims, error) {
+	return c.VerifyTokenWithContext(context.Background(), tokenString)
+}
+
+// VerifyTokenWithContext valida el token permitiendo pasar un context.Context para cancelación o timeout.
+func (c *Client) VerifyTokenWithContext(ctx context.Context, tokenString string) (*Claims, error) {
 	claims := &Claims{}
 
 	opts := []jwt.ParserOption{
@@ -193,7 +198,7 @@ func (c *Client) VerifyToken(tokenString string) (*Claims, error) {
 		}
 
 		kid, _ := t.Header["kid"].(string)
-		pubKey, err := c.getKey(kid)
+		pubKey, err := c.getKey(ctx, kid)
 		if err != nil {
 			return nil, err
 		}
@@ -220,12 +225,12 @@ func (c *Client) GetOpenIDConfiguration(ctx context.Context) (*OpenIDConfigurati
 
 	resp, err := c.config.HTTPClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error solicitando OpenID configuration: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("openid-configuration falló con HTTP %d", resp.StatusCode)
+		return nil, fmt.Errorf("openid-configuration devolvió status: %d", resp.StatusCode)
 	}
 
 	var cfg OpenIDConfiguration
@@ -236,8 +241,8 @@ func (c *Client) GetOpenIDConfiguration(ctx context.Context) (*OpenIDConfigurati
 	return &cfg, nil
 }
 
-// getKey busca la clave pública en el cache en memoria; si no existe o expiró el TTL, recarga el JWKS.
-func (c *Client) getKey(kid string) (*rsa.PublicKey, error) {
+// getKey busca la clave pública en el cache en memoria; si no existe o expiró el TTL, recarga el JWKS con el contexto provisto.
+func (c *Client) getKey(ctx context.Context, kid string) (*rsa.PublicKey, error) {
 	if strings.TrimSpace(kid) == "" {
 		return nil, fmt.Errorf("el header del token no incluye 'kid' válido")
 	}
@@ -262,7 +267,7 @@ func (c *Client) getKey(kid string) (*rsa.PublicKey, error) {
 		}
 	}
 
-	if err := c.fetchJWKSLocked(); err != nil {
+	if err := c.fetchJWKSLocked(ctx); err != nil {
 		return nil, err
 	}
 
@@ -273,10 +278,13 @@ func (c *Client) getKey(kid string) (*rsa.PublicKey, error) {
 	return nil, fmt.Errorf("clave pública con kid %q no encontrada en JWKS", kid)
 }
 
-// fetchJWKSLocked descarga y parsea las claves RSA desde /.well-known/jwks.json.
+// fetchJWKSLocked descarga y parsea las claves RSA desde /.well-known/jwks.json utilizando el contexto provisto.
 // Debe llamarse manteniendo el lock de escritura c.mu.
-func (c *Client) fetchJWKSLocked() error {
-	req, err := http.NewRequest(http.MethodGet, c.config.IssuerURL+"/.well-known/jwks.json", nil)
+func (c *Client) fetchJWKSLocked(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.config.IssuerURL+"/.well-known/jwks.json", nil)
 	if err != nil {
 		return err
 	}

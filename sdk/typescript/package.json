@@ -1,30 +1,27 @@
 {
-  "name": "@peak-auth/sdk",
+  "name": "@brunotarditi/peak-auth",
   "version": "1.0.0",
   "description": "SDK oficial y liviano de Peak Auth para Node.js, Express y Next.js",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./express": {
-      "import": "./dist/express.mjs",
-      "require": "./dist/express.js",
-      "types": "./dist/express.d.ts"
+      "types": "./dist/express.d.ts",
+      "default": "./dist/express.js"
     },
     "./nextjs": {
-      "import": "./dist/nextjs.mjs",
-      "require": "./dist/nextjs.js",
-      "types": "./dist/nextjs.d.ts"
+      "types": "./dist/nextjs.d.ts",
+      "default": "./dist/nextjs.js"
     }
   },
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No test specified\" && exit 0"
+    "test": "npm run build && node --test dist/client.test.js"
   },
   "keywords": [
     "peak-auth",
