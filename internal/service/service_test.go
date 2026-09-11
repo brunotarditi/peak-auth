@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"crypto/sha256"
@@ -250,11 +250,9 @@ func TestRecoveryCodeHashingAndVerification(t *testing.T) {
 // --- Tests User Service ---
 
 func TestAdminLogin_RejectsDeactivatedUser(t *testing.T) {
-	hash, _ := util.HashPassword("password123")
 	userRepo := &mockUserRepo{
 		user: model.User{
 			Email:      "admin@peak.test",
-			Password:   hash,
 			IsActive:   false,
 			IsVerified: true,
 		},
@@ -275,7 +273,7 @@ func TestAdminLogin_RejectsDeactivatedUser(t *testing.T) {
 		ruleService: ruleSvc,
 	}
 
-	_, _, _, _, _, err := svc.AdminLogin("admin@peak.test", "password123")
+	_, _, _, _, _, err := svc.AdminLogin("admin@peak.test", "")
 	if err == nil || err.Error() != "usuario desactivado" {
 		t.Fatalf("Esperaba error 'usuario desactivado', pero obtuvo: %v", err)
 	}
@@ -336,9 +334,8 @@ func TestRegister_ForbidsAdminAndRootRole(t *testing.T) {
 	}
 
 	_, err := svc.Register(request.RegisterRequest{
-		Email:    "new@test.com",
-		Password: "password123",
-		AppID:    "my-app",
+		Email: "new@test.com",
+		AppID: "my-app",
 	})
 	if err == nil || !strings.Contains(err.Error(), "no puede otorgar roles administrativos") {
 		t.Fatalf("Esperaba bloqueo de rol administrativo en Register, obtuvo: %v", err)
@@ -359,7 +356,7 @@ func TestValidateRegistration_ForbidsAdminRole(t *testing.T) {
 	appRepo := newMockAppRepo()
 	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
 
-	_, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{Password: "pass123"})
+	_, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{})
 	if err == nil {
 		t.Fatalf("Esperaba que ValidateRegistration rechazara default_role ADMIN en registro público")
 	}
@@ -377,7 +374,7 @@ func TestValidateRegistration_ForbidsRootRole(t *testing.T) {
 	appRepo := newMockAppRepo()
 	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
 
-	_, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{Password: "pass123"})
+	_, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{})
 	if err == nil {
 		t.Fatalf("Esperaba que ValidateRegistration rechazara default_role ROOT en registro público")
 	}
