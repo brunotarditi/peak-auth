@@ -211,7 +211,7 @@ grant_type=authorization_code
 
 ```json
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InBlYWstYXV0aC1rZXktMSJ9...",
+  "access_token": "<token_jwt_firmado>",
   "token_type": "Bearer",
   "expires_in": 3600
 }
@@ -356,7 +356,7 @@ docker run -d -p 8080:8080 \
   --name peak-auth \
   -e DATABASE_URL="postgres://user:pass@db:5432/peak_auth?sslmode=disable" \
   -e JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----" \
-  -e RESEND_API_KEY="re_123456" \
+  -e RESEND_API_KEY="re_tu_resend_api_key" \
   peak-auth
 ```
 
