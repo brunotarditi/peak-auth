@@ -100,3 +100,18 @@ func handleAuthError(c *gin.Context, _ error) {
 	}
 	c.Abort()
 }
+
+func AdminGuestMiddleware(manager *auth.JWTManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token, err := c.Cookie("admin_token")
+		if err == nil && token != "" {
+			jsonToken, err := manager.VerifyTokenForApp(token, util.AppIdPeakAuth)
+			if err == nil && jsonToken.MfaVerified && jsonToken.TokenType == "access" {
+				c.Redirect(http.StatusSeeOther, "/admin")
+				c.Abort()
+				return
+			}
+		}
+		c.Next()
+	}
+}

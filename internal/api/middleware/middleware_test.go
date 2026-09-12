@@ -1,4 +1,4 @@
-﻿package middleware
+package middleware
 
 import (
 	"crypto/rand"
@@ -346,4 +346,53 @@ func TestAuthMiddleware_InactiveUserRejected(t *testing.T) {
 	if w.Code != http.StatusSeeOther {
 		t.Fatalf("Esperaba redirección a login (303) para admin desactivado, obtuvo %d", w.Code)
 	}
+}
+
+func TestAdminGuestMiddleware(t *testing.T) {
+	manager := newTestJWTManager(t)
+
+	r := gin.New()
+	r.Use(AdminGuestMiddleware(manager))
+	r.GET("/admin/login", func(c *gin.Context) {
+		c.String(http.StatusOK, "login-page")
+	})
+
+	t.Run("Usuario anónimo puede acceder a /admin/login", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/admin/login", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK para anónimo, obtenido: %d", w.Code)
+		}
+	})
+
+	t.Run("Usuario con admin_token válido y MFA verificado es redirigido a /admin", func(t *testing.T) {
+		token, _ := manager.GenerateToken(1, "admin@peak.local", util.AppIdPeakAuth, []string{"ADMIN"}, time.Hour, true)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/admin/login", nil)
+		req.AddCookie(&http.Cookie{Name: "admin_token", Value: token})
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Fatalf("se esperaba 303 See Other para admin logueado, obtenido: %d", w.Code)
+		}
+		if loc := w.Header().Get("Location"); loc != "/admin" {
+			t.Fatalf("se esperaba redirección a /admin, obtenido: %s", loc)
+		}
+	})
+
+	t.Run("Usuario con token MFA pendiente no es redirigido", func(t *testing.T) {
+		token, _ := manager.GenerateMFAPendingToken(1, "admin@peak.local", util.AppIdPeakAuth)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/admin/login", nil)
+		req.AddCookie(&http.Cookie{Name: "admin_token", Value: token})
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK para token con MFA pendiente, obtenido: %d", w.Code)
+		}
+	})
 }

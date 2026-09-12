@@ -573,3 +573,26 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 		"success": true,
 	})
 }
+// LogoutEndpoint maneja el Federated Logout (Single Logout) de OAuth2/OIDC.
+// Borra la cookie de sesión central (peak_session) y redirige al usuario de vuelta a la aplicación.
+func (c *OAuthController) LogoutEndpoint(ctx *gin.Context) {
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("peak_session", "", -1, "/", "", util.IsProduction(), true)
+
+	redirectURI := ctx.Query("post_logout_redirect_uri")
+	if redirectURI == "" {
+		redirectURI = ctx.Query("redirect_uri")
+	}
+	if redirectURI == "" {
+		redirectURI = ctx.PostForm("post_logout_redirect_uri")
+	}
+	if redirectURI == "" {
+		redirectURI = ctx.PostForm("redirect_uri")
+	}
+
+	if redirectURI != "" {
+		ctx.Redirect(http.StatusSeeOther, redirectURI)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "Sesión cerrada correctamente"})
+}
