@@ -230,115 +230,77 @@ Peak Auth ofrece flujos integrados tanto para usuarios del portal SSO como para 
 
 ## 🔌 Cómo Integrar tus Aplicaciones
 
-Gracias a los **JWT Asimétricos (RSA-256)** y a los endpoints estándar de descubrimiento OIDC/OAuth 2.0 (`GET /.well-known/openid-configuration` y `GET /.well-known/jwks.json`), cualquier aplicación cliente, framework o microservicio puede integrarse de forma automática, validando tokens **sin llamadas repetitivas** y con soporte automático para rotación de claves.
+Gracias a los **JWT Asimétricos (RSA-256)** y a los endpoints estándar de descubrimiento OIDC/OAuth 2.0 (`GET /.well-known/openid-configuration` y `GET /.well-known/jwks.json`), cualquier aplicación cliente, framework o microservicio puede validar tokens de forma offline **en microsegundos** sin necesidad de llamadas repetitivas al servidor ni de compartir claves privadas.
 
-### Opción A: Validación automática vía JWKS / OIDC (Recomendado)
+### 📦 SDKs Oficiales Livianos
 
-Peak Auth expone su conjunto de claves públicas en `/.well-known/jwks.json`. Librerías estándar como `jose` en Node/TypeScript pueden descargar y cachear las claves automáticamente:
+Peak Auth provee SDKs oficiales de primera clase, ultra-livianos y con cero dependencias innecesarias:
 
-```typescript
-import { createRemoteJWKSet, jwtVerify } from "jose";
+| Plataforma | Paquete / Módulo | Características |
+| :--- | :--- | :--- |
+| **Node.js / Express / Next.js** | [`@brunotarditi/peak-auth`](sdk/typescript/README.md) | Basado en `jose` (zero binaries), generador PKCE nativo, middlewares para Express y Next.js App Router. |
+| **Go / Gin / net/http** | [`github.com/brunotarditi/peak-auth/sdk/go`](sdk/go/README.md) | Cache thread-safe de JWKS, generador PKCE, middlewares para `net/http` y subpaquete `gin/`. |
 
-// Cachea automáticamente la clave pública usando el JWKS
-const JWKS = createRemoteJWKSet(new URL("http://localhost:8080/.well-known/jwks.json"));
+---
 
-export async function verifyToken(token: string, clientId: string) {
-  const { payload } = await jwtVerify(token, JWKS, {
-    issuer: "peak-auth",
-    audience: clientId,
-  });
-  return payload;
-}
-```
-
-### Opción B: Validación con Clave Pública PEM en Node.js / Express
-
-```javascript
-import jwt from "jsonwebtoken";
-import fs from "fs";
-
-// Cargar la clave PÚBLICA descargada de Peak Auth
-const publicKey = fs.readFileSync("./jwt_public.pem", "utf-8");
-
-export function authMiddleware(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Token no suministrado" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, publicKey, {
-      algorithms: ["RS256"],
-      issuer: "peak-auth",
-      audience: "TU_CLIENT_ID",
-    });
-
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(403).json({ error: "Token inválido o expirado" });
-  }
-}
-```
-
-### Opción C: Validación en Go (Gin Framework)
+### Ejemplo con Go SDK (Gin Framework)
 
 ```go
-package middleware
-
 import (
-	"crypto/rsa"
-	"net/http"
-	"os"
-	"strings"
-
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+    peakauth "github.com/brunotarditi/peak-auth/sdk/go"
+    peakauthgin "github.com/brunotarditi/peak-auth/sdk/go/gin"
 )
 
-var rsaPublicKey *rsa.PublicKey
+client, _ := peakauth.New(peakauth.Config{
+    IssuerURL: "https://auth.tuempresa.com",
+    ClientID:  "mi-aplicacion",
+})
 
-func InitPublicKey(path string) error {
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	rsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(bytes)
-	return err
-}
-
-func RequireAuth(clientID string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Bearer token requerido"})
-			return
-		}
-
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-			return rsaPublicKey, nil
-		},
-			jwt.WithValidMethods([]string{"RS256"}),
-			jwt.WithIssuer("peak-auth"),
-			jwt.WithAudience(clientID),
-		)
-
-		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token no válido"})
-			return
-		}
-
-		c.Set("claims", token.Claims)
-		c.Next()
-	}
-}
+r := gin.Default()
+r.GET("/api/protegido", peakauthgin.Middleware(client), func(c *gin.Context) {
+    claims, _ := peakauthgin.ClaimsFromContext(c)
+    c.JSON(200, gin.H{"usuario": claims.Username, "roles": claims.Roles})
+})
 ```
+
+---
+
+### Ejemplo con TypeScript SDK (Express)
+
+```typescript
+import express from 'express';
+import { PeakAuthClient } from '@brunotarditi/peak-auth';
+import { peakAuthMiddleware } from '@brunotarditi/peak-auth/express';
+
+const app = express();
+const client = new PeakAuthClient({
+  issuerUrl: 'https://auth.tuempresa.com',
+  clientId: 'mi-aplicacion',
+});
+
+app.get('/api/protegido', peakAuthMiddleware(client), (req, res) => {
+  res.json({ usuario: req.user });
+});
+```
+
+---
+
+## 🔄 Rotación Multi-Clave & Período de Gracia (Grace Period)
+
+Peak Auth implementa arquitectura **multi-key fail-closed** para rotar claves criptográficas sin caída de servicio ni deslogueos intempestivos:
+
+1. **Firma Activa**: Peak Auth firma exclusivamente con la clave activa actual configurada en `JWT_PRIVATE_KEY` y `JWT_KEY_ID`.
+2. **JWKS Público Multi-Clave**: `GET /.well-known/jwks.json` expone automáticamente la clave pública activa y todas las claves históricas vigentes en período de gracia.
+3. **Período de Gracia (`JWT_PREVIOUS_KEYS`)**: Permite conservar claves públicas previas mediante un array JSON de claves válidas:
+   ```env
+   JWT_KEY_ID="peak-auth-key-2"
+   JWT_PREVIOUS_KEYS='[{"kid":"peak-auth-key-1","public_key":"-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"}]'
+   ```
+4. **Ciclo de Vida de Rotación**:
+   - Generar nuevo par RSA y asignarle un nuevo identificador (`JWT_KEY_ID`).
+   - Mover la clave pública anterior a `JWT_PREVIOUS_KEYS`.
+   - Esperar al menos el TTL máximo de los tokens de acceso activos (ej. 24h) para permitir que los tokens previamente emitidos expiren de forma natural.
+   - Retirar la clave vieja de `JWT_PREVIOUS_KEYS`. Los SDKs actualizarán automáticamente su cache local sin requerir reinicios.
 
 ---
 

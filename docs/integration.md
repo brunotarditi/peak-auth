@@ -1,114 +1,192 @@
 # Guía de Integración de Peak Auth
 
-Peak Auth es un sistema de SSO (Single Sign-On) basado en **JWT Asimétrico (RSA-256)**. Esta guía explica cómo integrar cualquier aplicación cliente (frontend o backend) con Peak Auth.
+**Peak Auth** es un Proveedor de Identidad (IdP) y servidor Single Sign-On (SSO) basado en el estándar **OAuth 2.0 con PKCE** y **JWT Asimétricos (RSA-256)** con descubrimiento OIDC vía JWKS.
 
-## Conceptos Básicos
+Esta guía explica cómo integrar aplicaciones frontend (Angular, React, Vue, móvil) y backend (Go, Node.js/Express, Next.js) de forma rápida y segura.
 
-1. **Peak Auth actúa como el Proveedor de Identidad (IdP).** No necesitas programar sistemas de login, registro, o recuperación de contraseña en tu aplicación.
-2. **Aplicación Cliente:** Tu aplicación web, móvil o backend.
-3. **Claves Asimétricas:** Peak Auth firma los tokens con su **Clave Privada**. Tu aplicación verifica los tokens usando la **Clave Pública** de Peak Auth.
+---
 
-## Flujo de Autenticación (OAuth 2.0 / OIDC inspirado)
-
-1. El usuario intenta acceder a una ruta protegida en tu aplicación.
-2. Tu aplicación verifica si el usuario tiene una sesión local válida (un JWT).
-3. Si no la tiene, lo **rediriges** al portal de Peak Auth.
-4. El usuario inicia sesión en Peak Auth (introduciendo sus credenciales, MFA, etc).
-5. Tras un login exitoso, Peak Auth redirige al usuario de vuelta a tu aplicación (a la `RedirectURI` configurada) enviando un código o token.
-6. Tu aplicación recibe el token y le da acceso al usuario.
-
-## Paso 1: Configurar la Aplicación en Peak Auth
-
-1. Inicia sesión en el panel de administrador de Peak Auth (`/admin`).
-2. Haz clic en **Nueva Aplicación**.
-3. Rellena los datos:
-   - **Nombre:** Ej. `Librería Mariela`
-   - **URI de Redirección:** Ej. `http://localhost:3000/auth/callback` (donde volverá el usuario).
-4. Guarda los cambios. El sistema generará un **Client ID** y un **Client Secret**.
-
-## Paso 2: Redirigir al Login
-
-En tu aplicación cliente (ej. React, Vue, Next.js, o un backend en Go/Node), cuando un usuario pulse "Iniciar Sesión", envíalo a esta URL:
+## 🎯 Arquitectura de Integración
 
 ```text
-GET https://<TU_DOMINIO_PEAK_AUTH>/login?client_id=<TU_CLIENT_ID>&redirect_uri=<TU_REDIRECT_URI>
+Usuario en Frontend (Angular, React, Web)
+   │
+   ├─ 1. Inicia login OAuth PKCE ──────────────────────► Peak Auth (/oauth/authorize)
+   │                                                         │
+   │                                                         ├─ Verifica sesión SSO o pide login + MFA
+   │                                                         └─ Emite código de autorización
+   │
+   ├─ 2. Recibe Authorization Code en /callback ◄────────────┘
+   │
+   ├─ 3. Envía Code + Code Verifier a su Backend ──────► Backend de tu Aplicación
+                                                             │
+                                                             ├─ 4. Canjea Code por Token en Peak Auth (/oauth/token)
+                                                             ├─ 5. Recibe Access Token (JWT) + Refresh Token
+                                                             └─ 6. Valida firma offline vía JWKS (sin archivos PEM manuales)
 ```
 
-> **Nota:** La URL pública de login actualmente se expone en `/login` o mediante la API si utilizas tu propia interfaz.
+---
 
-## Paso 3: Validar el JWT Asimétrico en tu Backend
+## Paso 1: Registrar la Aplicación en Peak Auth
 
-Cuando recibas el **Access Token** de Peak Auth, tu aplicación cliente (específicamente tu backend o servidor) debe validarlo **sin hacer peticiones HTTP a Peak Auth**. Esto se logra usando la **Clave Pública**.
+1. Inicia sesión en el panel administrativo de Peak Auth (`/admin`).
+2. Ve a **Aplicaciones** ➔ **Nueva Aplicación**.
+3. Configura:
+   - **Nombre:** Ej. `Librería Mariela`
+   - **App ID (Client ID):** Ej. `libreria-mariela`
+   - **URI de Redirección:** Ej. `http://localhost:4200/callback` (donde vuelve tu frontend tras autenticarse).
+4. El sistema generará el `client_id` y su `client_secret`.
 
-### Ejemplo en Node.js (Express)
+---
 
-```javascript
-const jwt = require("jsonwebtoken");
-const fs = require("fs");
+## Paso 2: Flujo de Autorización Frontend (OAuth 2.0 + PKCE)
 
-// 1. Cargar la clave PÚBLICA (descargada previamente desde Peak Auth)
-const publicKeyPEM = fs.readFileSync("./jwt_public.pem", "utf-8");
+Para aplicaciones frontend (SPAs o móviles), se debe utilizar PKCE con método `S256` para evitar la interceptación de códigos de autorización.
 
-app.get("/api/protegido", (req, res) => {
-  const token = req.headers.authorization?.split(" ")[1];
+### 1. Generar PKCE (`code_verifier` y `code_challenge`)
+- `code_verifier`: Cadena aleatoria segura de 43 a 128 caracteres.
+- `code_challenge`: Hash SHA-256 del verifier codificado en base64url (sin padding).
 
-  if (!token) return res.status(401).json({ error: "No token" });
-
-  try {
-    // 2. Verificar el JWT usando RSA-256
-    const decoded = jwt.verify(token, publicKeyPEM, {
-      algorithms: ["RS256"],
-    });
-
-    // 3. El token es válido, y fue emitido por Peak Auth.
-    // 'decoded' contiene { sub: userID, roles: [...], email: "..." }
-    res.json({ message: "Acceso permitido", user: decoded });
-
-  } catch (err) {
-    res.status(403).json({ error: "Token inválido o expirado" });
-  }
-});
+### 2. Redirigir al usuario al endpoint de autorización:
+```text
+GET https://<TU_DOMINIO_PEAK_AUTH>/oauth/authorize
+    ?client_id=libreria-mariela
+    &redirect_uri=https://tu-app.com/callback
+    &response_type=code
+    &state=<STATE_CSRF_ALEATORIO>
+    &code_challenge=<CODE_CHALLENGE>
+    &code_challenge_method=S256
 ```
 
-### Ejemplo en Go (Gin Framework)
+### 3. Recibir el código en el callback:
+Tras el login (y verificación MFA si está configurado), Peak Auth redirige a:
+```text
+https://tu-app.com/callback?code=<AUTHORIZATION_CODE>&state=<STATE>
+```
 
+---
+
+## Paso 3: Validación y Consumo de Tokens en el Backend
+
+El backend puede validar tokens **de forma offline en microsegundos** utilizando los SDKs oficiales, los cuales descargan y cachean automáticamente las claves públicas desde `/.well-known/jwks.json`.
+
+### 🚀 Opción A: Backend en Go (SDK Oficial)
+
+```bash
+go get github.com/brunotarditi/peak-auth/sdk/go
+# Si usas Gin:
+go get github.com/brunotarditi/peak-auth/sdk/go/gin
+```
+
+#### Con Gin Framework:
 ```go
 package main
 
 import (
-    "crypto/rsa"
-    "fmt"
-    "os"
-    "strings"
-    "github.com/golang-jwt/jwt/v5"
+    "net/http"
+    "github.com/gin-gonic/gin"
+    peakauth "github.com/brunotarditi/peak-auth/sdk/go"
+    peakauthgin "github.com/brunotarditi/peak-auth/sdk/go/gin"
 )
 
-var publicKey *rsa.PublicKey
-
-func init() {
-    // Cargar clave pública
-    pubBytes, _ := os.ReadFile("jwt_public.pem")
-    publicKey, _ = jwt.ParseRSAPublicKeyFromPEM(pubBytes)
-}
-
-func AuthMiddleware(tokenString string) error {
-    token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-        if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
-            return nil, fmt.Errorf("método de firma inesperado: %v", t.Header["alg"])
-        }
-        return publicKey, nil
+func main() {
+    client, err := peakauth.New(peakauth.Config{
+        IssuerURL: "https://auth.tuempresa.com",
+        ClientID:  "libreria-mariela",
     })
-
-    if err != nil || !token.Valid {
-        return fmt.Errorf("token inválido")
+    if err != nil {
+        panic(err)
     }
 
-    return nil
+    r := gin.Default()
+
+    // Endpoint protegido (requiere token válido)
+    r.GET("/api/libros", peakauthgin.Middleware(client), func(c *gin.Context) {
+        claims, _ := peakauthgin.ClaimsFromContext(c)
+        c.JSON(http.StatusOK, gin.H{"usuario": claims.Username, "roles": claims.Roles})
+    })
+
+    // Endpoint protegido que requiere rol ADMIN
+    r.POST("/api/libros", peakauthgin.Middleware(client, "ADMIN"), func(c *gin.Context) {
+        c.JSON(http.StatusCreated, gin.H{"mensaje": "Libro creado"})
+    })
+
+    r.Run(":3000")
 }
 ```
 
-## Beneficios de este diseño
+#### Con `net/http` estándar o Chi:
+```go
+mux := http.NewServeMux()
+handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    claims, _ := peakauth.ClaimsFromContext(r.Context())
+    w.Write([]byte("Hola " + claims.Username))
+})
 
-- **Cero latencia:** Tu aplicación no tiene que llamar a la API de Peak Auth en cada petición para saber si el usuario está autorizado. Todo se valida matemáticamente en tu servidor mediante RSA.
-- **Microservicios:** Si tienes 5 APIs diferentes (Facturación, Inventario, Envíos), todas pueden compartir la misma clave pública y validar los tokens de Peak Auth sin comunicarse entre ellas.
-- **Roles Centralizados:** Los claims del JWT incluyen los roles (`ADMIN`, `USER`) específicos para *tu aplicación*.
+mux.Handle("/api/admin", client.HTTPMiddleware("ADMIN")(handler))
+```
+
+---
+
+### 🚀 Opción B: Backend en Node.js / Express / Next.js (SDK Oficial)
+
+```bash
+npm install @brunotarditi/peak-auth
+```
+
+#### Con Express:
+```typescript
+import express from 'express';
+import { PeakAuthClient } from '@brunotarditi/peak-auth';
+import { peakAuthMiddleware } from '@brunotarditi/peak-auth/express';
+
+const app = express();
+const peakAuth = new PeakAuthClient({
+  issuerUrl: 'https://auth.tuempresa.com',
+  clientId: 'libreria-mariela',
+});
+
+// Ruta protegida para usuarios autenticados
+app.get('/api/perfil', peakAuthMiddleware(peakAuth), (req, res) => {
+  res.json({ usuario: req.user });
+});
+
+// Ruta que exige rol específico
+app.get('/api/admin', peakAuthMiddleware(peakAuth, { requiredRoles: ['ADMIN'] }), (req, res) => {
+  res.json({ mensaje: 'Bienvenido Admin', usuario: req.user });
+});
+
+app.listen(3000);
+```
+
+#### Con Next.js App Router (`app/api/profile/route.ts`):
+```typescript
+import { NextResponse } from 'next/server';
+import { PeakAuthClient } from '@brunotarditi/peak-auth';
+import { verifyNextRequest } from '@brunotarditi/peak-auth/nextjs';
+
+const peakAuth = new PeakAuthClient({
+  issuerUrl: process.env.PEAK_AUTH_URL!,
+  clientId: process.env.PEAK_CLIENT_ID!,
+});
+
+export async function GET(request: Request) {
+  try {
+    const user = await verifyNextRequest(request, peakAuth);
+    return NextResponse.json({ user });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 401 });
+  }
+}
+```
+
+---
+
+## 🔄 Rotación de Claves Cero-Downtime
+
+1. Peak Auth publica todas las claves públicas válidas (la clave activa y las claves en período de gracia) en:
+   ```text
+   GET https://<TU_DOMINIO_PEAK_AUTH>/.well-known/jwks.json
+   ```
+2. Los SDKs oficiales cachean las claves en memoria y detectan automáticamente cuando un token llega firmado con un nuevo `kid`, recargando el JWKS de forma transparente.
+3. No se requiere copiar archivos `.pem` a los servidores cliente ni reiniciar los backends cuando se rotan claves en Peak Auth.
