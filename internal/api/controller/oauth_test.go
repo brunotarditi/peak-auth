@@ -162,6 +162,8 @@ func setupOAuthControllerTest(t *testing.T) (*gin.Engine, *auth.JWTManager, *tes
 	{
 		oauth.GET("/authorize", ctrl.AuthorizeEndpoint)
 		oauth.POST("/token", ctrl.TokenEndpoint)
+		oauth.GET("/logout", ctrl.LogoutEndpoint)
+		oauth.POST("/logout", ctrl.LogoutEndpoint)
 	}
 
 	return r, tm, oauthRepo, appRepo
@@ -432,5 +434,54 @@ func TestOAuth_Token_ExpiredCode_Rejected(t *testing.T) {
 	if wToken.Code != http.StatusBadRequest {
 		t.Fatalf("se esperaba 400 Bad Request por código expirado, obtenido: %d", wToken.Code)
 	}
+}
+
+// TestOAuth_LogoutEndpoint comprueba que el endpoint de logout limpie la sesión SSO y soporte redirección
+func TestOAuth_LogoutEndpoint(t *testing.T) {
+	r, _, _, _ := setupOAuthControllerTest(t)
+
+	t.Run("Logout sin redirect_uri retorna JSON 200 y borra cookie", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout", nil)
+		req.AddCookie(&http.Cookie{Name: "peak_session", Value: "valid_session_token"})
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK, obtenido: %d", w.Code)
+		}
+		setCookie := w.Header().Get("Set-Cookie")
+		if !strings.Contains(setCookie, "peak_session=") || !strings.Contains(setCookie, "Max-Age=0") {
+			t.Fatalf("se esperaba que la cookie peak_session fuera borrada, Set-Cookie: %s", setCookie)
+		}
+	})
+
+	t.Run("Logout con redirect_uri redirige 303 y borra cookie", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?redirect_uri=https://portal.client.com", nil)
+		req.AddCookie(&http.Cookie{Name: "peak_session", Value: "valid_session_token"})
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Fatalf("se esperaba 303 See Other, obtenido: %d", w.Code)
+		}
+		if loc := w.Header().Get("Location"); loc != "https://portal.client.com" {
+			t.Fatalf("se esperaba redirección a https://portal.client.com, obtenido: %s", loc)
+		}
+	})
+
+	t.Run("Logout POST con post_logout_redirect_uri redirige 303", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		form := url.Values{"post_logout_redirect_uri": {"https://portal.client.com/logged-out"}}
+		req, _ := http.NewRequest(http.MethodPost, "/oauth/logout", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Fatalf("se esperaba 303 See Other, obtenido: %d", w.Code)
+		}
+		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/logged-out" {
+			t.Fatalf("se esperaba redirección a post_logout_redirect_uri, obtenido: %s", loc)
+		}
+	})
 }
 

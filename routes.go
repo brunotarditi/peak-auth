@@ -94,7 +94,9 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	oauth := r.Group("/oauth")
 	{
 		oauth.GET("/authorize", oauthCtrl.AuthorizeEndpoint)
-		oauth.POST("/token", oauthCtrl.TokenEndpoint)
+		oauth.POST("/token", oauthCtrl.TokenEndpoint) // S2S, might need basic auth or just form body
+		oauth.GET("/logout", oauthCtrl.LogoutEndpoint)  // Federated Logout (GET)
+		oauth.POST("/logout", oauthCtrl.LogoutEndpoint) // Federated Logout (POST)
 
 		// Flujo público de login para Web (SSO)
 		oauth.GET("/login", oauthCtrl.GetPublicLogin)
@@ -154,6 +156,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// ============================================================================
 	adminPublic := r.Group("/admin")
 	adminPublic.Use(middleware.AdminCSRFMiddleware())
+	adminPublic.Use(middleware.AdminGuestMiddleware(app.TokenManager))
 	{
 		adminPublic.GET("/login", loginCtrl.GetLoginForm)
 		adminPublic.POST("/login", loginLimiter, loginCtrl.PostLoginForm)

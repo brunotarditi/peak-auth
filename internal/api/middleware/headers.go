@@ -17,7 +17,7 @@ const contentSecurityPolicy = "default-src 'self'; " +
 	"font-src 'self' https://fonts.gstatic.com data:; " +
 	"img-src 'self' data: https:; " +
 	"connect-src 'self'; " +
-	"form-action 'self'; " +
+	"form-action *; " +
 	"object-src 'none'; " +
 	"base-uri 'self'; " +
 	"frame-ancestors 'none';"
