@@ -1,10 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"os"
-	"strings"
 	"time"
 
 	"peak-auth/internal/api/controller"
@@ -73,74 +69,34 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		TokenManager: app.TokenManager,
 	}
 
+	docsCtrl := &controller.DocsController{}
+
+	discoveryCtrl := &controller.DiscoveryController{
+		TokenManager: app.TokenManager,
+	}
+
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
 	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
 
-	// --- OIDC DISCOVERY ---
-	jwksHandler := func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
+	// ============================================================================
+	// OIDC & JWKS DISCOVERY (Público, CORS abierto para SDKs y librerías cliente)
+	// ============================================================================
+	r.GET("/.well-known/jwks.json", discoveryCtrl.JWKS)
+	r.OPTIONS("/.well-known/jwks.json", discoveryCtrl.JWKS)
+	r.GET("/.well-known/openid-configuration", discoveryCtrl.OpenIDConfiguration)
+	r.OPTIONS("/.well-known/openid-configuration", discoveryCtrl.OpenIDConfiguration)
 
-		if c.Request.Method == http.MethodOptions {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-
-		c.JSON(http.StatusOK, app.TokenManager.GetJWKS())
-	}
-	r.GET("/.well-known/jwks.json", jwksHandler)
-	r.OPTIONS("/.well-known/jwks.json", jwksHandler)
-
-	openIDConfigHandler := func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Header("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400")
-
-		if c.Request.Method == http.MethodOptions {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-
-		baseURL := strings.TrimRight(os.Getenv("APP_BASE_URL"), "/")
-		if baseURL == "" {
-			scheme := "http"
-			if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
-			baseURL = fmt.Sprintf("%s://%s", scheme, c.Request.Host)
-		}
-
-		issuer := os.Getenv("JWT_ISSUER")
-		if issuer == "" {
-			issuer = "peak-auth"
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"issuer":                                issuer,
-			"authorization_endpoint":                baseURL + "/oauth/authorize",
-			"token_endpoint":                        baseURL + "/oauth/token",
-			"jwks_uri":                              baseURL + "/.well-known/jwks.json",
-			"response_types_supported":              []string{"code"},
-			"subject_types_supported":               []string{"public"},
-			"id_token_signing_alg_values_supported": []string{"RS256"},
-			"code_challenge_methods_supported":      []string{"S256"},
-			"token_endpoint_auth_methods_supported": []string{"client_secret_post", "client_secret_basic", "none"},
-		})
-	}
-	r.GET("/.well-known/openid-configuration", openIDConfigHandler)
-	r.OPTIONS("/.well-known/openid-configuration", openIDConfigHandler)
-
-	// --- OAUTH2 ENDPOINTS ---
+	// ============================================================================
+	// OAUTH 2.0 & SSO FLOW (/oauth)
+	// Flujo de autorización estándar con PKCE y vistas públicas de login SSO
+	// ============================================================================
 	oauth := r.Group("/oauth")
 	{
 		oauth.GET("/authorize", oauthCtrl.AuthorizeEndpoint)
-		oauth.POST("/token", oauthCtrl.TokenEndpoint) // S2S, might need basic auth or just form body
+		oauth.POST("/token", oauthCtrl.TokenEndpoint)
 
-		// Flujo público de login para Web
+		// Flujo público de login para Web (SSO)
 		oauth.GET("/login", oauthCtrl.GetPublicLogin)
 		oauth.POST("/login", loginLimiter, oauthCtrl.PostPublicLogin)
 		oauth.GET("/login/mfa", oauthCtrl.GetPublicLoginMfa)
@@ -152,19 +108,18 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		oauth.POST("/login/mfa/setup/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupWebAuthnFinish)
 	}
 
-	docsCtrl := &controller.DocsController{}
-
-	// --- SETUP & USER ACTIONS (App inicial) ---
-	// Estas rutas también usan protección CSRF (double-submit cookie).
-
-	// Estas rutas también usan protección CSRF (double-submit cookie).
+	// ============================================================================
+	// SETUP & RECOVERY (Acciones de cuenta y bootstrap inicial)
+	// ============================================================================
 	r.GET("/setup", middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
 	r.POST("/setup", middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
 	r.GET("/verify", registerCtrl.GetVerifyEmail)
 	r.GET("/reset-password", middleware.AdminCSRFMiddleware(), userCtrl.GetResetPassword)
 	r.POST("/reset-password", resetLimiter, middleware.AdminCSRFMiddleware(), userCtrl.PostResetPassword)
 
-	// --- API V1 (Para integraciones externas) ---
+	// ============================================================================
+	// API V1 Pública para integraciones externas
+	// ============================================================================
 	api := r.Group("/api/v1")
 	api.Use(middleware.CORSMiddleware())
 	{
@@ -179,7 +134,9 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		api.POST("/refresh", loginLimiter, userCtrl.Refresh)
 	}
 
-	// --- API V1 Protegida (MFA configuration) ---
+	// ============================================================================
+	// API V1 Protegida (MFA configuration)
+	// ============================================================================
 	apiPrivate := r.Group("/api/v1")
 	apiPrivate.Use(middleware.CORSMiddleware())
 	apiPrivate.Use(middleware.AuthMiddleware(app.TokenManager, app.UserRepo))
@@ -192,7 +149,9 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		apiPrivate.GET("/mfa/status", userCtrl.GetMfaStatus)
 	}
 
+	// ============================================================================
 	// --- RUTAS PÚBLICAS DE ADMINISTRACIÓN ---
+	// ============================================================================
 	adminPublic := r.Group("/admin")
 	adminPublic.Use(middleware.AdminCSRFMiddleware())
 	{
@@ -213,7 +172,9 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		adminPublic.POST("/setup", setupCtrl.ProcessSetup)
 	}
 
-	// --- RUTAS PROTEGIDAS DE ADMINISTRACIÓN ---
+	// ============================================================================
+	// --- RUTAS PRIVADAS DE ADMINISTRACIÓN ---
+	// ============================================================================
 	adminPrivate := r.Group("/admin")
 	adminPrivate.Use(middleware.SecurityHeaderMiddleware())
 	adminPrivate.Use(middleware.AdminCSRFMiddleware())

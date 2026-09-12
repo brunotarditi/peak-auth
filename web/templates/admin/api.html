@@ -1,23 +1,17 @@
 {{ define "content" }}
 <div style="display: flex; gap: 2rem; width: 100%; padding: 1rem 0;">
     <!-- Sidebar Navegación -->
-    <aside class="api-sidebar">
+    <aside class="api-sidebar" style="width: 16rem; flex-shrink: 0; border-right: 1px solid var(--border-light); padding-right: 1.5rem; display: none;">
         <nav style="position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem;">
             <div>
-                <h4
-                    style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
-                    Conceptos Core</h4>
-                <ul
-                    style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                    Conceptos Core
+                </h4>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
                     <li>
-                        <a href="/admin/docs"
-                            style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; transition: color 0.2s;"
-                            onmouseover="this.style.color='var(--brand-600)'"
-                            onmouseout="this.style.color='var(--text-muted)'">
-                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        <a href="/admin/docs" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">
+                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                             Introducción
                         </a>
@@ -25,138 +19,233 @@
                 </ul>
             </div>
             <div>
-                <h4
-                    style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
-                    Desarrollo</h4>
-                <ul
-                    style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
-                    <li>
-                        <a href="/admin/docs/api"
-                            style="color: var(--brand-600); font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
-                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-                            </svg>
-                            API Endpoints
-                        </a>
-                    </li>
-                    <li><a href="#login"
-                            style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;"
-                            onmouseover="this.style.color='var(--brand-600)'"
-                            onmouseout="this.style.color='var(--text-muted)'">Autenticar Usuario</a></li>
-                    <li><a href="#refresh"
-                            style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;"
-                            onmouseover="this.style.color='var(--brand-600)'"
-                            onmouseout="this.style.color='var(--text-muted)'">Refresh Tokens</a></li>
-                    <li><a href="#validation"
-                            style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;"
-                            onmouseover="this.style.color='var(--brand-600)'"
-                            onmouseout="this.style.color='var(--text-muted)'">Validación de Firma</a></li>
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                    Endpoints
+                </h4>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                    <li><a href="#discovery" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">OIDC Discovery & JWKS</a></li>
+                    <li><a href="#oauth" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">OAuth 2.0 PKCE</a></li>
+                    <li><a href="#login" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">API Directa: Login</a></li>
+                    <li><a href="#refresh" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">API Directa: Refresh</a></li>
+                    <li><a href="#validation" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">SDKs & Validación</a></li>
                 </ul>
             </div>
         </nav>
     </aside>
-
+    <style>
+        @media (min-width: 768px) {
+            .api-sidebar { display: block !important; }
+        }
+    </style>
 
     <!-- Contenido Principal -->
     <main style="flex: 1; max-width: 48rem;">
         <div style="margin-bottom: 3rem;">
-            <h1
-                style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); margin-bottom: 1rem; letter-spacing: -0.025em;">
-                Referencia de API</h1>
+            <h1 style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); margin-bottom: 1rem; letter-spacing: -0.025em;">
+                Referencia de API y Protocolos
+            </h1>
             <p style="font-size: 1.125rem; color: var(--text-muted); line-height: 1.625;">
-                Endpoints de integración pública para interactuar con Peak Auth desde tus microservicios y aplicaciones
-                cliente.
+                Peak Auth expone interfaces estándar para descubrimiento OIDC, flujos de autorización OAuth 2.0 con PKCE, y una API REST directa (Headless) para clientes móviles y servicios backend.
             </p>
         </div>
 
-        <section id="login" style="margin-bottom: 3rem;">
-            <h2
-                style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
-                <span
-                    style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
-                /api/v1/login
+        <!-- SECCIÓN DISCOVERY -->
+        <section id="discovery" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+                Discovery OIDC & JWKS
             </h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
-                Autentica a un usuario y genera un JWT firmado mediante criptografía asimétrica. Requiere las
-                credenciales del cliente (App).
+                Endpoints públicos con cabeceras CORS habilitadas para que SDKs, librerías estándar OIDC y clientes puedan resolver la configuración y las claves públicas de validación de forma autónoma.
             </p>
-            <div
-                style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
-                <pre style="margin: 0;">
-                    <code>{
-                        "email": "email",
-                        "password": "password",
-                        "client_id": "mi-app-id",
-                        "client_secret": "secret-de-la-app"
-                    }</code>
-                </pre>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
+                    <code style="font-size: 1rem; font-weight: 600; color: var(--text-main);">/.well-known/jwks.json</code>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem;">
+                    Retorna el conjunto de claves públicas en formato estándar JWK (RFC 7517), incluyendo la clave activa actual y claves previas válidas durante periodos de rotación (<code style="font-family: monospace;">kid</code>).
+                </p>
+                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--emerald-500); font-family: monospace; overflow-x: auto;">
+                    <pre style="margin: 0;"><code>{
+  "keys": [
+    {
+      "kty": "RSA",
+      "use": "sig",
+      "alg": "RS256",
+      "kid": "peak-auth-key-1",
+      "n": "&lt;MODULO_RSA_BASE64URL&gt;",
+      "e": "AQAB"
+    }
+  ]
+}</code></pre>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
+                    <code style="font-size: 1rem; font-weight: 600; color: var(--text-main);">/.well-known/openid-configuration</code>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.875rem;">
+                    Metadatos de descubrimiento OpenID Connect con las URLs canónicas del servidor de autenticación.
+                </p>
+            </div>
+        </section>
+
+        <!-- SECCIÓN OAUTH 2.0 PKCE -->
+        <section id="oauth" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+                OAuth 2.0 con PKCE (Flujo de Autorización SSO)
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Recomendado para aplicaciones web, SPAs (Angular, React, Vue) y móviles. Permite autenticación centralizada con sesión compartida.
+            </p>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
+                    <code style="font-size: 1rem; font-weight: 600; color: var(--text-main);">/oauth/authorize</code>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    Redirige al usuario al portal de login. Si ya existe sesión SSO activa, emite el código de inmediato.
+                </p>
+                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace; overflow-x: auto;">
+                    <pre style="margin: 0;"><code>GET /oauth/authorize?response_type=code
+  &client_id=mi-app-id
+  &redirect_uri=https%3A%2F%2Fmi-app.com%2Fcallback
+  &code_challenge=&lt;CODE_CHALLENGE&gt;
+  &code_challenge_method=S256
+  &state=&lt;STATE&gt;</code></pre>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <span style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
+                    <code style="font-size: 1rem; font-weight: 600; color: var(--text-main);">/oauth/token</code>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    Intercambia el código de autorización temporal por los tokens de acceso definitivos (Access Token + Refresh Token).
+                </p>
+                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace; overflow-x: auto;">
+                    <pre style="margin: 0;"><code>{
+  "grant_type": "authorization_code",
+  "client_id": "mi-app-id",
+  "client_secret": "&lt;CLIENT_SECRET&gt;",
+  "code": "&lt;AUTHORIZATION_CODE&gt;",
+  "redirect_uri": "https://mi-app.com/callback",
+  "code_verifier": "&lt;CODE_VERIFIER&gt;"
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN API DIRECTA -->
+        <section id="login" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
+                /api/v1/login (Headless / M2M)
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Para clientes nativos o APIs máquina a máquina (M2M) que requieren autenticación directa sin interfaz web de redirección. Si el usuario tiene MFA activo o la aplicación lo exige mediante políticas, retorna un token temporal <code style="font-family: monospace;">mfa_pending</code>.
+            </p>
+            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace;">
+                <pre style="margin: 0;"><code>{
+  "email": "usuario@ejemplo.com",
+  "password": "&lt;PASSWORD&gt;",
+  "client_id": "mi-app-id",
+  "client_secret": "&lt;CLIENT_SECRET&gt;"
+}</code></pre>
             </div>
             <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Respuesta Exitosa</h4>
-            <div
-                style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--emerald-500); font-family: monospace;">
-                <pre style="margin: 0;">
-                    <code>{
-                        "access_token": "access_token>",
-                        "refresh_token": "refresh_token",
-                        "expires_in": 3600
-                    }</code>
-                </pre>
+            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.8125rem; color: var(--emerald-500); font-family: monospace;">
+                <pre style="margin: 0;"><code>{
+  "access_token": "&lt;ACCESS_TOKEN&gt;",
+  "refresh_token": "&lt;REFRESH_TOKEN&gt;",
+  "expires_in": 3600
+}</code></pre>
             </div>
         </section>
 
         <section id="refresh" style="margin-bottom: 3rem;">
-            <h2
-                style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
-                <span
-                    style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
                 /api/v1/refresh
             </h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
-                Obtiene un nuevo Access Token enviando un Refresh Token válido, sin necesidad de pedir usuario y
-                contraseña de nuevo. Aplica rotación de tokens (el viejo muere, uno nuevo nace).
+                Renueva el Access Token utilizando un Refresh Token válido. Implementa rotación criptográfica estricta con hash SHA-256: al consumirse el refresh token actual, es invalidado inmediatamente y se emite uno nuevo.
             </p>
-            <div
-                style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
-                <pre style="margin: 0;">
-                    <code>{
-                        "refresh_token": "refresh_token"
-                    }</code>
-                </pre>
+            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace;">
+                <pre style="margin: 0;"><code>{
+  "refresh_token": "&lt;REFRESH_TOKEN&gt;",
+  "client_id": "mi-app-id"
+}</code></pre>
             </div>
         </section>
 
+        <!-- SECCIÓN VALIDACIÓN CON SDKS -->
         <section id="validation" style="margin-bottom: 3rem;">
-            <h2
-                style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
-                Validación en tu Aplicación</h2>
-            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
-                Tu aplicación NO necesita llamar a Peak Auth para validar cada request. En su lugar, usa el archivo
-                público <code>jwt_public.pem</code>.
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+                Validación en tu Aplicación (SDKs Oficiales)
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.625;">
+                Tu backend NO debe llamar a Peak Auth en cada petición. Los SDKs oficiales consultan el endpoint JWKS, cachean las claves públicas en memoria y validan la firma criptográfica RSA-256, expiración y audiencia de forma 100% local y con latencia cero.
             </p>
-            <div
-                style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; overflow-x: auto; font-size: 0.875rem; color: var(--slate-300); font-family: monospace;">
-                <pre style="margin: 0;">
-                    <code>// Ejemplo en Node.js
-                        const jwt = require("jsonwebtoken");
-                        const fs = require("fs");
 
-                        const publicKey = fs.readFileSync("./jwt_public.pem", "utf-8");
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+                    1. TypeScript / Node.js (<code style="font-family: monospace;">@brunotarditi/peak-auth</code>)
+                </h3>
+                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace; overflow-x: auto;">
+                    <pre style="margin: 0;"><code>import { createPeakAuthClient } from "@brunotarditi/peak-auth";
+import { peakAuthExpress } from "@brunotarditi/peak-auth/express";
 
-                        app.get("/recurso-protegido", (req, res) => {
-                            const token = req.headers.authorization.split(" ")[1];
-                            try {
-                                // Validación local (sin latencia de red)
-                                const decoded = jwt.verify(token, publicKey, { algorithms: ["RS256"] });
-                                res.json({ user: decoded.email });
-                            } catch (err) {
-                                res.status(401).send("Token Inválido");
-                            }
-                        });
-                    </code>
-                </pre>
+const client = createPeakAuthClient({
+  baseUrl: "https://auth.tu-dominio.com",
+  clientId: "mi-app-id",
+});
+
+// Middleware Express automático:
+app.use("/api", peakAuthExpress({ baseUrl: "https://auth.tu-dominio.com", clientId: "mi-app-id" }));
+
+// O verificación manual en cualquier endpoint:
+const claims = await client.verifyToken(token);
+console.log("Usuario autenticado:", claims.email, claims.roles);</code></pre>
+                </div>
             </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+                    2. Go (<code style="font-family: monospace;">github.com/brunotarditi/peak-auth/sdk/go</code>)
+                </h3>
+                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace; overflow-x: auto;">
+                    <pre style="margin: 0;"><code>import (
+    peakauth "github.com/brunotarditi/peak-auth/sdk/go"
+    ginpeak "github.com/brunotarditi/peak-auth/sdk/go/gin"
+)
+
+client, err := peakauth.NewClient(peakauth.Config{
+    BaseURL:  "https://auth.tu-dominio.com",
+    ClientID: "mi-app-id",
+})
+
+// Middleware para Gin Web Framework:
+r.GET("/protegido", ginpeak.AuthMiddleware(client), func(c *gin.Context) {
+    claims, _ := ginpeak.GetClaims(c)
+    c.JSON(200, gin.H{"user": claims.Email, "roles": claims.Roles})
+})</code></pre>
+                </div>
+            </div>
+
+            <div style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 1rem; border-radius: var(--radius-xl); color: #1e40af; font-size: 0.875rem;">
+                <strong style="font-weight: 700; display: block; margin-bottom: 0.25rem;">Cero distribución de archivos PEM</strong>
+                Gracias al protocolo JWKS y la compatibilidad de los SDKs, ya no necesitas copiar archivos <code style="background: rgba(255,255,255,0.5); padding: 0.125rem 0.25rem; border-radius: 0.25rem;">jwt_public.pem</code> a cada servidor o contenedor. La resolución y rotación de claves es totalmente transparente.
+            </div>
+            <style>
+                .dark [style*="color: #1e40af"] { color: #93c5fd !important; }
+                .dark [style*="background: rgba(255,255,255,0.5)"] { background: rgba(0,0,0,0.2) !important; }
+            </style>
         </section>
 
     </main>
