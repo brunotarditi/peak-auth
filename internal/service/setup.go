@@ -102,41 +102,36 @@ func (s *setupService) InitializeSystem(port string) {
 		return
 	}
 
-	// 2. Generamos el token en memoria
-	token, _, _ := util.GenerateToken(32)
-	s.ephemeralToken = token
-	s.tokenExpiry = time.Now().Add(2 * time.Hour) // Expira en 2 horas
-
 	baseURL := util.BaseURL()
 
 	log.Printf("================================================================")
-	log.Printf("⚠️  PEAK-AUTH: MODO INSTALACIÓN ACTIVADO")
-	if util.IsProduction() {
-		log.Printf("Token efímero de inicialización generado (validez: 2 horas).")
-		log.Printf("URL de Setup segura: %s/setup", baseURL)
-		log.Printf("Configure la cuenta inicial proporcionando el token efímero asignado.")
-	} else {
-		log.Printf("Token efímero (solo memoria): %s", s.ephemeralToken)
-		log.Printf("URL de Setup: %s/setup?token=%s", baseURL, s.ephemeralToken)
+	log.Printf("⚠️  PEAK-AUTH: MODO INSTALACIÓN ACTIVADO (Primer arranque)")
+	log.Printf("Acceda a %s/setup para inicializar la cuenta maestra ROOT.", baseURL)
+	if s.setupToken != "" {
+		log.Printf("Autenticación requerida con SETUP_TOKEN configurado en entorno.")
 	}
 	log.Printf("================================================================")
 }
 
 func (s *setupService) ValidateSetupToken(token string) error {
-	if s.ephemeralToken == "" || token == "" || subtle.ConstantTimeCompare([]byte(s.ephemeralToken), []byte(token)) != 1 {
-		return errors.New("token de instalación inválido")
+	// Si se configuró un SETUP_TOKEN en .env, se exige coincidencia estricta
+	if s.setupToken != "" {
+		if token == "" || subtle.ConstantTimeCompare([]byte(s.setupToken), []byte(token)) != 1 {
+			return errors.New("token de instalación inválido")
+		}
+		return nil
 	}
 
-	if time.Now().After(s.tokenExpiry) {
-		// Si expiró, el admin debe reiniciar el server para generar uno nuevo
-		return errors.New("el token ha expirado, reinicie el servidor")
+	// Si no se configuró SETUP_TOKEN, se permite en primer arranque
+	first, _ := s.setupRepo.IsFirstRun()
+	if first {
+		return nil
 	}
-
-	return nil
+	return errors.New("el sistema ya ha sido configurado")
 }
 
 func (s *setupService) CompleteSetup(rootUser model.User) {
 	s.ephemeralToken = ""
 	s.tokenExpiry = time.Time{}
-	log.Println("✅ Setup finalizado. Token efímero destruido.")
+	log.Println("✅ Setup finalizado. Cuenta ROOT creada con éxito.")
 }
