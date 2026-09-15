@@ -71,6 +71,9 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	if err != nil {
 		return response.TokenResponse{}, fmt.Errorf("aplicación no autorizada")
 	}
+	if !app.IsActive {
+		return response.TokenResponse{}, fmt.Errorf("la aplicación está desactivada")
+	}
 
 	// 2. Aplicar política de intentos fallidos (SESSION_POLICY) (solo si NO es ROOT global)
 	isRoot := false
@@ -222,6 +225,9 @@ func (s *userService) Register(req request.RegisterRequest) (model.User, error) 
 	app, err := s.appRepo.FindByAppID(req.AppID)
 	if err != nil {
 		return model.User{}, fmt.Errorf("aplicación no encontrada")
+	}
+	if !app.IsActive {
+		return model.User{}, fmt.Errorf("la aplicación está desactivada")
 	}
 	// 1) Comprobar si existe un usuario con ese email
 	var user model.User
@@ -799,6 +805,9 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (res
 	app, err := s.appRepo.FindByAppID(publicAppID)
 	if err != nil {
 		return response.TokenResponse{}, fmt.Errorf("aplicación no encontrada")
+	}
+	if !app.IsActive {
+		return response.TokenResponse{}, fmt.Errorf("la aplicación está desactivada")
 	}
 
 	// 1. Validar reglas de autorización (AUTHZ_POLICY)

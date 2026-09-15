@@ -73,6 +73,9 @@ func (r *testAppRepo) ValidateSecret(appID, secret string) (model.Application, e
 	if !exists {
 		return model.Application{}, fmt.Errorf("app no encontrada")
 	}
+	if !app.IsActive {
+		return model.Application{}, fmt.Errorf("la aplicación está desactivada")
+	}
 	if app.SecretKey != secret {
 		return model.Application{}, fmt.Errorf("secreto inválido")
 	}
@@ -481,6 +484,46 @@ func TestOAuth_LogoutEndpoint(t *testing.T) {
 		}
 		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/logged-out" {
 			t.Fatalf("se esperaba redirección a post_logout_redirect_uri, obtenido: %s", loc)
+		}
+	})
+}
+
+func TestOAuth_DeactivatedApp(t *testing.T) {
+	r, _, _, appRepo := setupOAuthControllerTest(t)
+
+	appRepo.apps["disabled-app"] = &model.Application{
+		ID:          20,
+		AppID:       "disabled-app",
+		SecretKey:   "disabled-secret",
+		RedirectURL: "https://disabled.com/callback",
+		IsActive:    false,
+	}
+
+	t.Run("App desactivada no puede autorizar flujo OAuth", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/authorize?client_id=disabled-app&redirect_uri=https://disabled.com/callback&response_type=code", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code == http.StatusFound {
+			t.Fatalf("App desactivada no debería permitir autorización, obtuvo redirect: %v", w.Header().Get("Location"))
+		}
+	})
+
+	t.Run("App desactivada no puede intercambiar token", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		form := url.Values{
+			"grant_type":    {"authorization_code"},
+			"client_id":     {"disabled-app"},
+			"client_secret": {"disabled-secret"},
+			"code":          {"any-code"},
+			"redirect_uri":  {"https://disabled.com/callback"},
+		}
+		req, _ := http.NewRequest(http.MethodPost, "/oauth/token", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code == http.StatusOK {
+			t.Fatalf("App desactivada no debe permitir intercambio de token, obtuvo 200 OK")
 		}
 	})
 }
