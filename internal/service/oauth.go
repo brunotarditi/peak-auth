@@ -37,6 +37,10 @@ func (s *oauthService) ValidateClientRedirect(clientID, redirectURI string) erro
 		return errors.New("client_id inválido")
 	}
 
+	if !app.IsActive {
+		return errors.New("la aplicación está desactivada")
+	}
+
 	cleanAppURL := strings.TrimRight(strings.TrimSpace(app.RedirectURL), "/")
 	cleanReqURL := strings.TrimRight(strings.TrimSpace(redirectURI), "/")
 	if cleanAppURL != cleanReqURL {

@@ -393,8 +393,9 @@ func (m *mockRuleServiceForMfa) FindRulesByAppID(appID uint) ([]model.Applicatio
 func TestCompleteLoginWithMfa_RejectsWhenAppRequiresMfaAndUserHasNoMfa(t *testing.T) {
 	appRepo := newMockAppRepo()
 	appRepo.apps["secure-app"] = &model.Application{
-		Model: gorm.Model{ID: 10},
-		AppID: "secure-app",
+		Model:    gorm.Model{ID: 10},
+		AppID:    "secure-app",
+		IsActive: true,
 	}
 
 	userRepo := &mockUserRepo{
@@ -429,7 +430,7 @@ func TestCompleteLoginWithMfa_RejectsWhenAppRequiresMfaAndUserHasNoMfa(t *testin
 
 func TestRegister_ForbidsAdminAndRootRole(t *testing.T) {
 	appRepo := newMockAppRepo()
-	appRepo.apps["my-app"] = &model.Application{AppID: "my-app"}
+	appRepo.apps["my-app"] = &model.Application{AppID: "my-app", IsActive: true}
 
 	svc := &userService{
 		appRepo:  appRepo,
@@ -449,6 +450,40 @@ func TestRegister_ForbidsAdminAndRootRole(t *testing.T) {
 	})
 	if err == nil || !strings.Contains(err.Error(), "no puede otorgar roles administrativos") {
 		t.Fatalf("Esperaba bloqueo de rol administrativo en Register, obtuvo: %v", err)
+	}
+}
+
+func TestDeactivatedApp_RejectsLoginAndRegister(t *testing.T) {
+	appRepo := newMockAppRepo()
+	appRepo.apps["inactive-app"] = &model.Application{
+		Model:    gorm.Model{ID: 5},
+		AppID:    "inactive-app",
+		IsActive: false,
+	}
+
+	svc := &userService{
+		appRepo:  appRepo,
+		userRepo: &mockUserRepo{user: model.User{IsActive: true, IsVerified: true}},
+	}
+
+	// Login
+	passHash, _ := util.HashPassword("Password123!")
+	svc.userRepo = &mockUserRepo{user: model.User{Password: passHash, IsActive: true, IsVerified: true}}
+	_, err := svc.Login(request.LoginRequest{Email: "user@test.com", Password: "Password123!"}, "inactive-app")
+	if err == nil || !strings.Contains(err.Error(), "la aplicación está desactivada") {
+		t.Fatalf("Esperaba error de aplicación desactivada en Login, obtuvo: %v", err)
+	}
+
+	// Register
+	_, err = svc.Register(request.RegisterRequest{Email: "user@test.com", AppID: "inactive-app"})
+	if err == nil || !strings.Contains(err.Error(), "la aplicación está desactivada") {
+		t.Fatalf("Esperaba error de aplicación desactivada en Register, obtuvo: %v", err)
+	}
+
+	// CompleteLoginWithMfa
+	_, err = svc.CompleteLoginWithMfa(1, "inactive-app")
+	if err == nil || !strings.Contains(err.Error(), "la aplicación está desactivada") {
+		t.Fatalf("Esperaba error de aplicación desactivada en CompleteLoginWithMfa, obtuvo: %v", err)
 	}
 }
 

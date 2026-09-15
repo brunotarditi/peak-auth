@@ -1,10 +1,11 @@
 package repo
 
 import (
-	"peak-auth/internal/api/response"
-	"peak-auth/internal/store/model"
+	"errors"
 	"time"
 
+	"peak-auth/internal/api/response"
+	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
 
 	"gorm.io/gorm"
@@ -58,11 +59,14 @@ func (r *applicationRepository) FindByName(name string) (model.Application, erro
 }
 
 // ValidateSecret comprueba el secret proporcionado para la app pública y
-// devuelve la aplicación si la credencial es válida.
+// devuelve la aplicación si la credencial es válida y la aplicación está activa.
 func (r *applicationRepository) ValidateSecret(appID string, secret string) (model.Application, error) {
 	app, err := r.FindByAppID(appID)
 	if err != nil {
 		return model.Application{}, err
+	}
+	if !app.IsActive {
+		return model.Application{}, errors.New("la aplicación está desactivada")
 	}
 	if !util.CheckPasswordHash(secret, app.SecretKey) {
 		return model.Application{}, gorm.ErrRecordNotFound
