@@ -219,16 +219,47 @@ async function openMfaSettings() {
             });
 
             if (confirmDisable.isConfirmed) {
-                const finalConfirm = await peakConfirm({
-                    title: '¿Confirmar desactivación?',
-                    text: 'Esto reducirá la seguridad de su cuenta.',
-                    confirmText: 'Sí, Desactivar',
-                    type: 'danger'
+                const stepUpConfirm = await PeakModal.fire({
+                    title: 'Confirmar Desactivación',
+                    html: `
+                        <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Para confirmar la desactivación de 2FA, ingrese su contraseña actual o un código de verificación:</p>
+                        <input id="stepup-credential" type="password" class="peak-input" placeholder="Contraseña o código 2FA" autocomplete="current-password" />
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, Desactivar',
+                    cancelButtonText: 'Cancelar',
+                    background: themeConfig.background,
+                    color: themeConfig.color,
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'peak-card',
+                        confirmButton: 'peak-btn peak-btn-danger',
+                        cancelButton: 'peak-btn peak-btn-secondary',
+                        actions: 'swal2-actions-custom'
+                    },
+                    preConfirm: () => {
+                        const val = document.getElementById('stepup-credential').value.trim();
+                        if (!val) {
+                            PeakModal.showValidationMessage('Debe ingresar su contraseña o código');
+                            return false;
+                        }
+                        return val;
+                    }
                 });
 
-                if (finalConfirm) {
-                    const disableRes = await fetch('/api/v1/mfa/totp/disable', { method: 'POST' });
-                    if (disableRes.ok) showToast('MFA desactivado', 'success');
+                if (stepUpConfirm.isConfirmed) {
+                    const cred = stepUpConfirm.value;
+                    const disableRes = await fetch('/api/v1/mfa/totp/disable', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: cred, code: cred })
+                    });
+                    if (disableRes.ok) {
+                        showToast('MFA desactivado correctamente', 'success');
+                    } else {
+                        const errData = await disableRes.json();
+                        showToast(errData.error || 'Error al desactivar MFA', 'error');
+                    }
                 }
             }
         } else {

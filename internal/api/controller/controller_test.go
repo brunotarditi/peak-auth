@@ -1,6 +1,7 @@
-﻿package controller
+package controller
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"peak-auth/internal/api/response"
+	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
 )
@@ -204,3 +206,216 @@ func TestRevokeUserAccess_AllowsRevokingRegularUser(t *testing.T) {
 		t.Fatalf("El acceso debió haberse revocado")
 	}
 }
+
+type mockUserServiceForStepUp struct {
+	service.UserService
+	user *model.User
+}
+
+func (m *mockUserServiceForStepUp) FindVerifiedUserByID(id uint) (*model.User, error) {
+	if m.user != nil {
+		return m.user, nil
+	}
+	return nil, fmt.Errorf("usuario no encontrado")
+}
+
+type mockMfaServiceForStepUp struct {
+	service.MfaService
+	mfaEnabled bool
+	disabled   bool
+	totpCode   string
+}
+
+func (m *mockMfaServiceForStepUp) IsMfaEnabled(userID uint) bool {
+	return m.mfaEnabled
+}
+
+func (m *mockMfaServiceForStepUp) DisableMFA(userID uint) error {
+	m.disabled = true
+	return nil
+}
+
+func (m *mockMfaServiceForStepUp) ValidateTOTPCode(userID uint, code string) error {
+	if m.totpCode != "" && m.totpCode == code {
+		return nil
+	}
+	return fmt.Errorf("código inválido")
+}
+
+func (m *mockMfaServiceForStepUp) ValidateRecoveryCode(userID uint, code string) error {
+	return fmt.Errorf("código inválido")
+}
+
+func (m *mockMfaServiceForStepUp) SetupTOTP(userID uint, userEmail string) (*response.TOTPSetupResponse, error) {
+	return &response.TOTPSetupResponse{Secret: "JBSWY3DPEHPK3PXP"}, nil
+}
+
+func TestDisableMFA_RequiresAuthentication(t *testing.T) {
+	ctrl := &UserController{}
+	r := gin.New()
+	r.POST("/api/v1/mfa/totp/disable", ctrl.DisableMFA)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"pass"}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Esperaba 401 Unauthorized sin sesión de usuario, obtuvo %d", w.Code)
+	}
+}
+
+func TestDisableMFA_RequiresPasswordOrCode(t *testing.T) {
+	ctrl := &UserController{}
+	r := gin.New()
+	r.POST("/api/v1/mfa/totp/disable", func(c *gin.Context) {
+		c.Set("user_id", uint(1))
+		ctrl.DisableMFA(c)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Esperaba 400 Bad Request sin password ni code, obtuvo %d", w.Code)
+	}
+}
+
+func TestDisableMFA_RejectsWrongCredentials(t *testing.T) {
+	passHash, _ := util.HashPassword("CorrectPassword123!")
+	userSvc := &mockUserServiceForStepUp{
+		user: &model.User{
+			Password: passHash,
+		},
+	}
+	mfaSvc := &mockMfaServiceForStepUp{
+		totpCode: "123456",
+	}
+
+	ctrl := &UserController{
+		UserService: userSvc,
+		MfaService:  mfaSvc,
+	}
+
+	r := gin.New()
+	r.POST("/api/v1/mfa/totp/disable", func(c *gin.Context) {
+		c.Set("user_id", uint(1))
+		ctrl.DisableMFA(c)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"WrongPassword","code":"000000"}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Esperaba 401 Unauthorized con credenciales incorrectas, obtuvo %d", w.Code)
+	}
+	if mfaSvc.disabled {
+		t.Fatalf("MFA no debió haberse desactivado")
+	}
+}
+
+func TestDisableMFA_SucceedsWithValidPassword(t *testing.T) {
+	passHash, _ := util.HashPassword("CorrectPassword123!")
+	userSvc := &mockUserServiceForStepUp{
+		user: &model.User{
+			Password: passHash,
+		},
+	}
+	mfaSvc := &mockMfaServiceForStepUp{
+		mfaEnabled: true,
+	}
+
+	ctrl := &UserController{
+		UserService: userSvc,
+		MfaService:  mfaSvc,
+	}
+
+	r := gin.New()
+	r.POST("/api/v1/mfa/totp/disable", func(c *gin.Context) {
+		c.Set("user_id", uint(1))
+		ctrl.DisableMFA(c)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"CorrectPassword123!"}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Esperaba 200 OK con contraseña válida, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+	if !mfaSvc.disabled {
+		t.Fatalf("MFA debió haberse desactivado")
+	}
+}
+
+func TestDisableMFA_SucceedsWithValidMfaCode(t *testing.T) {
+	passHash, _ := util.HashPassword("OtherPassword")
+	userSvc := &mockUserServiceForStepUp{
+		user: &model.User{
+			Password: passHash,
+		},
+	}
+	mfaSvc := &mockMfaServiceForStepUp{
+		mfaEnabled: true,
+		totpCode:   "654321",
+	}
+
+	ctrl := &UserController{
+		UserService: userSvc,
+		MfaService:  mfaSvc,
+	}
+
+	r := gin.New()
+	r.POST("/api/v1/mfa/totp/disable", func(c *gin.Context) {
+		c.Set("user_id", uint(1))
+		ctrl.DisableMFA(c)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"code":"654321"}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Esperaba 200 OK con código TOTP válido, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+	if !mfaSvc.disabled {
+		t.Fatalf("MFA debió haberse desactivado")
+	}
+}
+
+func TestSetupTOTPLogin_RejectsWhenMfaAlreadyEnabled(t *testing.T) {
+	_, tm, _, _ := setupOAuthControllerTest(t)
+	mfaToken, err := tm.GenerateMFAPendingToken(1, "user@test.com", "client-portal")
+	if err != nil {
+		t.Fatalf("Error generando token MFA: %v", err)
+	}
+
+	mfaSvc := &mockMfaServiceForStepUp{
+		mfaEnabled: true, // Ya tiene MFA activo
+	}
+
+	loginCtrl := &LoginController{
+		TokenManager: tm,
+		MfaService:   mfaSvc,
+	}
+
+	r := gin.New()
+	r.POST("/login/mfa/totp/setup", loginCtrl.SetupTOTPLogin)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/login/mfa/totp/setup", nil)
+	req.Header.Set("Authorization", "Bearer "+mfaToken)
+	req.Header.Set("X-App-ID", "client-portal")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("Esperaba 403 Forbidden al intentar re-enrolar MFA cuando ya está activo, obtuvo %d", w.Code)
+	}
+}
+

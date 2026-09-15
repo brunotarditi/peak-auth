@@ -67,6 +67,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		UserService:  app.UserService,
 		MfaService:   app.MfaService,
 		TokenManager: app.TokenManager,
+		RuleService:  app.RuleService,
+		AppService:   app.AppService,
 	}
 
 	docsCtrl := &controller.DocsController{}
