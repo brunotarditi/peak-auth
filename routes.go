@@ -115,6 +115,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// ============================================================================
 	// SETUP & RECOVERY (Acciones de cuenta y bootstrap inicial)
 	// ============================================================================
+	r.POST("/setup/auth", middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
 	r.GET("/setup", middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
 	r.POST("/setup", middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
 	r.GET("/verify", registerCtrl.GetVerifyEmail)
@@ -173,6 +174,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		adminPublic.POST("/login/mfa/webauthn/finish", loginLimiter, middleware.AdminCSRFMiddleware(), loginCtrl.FinishWebAuthnLoginAdmin)
 
 		// El setup también es accesible desde /admin/setup
+		adminPublic.POST("/setup/auth", setupCtrl.AuthenticateSetup)
 		adminPublic.GET("/setup", setupCtrl.ShowSetup)
 		adminPublic.POST("/setup", setupCtrl.ProcessSetup)
 	}

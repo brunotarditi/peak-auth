@@ -37,7 +37,6 @@
             </div>
 
             <form id="setupForm" action="/setup" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;" novalidate>
-                <input type="hidden" name="token" value="{{.SetupToken}}">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 
                 <div style="margin-bottom: 0;" class="form-group">
