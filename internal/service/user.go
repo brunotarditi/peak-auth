@@ -150,9 +150,10 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 		if r.Code == "MFA_POLICY" {
 			policy, err := util.ParseMfaPolicy(r.Value)
 			if err == nil {
-				if policy.Mode == "REQUIRED" {
+				switch policy.Mode {
+				case "REQUIRED":
 					mfaRequiredByPolicy = true
-				} else if policy.Mode == "DISABLED" {
+				case "DISABLED":
 					mfaDisabledByPolicy = true
 				}
 			}
@@ -579,9 +580,10 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 		if r.Code == "MFA_POLICY" {
 			policy, err := util.ParseMfaPolicy(r.Value)
 			if err == nil {
-				if policy.Mode == "REQUIRED" {
+				switch policy.Mode {
+				case "REQUIRED":
 					mfaRequiredByPolicy = true
-				} else if policy.Mode == "DISABLED" {
+				case "DISABLED":
 					mfaDisabledByPolicy = true
 				}
 			}
@@ -804,7 +806,7 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (res
 		return response.TokenResponse{}, err
 	}
 
-	// 2. Aplicar duración de sesión (SESSION_POLICY)
+	// 2. Aplicar duración de sesión (SESSION_POLICY) y validar MFA_POLICY
 	duration := time.Hour * 24
 	rules, err := s.ruleService.FindRulesByAppID(app.ID)
 	if err == nil {
@@ -813,6 +815,12 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (res
 				sess, err := util.ParseSessionPolicy(r.Value)
 				if err == nil && sess.TokenExpirationMinutes > 0 {
 					duration = time.Duration(sess.TokenExpirationMinutes) * time.Minute
+				}
+			}
+			if r.Code == "MFA_POLICY" {
+				mfaPol, err := util.ParseMfaPolicy(r.Value)
+				if err == nil && mfaPol.Mode == "REQUIRED" && !user.MfaEnabled {
+					return response.TokenResponse{}, fmt.Errorf("la aplicación requiere autenticación multi-factor (MFA)")
 				}
 			}
 		}

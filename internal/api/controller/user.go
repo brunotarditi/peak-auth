@@ -262,7 +262,7 @@ func (ctrl *UserController) VerifyTOTP(c *gin.Context) {
 	})
 }
 
-// DisableMFA desactiva el segundo factor para el usuario autenticado
+// DisableMFA desactiva el segundo factor para el usuario autenticado exigiendo autenticación paso a paso (step-up auth)
 func (ctrl *UserController) DisableMFA(c *gin.Context) {
 	val, exists := c.Get("user_id")
 	if !exists {
@@ -270,6 +270,36 @@ func (ctrl *UserController) DisableMFA(c *gin.Context) {
 		return
 	}
 	userID := val.(uint)
+
+	var req struct {
+		Password string `json:"password"`
+		Code     string `json:"code"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || (req.Password == "" && req.Code == "") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Se requiere contraseña o código MFA para confirmar la desactivación"})
+		return
+	}
+
+	user, err := ctrl.UserService.FindVerifiedUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado"})
+		return
+	}
+
+	authenticated := false
+	if req.Password != "" && util.CheckPasswordHash(req.Password, user.Password) {
+		authenticated = true
+	}
+	if !authenticated && req.Code != "" {
+		if ctrl.MfaService.ValidateTOTPCode(userID, req.Code) == nil || ctrl.MfaService.ValidateRecoveryCode(userID, req.Code) == nil {
+			authenticated = true
+		}
+	}
+
+	if !authenticated {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciales de confirmación incorrectas"})
+		return
+	}
 
 	if err := ctrl.MfaService.DisableMFA(userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

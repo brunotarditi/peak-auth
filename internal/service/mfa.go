@@ -227,6 +227,9 @@ func (s *mfaService) RegenerateRecoveryCodes(userID uint) ([]string, error) {
 
 // DisableMFA desactiva MFA completamente: elimina credenciales y códigos de recuperación.
 func (s *mfaService) DisableMFA(userID uint) error {
+	if !s.IsMfaEnabled(userID) {
+		return fmt.Errorf("MFA no está habilitado")
+	}
 	if err := s.mfaRepo.DeleteCredentialsByUser(userID); err != nil {
 		return fmt.Errorf("error eliminando credenciales MFA: %w", err)
 	}

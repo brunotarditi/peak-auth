@@ -480,6 +480,11 @@ func (ctrl *LoginController) SetupTOTPLogin(c *gin.Context) {
 		return
 	}
 
+	if ctrl.MfaService.IsMfaEnabled(userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario ya tiene MFA configurado; debe autenticarse con su factor existente"})
+		return
+	}
+
 	resp, err := ctrl.MfaService.SetupTOTP(userID, claims.Username)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -519,6 +524,11 @@ func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 	userID, err := parseUserIDFromSubject(claims.Subject)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
+
+	if ctrl.MfaService.IsMfaEnabled(userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario ya tiene MFA configurado"})
 		return
 	}
 
@@ -563,6 +573,11 @@ func (ctrl *LoginController) BeginWebAuthnRegistrationLogin(c *gin.Context) {
 		return
 	}
 
+	if ctrl.MfaService.IsMfaEnabled(userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario ya tiene MFA configurado; debe autenticarse con su factor existente"})
+		return
+	}
+
 	options, sessionData, err := ctrl.MfaService.BeginWebAuthnRegistration(userID, claims.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -594,6 +609,11 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 	userID, err := parseUserIDFromSubject(claims.Subject)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA inválido"})
+		return
+	}
+
+	if ctrl.MfaService.IsMfaEnabled(userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario ya tiene MFA configurado"})
 		return
 	}
 
@@ -645,6 +665,11 @@ func (ctrl *LoginController) PostAdminMfaSetup(c *gin.Context) {
 		return
 	}
 
+	if ctrl.MfaService.IsMfaEnabled(userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario ya tiene MFA configurado; debe autenticarse con su factor existente"})
+		return
+	}
+
 	resp, err := ctrl.MfaService.SetupTOTP(userID, claims.Username)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -678,6 +703,11 @@ func (ctrl *LoginController) PostAdminMfaVerifySetup(c *gin.Context) {
 	userID, err := parseUserIDFromSubject(claims.Subject)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+		return
+	}
+
+	if ctrl.MfaService.IsMfaEnabled(userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario ya tiene MFA configurado"})
 		return
 	}
 

@@ -20,6 +20,8 @@ type OAuthController struct {
 	UserService  service.UserService
 	MfaService   service.MfaService
 	TokenManager *auth.JWTManager
+	RuleService  service.ApplicationRuleService
+	AppService   service.ApplicationService
 }
 
 // AuthorizeEndpoint maneja GET /oauth/authorize
@@ -83,6 +85,54 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 		url.RawQuery = query.Encode()
 		ctx.Redirect(http.StatusFound, url.String())
 		return
+	}
+
+	// Validar si la app destino exige MFA_POLICY
+	if c.AppService != nil && c.RuleService != nil {
+		targetApp, err := c.AppService.GetAppDetails(clientID)
+		if err == nil {
+			rules, _ := c.RuleService.FindRulesByAppID(targetApp.ID)
+			for _, r := range rules {
+				if r.Code == "MFA_POLICY" {
+					policy, err := util.ParseMfaPolicy(r.Value)
+					if err == nil && policy.Mode == "REQUIRED" {
+						if !c.MfaService.IsMfaEnabled(userID) {
+							mfaToken, _ := c.TokenManager.GenerateMFAPendingToken(userID, claims.Username, clientID)
+							c.setMfaCookie(ctx, mfaToken)
+							redirectURL := url.URL{Path: "/oauth/login/mfa/setup"}
+							query := redirectURL.Query()
+							query.Set("client_id", clientID)
+							query.Set("redirect_uri", redirectURI)
+							query.Set("state", state)
+
+							if codeChallenge != "" {
+								query.Set("code_challenge", codeChallenge)
+								query.Set("code_challenge_method", codeChallengeMethod)
+							}
+							redirectURL.RawQuery = query.Encode()
+							ctx.Redirect(http.StatusFound, redirectURL.String())
+							return
+						}
+						if !claims.MfaVerified {
+							mfaToken, _ := c.TokenManager.GenerateMFAPendingToken(userID, claims.Username, clientID)
+							c.setMfaCookie(ctx, mfaToken)
+							redirectURL := url.URL{Path: "/oauth/login/mfa"}
+							query := redirectURL.Query()
+							query.Set("client_id", clientID)
+							query.Set("redirect_uri", redirectURI)
+							query.Set("state", state)
+							if codeChallenge != "" {
+								query.Set("code_challenge", codeChallenge)
+								query.Set("code_challenge_method", codeChallengeMethod)
+							}
+							redirectURL.RawQuery = query.Encode()
+							ctx.Redirect(http.StatusFound, redirectURL.String())
+							return
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// 2. Generar Authorization Code (con soporte PKCE)
@@ -298,6 +348,17 @@ func (c *OAuthController) GetPublicLoginMfaSetup(ctx *gin.Context) {
 		return
 	}
 
+	claims, err := c.TokenManager.VerifyMFAPendingToken(mfaToken, "")
+	if err == nil {
+		if userID, err := parseUserIDFromSubject(claims.Subject); err == nil {
+			if c.MfaService.IsMfaEnabled(userID) {
+				ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/oauth/login/mfa?client_id=%s&redirect_uri=%s&state=%s",
+					url.QueryEscape(ctx.Query("client_id")), url.QueryEscape(ctx.Query("redirect_uri")), url.QueryEscape(ctx.Query("state"))))
+				return
+			}
+		}
+	}
+
 	ctx.HTML(http.StatusOK, "oauth_login_mfa_setup.html", gin.H{
 		"MfaToken":    mfaToken,
 		"ClientID":    ctx.Query("client_id"),
@@ -493,6 +554,11 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 		return
 	}
 
+	if c.MfaService.IsMfaEnabled(userID) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "El usuario ya tiene MFA configurado"})
+		return
+	}
+
 	recoveryCodes, err := c.MfaService.VerifyAndActivateTOTP(userID, req.Code)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -544,6 +610,11 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 		return
 	}
 
+	if c.MfaService.IsMfaEnabled(userID) {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "El usuario ya tiene MFA configurado"})
+		return
+	}
+
 	sessionKey := fmt.Sprintf("wa_reg_%s", mfaToken)
 	sessionData, exists := service.GetWebAuthnSession(sessionKey)
 	if !exists {
@@ -573,6 +644,7 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 		"success": true,
 	})
 }
+
 // LogoutEndpoint maneja el Federated Logout (Single Logout) de OAuth2/OIDC.
 // Borra la cookie de sesión central (peak_session) y redirige al usuario de vuelta a la aplicación.
 func (c *OAuthController) LogoutEndpoint(ctx *gin.Context) {

@@ -377,6 +377,56 @@ func TestCompleteAdminLoginWithMfa_RejectsDeactivatedUser(t *testing.T) {
 	}
 }
 
+type mockRuleServiceForMfa struct {
+	ApplicationRuleService
+	rules []model.ApplicationRules
+}
+
+func (m *mockRuleServiceForMfa) ValidateLogin(appID, userID uint) error {
+	return nil
+}
+
+func (m *mockRuleServiceForMfa) FindRulesByAppID(appID uint) ([]model.ApplicationRules, error) {
+	return m.rules, nil
+}
+
+func TestCompleteLoginWithMfa_RejectsWhenAppRequiresMfaAndUserHasNoMfa(t *testing.T) {
+	appRepo := newMockAppRepo()
+	appRepo.apps["secure-app"] = &model.Application{
+		Model: gorm.Model{ID: 10},
+		AppID: "secure-app",
+	}
+
+	userRepo := &mockUserRepo{
+		user: model.User{
+			Model:      gorm.Model{ID: 1},
+			Email:      "user@test.com",
+			IsActive:   true,
+			IsVerified: true,
+			MfaEnabled: false,
+		},
+	}
+
+	svc := &userService{
+		userRepo: userRepo,
+		appRepo:  appRepo,
+		ruleService: &mockRuleServiceForMfa{
+			rules: []model.ApplicationRules{
+				{
+					ApplicationID: 10,
+					Code:          "MFA_POLICY",
+					Value:         []byte(`{"mode":"REQUIRED"}`),
+				},
+			},
+		},
+	}
+
+	_, err := svc.CompleteLoginWithMfa(1, "secure-app")
+	if err == nil || !strings.Contains(err.Error(), "la aplicación requiere autenticación multi-factor (MFA)") {
+		t.Fatalf("Esperaba error de requerimiento de MFA, obtuvo: %v", err)
+	}
+}
+
 func TestRegister_ForbidsAdminAndRootRole(t *testing.T) {
 	appRepo := newMockAppRepo()
 	appRepo.apps["my-app"] = &model.Application{AppID: "my-app"}
