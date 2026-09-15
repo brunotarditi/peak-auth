@@ -31,13 +31,14 @@ func (ctrl *SetupController) ShowSetup(c *gin.Context) {
 	}
 
 	if err := ctrl.SetupService.ValidateSetupToken(token); err != nil {
-		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "El token de inicialización (setup) es inválido o ha expirado.")
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "El token de inicialización (setup) es inválido o el sistema ya ha sido configurado.")
 		return
 	}
 
-	// Establecer cookie temporal HttpOnly para que no sea obligatorio mantener el token en el query param
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("setup_token", token, 3600, "/", "", util.IsProduction(), true)
+	if token != "" {
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("setup_token", token, 3600, "/", "", util.IsProduction(), true)
+	}
 
 	csrf, _ := c.Get("csrf_token")
 	c.HTML(200, "setup.html", gin.H{"SetupToken": token, "CSRFToken": csrf})
@@ -60,8 +61,8 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		}
 	}
 
-	if email == "" || password == "" || token == "" {
-		ctrl.renderError(c, http.StatusBadRequest, "Datos Incompletos", "Email, contraseña y token son requeridos para completar la configuración inicial.")
+	if email == "" || password == "" {
+		ctrl.renderError(c, http.StatusBadRequest, "Datos Incompletos", "Email y contraseña son requeridos para completar la configuración inicial.")
 		return
 	}
 

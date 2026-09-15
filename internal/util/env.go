@@ -28,8 +28,13 @@ func Scheme() string {
 func BaseURL() string {
 	if base := strings.TrimSpace(os.Getenv("APP_BASE_URL")); base != "" {
 		cleaned := strings.TrimRight(base, "/")
-		if IsProduction() && strings.HasPrefix(strings.ToLower(cleaned), "http://") {
-			cleaned = "https://" + cleaned[7:]
+		if IsProduction() {
+			if strings.HasPrefix(strings.ToLower(cleaned), "http://") {
+				return "https://" + cleaned[7:]
+			}
+			if !strings.Contains(cleaned, "://") {
+				return "https://" + cleaned
+			}
 		}
 		return cleaned
 	}
@@ -41,6 +46,9 @@ func BaseURL() string {
 	port := strings.TrimSpace(os.Getenv("PORT"))
 
 	scheme := Scheme()
+	if IsProduction() {
+		scheme = "https"
+	}
 	// En producción detrás de TLS no se incluye el puerto si es el estándar.
 	if port == "" || (scheme == "https" && port == "443") || (scheme == "http" && port == "80") {
 		return scheme + "://" + host
