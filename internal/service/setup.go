@@ -17,6 +17,7 @@ type SetupService interface {
 	IsFirstRun() (bool, error)
 	InitializeSystem(port string)
 	CompleteSetup(rootUser model.User)
+	RequiresToken() bool
 }
 
 type setupService struct {
@@ -25,6 +26,7 @@ type setupService struct {
 	setupToken     string
 	ephemeralToken string
 	tokenExpiry    time.Time
+	setupCompleted bool
 }
 
 func NewSetupService(setupRepo repo.SetupRepository, setupToken string, txManager repo.TransactionManager) SetupService {
@@ -33,6 +35,12 @@ func NewSetupService(setupRepo repo.SetupRepository, setupToken string, txManage
 
 func (s *setupService) CreateRootUser(email, password, token string) (model.User, error) {
 	var user model.User
+
+	// Prevent setup after it's been completed
+	if s.setupCompleted {
+		return model.User{}, errors.New("el sistema ya ha sido configurado")
+	}
+
 	if err := s.ValidateSetupToken(token); err != nil {
 		return model.User{}, errors.New("token de setup inválido")
 	}
@@ -84,7 +92,8 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 	})
 
 	if err == nil {
-		// Limpiamos el token en memoria únicamente si la transacción persistió correctamente
+		// Mark setup as completed - this makes the token permanently invalid
+		s.setupCompleted = true
 		s.CompleteSetup(user)
 	}
 
@@ -114,6 +123,11 @@ func (s *setupService) InitializeSystem(port string) {
 }
 
 func (s *setupService) ValidateSetupToken(token string) error {
+	// Prevent reuse after setup is completed
+	if s.setupCompleted {
+		return errors.New("el sistema ya ha sido configurado")
+	}
+
 	// Si se configuró un SETUP_TOKEN en .env, se exige coincidencia estricta
 	if s.setupToken != "" {
 		if token == "" || subtle.ConstantTimeCompare([]byte(s.setupToken), []byte(token)) != 1 {
@@ -128,6 +142,10 @@ func (s *setupService) ValidateSetupToken(token string) error {
 		return nil
 	}
 	return errors.New("el sistema ya ha sido configurado")
+}
+
+func (s *setupService) RequiresToken() bool {
+	return s.setupToken != ""
 }
 
 func (s *setupService) CompleteSetup(rootUser model.User) {

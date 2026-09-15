@@ -16,6 +16,33 @@ type SetupController struct {
 	TokenManager *auth.JWTManager
 }
 
+// AuthenticateSetup accepts the setup token via POST body and sets it in a secure cookie
+func (ctrl *SetupController) AuthenticateSetup(c *gin.Context) {
+	first, _ := ctrl.SetupService.IsFirstRun()
+	if !first {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El sistema ya ha sido configurado"})
+		return
+	}
+
+	token := c.PostForm("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Token requerido"})
+		return
+	}
+
+	// Validate token before setting cookie
+	if err := ctrl.SetupService.ValidateSetupToken(token); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Token de instalación inválido"})
+		return
+	}
+
+	// Set token in secure, HttpOnly cookie
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("setup_token", token, 7200, "/", "", util.IsProduction(), true) // 2 hours
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "redirect": "/setup"})
+}
+
 func (ctrl *SetupController) ShowSetup(c *gin.Context) {
 	first, _ := ctrl.SetupService.IsFirstRun()
 	if !first {
@@ -23,25 +50,38 @@ func (ctrl *SetupController) ShowSetup(c *gin.Context) {
 		return
 	}
 
-	token := c.Query("token")
-	if token == "" {
-		if cookie, err := c.Cookie("setup_token"); err == nil {
-			token = cookie
-		}
+	// Only accept token from cookie (never from query string to prevent URL logging)
+	token := ""
+	if cookie, err := c.Cookie("setup_token"); err == nil {
+		token = cookie
 	}
 
+	// If SETUP_TOKEN is required but not provided, show auth page
+	if ctrl.SetupService.RequiresToken() && token == "" {
+		// Apply no-store cache control
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Header("Pragma", "no-cache")
+		c.Header("Expires", "0")
+
+		csrf, _ := c.Get("csrf_token")
+		c.HTML(200, "setup_auth.html", gin.H{"CSRFToken": csrf})
+		return
+	}
+
+	// Validate token but don't pass it to the template
 	if err := ctrl.SetupService.ValidateSetupToken(token); err != nil {
 		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "El token de inicialización (setup) es inválido o el sistema ya ha sido configurado.")
 		return
 	}
 
-	if token != "" {
-		c.SetSameSite(http.SameSiteLaxMode)
-		c.SetCookie("setup_token", token, 3600, "/", "", util.IsProduction(), true)
-	}
+	// Apply no-store cache control to prevent caching of setup page
+	c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
 
 	csrf, _ := c.Get("csrf_token")
-	c.HTML(200, "setup.html", gin.H{"SetupToken": token, "CSRFToken": csrf})
+	// Do NOT pass SetupToken to template - validation is server-side only
+	c.HTML(200, "setup.html", gin.H{"CSRFToken": csrf})
 }
 
 func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
@@ -54,11 +94,11 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 
 	email := c.PostForm("email")
 	password := c.PostForm("password")
-	token := c.PostForm("token")
-	if token == "" {
-		if cookie, err := c.Cookie("setup_token"); err == nil {
-			token = cookie
-		}
+
+	// Only accept token from cookie (never from POST form to prevent logging)
+	token := ""
+	if cookie, err := c.Cookie("setup_token"); err == nil {
+		token = cookie
 	}
 
 	if email == "" || password == "" {
