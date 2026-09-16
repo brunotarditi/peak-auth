@@ -136,7 +136,8 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 	}
 
 	// 2. Generar Authorization Code (con soporte PKCE)
-	code, err := c.OAuthService.GenerateAuthorizationCode(userID, clientID, redirectURI, codeChallenge, codeChallengeMethod)
+	mfaCompleted := claims.MfaVerified
+	code, err := c.OAuthService.GenerateAuthorizationCode(userID, clientID, redirectURI, codeChallenge, codeChallengeMethod, mfaCompleted)
 	if err != nil {
 		// Por seguridad, si el redirectURI no es válido según BD, no redirigir
 		if err.Error() == "redirect_uri no coincide con la registrada" {
@@ -182,7 +183,7 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 	}
 
 	// Intercambiar código por Token validando client, secret, redirect_uri y PKCE code_verifier
-	userID, err := c.OAuthService.ExchangeCodeForToken(req.ClientID, req.ClientSecret, req.Code, req.RedirectURI, req.CodeVerifier)
+	userID, mfaCompleted, err := c.OAuthService.ExchangeCodeForToken(req.ClientID, req.ClientSecret, req.Code, req.RedirectURI, req.CodeVerifier)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": err.Error()})
 		return
@@ -190,7 +191,7 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 
 	// El token final se genera emulando un login completo (incluyendo roles para ese client_id)
 	// Para ello utilizamos CompleteLoginWithMfa (que simplemente expide un token JWT para el usuario en la app)
-	response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID)
+	response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID, mfaCompleted)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": err.Error()})
 		return
@@ -306,7 +307,7 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "Identificador de usuario inválido.")
 		return
 	}
-	ssoJWT, err := c.TokenManager.GenerateToken(uid, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
+	ssoJWT, err := c.TokenManager.GenerateToken(uid, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, false)
 	if err != nil {
 		c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "No se pudo generar la sesión SSO.")
 		return

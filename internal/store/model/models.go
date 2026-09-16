@@ -128,6 +128,7 @@ type OAuthCode struct {
 	ExpiresAt           time.Time `gorm:"index;not null"`
 	CodeChallenge       string    `gorm:"type:varchar(255)"`
 	CodeChallengeMethod string    `gorm:"type:varchar(20)"`
+	MfaCompleted        bool      `gorm:"default:false;not null"`
 	User                User      `gorm:"foreignKey:UserID"`
 }
 

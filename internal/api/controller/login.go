@@ -409,7 +409,7 @@ func (ctrl *LoginController) VerifyMfaTotp(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID)
+	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID, true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -450,7 +450,7 @@ func (ctrl *LoginController) VerifyMfaRecovery(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID)
+	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID, true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -539,7 +539,7 @@ func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 	}
 
 	// Login is complete, generate final token
-	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID)
+	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID, true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -633,7 +633,7 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 	service.DeleteWebAuthnSession(sessionKey)
 
 	// Login is complete, generate final token
-	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID)
+	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID, true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

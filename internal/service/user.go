@@ -34,7 +34,7 @@ type UserService interface {
 	Refresh(token string) (response.TokenResponse, error)
 	UnlockUser(userID uint) error
 	ResendVerification(userID uint, appID string) error
-	CompleteLoginWithMfa(userID uint, publicAppID string) (response.TokenResponse, error)
+	CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error)
 	CompleteAdminLoginWithMfa(userID uint) (string, int, error)
 }
 
@@ -187,7 +187,7 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	}
 
 	// 4. Generar Token JWT
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, true)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, false)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -788,7 +788,7 @@ func (s *userService) ResendVerification(userID uint, appID string) error {
 	return s.emailService.SendVerificationEmail(user.Email, plainToken, app.Name)
 }
 
-func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (response.TokenResponse, error) {
+func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
 	user, err := s.userRepo.FindById(userID)
 	if err != nil {
 		return response.TokenResponse{}, fmt.Errorf("usuario no encontrado")
@@ -828,8 +828,13 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (res
 			}
 			if r.Code == "MFA_POLICY" {
 				mfaPol, err := util.ParseMfaPolicy(r.Value)
-				if err == nil && mfaPol.Mode == "REQUIRED" && !user.MfaEnabled {
-					return response.TokenResponse{}, fmt.Errorf("la aplicación requiere autenticación multi-factor (MFA)")
+				if err == nil && mfaPol.Mode == "REQUIRED" {
+					if !user.MfaEnabled {
+						return response.TokenResponse{}, fmt.Errorf("la aplicación requiere autenticación multi-factor (MFA)")
+					}
+					if !mfaCompleted {
+						return response.TokenResponse{}, fmt.Errorf("la aplicación requiere completar autenticación multi-factor (MFA)")
+					}
 				}
 			}
 		}
@@ -846,7 +851,7 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string) (res
 	}
 
 	// 4. Generar Token JWT
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, true)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, mfaCompleted)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}

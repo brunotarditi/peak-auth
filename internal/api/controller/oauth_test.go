@@ -96,12 +96,12 @@ var _ repo.ApplicationRepository = (*testAppRepo)(nil)
 
 type testUserService struct {
 	service.UserService
-	completeLoginFn func(userID uint, publicAppID string) (response.TokenResponse, error)
+	completeLoginFn func(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error)
 }
 
-func (u *testUserService) CompleteLoginWithMfa(userID uint, publicAppID string) (response.TokenResponse, error) {
+func (u *testUserService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
 	if u.completeLoginFn != nil {
-		return u.completeLoginFn(userID, publicAppID)
+		return u.completeLoginFn(userID, publicAppID, mfaCompleted)
 	}
 	return response.TokenResponse{}, nil
 }
@@ -138,8 +138,8 @@ func setupOAuthControllerTest(t *testing.T) (*gin.Engine, *auth.JWTManager, *tes
 	oauthSvc := service.NewOAuthService(oauthRepo, appRepo)
 
 	mockUserSvc := &testUserService{
-		completeLoginFn: func(userID uint, publicAppID string) (response.TokenResponse, error) {
-			token, err := tm.GenerateToken(userID, "user@client.com", publicAppID, []string{"USER"}, time.Hour, true)
+		completeLoginFn: func(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
+			token, err := tm.GenerateToken(userID, "user@client.com", publicAppID, []string{"USER"}, time.Hour, mfaCompleted)
 			if err != nil {
 				return response.TokenResponse{}, err
 			}
