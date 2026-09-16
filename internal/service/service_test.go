@@ -238,39 +238,42 @@ func TestOAuthPKCEAndRedirectValidation(t *testing.T) {
 	h := sha256.Sum256([]byte(verifier))
 	challenge := base64.RawURLEncoding.EncodeToString(h[:])
 
-	code, err := oauthSvc.GenerateAuthorizationCode(42, clientID, redirectURI, challenge, "S256")
+	code, err := oauthSvc.GenerateAuthorizationCode(42, clientID, redirectURI, challenge, "S256", true)
 	if err != nil {
 		t.Fatalf("error generando authorization code: %v", err)
 	}
 
 	savedCode := *oauthRepo.codes[code]
-	_, err = oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, "https://evil.com/callback", verifier)
+	_, _, err = oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, "https://evil.com/callback", verifier)
 	if err == nil {
 		t.Fatalf("se esperaba error por redirect_uri incorrecta")
 	}
 
 	oauthRepo.codes[code] = &savedCode
-	_, err = oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, "", verifier)
+	_, _, err = oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, "", verifier)
 	if err == nil {
 		t.Fatalf("se esperaba error por omitir redirect_uri")
 	}
 
 	oauthRepo.codes[code] = &savedCode
-	_, err = oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, redirectURI, "wrong-verifier-12345678901234567890")
+	_, _, err = oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, redirectURI, "wrong-verifier-12345678901234567890")
 	if err == nil {
 		t.Fatalf("se esperaba error por code_verifier incorrecto")
 	}
 
 	oauthRepo.codes[code] = &savedCode
-	userID, err := oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, redirectURI, verifier)
+	userID, mfaCompleted, err := oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, redirectURI, verifier)
 	if err != nil {
 		t.Fatalf("error inesperado en canje válido: %v", err)
 	}
 	if userID != 42 {
 		t.Fatalf("se esperaba userID 42, obtenido: %d", userID)
 	}
+	if !mfaCompleted {
+		t.Fatalf("se esperaba mfaCompleted true, obtenido: %v", mfaCompleted)
+	}
 
-	_, err = oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, redirectURI, verifier)
+	_, _, err = oauthSvc.ExchangeCodeForToken(clientID, clientSecret, code, redirectURI, verifier)
 	if err == nil {
 		t.Fatalf("se esperaba error al intentar reutilizar código ya consumido")
 	}
@@ -352,7 +355,7 @@ func TestCompleteLoginWithMfa_RejectsDeactivatedUser(t *testing.T) {
 		userRepo: userRepo,
 	}
 
-	_, err := svc.CompleteLoginWithMfa(1, "my-app")
+	_, err := svc.CompleteLoginWithMfa(1, "my-app", true)
 	if err == nil || err.Error() != "usuario desactivado" {
 		t.Fatalf("Esperaba error 'usuario desactivado', pero obtuvo: %v", err)
 	}
@@ -422,9 +425,47 @@ func TestCompleteLoginWithMfa_RejectsWhenAppRequiresMfaAndUserHasNoMfa(t *testin
 		},
 	}
 
-	_, err := svc.CompleteLoginWithMfa(1, "secure-app")
+	_, err := svc.CompleteLoginWithMfa(1, "secure-app", false)
 	if err == nil || !strings.Contains(err.Error(), "la aplicación requiere autenticación multi-factor (MFA)") {
 		t.Fatalf("Esperaba error de requerimiento de MFA, obtuvo: %v", err)
+	}
+}
+
+func TestCompleteLoginWithMfa_RejectsWhenAppRequiresMfaAndMfaNotCompleted(t *testing.T) {
+	appRepo := newMockAppRepo()
+	appRepo.apps["secure-app"] = &model.Application{
+		Model:    gorm.Model{ID: 10},
+		AppID:    "secure-app",
+		IsActive: true,
+	}
+
+	userRepo := &mockUserRepo{
+		user: model.User{
+			Model:      gorm.Model{ID: 1},
+			Email:      "user@test.com",
+			IsActive:   true,
+			IsVerified: true,
+			MfaEnabled: true,
+		},
+	}
+
+	svc := &userService{
+		userRepo: userRepo,
+		appRepo:  appRepo,
+		ruleService: &mockRuleServiceForMfa{
+			rules: []model.ApplicationRules{
+				{
+					ApplicationID: 10,
+					Code:          "MFA_POLICY",
+					Value:         []byte(`{"mode":"REQUIRED"}`),
+				},
+			},
+		},
+	}
+
+	_, err := svc.CompleteLoginWithMfa(1, "secure-app", false)
+	if err == nil || !strings.Contains(err.Error(), "la aplicación requiere completar autenticación multi-factor (MFA)") {
+		t.Fatalf("Esperaba error de completar MFA, obtuvo: %v", err)
 	}
 }
 
@@ -481,7 +522,7 @@ func TestDeactivatedApp_RejectsLoginAndRegister(t *testing.T) {
 	}
 
 	// CompleteLoginWithMfa
-	_, err = svc.CompleteLoginWithMfa(1, "inactive-app")
+	_, err = svc.CompleteLoginWithMfa(1, "inactive-app", false)
 	if err == nil || !strings.Contains(err.Error(), "la aplicación está desactivada") {
 		t.Fatalf("Esperaba error de aplicación desactivada en CompleteLoginWithMfa, obtuvo: %v", err)
 	}

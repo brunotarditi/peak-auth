@@ -14,8 +14,8 @@ import (
 
 type OAuthService interface {
 	ValidateClientRedirect(clientID, redirectURI string) error
-	GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string) (string, error)
-	ExchangeCodeForToken(clientID, clientSecret, codeStr, redirectURI, codeVerifier string) (uint, error)
+	GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string, mfaCompleted bool) (string, error)
+	ExchangeCodeForToken(clientID, clientSecret, codeStr, redirectURI, codeVerifier string) (uint, bool, error)
 	StartCleanupTask(interval time.Duration)
 }
 
@@ -50,7 +50,7 @@ func (s *oauthService) ValidateClientRedirect(clientID, redirectURI string) erro
 	return nil
 }
 
-func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string) (string, error) {
+func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string, mfaCompleted bool) (string, error) {
 	// Verificar que el app existe y que la redirect URI coincide exactamente
 	if err := s.ValidateClientRedirect(clientID, redirectURI); err != nil {
 		return "", err
@@ -83,6 +83,7 @@ func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirect
 		RedirectURI:         redirectURI,
 		CodeChallenge:       codeChallenge,
 		CodeChallengeMethod: codeChallengeMethod,
+		MfaCompleted:        mfaCompleted,
 		ExpiresAt:           time.Now().Add(5 * time.Minute),
 	}
 
@@ -93,27 +94,27 @@ func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirect
 	return codeStr, nil
 }
 
-func (s *oauthService) ExchangeCodeForToken(clientID, clientSecret, codeStr, redirectURI, codeVerifier string) (uint, error) {
+func (s *oauthService) ExchangeCodeForToken(clientID, clientSecret, codeStr, redirectURI, codeVerifier string) (uint, bool, error) {
 	// 1. Validar las credenciales del cliente (app) usando hashing constante de secreto
 	_, err := s.appRepo.ValidateSecret(clientID, clientSecret)
 	if err != nil {
-		return 0, errors.New("credenciales de cliente inválidas")
+		return 0, false, errors.New("credenciales de cliente inválidas")
 	}
 
 	// 2. Obtener y consumir el código de un solo uso (One-Time Use Transactional)
 	code, err := s.oauthRepo.GetAndConsumeCode(codeStr)
 	if err != nil {
-		return 0, errors.New("código de autorización inválido o ya utilizado")
+		return 0, false, errors.New("código de autorización inválido o ya utilizado")
 	}
 
 	// 3. Verificar expiración (por si no lo agarró el cleanup)
 	if time.Now().After(code.ExpiresAt) {
-		return 0, errors.New("el código de autorización ha expirado")
+		return 0, false, errors.New("el código de autorización ha expirado")
 	}
 
 	// 4. Verificar que pertenece a este client_id
 	if code.ClientID != clientID {
-		return 0, errors.New("el código no pertenece a este client_id")
+		return 0, false, errors.New("el código no pertenece a este client_id")
 	}
 
 	// 5. Validación estricta de redirect_uri (RFC 6749 Sección 4.1.3)
@@ -121,30 +122,30 @@ func (s *oauthService) ExchangeCodeForToken(clientID, clientSecret, codeStr, red
 		cleanRedirectReq := strings.TrimRight(strings.TrimSpace(redirectURI), "/")
 		cleanRedirectCode := strings.TrimRight(strings.TrimSpace(code.RedirectURI), "/")
 		if cleanRedirectReq != cleanRedirectCode {
-			return 0, errors.New("redirect_uri no coincide con la asociada al código de autorización")
+			return 0, false, errors.New("redirect_uri no coincide con la asociada al código de autorización")
 		}
 	}
 
 	// 6. Validación de PKCE (RFC 7636)
 	if code.CodeChallenge != "" {
 		if codeVerifier == "" {
-			return 0, errors.New("code_verifier es requerido para este código de autorización")
+			return 0, false, errors.New("code_verifier es requerido para este código de autorización")
 		}
 
 		if code.CodeChallengeMethod == "S256" {
 			h := sha256.Sum256([]byte(codeVerifier))
 			computed := base64.RawURLEncoding.EncodeToString(h[:])
 			if subtle.ConstantTimeCompare([]byte(computed), []byte(code.CodeChallenge)) != 1 {
-				return 0, errors.New("code_verifier inválido")
+				return 0, false, errors.New("code_verifier inválido")
 			}
 		} else { // PLAIN
 			if subtle.ConstantTimeCompare([]byte(codeVerifier), []byte(code.CodeChallenge)) != 1 {
-				return 0, errors.New("code_verifier inválido")
+				return 0, false, errors.New("code_verifier inválido")
 			}
 		}
 	}
 
-	return code.UserID, nil
+	return code.UserID, code.MfaCompleted, nil
 }
 
 // StartCleanupTask inicia una goroutine que borra periódicamente los códigos expirados
