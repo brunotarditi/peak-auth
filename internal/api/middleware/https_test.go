@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRequireHTTPSMiddleware_Development(t *testing.T) {
@@ -27,8 +27,12 @@ func TestRequireHTTPSMiddleware_Development(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, "OK", w.Body.String())
+	if w.Code != 200 {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if w.Body.String() != "OK" {
+		t.Fatalf("expected OK, got %s", w.Body.String())
+	}
 }
 
 func TestRequireHTTPSMiddleware_ProductionWithTLS(t *testing.T) {
@@ -48,8 +52,12 @@ func TestRequireHTTPSMiddleware_ProductionWithTLS(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, "OK", w.Body.String())
+	if w.Code != 200 {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if w.Body.String() != "OK" {
+		t.Fatalf("expected OK, got %s", w.Body.String())
+	}
 }
 
 func TestRequireHTTPSMiddleware_ProductionWithTrustedProxy(t *testing.T) {
@@ -71,8 +79,12 @@ func TestRequireHTTPSMiddleware_ProductionWithTrustedProxy(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, "OK", w.Body.String())
+	if w.Code != 200 {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if w.Body.String() != "OK" {
+		t.Fatalf("expected OK, got %s", w.Body.String())
+	}
 }
 
 func TestRequireHTTPSMiddleware_ProductionWithoutTLS(t *testing.T) {
@@ -91,8 +103,12 @@ func TestRequireHTTPSMiddleware_ProductionWithoutTLS(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusForbidden, w.Code)
-	assert.Contains(t, w.Body.String(), "requires HTTPS")
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "requires HTTPS") {
+		t.Fatalf("expected error message to contain 'requires HTTPS', got %s", w.Body.String())
+	}
 }
 
 func TestRequireHTTPSMiddleware_ProductionWithUntrustedProxy(t *testing.T) {
@@ -112,6 +128,10 @@ func TestRequireHTTPSMiddleware_ProductionWithUntrustedProxy(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusForbidden, w.Code)
-	assert.Contains(t, w.Body.String(), "requires HTTPS")
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "requires HTTPS") {
+		t.Fatalf("expected error message to contain 'requires HTTPS', got %s", w.Body.String())
+	}
 }
