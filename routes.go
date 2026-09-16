@@ -94,6 +94,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// Flujo de autorización estándar con PKCE y vistas públicas de login SSO
 	// ============================================================================
 	oauth := r.Group("/oauth")
+	oauth.Use(middleware.RequireHTTPSMiddleware())
 	{
 		oauth.GET("/authorize", oauthCtrl.AuthorizeEndpoint)
 		oauth.POST("/token", oauthCtrl.TokenEndpoint) // S2S, might need basic auth or just form body
@@ -115,17 +116,18 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// ============================================================================
 	// SETUP & RECOVERY (Acciones de cuenta y bootstrap inicial)
 	// ============================================================================
-	r.POST("/setup/auth", middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
-	r.GET("/setup", middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
-	r.POST("/setup", middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
+	r.POST("/setup/auth", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
+	r.GET("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
+	r.POST("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
 	r.GET("/verify", registerCtrl.GetVerifyEmail)
-	r.GET("/reset-password", middleware.AdminCSRFMiddleware(), userCtrl.GetResetPassword)
-	r.POST("/reset-password", resetLimiter, middleware.AdminCSRFMiddleware(), userCtrl.PostResetPassword)
+	r.GET("/reset-password", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.GetResetPassword)
+	r.POST("/reset-password", resetLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.PostResetPassword)
 
 	// ============================================================================
 	// API V1 Pública para integraciones externas
 	// ============================================================================
 	api := r.Group("/api/v1")
+	api.Use(middleware.RequireHTTPSMiddleware())
 	api.Use(middleware.CORSMiddleware())
 	{
 		api.POST("/login", loginLimiter, loginCtrl.Login)
@@ -158,6 +160,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// --- RUTAS PÚBLICAS DE ADMINISTRACIÓN ---
 	// ============================================================================
 	adminPublic := r.Group("/admin")
+	adminPublic.Use(middleware.RequireHTTPSMiddleware())
 	adminPublic.Use(middleware.AdminCSRFMiddleware())
 	adminPublic.Use(middleware.AdminGuestMiddleware(app.TokenManager))
 	{

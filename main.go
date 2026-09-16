@@ -78,8 +78,24 @@ func main() {
 
 	appInstance.SetupService.InitializeSystem(port)
 
-	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("error starting server: %v", err)
+	// Check if TLS certificates are provided for direct TLS termination
+	tlsCert := os.Getenv("TLS_CERT_FILE")
+	tlsKey := os.Getenv("TLS_KEY_FILE")
+
+	if tlsCert != "" && tlsKey != "" {
+		log.Printf("Starting server with TLS on port %s", port)
+		if err := router.RunTLS(":"+port, tlsCert, tlsKey); err != nil {
+			log.Fatalf("error starting TLS server: %v", err)
+		}
+	} else {
+		if util.IsProduction() {
+			log.Println("⚠️  WARNING: Running in production mode without TLS certificates.")
+			log.Println("⚠️  Ensure a trusted HTTPS reverse proxy is configured with TRUSTED_PROXIES set.")
+			log.Println("⚠️  To terminate TLS in the application, set TLS_CERT_FILE and TLS_KEY_FILE.")
+		}
+		if err := router.Run(":" + port); err != nil {
+			log.Fatalf("error starting server: %v", err)
+		}
 	}
 
 }
