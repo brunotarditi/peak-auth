@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"peak-auth/internal/app"
 	"peak-auth/internal/auth"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -106,5 +107,57 @@ func TestJWKSEndpoint(t *testing.T) {
 	keys, ok := resp["keys"].([]interface{})
 	if !ok || len(keys) == 0 {
 		t.Fatalf("se esperaba array 'keys' no vacío, obtenido: %v", resp["keys"])
+	}
+}
+
+func TestOAuthLoginRoute_CSRFProtection(t *testing.T) {
+	r, _ := setupTestApp(t)
+
+	t.Run("Rechaza POST sin Origin ni Referer", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/oauth/login", strings.NewReader("email=test@example.com"))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Fatalf("se esperaba 403 Forbidden por falta de CSRF/Origin, obtenido: %d", w.Code)
+		}
+	})
+
+	t.Run("Rechaza POST con Origin pero sin token CSRF", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/oauth/login", strings.NewReader("email=test@example.com"))
+		req.Host = "localhost:8080"
+		req.Header.Set("Origin", "http://localhost:8080")
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Fatalf("se esperaba 403 Forbidden por falta de token CSRF, obtenido: %d", w.Code)
+		}
+	})
+
+	t.Run("GET emite cookie csrf_token", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/login", nil)
+		r.ServeHTTP(w, req)
+
+		cookieHeader := w.Header().Get("Set-Cookie")
+		if !strings.Contains(cookieHeader, "csrf_token=") {
+			t.Fatalf("se esperaba que GET /oauth/login establezca cookie csrf_token, obtenido: %q", cookieHeader)
+		}
+	})
+}
+
+func TestVerifyRoute_RequiresHTTPS(t *testing.T) {
+	t.Setenv("ENV", "production")
+	r, _ := setupTestApp(t)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/verify?token=dummy-token", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("se esperaba 403 Forbidden para /verify sin HTTPS en producción, obtenido: %d", w.Code)
 	}
 }

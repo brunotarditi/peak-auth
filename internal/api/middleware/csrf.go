@@ -14,7 +14,7 @@ const (
 	csrfMaxAge     = 3600 * 12 // 12 horas
 )
 
-// AdminCSRFMiddleware implementa protección CSRF con el patrón "double-submit cookie":
+// CSRFMiddleware implementa protección CSRF con el patrón "double-submit cookie":
 //
 //  1. En toda petición segura (GET/HEAD/OPTIONS) garantiza que exista una cookie
 //     csrf_token legible por JS. El front la reenvía en el header X-CSRF-Token.
@@ -23,7 +23,7 @@ const (
 //     en tiempo constante), y
 //     b) el Origin/Referer pertenezca al mismo host. A diferencia de la versión
 //     anterior, si Origin y Referer están AUSENTES la petición se RECHAZA.
-func AdminCSRFMiddleware() gin.HandlerFunc {
+func CSRFMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := getOrCreateCSRFToken(c)
 
@@ -52,6 +52,11 @@ func AdminCSRFMiddleware() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+// AdminCSRFMiddleware es un alias de compatibilidad para CSRFMiddleware.
+func AdminCSRFMiddleware() gin.HandlerFunc {
+	return CSRFMiddleware()
 }
 
 func getOrCreateCSRFToken(c *gin.Context) string {

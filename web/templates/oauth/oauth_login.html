@@ -7,21 +7,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar sesión con Peak Auth</title>
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
-    <!-- Vanilla CSS -->
     <link rel="stylesheet" href="/static/css/main.css">
-    <script src="/static/js/common.js"></script>
+    <script src="{{ js "config.js" }}"></script>
+    <script src="{{ js "common.js" }}"></script>
 </head>
 
 <body class="layout-auth">
-    <!-- Fondos dinámicos -->
     <div class="auth-bg-shapes">
         <div class="auth-blob-1"></div>
         <div class="auth-blob-2"></div>
     </div>
 
-    <!-- Contenedor Principal -->
     <div class="auth-container">
-        <!-- Logo -->
         <div style="text-align: center; margin-bottom: 2rem;">
             <div class="navbar-logo-wrapper" style="display: inline-flex; padding: 0.75rem; border-radius: 1rem; background: var(--bg-surface); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: 1rem;">
                 <img src="/static/img/logo.svg" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">

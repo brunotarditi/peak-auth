@@ -333,11 +333,13 @@ func (c *OAuthController) GetPublicLoginMfa(ctx *gin.Context) {
 		return
 	}
 
+	csrf, _ := ctx.Get("csrf_token")
 	ctx.HTML(http.StatusOK, "oauth_login_mfa.html", gin.H{
 		"MfaToken":    mfaToken,
 		"ClientID":    ctx.Query("client_id"),
 		"RedirectURI": ctx.Query("redirect_uri"),
 		"State":       ctx.Query("state"),
+		"CSRFToken":   csrf,
 	})
 }
 
@@ -360,11 +362,13 @@ func (c *OAuthController) GetPublicLoginMfaSetup(ctx *gin.Context) {
 		}
 	}
 
+	csrf, _ := ctx.Get("csrf_token")
 	ctx.HTML(http.StatusOK, "oauth_login_mfa_setup.html", gin.H{
 		"MfaToken":    mfaToken,
 		"ClientID":    ctx.Query("client_id"),
 		"RedirectURI": ctx.Query("redirect_uri"),
 		"State":       ctx.Query("state"),
+		"CSRFToken":   csrf,
 	})
 }
 
