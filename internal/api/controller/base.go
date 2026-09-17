@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"peak-auth/internal/service"
 	"peak-auth/internal/util"
 	"strconv"
 	"strings"
@@ -47,6 +48,27 @@ func (ctrl *BaseController) clearMfaCookie(c *gin.Context) {
 	c.SetCookie("mfa_pending_token", "", -1, "/", "", isSecure, true)
 }
 
+// setMfaTransactionCookie establece una cookie con el transaction ID opaco (no el JWT)
+func (ctrl *BaseController) setMfaTransactionCookie(c *gin.Context, transactionID string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	isSecure := util.IsProduction()
+	c.SetCookie("mfa_txn_id", transactionID, 300, "/", "", isSecure, true)
+}
+
+// clearMfaTransactionCookie borra la cookie de transaction ID
+func (ctrl *BaseController) clearMfaTransactionCookie(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	isSecure := util.IsProduction()
+	c.SetCookie("mfa_txn_id", "", -1, "/", "", isSecure, true)
+}
+
+// getMfaSessionIdentifier returns a stable session identifier for binding MFA transactions to the browser
+func (ctrl *BaseController) getMfaSessionIdentifier(c *gin.Context) string {
+	// Use a combination of factors to create a stable session identifier
+	// This binds the MFA transaction to the specific browser session
+	return c.ClientIP() + "|" + c.GetHeader("User-Agent")
+}
+
 // extractMfaToken obtiene el token MFA pendiente desde la cookie HttpOnly, el formulario o la cabecera Authorization (evitando URLs/query params por seguridad)
 func (ctrl *BaseController) extractMfaToken(c *gin.Context) string {
 	if cookie, err := c.Cookie("mfa_pending_token"); err == nil && cookie != "" {
@@ -60,6 +82,37 @@ func (ctrl *BaseController) extractMfaToken(c *gin.Context) string {
 		return strings.TrimSpace(auth[7:])
 	}
 	return ""
+}
+
+// extractMfaTransactionID obtiene el transaction ID desde la cookie
+func (ctrl *BaseController) extractMfaTransactionID(c *gin.Context) string {
+	if cookie, err := c.Cookie("mfa_txn_id"); err == nil && cookie != "" {
+		return cookie
+	}
+	return ""
+}
+
+// getMfaTransactionFromCookie retrieves and validates the MFA transaction from the cookie
+func (ctrl *BaseController) getMfaTransactionFromCookie(c *gin.Context) (*service.MfaTransaction, error) {
+	transactionID := ctrl.extractMfaTransactionID(c)
+	if transactionID == "" {
+		return nil, fmt.Errorf("no se encontró transaction ID de MFA")
+	}
+
+	sessionID := ctrl.getMfaSessionIdentifier(c)
+	txn, err := service.GetMfaTransaction(transactionID, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, nil
+}
+
+// setNoCacheHeaders sets Cache-Control headers to prevent caching of sensitive MFA pages
+func (ctrl *BaseController) setNoCacheHeaders(c *gin.Context) {
+	c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
 }
 
 // internalErrorJSON loguea el error real (para diagnóstico) y devuelve al cliente
