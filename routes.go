@@ -97,9 +97,10 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	oauth.Use(middleware.RequireHTTPSMiddleware())
 	{
 		oauth.GET("/authorize", oauthCtrl.AuthorizeEndpoint)
-		oauth.POST("/token", oauthCtrl.TokenEndpoint) // S2S, might need basic auth or just form body
-		oauth.GET("/logout", oauthCtrl.LogoutEndpoint)  // Federated Logout (GET)
-		oauth.POST("/logout", oauthCtrl.LogoutEndpoint) // Federated Logout (POST)
+		oauth.POST("/token", oauthCtrl.TokenEndpoint)    // Token Exchange (S2S o SPA)
+		oauth.OPTIONS("/token", oauthCtrl.TokenEndpoint) // Preflight CORS para clientes SPA
+		oauth.GET("/logout", oauthCtrl.LogoutEndpoint)   // Federated Logout (GET)
+		oauth.POST("/logout", oauthCtrl.LogoutEndpoint)  // Federated Logout (POST)
 
 		// Flujo público de login para Web (SSO) protegido con CSRF
 		oauthWeb := oauth.Group("/login")

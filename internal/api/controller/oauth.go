@@ -155,8 +155,22 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 	ctx.Redirect(http.StatusFound, finalRedirect)
 }
 
-// TokenEndpoint maneja POST /oauth/token
+// TokenEndpoint maneja POST y OPTIONS /oauth/token (RFC 6749, RFC 7636)
 func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
+	// Soporte CORS para clientes SPA
+	ctx.Header("Access-Control-Allow-Origin", "*")
+	ctx.Header("Access-Control-Allow-Methods", "POST, OPTIONS")
+	ctx.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	if ctx.Request.Method == http.MethodOptions {
+		ctx.AbortWithStatus(http.StatusNoContent)
+		return
+	}
+
+	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	ctx.Header("Cache-Control", "no-store")
+	ctx.Header("Pragma", "no-cache")
+
 	// Soporta tanto Form Data como JSON
 	var req struct {
 		ClientID     string `json:"client_id" form:"client_id"`
@@ -172,12 +186,29 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 		return
 	}
 
+	// Soporte client_secret_basic (RFC 6749 §2.3.1): si client_id o client_secret faltan en el cuerpo,
+	// intentar extraerlos del encabezado Authorization: Basic <base64(client_id:client_secret)>
+	if basicUser, basicPass, ok := ctx.Request.BasicAuth(); ok {
+		if unescapedUser, err := url.QueryUnescape(basicUser); err == nil {
+			basicUser = unescapedUser
+		}
+		if unescapedPass, err := url.QueryUnescape(basicPass); err == nil {
+			basicPass = unescapedPass
+		}
+		if req.ClientID == "" {
+			req.ClientID = basicUser
+		}
+		if req.ClientSecret == "" {
+			req.ClientSecret = basicPass
+		}
+	}
+
 	if req.GrantType != "authorization_code" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "unsupported_grant_type"})
 		return
 	}
 
-	if req.ClientID == "" || req.ClientSecret == "" || req.Code == "" {
+	if req.ClientID == "" || req.Code == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request"})
 		return
 	}
