@@ -61,6 +61,13 @@ func NewEmailService() *EmailService {
 		provider = &ResendProvider{ApiKey: apiKey, From: from}
 		log.Println("📧 Email Service initialized with RESEND provider")
 	} else {
+		// Fail closed in production: ConsoleProvider logs sensitive tokens
+		if util.IsProduction() {
+			log.Fatal("🚨 FATAL: EMAIL_PROVIDER must be RESEND with valid RESEND_API_KEY in production. " +
+				"ConsoleProvider logs bearer tokens (password reset, verification) to application logs, " +
+				"allowing credential theft by log readers. Set EMAIL_PROVIDER=RESEND and RESEND_API_KEY " +
+				"or set ENV to development/test for local work.")
+		}
 		provider = &ConsoleProvider{}
 		log.Println("📧 Email Service initialized with CONSOLE (Mock) provider")
 	}
