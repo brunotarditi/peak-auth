@@ -8,7 +8,6 @@ import (
 	"peak-auth/internal/audit"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
-	"peak-auth/internal/util"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -151,7 +150,7 @@ func (ctrl *LoginController) GetAdminMfaSetupForm(c *gin.Context) {
 	ctrl.setNoCacheHeaders(c)
 	
 	// Get MFA transaction from server-side store
-	txn, err := ctrl.getMfaTransactionFromCookie(c)
+	_, err := ctrl.getMfaTransactionFromCookie(c)
 	if err != nil {
 		ctrl.clearMfaTransactionCookie(c)
 		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("Acceso no autorizado o sesión MFA expirada"))
