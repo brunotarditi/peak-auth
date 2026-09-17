@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
+	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,7 @@ type UserController struct {
 	RuleService service.ApplicationRuleService
 	RoleService service.RoleService
 	MfaService  service.MfaService
+	UarRepo     repo.UserApplicationRoleRepository
 }
 
 // GetResetPassword muestra el formulario de cambio de contraseña
@@ -199,9 +201,28 @@ func (ctrl *UserController) GetAppUsers(c *gin.Context) {
 
 // PostUnlockUser resetea el contador de intentos fallidos de los usuarios bloqueados
 func (ctrl *UserController) PostUnlockUser(c *gin.Context) {
+	appIDParam := c.Param("id")
 	userIDStr := c.Param("user_id")
 	var userID uint
 	fmt.Sscanf(userIDStr, "%d", &userID)
+
+	// Verificar que la aplicación existe y obtener su ID interno
+	app, err := ctrl.AppService.GetAppDetails(appIDParam)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aplicación no encontrada"})
+		return
+	}
+
+	// Los administradores de plataforma pueden desbloquear cualquier usuario
+	isPlatformAdmin, _ := c.Get("is_platform_admin")
+	if isPlatformAdmin != true {
+		// Para administradores de aplicación, verificar que el usuario pertenece a la aplicación autorizada
+		belongs, err := ctrl.UarRepo.BelongsToApp(userID, app.ID)
+		if err != nil || !belongs {
+			c.JSON(http.StatusForbidden, gin.H{"error": "El usuario no pertenece a esta aplicación"})
+			return
+		}
+	}
 
 	if err := ctrl.UserService.UnlockUser(userID); err != nil {
 		c.JSON(500, gin.H{"error": "No se pudo desbloquear al usuario"})

@@ -22,6 +22,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		RuleService: app.RuleService,
 		RoleService: app.RoleService,
 		MfaService:  app.MfaService,
+		UarRepo:     app.UarRepo,
 	}
 
 	setupCtrl := &controller.SetupController{
