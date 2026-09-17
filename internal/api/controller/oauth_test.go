@@ -165,6 +165,7 @@ func setupOAuthControllerTest(t *testing.T) (*gin.Engine, *auth.JWTManager, *tes
 	{
 		oauth.GET("/authorize", ctrl.AuthorizeEndpoint)
 		oauth.POST("/token", ctrl.TokenEndpoint)
+		oauth.OPTIONS("/token", ctrl.TokenEndpoint)
 		oauth.GET("/logout", ctrl.LogoutEndpoint)
 		oauth.POST("/logout", ctrl.LogoutEndpoint)
 	}
@@ -594,5 +595,137 @@ func TestOAuth_Logout_OpenRedirectPrevention(t *testing.T) {
 			t.Fatalf("se esperaba redirección a https://portal.client.com/oauth/callback, obtenido: %s", loc)
 		}
 	})
+}
+
+func TestOAuth_TokenEndpoint_ClientSecretBasic(t *testing.T) {
+	r, _, oauthRepo, _ := setupOAuthControllerTest(t)
+
+	clientID := "client-portal"
+	clientSecret := "client-portal-secret-12345"
+	redirectURI := "https://portal.client.com/oauth/callback"
+
+	codeVerifier := "basic-auth-verifier-123456789012345678901234"
+	h := sha256.Sum256([]byte(codeVerifier))
+	codeChallenge := base64.RawURLEncoding.EncodeToString(h[:])
+
+	code := "test-code-basic-123"
+	oauthRepo.codes[code] = &model.OAuthCode{
+		Code:                code,
+		UserID:              42,
+		ClientID:            clientID,
+		RedirectURI:         redirectURI,
+		CodeChallenge:       codeChallenge,
+		CodeChallengeMethod: "S256",
+		MfaCompleted:        true,
+		ExpiresAt:           time.Now().Add(5 * time.Minute),
+	}
+
+	// Enviar solo code y redirect_uri en el body, credenciales en Authorization: Basic
+	tokenReqBody := url.Values{
+		"grant_type":    {"authorization_code"},
+		"code":          {code},
+		"redirect_uri":  {redirectURI},
+		"code_verifier": {codeVerifier},
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/oauth/token", strings.NewReader(tokenReqBody.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(clientID, clientSecret)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("se esperaba 200 OK con client_secret_basic, obtenido: %d, body: %s", w.Code, w.Body.String())
+	}
+
+	var tokenResp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &tokenResp); err != nil {
+		t.Fatalf("error parseando respuesta: %v", err)
+	}
+
+	accessToken, ok := tokenResp["access_token"].(string)
+	if !ok || accessToken == "" {
+		t.Fatalf("no se recibió access_token válido")
+	}
+
+	// Verificar cabeceras de seguridad
+	if w.Header().Get("Cache-Control") != "no-store" {
+		t.Errorf("se esperaba Cache-Control: no-store, obtenido: %q", w.Header().Get("Cache-Control"))
+	}
+	if w.Header().Get("Pragma") != "no-cache" {
+		t.Errorf("se esperaba Pragma: no-cache, obtenido: %q", w.Header().Get("Pragma"))
+	}
+	if w.Header().Get("Access-Control-Allow-Origin") != "*" {
+		t.Errorf("se esperaba Access-Control-Allow-Origin: *, obtenido: %q", w.Header().Get("Access-Control-Allow-Origin"))
+	}
+}
+
+func TestOAuth_TokenEndpoint_PublicClientPKCE(t *testing.T) {
+	r, _, oauthRepo, _ := setupOAuthControllerTest(t)
+
+	clientID := "client-portal"
+	redirectURI := "https://portal.client.com/oauth/callback"
+
+	codeVerifier := "public-client-pkce-verifier-12345678901234567890"
+	h := sha256.Sum256([]byte(codeVerifier))
+	codeChallenge := base64.RawURLEncoding.EncodeToString(h[:])
+
+	code := "test-code-public-123"
+	oauthRepo.codes[code] = &model.OAuthCode{
+		Code:                code,
+		UserID:              42,
+		ClientID:            clientID,
+		RedirectURI:         redirectURI,
+		CodeChallenge:       codeChallenge,
+		CodeChallengeMethod: "S256",
+		MfaCompleted:        false,
+		ExpiresAt:           time.Now().Add(5 * time.Minute),
+	}
+
+	// Solicitud sin client_secret (método auth "none")
+	tokenReqBody := url.Values{
+		"grant_type":    {"authorization_code"},
+		"client_id":     {clientID},
+		"code":          {code},
+		"redirect_uri":  {redirectURI},
+		"code_verifier": {codeVerifier},
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/oauth/token", strings.NewReader(tokenReqBody.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("se esperaba 200 OK para cliente público con PKCE, obtenido: %d, body: %s", w.Code, w.Body.String())
+	}
+
+	var tokenResp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &tokenResp); err != nil {
+		t.Fatalf("error parseando respuesta: %v", err)
+	}
+
+	if _, ok := tokenResp["access_token"].(string); !ok {
+		t.Fatalf("access_token no devuelto")
+	}
+}
+
+func TestOAuth_TokenEndpoint_CORSPreflight(t *testing.T) {
+	r, _, _, _ := setupOAuthControllerTest(t)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodOptions, "/oauth/token", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("se esperaba status 204 No Content en preflight OPTIONS, obtenido: %d", w.Code)
+	}
+
+	if w.Header().Get("Access-Control-Allow-Origin") != "*" {
+		t.Errorf("se esperaba Access-Control-Allow-Origin: *, obtenido: %q", w.Header().Get("Access-Control-Allow-Origin"))
+	}
+	if !strings.Contains(w.Header().Get("Access-Control-Allow-Methods"), "POST") {
+		t.Errorf("se esperaba POST en Access-Control-Allow-Methods, obtenido: %q", w.Header().Get("Access-Control-Allow-Methods"))
+	}
 }
 

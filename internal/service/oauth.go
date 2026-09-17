@@ -95,10 +95,21 @@ func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirect
 }
 
 func (s *oauthService) ExchangeCodeForToken(clientID, clientSecret, codeStr, redirectURI, codeVerifier string) (uint, bool, error) {
-	// 1. Validar las credenciales del cliente (app) usando hashing constante de secreto
-	_, err := s.appRepo.ValidateSecret(clientID, clientSecret)
-	if err != nil {
-		return 0, false, errors.New("credenciales de cliente inválidas")
+	// 1. Validar las credenciales del cliente (app)
+	if clientSecret != "" {
+		_, err := s.appRepo.ValidateSecret(clientID, clientSecret)
+		if err != nil {
+			return 0, false, errors.New("credenciales de cliente inválidas")
+		}
+	} else {
+		// Cliente público (método auth "none"): verificar existencia y estado activo de la app
+		app, err := s.appRepo.FindByAppID(clientID)
+		if err != nil {
+			return 0, false, errors.New("credenciales de cliente inválidas")
+		}
+		if !app.IsActive {
+			return 0, false, errors.New("la aplicación está desactivada")
+		}
 	}
 
 	// 2. Obtener y consumir el código de un solo uso (One-Time Use Transactional)
@@ -126,7 +137,11 @@ func (s *oauthService) ExchangeCodeForToken(clientID, clientSecret, codeStr, red
 		}
 	}
 
-	// 6. Validación de PKCE (RFC 7636)
+	// 6. Validación de PKCE (RFC 7636) y requerimiento para clientes públicos
+	if clientSecret == "" && code.CodeChallenge == "" {
+		return 0, false, errors.New("se requiere client_secret para códigos de autorización sin PKCE")
+	}
+
 	if code.CodeChallenge != "" {
 		if codeVerifier == "" {
 			return 0, false, errors.New("code_verifier es requerido para este código de autorización")

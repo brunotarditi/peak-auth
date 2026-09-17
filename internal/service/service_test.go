@@ -277,6 +277,58 @@ func TestOAuthPKCEAndRedirectValidation(t *testing.T) {
 	if err == nil {
 		t.Fatalf("se esperaba error al intentar reutilizar código ya consumido")
 	}
+
+	t.Run("Cliente público con PKCE puede canjear sin client_secret", func(t *testing.T) {
+		publicCode, err := oauthSvc.GenerateAuthorizationCode(99, clientID, redirectURI, challenge, "S256", false)
+		if err != nil {
+			t.Fatalf("error generando código: %v", err)
+		}
+
+		uID, mfa, err := oauthSvc.ExchangeCodeForToken(clientID, "", publicCode, redirectURI, verifier)
+		if err != nil {
+			t.Fatalf("cliente público con PKCE debería poder canjear sin client_secret, error: %v", err)
+		}
+		if uID != 99 {
+			t.Fatalf("se esperaba userID 99, obtenido %d", uID)
+		}
+		if mfa {
+			t.Fatalf("se esperaba mfa false, obtenido %v", mfa)
+		}
+	})
+
+	t.Run("Cliente sin client_secret y sin PKCE es rechazado", func(t *testing.T) {
+		noPkceCode, err := oauthSvc.GenerateAuthorizationCode(99, clientID, redirectURI, "", "", false)
+		if err != nil {
+			t.Fatalf("error generando código: %v", err)
+		}
+
+		_, _, err = oauthSvc.ExchangeCodeForToken(clientID, "", noPkceCode, redirectURI, "")
+		if err == nil {
+			t.Fatalf("se esperaba rechazo al intentar canjear código sin PKCE y sin client_secret")
+		}
+	})
+
+	t.Run("Cliente público con app desactivada es rechazado", func(t *testing.T) {
+		inactiveClientID := "inactive-client"
+		appRepo.apps[inactiveClientID] = &model.Application{
+			AppID:       inactiveClientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		inactiveCode, err := oauthSvc.GenerateAuthorizationCode(99, inactiveClientID, redirectURI, challenge, "S256", false)
+		if err != nil {
+			t.Fatalf("error generando código: %v", err)
+		}
+
+		// La aplicación se desactiva antes del canje
+		appRepo.apps[inactiveClientID].IsActive = false
+
+		_, _, err = oauthSvc.ExchangeCodeForToken(inactiveClientID, "", inactiveCode, redirectURI, verifier)
+		if err == nil {
+			t.Fatalf("se esperaba rechazo para aplicación desactivada")
+		}
+	})
 }
 
 // --- Tests MFA ---
