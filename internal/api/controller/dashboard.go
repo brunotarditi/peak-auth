@@ -56,6 +56,20 @@ func (ctrl *DashboardController) PostResendVerification(c *gin.Context) {
 	var userID uint
 	fmt.Sscanf(userIDStr, "%d", &userID)
 
+	// Verificar que la aplicación existe
+	app, err := ctrl.AppService.GetAppDetails(appID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aplicación no encontrada"})
+		return
+	}
+
+	// Verificar que el usuario pertenece a la aplicación
+	belongs, err := ctrl.AppService.UserBelongsToApp(userID, app.ID)
+	if err != nil || !belongs {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario no pertenece a esta aplicación"})
+		return
+	}
+
 	if err := ctrl.UserService.ResendVerification(userID, appID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No se pudo reenviar el email de verificación"})
 		return
@@ -92,6 +106,13 @@ func (ctrl *DashboardController) PostSendResetPassword(c *gin.Context) {
 	app, err := ctrl.AppService.GetAppDetails(appIDParam)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Aplicación no encontrada"})
+		return
+	}
+
+	// Verificar que el usuario pertenece a la aplicación
+	belongs, err := ctrl.AppService.UserBelongsToApp(userID, app.ID)
+	if err != nil || !belongs {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario no pertenece a esta aplicación"})
 		return
 	}
 

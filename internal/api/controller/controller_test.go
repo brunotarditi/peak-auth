@@ -113,9 +113,10 @@ func TestExtractMfaToken_AcceptsPostForm(t *testing.T) {
 }
 
 type mockAppService struct {
-	app     model.Application
-	isRoot  bool
-	revoked bool
+	app        model.Application
+	isRoot     bool
+	revoked    bool
+	notBelongs bool
 }
 
 func (m *mockAppService) CreateApp(name, description, redirectURL string, isActive bool) (model.Application, string, error) {
@@ -136,6 +137,9 @@ func (m *mockAppService) RevokeUserFromApp(userID, appID uint) error {
 	return nil
 }
 func (m *mockAppService) IsRootUser(userID, appID uint) bool { return m.isRoot }
+func (m *mockAppService) UserBelongsToApp(userID, appID uint) (bool, error) {
+	return !m.notBelongs, nil
+}
 func (m *mockAppService) GetAppDetails(appID string) (model.Application, error) {
 	return m.app, nil
 }
@@ -204,6 +208,33 @@ func TestRevokeUserAccess_AllowsRevokingRegularUser(t *testing.T) {
 	}
 	if !appSvc.revoked {
 		t.Fatalf("El acceso debió haberse revocado")
+	}
+}
+
+func TestRevokeUserAccess_UserNotInApp_ReturnsNotFound(t *testing.T) {
+	appSvc := &mockAppService{
+		app: model.Application{
+			Name:  "Peak Auth",
+			AppID: util.AppIdPeakAuth,
+		},
+		notBelongs: true,
+	}
+	ctrl := &UserController{
+		AppService: appSvc,
+	}
+
+	r := gin.New()
+	r.DELETE("/admin/apps/:id/users/:user_id", func(c *gin.Context) {
+		c.Set("user_id", uint(99))
+		ctrl.RevokeUserAccess(c)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodDelete, "/admin/apps/peak-auth/users/999", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("Esperaba 404 NotFound cuando el usuario no pertenece a la app, obtuvo %d", w.Code)
 	}
 }
 

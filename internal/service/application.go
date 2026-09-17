@@ -18,6 +18,7 @@ type ApplicationService interface {
 	RegisterUserInApp(userEmail, roleName string, app *model.Application) error
 	RevokeUserFromApp(userID, appID uint) error
 	IsRootUser(userID, appID uint) bool
+	UserBelongsToApp(userID, appID uint) (bool, error)
 	GetAppDetails(appID string) (model.Application, error)
 	DeleteApp(appID string) error
 	GetDashboardStats() ([]response.AppStatsResponse, error)
@@ -172,6 +173,10 @@ func (s *applicationService) IsRootUser(userID, appID uint) bool {
 		}
 	}
 	return false
+}
+
+func (s *applicationService) UserBelongsToApp(userID, appID uint) (bool, error) {
+	return s.uarRepo.BelongsToApp(userID, appID)
 }
 
 func (s *applicationService) RevokeUserFromApp(userID, appID uint) error {
