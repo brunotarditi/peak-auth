@@ -1,13 +1,11 @@
-const mfaToken = window.MFA_TOKEN;
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Load QR code
-            try {
-                const res = await fetch('/admin/mfa/setup', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + mfaToken }
-                });
-                if (res.ok) {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load QR code - MFA token is now in HttpOnly cookie, no need to pass it
+    try {
+        const res = await fetch('/admin/mfa/setup', {
+            method: 'POST',
+            credentials: 'same-origin' // Include cookies
+        });
+        if (res.ok) {
                     const data = await res.json();
                     if (typeof data.qr_code === 'string' && data.qr_code.startsWith('data:image/')) {
                         const img = document.createElement('img');
@@ -39,9 +37,9 @@ const mfaToken = window.MFA_TOKEN;
                 const res = await fetch('/admin/mfa/verify', {
                     method: 'POST',
                     headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + mfaToken 
+                        'Content-Type': 'application/json'
                     },
+                    credentials: 'same-origin', // Include cookies
                     body: JSON.stringify({ code: code, is_setup: true })
                 });
 

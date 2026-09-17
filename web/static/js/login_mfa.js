@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnWebAuthn = document.getElementById('btn-webauthn');
     if (btnWebAuthn) {
         btnWebAuthn.addEventListener('click', async () => {
-            const mfaToken = document.querySelector('input[name="mfa_token"]').value;
             const csrfToken = document.querySelector('input[name="csrf_token"]').value;
             
             try {
@@ -13,14 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnWebAuthn.disabled = true;
                 btnWebAuthn.innerHTML = '<span>Verificando...</span>';
 
-                const beginHeaders = {};
-                if (mfaToken) {
-                    beginHeaders['Authorization'] = 'Bearer ' + mfaToken;
-                }
-
+                // MFA token is now in HttpOnly cookie, no need to pass it in headers
                 const beginRes = await fetch('/admin/login/mfa/webauthn/begin', {
                     method: 'GET',
-                    headers: beginHeaders
+                    credentials: 'same-origin' // Include cookies
                 });
 
                 if (!beginRes.ok) {
@@ -50,17 +45,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
 
-                const finishHeaders = {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken
-                };
-                if (mfaToken) {
-                    finishHeaders['Authorization'] = 'Bearer ' + mfaToken;
-                }
-
                 const finishRes = await fetch('/admin/login/mfa/webauthn/finish', {
                     method: 'POST',
-                    headers: finishHeaders,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    credentials: 'same-origin', // Include cookies
                     body: JSON.stringify(authData)
                 });
 
