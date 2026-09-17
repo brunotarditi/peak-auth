@@ -262,7 +262,7 @@ func (ctrl *UserController) VerifyTOTP(c *gin.Context) {
 	})
 }
 
-// DisableMFA desactiva el segundo factor para el usuario autenticado exigiendo autenticación paso a paso (step-up auth)
+// DisableMFA desactiva el segundo factor para el usuario autenticado exigiendo confirmación de doble factor (contraseña + código MFA)
 func (ctrl *UserController) DisableMFA(c *gin.Context) {
 	val, exists := c.Get("user_id")
 	if !exists {
@@ -275,8 +275,13 @@ func (ctrl *UserController) DisableMFA(c *gin.Context) {
 		Password string `json:"password"`
 		Code     string `json:"code"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil || (req.Password == "" && req.Code == "") {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Se requiere contraseña o código MFA para confirmar la desactivación"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de solicitud inválido"})
+		return
+	}
+
+	if req.Password == "" || req.Code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Se requieren tanto la contraseña como el código MFA para confirmar la desactivación"})
 		return
 	}
 
@@ -286,18 +291,15 @@ func (ctrl *UserController) DisableMFA(c *gin.Context) {
 		return
 	}
 
-	authenticated := false
-	if req.Password != "" && util.CheckPasswordHash(req.Password, user.Password) {
-		authenticated = true
-	}
-	if !authenticated && req.Code != "" {
-		if ctrl.MfaService.ValidateTOTPCode(userID, req.Code) == nil || ctrl.MfaService.ValidateRecoveryCode(userID, req.Code) == nil {
-			authenticated = true
-		}
+	// 1. Validar factor de conocimiento (contraseña)
+	if !util.CheckPasswordHash(req.Password, user.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Contraseña incorrecta"})
+		return
 	}
 
-	if !authenticated {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciales de confirmación incorrectas"})
+	// 2. Validar factor de posesión (código TOTP o de recuperación)
+	if ctrl.MfaService.ValidateTOTPCode(userID, req.Code) != nil && ctrl.MfaService.ValidateRecoveryCode(userID, req.Code) != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Código MFA incorrecto"})
 		return
 	}
 

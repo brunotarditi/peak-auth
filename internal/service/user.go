@@ -202,6 +202,7 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 		ApplicationID: app.ID,
 		Token:         hex.EncodeToString(rtHash),
 		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+		MfaCompleted:  false,
 	}
 	createErr := s.refreshTokenRepo.Create(&rt)
 	if createErr != nil {
@@ -701,8 +702,8 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		roles[i] = r.Name
 	}
 
-	// 2. Generar nuevo Access Token
-	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration, true)
+	// 2. Generar nuevo Access Token preservando el aseguramiento de MFA original
+	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration, rt.MfaCompleted)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -718,6 +719,7 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		ApplicationID: app.ID,
 		Token:         hex.EncodeToString(rtHash),
 		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+		MfaCompleted:  rt.MfaCompleted,
 	}
 
 	// 4. Rotación atómica: persistir el nuevo y eliminar el viejo en una transacción.
@@ -866,6 +868,7 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 		ApplicationID: app.ID,
 		Token:         hex.EncodeToString(rtHash),
 		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+		MfaCompleted:  mfaCompleted,
 	}
 	if err := s.refreshTokenRepo.Create(&rt); err != nil {
 		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
