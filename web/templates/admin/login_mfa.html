@@ -43,7 +43,6 @@
 
             <form action="/admin/login/mfa" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                <input type="hidden" name="mfa_token" value="{{ .MfaToken }}">
                 
                 <div style="margin-bottom: 0;" class="form-group">
                     <label style="display: block; font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem;">Código de Seguridad</label>

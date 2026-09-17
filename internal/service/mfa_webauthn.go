@@ -1,6 +1,8 @@
 package service
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -120,6 +122,148 @@ func DeleteWebAuthnSession(key string) {
 	waSessionMutex.Lock()
 	defer waSessionMutex.Unlock()
 	delete(waSessionCache, key)
+}
+
+// MFA Transaction Store - Server-side state for MFA pending flows
+// This prevents replay attacks by binding MFA tokens to server-side transactions
+// that are consumed on first successful use.
+
+type MfaTransaction struct {
+	MfaToken      string    // The actual JWT token (kept server-side only)
+	UserID        uint      // User ID from the token
+	Username      string    // Username from the token
+	AppID         string    // Application ID
+	CreatedAt     time.Time // Transaction creation time
+	ExpiresAt     time.Time // Transaction expiration (5 minutes)
+	Consumed      bool      // Whether this transaction has been used
+	SessionCookie string    // Browser session identifier for binding
+}
+
+const maxMfaTransactionCacheSize = 10000
+
+var (
+	mfaTransactionCache = make(map[string]*MfaTransaction)
+	mfaTransactionMutex sync.RWMutex
+)
+
+func init() {
+	go cleanupMfaTransactions()
+}
+
+func cleanupMfaTransactions() {
+	ticker := time.NewTicker(1 * time.Minute)
+	for range ticker.C {
+		mfaTransactionMutex.Lock()
+		now := time.Now()
+		for k, v := range mfaTransactionCache {
+			if now.After(v.ExpiresAt) {
+				delete(mfaTransactionCache, k)
+			}
+		}
+		mfaTransactionMutex.Unlock()
+	}
+}
+
+// generateTransactionID creates a cryptographically secure random transaction ID
+func generateTransactionID() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+// StoreMfaTransaction creates a server-side MFA transaction and returns an opaque transaction ID
+func StoreMfaTransaction(mfaToken string, userID uint, username string, appID string, sessionCookie string) (string, error) {
+	mfaTransactionMutex.Lock()
+	defer mfaTransactionMutex.Unlock()
+
+	// Control de memoria contra ataques DoS
+	if len(mfaTransactionCache) >= maxMfaTransactionCacheSize {
+		now := time.Now()
+		// Purgar expirados primero
+		for k, v := range mfaTransactionCache {
+			if now.After(v.ExpiresAt) {
+				delete(mfaTransactionCache, k)
+			}
+		}
+		// Si aún supera el umbral, desalojar la primera entrada arbitraria
+		if len(mfaTransactionCache) >= maxMfaTransactionCacheSize {
+			for k := range mfaTransactionCache {
+				delete(mfaTransactionCache, k)
+				break
+			}
+		}
+	}
+
+	transactionID, err := generateTransactionID()
+	if err != nil {
+		return "", err
+	}
+
+	mfaTransactionCache[transactionID] = &MfaTransaction{
+		MfaToken:      mfaToken,
+		UserID:        userID,
+		Username:      username,
+		AppID:         appID,
+		CreatedAt:     time.Now(),
+		ExpiresAt:     time.Now().Add(5 * time.Minute),
+		Consumed:      false,
+		SessionCookie: sessionCookie,
+	}
+
+	return transactionID, nil
+}
+
+// GetMfaTransaction retrieves an MFA transaction if it exists, is not expired, and is not consumed
+func GetMfaTransaction(transactionID string, sessionCookie string) (*MfaTransaction, error) {
+	mfaTransactionMutex.RLock()
+	defer mfaTransactionMutex.RUnlock()
+
+	txn, exists := mfaTransactionCache[transactionID]
+	if !exists {
+		return nil, fmt.Errorf("transacción MFA no encontrada o expirada")
+	}
+
+	if time.Now().After(txn.ExpiresAt) {
+		return nil, fmt.Errorf("transacción MFA expirada")
+	}
+
+	if txn.Consumed {
+		return nil, fmt.Errorf("transacción MFA ya fue utilizada")
+	}
+
+	// Bind to session cookie for additional security
+	if txn.SessionCookie != sessionCookie {
+		return nil, fmt.Errorf("transacción MFA no coincide con la sesión del navegador")
+	}
+
+	return txn, nil
+}
+
+// ConsumeMfaTransaction marks a transaction as consumed (one-time use)
+func ConsumeMfaTransaction(transactionID string) error {
+	mfaTransactionMutex.Lock()
+	defer mfaTransactionMutex.Unlock()
+
+	txn, exists := mfaTransactionCache[transactionID]
+	if !exists {
+		return fmt.Errorf("transacción MFA no encontrada")
+	}
+
+	if txn.Consumed {
+		return fmt.Errorf("transacción MFA ya fue consumida")
+	}
+
+	txn.Consumed = true
+	return nil
+}
+
+// DeleteMfaTransaction removes an MFA transaction from the cache
+func DeleteMfaTransaction(transactionID string) {
+	mfaTransactionMutex.Lock()
+	defer mfaTransactionMutex.Unlock()
+	delete(mfaTransactionCache, transactionID)
 }
 
 // webAuthnUserWrapper implementa webauthn.User para interactuar con la librería
