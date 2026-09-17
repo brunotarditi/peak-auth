@@ -205,11 +205,21 @@ func (s *applicationService) UpdateApp(appID string, description, redirectURL st
 		return err
 	}
 
+	wasActive := app.IsActive
 	app.Description = description
 	app.RedirectURL = redirectURL
 	app.IsActive = isActive
 
-	return s.repo.Update(&app)
+	if err := s.repo.Update(&app); err != nil {
+		return err
+	}
+
+	// Si la aplicación fue desactivada, revocar todos los refresh tokens pendientes
+	if wasActive && !isActive && s.refreshTokenRepo != nil {
+		_ = s.refreshTokenRepo.DeleteByApp(app.ID)
+	}
+
+	return nil
 }
 
 func (s *applicationService) RegenerateSecret(appID string) (string, error) {

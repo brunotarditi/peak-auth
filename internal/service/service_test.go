@@ -185,6 +185,7 @@ func (m *mockRefreshTokenRepo) DeleteByUserAndApp(userID, appID uint) error {
 	m.deletedByUserAndApp = true
 	return nil
 }
+func (m *mockRefreshTokenRepo) DeleteByApp(appID uint) error { return nil }
 
 type mockTxRepo struct {
 	repo.TxRepository
