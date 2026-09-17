@@ -435,10 +435,28 @@ func (c *OAuthController) PostPublicLoginMfaTotp(ctx *gin.Context) {
 		return
 	}
 
+	// Create a unique key for this MFA token to track attempts
+	tokenKey := fmt.Sprintf("oauth_mfa_%d_%s", userID, claims.Subject)
+
+	// Check if token is already locked
+	if service.IsApiMfaTokenLocked(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+		return
+	}
+
 	if err := c.MfaService.ValidateTOTPCode(userID, req.Code); err != nil {
+		// Record failed attempt and check if token should be locked
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+			// Token is now locked due to excessive failures
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+			return
+		}
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Código incorrecto"})
 		return
 	}
+
+	// Clear attempt tracker on successful validation
+	service.DeleteApiMfaAttemptTracker(tokenKey)
 
 	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
@@ -485,10 +503,28 @@ func (c *OAuthController) PostPublicLoginMfaRecovery(ctx *gin.Context) {
 		return
 	}
 
+	// Create a unique key for this MFA token to track attempts
+	tokenKey := fmt.Sprintf("oauth_mfa_%d_%s", userID, claims.Subject)
+
+	// Check if token is already locked
+	if service.IsApiMfaTokenLocked(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+		return
+	}
+
 	if err := c.MfaService.ValidateRecoveryCode(userID, req.Code); err != nil {
+		// Record failed attempt and check if token should be locked
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+			// Token is now locked due to excessive failures
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+			return
+		}
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Código de recuperación inválido"})
 		return
 	}
+
+	// Clear attempt tracker on successful validation
+	service.DeleteApiMfaAttemptTracker(tokenKey)
 
 	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
@@ -531,6 +567,15 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 		return
 	}
 
+	// Create a unique key for this MFA token to track attempts
+	tokenKey := fmt.Sprintf("oauth_mfa_%d_%s", userID, claims.Subject)
+
+	// Check if token is already locked
+	if service.IsApiMfaTokenLocked(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+		return
+	}
+
 	sessionKey := fmt.Sprintf("wa_login_%s", mfaToken)
 	sessionData, exists := service.GetWebAuthnSession(sessionKey)
 	if !exists {
@@ -539,9 +584,18 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 	}
 
 	if err := c.MfaService.FinishWebAuthnLogin(userID, sessionData, ctx.Request); err != nil {
+		// Record failed attempt and check if token should be locked
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+			// Token is now locked due to excessive failures
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+			return
+		}
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Clear attempt tracker on successful validation
+	service.DeleteApiMfaAttemptTracker(tokenKey)
 
 	service.DeleteWebAuthnSession(sessionKey)
 
@@ -595,11 +649,29 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 		return
 	}
 
+	// Create a unique key for this MFA token to track attempts
+	tokenKey := fmt.Sprintf("oauth_mfa_setup_%d_%s", userID, claims.Subject)
+
+	// Check if token is already locked
+	if service.IsApiMfaTokenLocked(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+		return
+	}
+
 	recoveryCodes, err := c.MfaService.VerifyAndActivateTOTP(userID, req.Code)
 	if err != nil {
+		// Record failed attempt and check if token should be locked
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+			// Token is now locked due to excessive failures
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+			return
+		}
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Clear attempt tracker on successful validation
+	service.DeleteApiMfaAttemptTracker(tokenKey)
 
 	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
 	if err != nil {
@@ -651,6 +723,15 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 		return
 	}
 
+	// Create a unique key for this MFA token to track attempts
+	tokenKey := fmt.Sprintf("oauth_mfa_setup_%d_%s", userID, claims.Subject)
+
+	// Check if token is already locked
+	if service.IsApiMfaTokenLocked(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+		return
+	}
+
 	sessionKey := fmt.Sprintf("wa_reg_%s", mfaToken)
 	sessionData, exists := service.GetWebAuthnSession(sessionKey)
 	if !exists {
@@ -659,9 +740,18 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 	}
 
 	if err := c.MfaService.FinishWebAuthnRegistration(userID, sessionData, ctx.Request); err != nil {
+		// Record failed attempt and check if token should be locked
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+			// Token is now locked due to excessive failures
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
+			return
+		}
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Clear attempt tracker on successful validation
+	service.DeleteApiMfaAttemptTracker(tokenKey)
 
 	service.DeleteWebAuthnSession(sessionKey)
 
