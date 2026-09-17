@@ -104,6 +104,13 @@ func (ctrl *UserController) RevokeUserAccess(c *gin.Context) {
 		}
 	}
 
+	// Verificar que el usuario pertenece a la aplicación antes de revocar
+	belongs, err := ctrl.AppService.UserBelongsToApp(userID, app.ID)
+	if err != nil || !belongs {
+		c.JSON(http.StatusNotFound, gin.H{"error": "El usuario no pertenece a esta aplicación"})
+		return
+	}
+
 	// Defensa: ningún administrador de plataforma puede revocar el acceso del usuario ROOT a la app raíz
 	if app.AppID == util.AppIdPeakAuth && ctrl.AppService.IsRootUser(userID, app.ID) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "No se puede revocar el acceso al usuario ROOT de la plataforma"})
@@ -199,9 +206,24 @@ func (ctrl *UserController) GetAppUsers(c *gin.Context) {
 
 // PostUnlockUser resetea el contador de intentos fallidos de los usuarios bloqueados
 func (ctrl *UserController) PostUnlockUser(c *gin.Context) {
+	appIDParam := c.Param("id")
 	userIDStr := c.Param("user_id")
 	var userID uint
 	fmt.Sscanf(userIDStr, "%d", &userID)
+
+	// Verificar que la aplicación existe
+	app, err := ctrl.AppService.GetAppDetails(appIDParam)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aplicación no encontrada"})
+		return
+	}
+
+	// Verificar que el usuario pertenece a la aplicación
+	belongs, err := ctrl.AppService.UserBelongsToApp(userID, app.ID)
+	if err != nil || !belongs {
+		c.JSON(http.StatusForbidden, gin.H{"error": "El usuario no pertenece a esta aplicación"})
+		return
+	}
 
 	if err := ctrl.UserService.UnlockUser(userID); err != nil {
 		c.JSON(500, gin.H{"error": "No se pudo desbloquear al usuario"})
