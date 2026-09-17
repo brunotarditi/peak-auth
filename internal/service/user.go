@@ -671,6 +671,11 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		return response.TokenResponse{}, fmt.Errorf("aplicación no encontrada")
 	}
 
+	if !app.IsActive {
+		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
+		return response.TokenResponse{}, fmt.Errorf("la aplicación está desactivada")
+	}
+
 	// Validar que el usuario siga teniendo acceso y reglas vigentes en la aplicación
 	if err := s.ruleService.ValidateLogin(app.ID, user.ID); err != nil {
 		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
