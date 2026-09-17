@@ -265,7 +265,7 @@ func TestDisableMFA_RequiresAuthentication(t *testing.T) {
 	}
 }
 
-func TestDisableMFA_RequiresPasswordOrCode(t *testing.T) {
+func TestDisableMFA_RequiresBothPasswordAndCode(t *testing.T) {
 	ctrl := &UserController{}
 	r := gin.New()
 	r.POST("/api/v1/mfa/totp/disable", func(c *gin.Context) {
@@ -273,14 +273,38 @@ func TestDisableMFA_RequiresPasswordOrCode(t *testing.T) {
 		ctrl.DisableMFA(c)
 	})
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{}`))
-	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
+	t.Run("Rechaza payload vacío (400)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{}`))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("Esperaba 400 Bad Request sin password ni code, obtuvo %d", w.Code)
-	}
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("Esperaba 400 Bad Request sin password ni code, obtuvo %d", w.Code)
+		}
+	})
+
+	t.Run("Rechaza si solo envía contraseña (400)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"MyPassword123!"}`))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("Esperaba 400 Bad Request enviando solo password, obtuvo %d", w.Code)
+		}
+	})
+
+	t.Run("Rechaza si solo envía código MFA (400)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"code":"123456"}`))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("Esperaba 400 Bad Request enviando solo código, obtuvo %d", w.Code)
+		}
+	})
 }
 
 func TestDisableMFA_RejectsWrongCredentials(t *testing.T) {
@@ -305,20 +329,36 @@ func TestDisableMFA_RejectsWrongCredentials(t *testing.T) {
 		ctrl.DisableMFA(c)
 	})
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"WrongPassword","code":"000000"}`))
-	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
+	t.Run("Rechaza si la contraseña es incorrecta (401)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"WrongPassword","code":"123456"}`))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("Esperaba 401 Unauthorized con credenciales incorrectas, obtuvo %d", w.Code)
-	}
-	if mfaSvc.disabled {
-		t.Fatalf("MFA no debió haberse desactivado")
-	}
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("Esperaba 401 Unauthorized con contraseña incorrecta, obtuvo %d", w.Code)
+		}
+		if mfaSvc.disabled {
+			t.Fatalf("MFA no debió haberse desactivado")
+		}
+	})
+
+	t.Run("Rechaza si el código MFA es incorrecto (401)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"CorrectPassword123!","code":"000000"}`))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("Esperaba 401 Unauthorized con código MFA incorrecto, obtuvo %d", w.Code)
+		}
+		if mfaSvc.disabled {
+			t.Fatalf("MFA no debió haberse desactivado")
+		}
+	})
 }
 
-func TestDisableMFA_SucceedsWithValidPassword(t *testing.T) {
+func TestDisableMFA_SucceedsWithBothValidCredentials(t *testing.T) {
 	passHash, _ := util.HashPassword("CorrectPassword123!")
 	userSvc := &mockUserServiceForStepUp{
 		user: &model.User{
@@ -327,6 +367,7 @@ func TestDisableMFA_SucceedsWithValidPassword(t *testing.T) {
 	}
 	mfaSvc := &mockMfaServiceForStepUp{
 		mfaEnabled: true,
+		totpCode:   "123456",
 	}
 
 	ctrl := &UserController{
@@ -341,48 +382,12 @@ func TestDisableMFA_SucceedsWithValidPassword(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"CorrectPassword123!"}`))
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"CorrectPassword123!","code":"123456"}`))
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("Esperaba 200 OK con contraseña válida, obtuvo %d: %s", w.Code, w.Body.String())
-	}
-	if !mfaSvc.disabled {
-		t.Fatalf("MFA debió haberse desactivado")
-	}
-}
-
-func TestDisableMFA_SucceedsWithValidMfaCode(t *testing.T) {
-	passHash, _ := util.HashPassword("OtherPassword")
-	userSvc := &mockUserServiceForStepUp{
-		user: &model.User{
-			Password: passHash,
-		},
-	}
-	mfaSvc := &mockMfaServiceForStepUp{
-		mfaEnabled: true,
-		totpCode:   "654321",
-	}
-
-	ctrl := &UserController{
-		UserService: userSvc,
-		MfaService:  mfaSvc,
-	}
-
-	r := gin.New()
-	r.POST("/api/v1/mfa/totp/disable", func(c *gin.Context) {
-		c.Set("user_id", uint(1))
-		ctrl.DisableMFA(c)
-	})
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"code":"654321"}`))
-	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("Esperaba 200 OK con código TOTP válido, obtuvo %d: %s", w.Code, w.Body.String())
+		t.Fatalf("Esperaba 200 OK con contraseña y código válidos, obtuvo %d: %s", w.Code, w.Body.String())
 	}
 	if !mfaSvc.disabled {
 		t.Fatalf("MFA debió haberse desactivado")

@@ -820,3 +820,132 @@ func TestRefreshToken_InactiveOrUnverifiedUser(t *testing.T) {
 	}
 }
 
+func TestRefreshToken_PreservesMfaAssuranceLevel(t *testing.T) {
+	tm := newServiceTestJWTManager(t)
+
+	user := model.User{
+		ID:         10,
+		Email:      "mfa-user@peak.test",
+		IsActive:   true,
+		IsVerified: true,
+	}
+	userRepo := &mockUserRepo{user: user}
+
+	app := model.Application{
+		ID:          1,
+		AppID:       "test-app",
+		Name:        "Test App",
+		IsActive:    true,
+		RedirectURL: "https://test.com/cb",
+	}
+	appRepo := newMockAppRepo()
+	appRepo.apps["test-app"] = &app
+
+	uarRepo := &mockUARRepo{
+		roles: map[uint][]string{10: {"USER"}},
+	}
+	ruleSvc := NewApplicationRuleService(&mockRuleRepo{}, uarRepo, nil, appRepo)
+
+	t.Run("Token emitido sin MFA preserva mfa_verified=false tras refresco", func(t *testing.T) {
+		refreshRepo := newMockRefreshTokenRepo()
+		txMgr := &mockTxManager{txRepo: &mockTxRepo{refreshRepo: refreshRepo}}
+
+		plainToken := "plain_without_mfa_12345"
+		hash := sha256.Sum256([]byte(plainToken))
+		hashStr := hex.EncodeToString(hash[:])
+
+		_ = refreshRepo.Create(&model.RefreshToken{
+			UserID:        user.ID,
+			ApplicationID: app.ID,
+			Token:         hashStr,
+			ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+			MfaCompleted:  false,
+		})
+
+		svc := &userService{
+			userRepo:         userRepo,
+			appRepo:          appRepo,
+			uarRepo:          uarRepo,
+			ruleService:      ruleSvc,
+			tokenManager:     tm,
+			refreshTokenRepo: refreshRepo,
+			txManager:        txMgr,
+		}
+
+		resp, err := svc.Refresh(plainToken)
+		if err != nil {
+			t.Fatalf("Refresh falló: %v", err)
+		}
+
+		claims, err := tm.VerifyToken(resp.AccessToken)
+		if err != nil {
+			t.Fatalf("Error verificando claims del AccessToken: %v", err)
+		}
+		if claims.MfaVerified {
+			t.Fatalf("VULNERABILIDAD DETECTADA: el AccessToken resultante tiene mfa_verified=true cuando el token original fue sin MFA")
+		}
+
+		// Verificar que el nuevo refresh token rotado mantiene MfaCompleted=false
+		newHash := sha256.Sum256([]byte(resp.RefreshToken))
+		newHashStr := hex.EncodeToString(newHash[:])
+		newRt, err := refreshRepo.FindByToken(newHashStr)
+		if err != nil {
+			t.Fatalf("No se encontró el nuevo refresh token en repo: %v", err)
+		}
+		if newRt.MfaCompleted {
+			t.Fatalf("El nuevo RefreshToken debió persistir MfaCompleted=false")
+		}
+	})
+
+	t.Run("Token emitido con MFA preserva mfa_verified=true tras refresco", func(t *testing.T) {
+		refreshRepo := newMockRefreshTokenRepo()
+		txMgr := &mockTxManager{txRepo: &mockTxRepo{refreshRepo: refreshRepo}}
+
+		plainToken := "plain_with_mfa_67890"
+		hash := sha256.Sum256([]byte(plainToken))
+		hashStr := hex.EncodeToString(hash[:])
+
+		_ = refreshRepo.Create(&model.RefreshToken{
+			UserID:        user.ID,
+			ApplicationID: app.ID,
+			Token:         hashStr,
+			ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+			MfaCompleted:  true,
+		})
+
+		svc := &userService{
+			userRepo:         userRepo,
+			appRepo:          appRepo,
+			uarRepo:          uarRepo,
+			ruleService:      ruleSvc,
+			tokenManager:     tm,
+			refreshTokenRepo: refreshRepo,
+			txManager:        txMgr,
+		}
+
+		resp, err := svc.Refresh(plainToken)
+		if err != nil {
+			t.Fatalf("Refresh falló: %v", err)
+		}
+
+		claims, err := tm.VerifyToken(resp.AccessToken)
+		if err != nil {
+			t.Fatalf("Error verificando claims del AccessToken: %v", err)
+		}
+		if !claims.MfaVerified {
+			t.Fatalf("Se esperaba mfa_verified=true para sesión con MFA completado")
+		}
+
+		// Verificar que el nuevo refresh token rotado mantiene MfaCompleted=true
+		newHash := sha256.Sum256([]byte(resp.RefreshToken))
+		newHashStr := hex.EncodeToString(newHash[:])
+		newRt, err := refreshRepo.FindByToken(newHashStr)
+		if err != nil {
+			t.Fatalf("No se encontró el nuevo refresh token en repo: %v", err)
+		}
+		if !newRt.MfaCompleted {
+			t.Fatalf("El nuevo RefreshToken debió persistir MfaCompleted=true")
+		}
+	})
+}
+

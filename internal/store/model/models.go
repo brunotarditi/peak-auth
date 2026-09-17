@@ -62,6 +62,7 @@ type RefreshToken struct {
 	ApplicationID uint
 	Token         string `gorm:"uniqueIndex;not null"`
 	ExpiresAt     time.Time
+	MfaCompleted  bool   `gorm:"default:false"`
 }
 
 type Role struct {

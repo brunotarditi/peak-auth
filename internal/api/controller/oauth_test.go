@@ -460,21 +460,24 @@ func TestOAuth_LogoutEndpoint(t *testing.T) {
 
 	t.Run("Logout con redirect_uri redirige 303 y borra cookie", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?redirect_uri=https://portal.client.com", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?client_id=client-portal&redirect_uri=https://portal.client.com/oauth/callback", nil)
 		req.AddCookie(&http.Cookie{Name: "peak_session", Value: "valid_session_token"})
 		r.ServeHTTP(w, req)
 
 		if w.Code != http.StatusSeeOther {
 			t.Fatalf("se esperaba 303 See Other, obtenido: %d", w.Code)
 		}
-		if loc := w.Header().Get("Location"); loc != "https://portal.client.com" {
-			t.Fatalf("se esperaba redirección a https://portal.client.com, obtenido: %s", loc)
+		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/oauth/callback" {
+			t.Fatalf("se esperaba redirección a https://portal.client.com/oauth/callback, obtenido: %s", loc)
 		}
 	})
 
 	t.Run("Logout POST con post_logout_redirect_uri redirige 303", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		form := url.Values{"post_logout_redirect_uri": {"https://portal.client.com/logged-out"}}
+		form := url.Values{
+			"client_id":                {"client-portal"},
+			"post_logout_redirect_uri": {"https://portal.client.com/oauth/callback"},
+		}
 		req, _ := http.NewRequest(http.MethodPost, "/oauth/logout", strings.NewReader(form.Encode()))
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r.ServeHTTP(w, req)
@@ -482,7 +485,7 @@ func TestOAuth_LogoutEndpoint(t *testing.T) {
 		if w.Code != http.StatusSeeOther {
 			t.Fatalf("se esperaba 303 See Other, obtenido: %d", w.Code)
 		}
-		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/logged-out" {
+		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/oauth/callback" {
 			t.Fatalf("se esperaba redirección a post_logout_redirect_uri, obtenido: %s", loc)
 		}
 	})
@@ -524,6 +527,71 @@ func TestOAuth_DeactivatedApp(t *testing.T) {
 
 		if w.Code == http.StatusOK {
 			t.Fatalf("App desactivada no debe permitir intercambio de token, obtuvo 200 OK")
+		}
+	})
+}
+
+func TestOAuth_Logout_OpenRedirectPrevention(t *testing.T) {
+	r, _, _, _ := setupOAuthControllerTest(t)
+
+	t.Run("Logout sin parámetros retorna 200 OK y limpia sesión", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK, obtenido: %d", w.Code)
+		}
+		// Verificar que la cookie peak_session se eliminó (MaxAge < 0)
+		cookies := w.Result().Cookies()
+		var sessionCookie *http.Cookie
+		for _, c := range cookies {
+			if c.Name == "peak_session" {
+				sessionCookie = c
+				break
+			}
+		}
+		if sessionCookie == nil || sessionCookie.MaxAge >= 0 {
+			t.Fatalf("se esperaba cookie peak_session expirada")
+		}
+	})
+
+	t.Run("Logout con URL maliciosa externa sin client_id es bloqueado (400)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?post_logout_redirect_uri=https://evil.com/phishing", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400 Bad Request por intento de Open Redirect, obtenido: %d", w.Code)
+		}
+		if loc := w.Header().Get("Location"); loc != "" {
+			t.Fatalf("no debió haber cabecera Location hacia sitio externo, obtenido: %s", loc)
+		}
+	})
+
+	t.Run("Logout con client_id pero URL no registrada es bloqueado (400)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?client_id=client-portal&post_logout_redirect_uri=https://evil.com/phishing", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400 Bad Request por redirect URI no registrada, obtenido: %d", w.Code)
+		}
+		if loc := w.Header().Get("Location"); loc != "" {
+			t.Fatalf("no debió haber cabecera Location hacia sitio externo, obtenido: %s", loc)
+		}
+	})
+
+	t.Run("Logout con client_id y redirect_uri registrada redirige exitosamente (303)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?client_id=client-portal&post_logout_redirect_uri=https://portal.client.com/oauth/callback", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Fatalf("se esperaba 303 See Other, obtenido: %d", w.Code)
+		}
+		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/oauth/callback" {
+			t.Fatalf("se esperaba redirección a https://portal.client.com/oauth/callback, obtenido: %s", loc)
 		}
 	})
 }
