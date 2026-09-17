@@ -101,16 +101,20 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		oauth.GET("/logout", oauthCtrl.LogoutEndpoint)  // Federated Logout (GET)
 		oauth.POST("/logout", oauthCtrl.LogoutEndpoint) // Federated Logout (POST)
 
-		// Flujo público de login para Web (SSO)
-		oauth.GET("/login", oauthCtrl.GetPublicLogin)
-		oauth.POST("/login", loginLimiter, oauthCtrl.PostPublicLogin)
-		oauth.GET("/login/mfa", oauthCtrl.GetPublicLoginMfa)
-		oauth.POST("/login/mfa/totp", loginLimiter, oauthCtrl.PostPublicLoginMfaTotp)
-		oauth.POST("/login/mfa/recovery", loginLimiter, oauthCtrl.PostPublicLoginMfaRecovery)
-		oauth.POST("/login/mfa/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaWebAuthnFinish)
-		oauth.GET("/login/mfa/setup", oauthCtrl.GetPublicLoginMfaSetup)
-		oauth.POST("/login/mfa/setup/verify", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupVerify)
-		oauth.POST("/login/mfa/setup/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupWebAuthnFinish)
+		// Flujo público de login para Web (SSO) protegido con CSRF
+		oauthWeb := oauth.Group("/login")
+		oauthWeb.Use(middleware.CSRFMiddleware())
+		{
+			oauthWeb.GET("", oauthCtrl.GetPublicLogin)
+			oauthWeb.POST("", loginLimiter, oauthCtrl.PostPublicLogin)
+			oauthWeb.GET("/mfa", oauthCtrl.GetPublicLoginMfa)
+			oauthWeb.POST("/mfa/totp", loginLimiter, oauthCtrl.PostPublicLoginMfaTotp)
+			oauthWeb.POST("/mfa/recovery", loginLimiter, oauthCtrl.PostPublicLoginMfaRecovery)
+			oauthWeb.POST("/mfa/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaWebAuthnFinish)
+			oauthWeb.GET("/mfa/setup", oauthCtrl.GetPublicLoginMfaSetup)
+			oauthWeb.POST("/mfa/setup/verify", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupVerify)
+			oauthWeb.POST("/mfa/setup/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupWebAuthnFinish)
+		}
 	}
 
 	// ============================================================================
@@ -119,7 +123,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	r.POST("/setup/auth", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
 	r.GET("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
 	r.POST("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
-	r.GET("/verify", registerCtrl.GetVerifyEmail)
+	r.GET("/verify", middleware.RequireHTTPSMiddleware(), registerCtrl.GetVerifyEmail)
 	r.GET("/reset-password", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.GetResetPassword)
 	r.POST("/reset-password", resetLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.PostResetPassword)
 

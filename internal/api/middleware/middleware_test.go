@@ -82,6 +82,21 @@ func TestCSRF_PostValidPasses(t *testing.T) {
 	}
 }
 
+func TestCSRF_PostValidWithFormFieldPasses(t *testing.T) {
+	token := "tokForm123ABC"
+	w := httptest.NewRecorder()
+	formData := strings.NewReader("csrf_token=" + token + "&user=admin")
+	req, _ := http.NewRequest("POST", "/do", formData)
+	req.Host = "example.com"
+	req.Header.Set("Origin", "http://example.com")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "csrf_token", Value: token})
+	csrfRouter().ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("se esperaba 200 con csrf_token en form body, se obtuvo %d (body=%s)", w.Code, w.Body.String())
+	}
+}
+
 func TestCSRF_PostMismatchRejected(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/do", nil)
