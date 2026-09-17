@@ -458,7 +458,7 @@ func (ctrl *LoginController) VerifyMfaTotp(c *gin.Context) {
 
 	if err := ctrl.MfaService.ValidateTOTPCode(userID, req.Code); err != nil {
 		// Record failed attempt and check if token should be locked
-		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
 			// Token is now locked due to excessive failures
 			audit.EventResult(c, "api.login.mfa_totp_failed", fmt.Sprintf("userID=%d", userID), false, "exceso de intentos fallidos")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
@@ -519,7 +519,7 @@ func (ctrl *LoginController) VerifyMfaRecovery(c *gin.Context) {
 
 	if err := ctrl.MfaService.ValidateRecoveryCode(userID, req.Code); err != nil {
 		// Record failed attempt and check if token should be locked
-		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
 			// Token is now locked due to excessive failures
 			audit.EventResult(c, "api.login.mfa_recovery_failed", fmt.Sprintf("userID=%d", userID), false, "exceso de intentos fallidos")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
@@ -627,7 +627,7 @@ func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 	recoveryCodes, err := ctrl.MfaService.VerifyAndActivateTOTP(userID, req.Code)
 	if err != nil {
 		// Record failed attempt and check if token should be locked
-		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
 			// Token is now locked due to excessive failures
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
 			return

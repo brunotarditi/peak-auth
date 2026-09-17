@@ -446,7 +446,7 @@ func (c *OAuthController) PostPublicLoginMfaTotp(ctx *gin.Context) {
 
 	if err := c.MfaService.ValidateTOTPCode(userID, req.Code); err != nil {
 		// Record failed attempt and check if token should be locked
-		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
 			// Token is now locked due to excessive failures
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
 			return
@@ -514,7 +514,7 @@ func (c *OAuthController) PostPublicLoginMfaRecovery(ctx *gin.Context) {
 
 	if err := c.MfaService.ValidateRecoveryCode(userID, req.Code); err != nil {
 		// Record failed attempt and check if token should be locked
-		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
 			// Token is now locked due to excessive failures
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
 			return
@@ -585,7 +585,7 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 
 	if err := c.MfaService.FinishWebAuthnLogin(userID, sessionData, ctx.Request); err != nil {
 		// Record failed attempt and check if token should be locked
-		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
 			// Token is now locked due to excessive failures
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
 			return
@@ -661,7 +661,7 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 	recoveryCodes, err := c.MfaService.VerifyAndActivateTOTP(userID, req.Code)
 	if err != nil {
 		// Record failed attempt and check if token should be locked
-		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
 			// Token is now locked due to excessive failures
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
 			return
@@ -741,7 +741,7 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 
 	if err := c.MfaService.FinishWebAuthnRegistration(userID, sessionData, ctx.Request); err != nil {
 		// Record failed attempt and check if token should be locked
-		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey); lockErr != nil {
+		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
 			// Token is now locked due to excessive failures
 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
 			return
