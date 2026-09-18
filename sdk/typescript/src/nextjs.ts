@@ -11,11 +11,18 @@ export interface NextAuthOptions {
    * Roles requeridos para autorizar el acceso
    */
   requiredRoles?: string[];
+
+  /**
+   * Si es true, utiliza validación online vía /api/v1/introspect para verificar revocación inmediata.
+   * Requiere que el cliente tenga configurado clientSecret. Por defecto: false (validación offline).
+   */
+  useIntrospection?: boolean;
 }
 
 /**
  * Extrae y valida el JWT de una petición estándar de Next.js (Route Handler o Server Action).
  * Busca el token primero en el encabezado Authorization: Bearer, y luego en cookies.
+ * Si useIntrospection es true, realiza validación online para detectar revocación inmediata.
  */
 export async function verifyNextRequest(
   request: Request,
@@ -41,7 +48,32 @@ export async function verifyNextRequest(
     throw new Error('No se encontró un token de autenticación válido en la petición');
   }
 
-  const claims = await client.verifyToken(token);
+  let claims: PeakClaims;
+
+  if (options?.useIntrospection) {
+    // Validación online con verificación de revocación
+    const introspection = await client.introspectToken(token);
+    if (!introspection.active) {
+      throw new Error('Token revocado o inválido');
+    }
+    // Construir claims desde la respuesta de introspección
+    claims = {
+      sub: introspection.sub || '',
+      username: introspection.username || '',
+      app_id: introspection.aud || '',
+      roles: introspection.roles || [],
+      mfa_verified: introspection.mfa_verified || false,
+      token_type: introspection.token_type || 'access',
+      authz_version: 0, // No disponible en introspección
+      iss: introspection.iss,
+      aud: introspection.aud,
+      exp: introspection.exp,
+      iat: introspection.iat,
+    };
+  } else {
+    // Validación offline tradicional (solo firma y expiración)
+    claims = await client.verifyToken(token);
+  }
 
   if (options?.requiredRoles && options.requiredRoles.length > 0) {
     const userRoles = claims.roles || [];

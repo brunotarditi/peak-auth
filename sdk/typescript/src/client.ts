@@ -6,6 +6,7 @@ import type {
   PKCEPair,
   TokenResponse,
   OpenIDConfiguration,
+  IntrospectionResponse,
 } from './types.js';
 
 export class PeakAuthClient {
@@ -167,6 +168,34 @@ export class PeakAuthClient {
     });
 
     return payload as PeakClaims;
+  }
+
+  /**
+   * Realiza una validación online del token contra el servidor de autorización.
+   * Este método consulta el endpoint /api/v1/introspect para verificar el estado actual del token,
+   * incluyendo si ha sido revocado mediante authz_version. Requiere que el cliente tenga configurado clientSecret.
+   */
+  async introspectToken(tokenString: string): Promise<IntrospectionResponse> {
+    if (!this.config.clientSecret) {
+      throw new Error('PeakAuth: clientSecret es requerido para introspección');
+    }
+
+    const res = await fetch(`${this.config.issuerUrl}/api/v1/introspect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-App-Id': this.config.clientId,
+        'X-App-Secret': this.config.clientSecret,
+      },
+      body: JSON.stringify({ token: tokenString }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`PeakAuth introspección falló: HTTP ${res.status}`);
+    }
+
+    return (await res.json()) as IntrospectionResponse;
   }
 
   /**
