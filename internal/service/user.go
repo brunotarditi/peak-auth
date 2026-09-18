@@ -441,34 +441,12 @@ func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 // ResetPassword valida el token, actualiza la contraseña y marca el token como
 // usado de forma ATÓMICA, e invalida todas las sesiones (refresh tokens) del usuario.
 func (s *userService) ResetPassword(token, newPassword string) error {
-	reset, err := s.passwordResetRepo.FindValidPasswordReset(token)
-	if err != nil {
-		return fmt.Errorf("el token de restablecimiento es inválido o ha expirado")
-	}
 
-	// 1. Verificar que el usuario esté activo
-	user, err := s.userRepo.FindById(reset.UserID)
-	if err != nil || !user.IsActive {
-		return fmt.Errorf("el usuario asociado a este token no está activo o no existe")
-	}
-
-	// 2. Validar longitud (límite de bcrypt) y políticas de la aplicación (PWD_POLICY)
+	// 1. Validate password length early (before expensive operations)
 	if err := util.ValidatePasswordLength(newPassword); err != nil {
 		return err
 	}
-	rules, err := s.ruleService.FindRulesByAppID(reset.ApplicationID)
-	if err == nil {
-		for _, r := range rules {
-			if r.Code == "PWD_POLICY" {
-				if err := util.ValidatePasswordPolicy(r.Value, newPassword); err != nil {
-					return err
-				}
-			}
-		}
-	} else if reset.ApplicationID != 0 {
-		return fmt.Errorf("error al validar políticas de la aplicación")
-	}
-
+	// 2. Hash password before transaction (expensive operation)
 	hashed, err := util.HashPassword(newPassword)
 	if err != nil {
 		return fmt.Errorf("error al hashear contraseña: %w", err)
@@ -476,27 +454,60 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 
 	now := time.Now()
 
-	// 3. Aplicar todos los cambios en una única transacción para evitar estados
-	//    inconsistentes (token reutilizable si falla un paso posterior).
+	// 3. Execute all operations atomically within a transaction
 	return s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
+		// 3a. Find and validate the reset token inside the transaction
+		reset, err := tx.PasswordResets().FindValidPasswordReset(token)
+		if err != nil {
+			return fmt.Errorf("el token de restablecimiento es inválido o ha expirado")
+		}
+
+		// 3b. Verify user is active
+		user, err := tx.Users().FindById(reset.UserID)
+		if err != nil || !user.IsActive {
+			return fmt.Errorf("el usuario asociado a este token no está activo o no existe")
+		}
+
+		// 3c. Validate password policy for the application
+		rules, err := s.ruleService.FindRulesByAppID(reset.ApplicationID)
+		if err == nil {
+			for _, r := range rules {
+				if r.Code == "PWD_POLICY" {
+					if err := util.ValidatePasswordPolicy(r.Value, newPassword); err != nil {
+						return err
+					}
+				}
+			}
+		} else if reset.ApplicationID != 0 {
+			return fmt.Errorf("error al validar políticas de la aplicación")
+		}
+
+		// 3d. CRITICAL: Claim the token FIRST (atomic test-and-set)
+		// This ensures only one concurrent request can proceed
+		if err := tx.PasswordResets().MarkPasswordResetUsed(reset.ID, now); err != nil {
+			return fmt.Errorf("el token ya ha sido utilizado o no es válido")
+		}
+
+		// 3e. Update password only after successfully claiming the token
 		if err := tx.PasswordResets().UpdatePassword(reset.UserID, hashed); err != nil {
 			return fmt.Errorf("error al actualizar contraseña: %w", err)
 		}
-		if err := tx.PasswordResets().MarkPasswordResetUsed(reset.ID, now); err != nil {
-			return fmt.Errorf("error al actualizar estado del token: %w", err)
-		}
-		// Invalidate all other unused tokens for this user to prevent reuse
+
+		// 3f. Invalidate all other unused tokens for this user to prevent reuse
 		if err := tx.PasswordResets().InvalidateAllUserTokens(reset.UserID); err != nil {
 			return fmt.Errorf("error al invalidar tokens previos: %w", err)
 		}
-		// Al restablecer la contraseña con el token de email, queda verificado.
+
+		// 3g. Mark user as verified when resetting password via email token
 		if err := tx.Users().UpdateColumn("is_verified", true, reset.UserID); err != nil {
 			return fmt.Errorf("error al verificar la cuenta: %w", err)
 		}
-		// Invalidar todas las sesiones existentes del usuario (revocación de tokens).
+
+		// 3h. Revoke all existing sessions (refresh tokens) for security
 		if err := tx.RefreshTokens().DeleteByUser(reset.UserID); err != nil {
 			return fmt.Errorf("error al revocar sesiones: %w", err)
 		}
+
 		return nil
 	})
 }

@@ -55,7 +55,14 @@ func (r *passwordReset) UpdatePassword(userID uint, hashed string) error {
 }
 
 func (r *passwordReset) MarkPasswordResetUsed(resetID uint, usedAt time.Time) error {
-	return r.db.Model(&model.PasswordReset{}).Where("id = ? AND used_at IS NULL", resetID).UpdateColumn("used_at", usedAt).Error
+	result := r.db.Model(&model.PasswordReset{}).Where("id = ? AND used_at IS NULL", resetID).UpdateColumn("used_at", usedAt)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *passwordReset) CreatePasswordReset(reset *model.PasswordReset) error {

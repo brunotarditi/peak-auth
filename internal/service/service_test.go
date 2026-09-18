@@ -257,6 +257,9 @@ func (m *mockPasswordResetRepo) UpdatePassword(userID uint, hashed string) error
 func (m *mockPasswordResetRepo) MarkPasswordResetUsed(resetID uint, usedAt time.Time) error {
 	for _, r := range m.tokens {
 		if r.ID == resetID {
+			if r.UsedAt != nil {
+				return gorm.ErrRecordNotFound
+			}
 			r.UsedAt = &usedAt
 			return nil
 		}
@@ -1314,6 +1317,54 @@ func TestUserService_ResetPassword_InvalidatesAllRemainingTokens(t *testing.T) {
 	// Verificar que la contraseña fue actualizada
 	if resetRepo.updatedPasswords[userID] == "" {
 		t.Errorf("se esperaba que la contraseña haya sido actualizada en repo")
+	}
+}
+
+func TestUserService_ResetPassword_PreventsTokenReuse(t *testing.T) {
+	resetRepo := newMockPasswordResetRepo()
+	userRepo := &mockUserRepo{
+		user: model.User{
+			ID:         10,
+			Email:      "victim@test.com",
+			IsActive:   true,
+			IsVerified: true,
+		},
+	}
+	refreshRepo := newMockRefreshTokenRepo()
+	ruleSvc := &mockRuleServiceForReset{rules: nil}
+
+	txRepo := &mockTxRepo{
+		refreshRepo:       refreshRepo,
+		passwordResetRepo: resetRepo,
+		userRepo:          userRepo,
+	}
+	txMgr := &mockTxManager{txRepo: txRepo}
+
+	svc := &userService{
+		userRepo:          userRepo,
+		passwordResetRepo: resetRepo,
+		ruleService:       ruleSvc,
+		txManager:         txMgr,
+	}
+
+	userID := uint(10)
+	appID := uint(0)
+
+	token, _, err := svc.GenerateResetToken(userID, appID)
+	if err != nil {
+		t.Fatalf("GenerateResetToken fallo: %v", err)
+	}
+
+	// Primer intento de reset: debe tener éxito
+	err = svc.ResetPassword(token, "Password123!")
+	if err != nil {
+		t.Fatalf("Primer ResetPassword debio ser exitoso: %v", err)
+	}
+
+	// Segundo intento con el mismo token: debe ser rechazado rotundamente
+	err = svc.ResetPassword(token, "AnotherPassword123!")
+	if err == nil {
+		t.Fatalf("Se esperaba error al reutilizar el token de reset, pero no fallo")
 	}
 }
 
