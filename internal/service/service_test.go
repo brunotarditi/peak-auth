@@ -215,13 +215,98 @@ func (m *mockRefreshTokenRepo) DeleteByUserAndApp(userID, appID uint) error {
 }
 func (m *mockRefreshTokenRepo) DeleteByApp(appID uint) error { return nil }
 
+type mockPasswordResetRepo struct {
+	tokens           map[string]*model.PasswordReset
+	userTokens       map[uint][]*model.PasswordReset
+	invalidatedCalls map[uint]int
+	updatedPasswords map[uint]string
+	nextID           uint
+}
+
+func newMockPasswordResetRepo() *mockPasswordResetRepo {
+	return &mockPasswordResetRepo{
+		tokens:           make(map[string]*model.PasswordReset),
+		userTokens:       make(map[uint][]*model.PasswordReset),
+		invalidatedCalls: make(map[uint]int),
+		updatedPasswords: make(map[uint]string),
+	}
+}
+
+func (m *mockPasswordResetRepo) CheckLastTimeTokenReset(userId uint) (time.Time, error) {
+	return time.Time{}, nil
+}
+
+func (m *mockPasswordResetRepo) FindValidPasswordReset(plainToken string) (*model.PasswordReset, error) {
+	hashed := sha256.Sum256([]byte(plainToken))
+	key := hex.EncodeToString(hashed[:])
+	r, exists := m.tokens[key]
+	if !exists {
+		return nil, errors.New("token no encontrado")
+	}
+	if r.UsedAt != nil || r.ExpiresAt.Before(time.Now()) {
+		return nil, errors.New("token ya usado o expirado")
+	}
+	return r, nil
+}
+
+func (m *mockPasswordResetRepo) UpdatePassword(userID uint, hashed string) error {
+	m.updatedPasswords[userID] = hashed
+	return nil
+}
+
+func (m *mockPasswordResetRepo) MarkPasswordResetUsed(resetID uint, usedAt time.Time) error {
+	for _, r := range m.tokens {
+		if r.ID == resetID {
+			r.UsedAt = &usedAt
+			return nil
+		}
+	}
+	return errors.New("token no encontrado")
+}
+
+func (m *mockPasswordResetRepo) CreatePasswordReset(reset *model.PasswordReset) error {
+	m.nextID++
+	reset.ID = m.nextID
+	m.userTokens[reset.UserID] = append(m.userTokens[reset.UserID], reset)
+	if len(reset.TokenHash) > 0 {
+		key := hex.EncodeToString(reset.TokenHash)
+		m.tokens[key] = reset
+	}
+	return nil
+}
+
+func (m *mockPasswordResetRepo) CountResetsThisMonth(userID uint) (int64, error) {
+	return int64(len(m.userTokens[userID])), nil
+}
+
+func (m *mockPasswordResetRepo) InvalidateAllUserTokens(userID uint) error {
+	m.invalidatedCalls[userID]++
+	for _, r := range m.userTokens[userID] {
+		if r.UsedAt == nil && r.ExpiresAt.After(time.Now()) {
+			now := time.Now()
+			r.UsedAt = &now
+		}
+	}
+	return nil
+}
+
 type mockTxRepo struct {
 	repo.TxRepository
-	refreshRepo repo.RefreshTokenRepository
+	refreshRepo       repo.RefreshTokenRepository
+	passwordResetRepo repo.PasswordResetRepository
+	userRepo          repo.UserRepository
 }
 
 func (m *mockTxRepo) RefreshTokens() repo.RefreshTokenRepository {
 	return m.refreshRepo
+}
+
+func (m *mockTxRepo) PasswordResets() repo.PasswordResetRepository {
+	return m.passwordResetRepo
+}
+
+func (m *mockTxRepo) Users() repo.UserRepository {
+	return m.userRepo
 }
 
 type mockTxManager struct {
@@ -239,6 +324,15 @@ type mockRuleServiceForRegister struct {
 
 func (m *mockRuleServiceForRegister) ValidateRegistration(appID uint, req request.RegisterRequest) (*util.RegistrationPolicy, error) {
 	return m.policy, nil
+}
+
+type mockRuleServiceForReset struct {
+	ApplicationRuleService
+	rules []model.ApplicationRules
+}
+
+func (m *mockRuleServiceForReset) FindRulesByAppID(appID uint) ([]model.ApplicationRules, error) {
+	return m.rules, nil
 }
 
 // --- Tests OAuth ---
@@ -1098,5 +1192,128 @@ func TestUserService_FindVerifiedUserByID(t *testing.T) {
 			t.Errorf("error esperado 'usuario no encontrado', obtenido: %v", err)
 		}
 	})
+}
+
+func TestUserService_GenerateResetToken_InvalidatesPreviousTokens(t *testing.T) {
+	resetRepo := newMockPasswordResetRepo()
+	svc := &userService{
+		passwordResetRepo: resetRepo,
+	}
+
+	userID := uint(42)
+	appID := uint(1)
+
+	// Generar primer token de reset
+	token1, _, err := svc.GenerateResetToken(userID, appID)
+	if err != nil {
+		t.Fatalf("GenerateResetToken fallo para token1: %v", err)
+	}
+
+	// Verificar que el token1 es válido inmediatamente después de generarse
+	reset1, err := resetRepo.FindValidPasswordReset(token1)
+	if err != nil {
+		t.Fatalf("se esperaba token1 valido, obtenido error: %v", err)
+	}
+	if reset1.UsedAt != nil {
+		t.Fatalf("se esperaba token1 sin usar")
+	}
+
+	// Generar segundo token para el mismo usuario
+	token2, _, err := svc.GenerateResetToken(userID, appID)
+	if err != nil {
+		t.Fatalf("GenerateResetToken fallo para token2: %v", err)
+	}
+
+	// El token1 ahora DEBE haber sido invalidado
+	_, err = resetRepo.FindValidPasswordReset(token1)
+	if err == nil {
+		t.Fatalf("se esperaba que token1 estuviera invalidado tras generar token2")
+	}
+
+	// El token2 DEBE estar activo
+	reset2, err := resetRepo.FindValidPasswordReset(token2)
+	if err != nil {
+		t.Fatalf("se esperaba que token2 fuera valido, obtenido error: %v", err)
+	}
+	if reset2.UsedAt != nil {
+		t.Fatalf("se esperaba token2 activo")
+	}
+
+	// Verificar que se invocó InvalidateAllUserTokens para este usuario
+	if resetRepo.invalidatedCalls[userID] < 2 {
+		t.Errorf("se esperaba al menos 2 llamadas a InvalidateAllUserTokens, obtenidas: %d", resetRepo.invalidatedCalls[userID])
+	}
+}
+
+func TestUserService_ResetPassword_InvalidatesAllRemainingTokens(t *testing.T) {
+	resetRepo := newMockPasswordResetRepo()
+	userRepo := &mockUserRepo{
+		user: model.User{
+			ID:         42,
+			Email:      "user@test.com",
+			IsActive:   true,
+			IsVerified: true,
+		},
+	}
+	refreshRepo := newMockRefreshTokenRepo()
+	ruleSvc := &mockRuleServiceForReset{rules: nil}
+
+	txRepo := &mockTxRepo{
+		refreshRepo:       refreshRepo,
+		passwordResetRepo: resetRepo,
+		userRepo:          userRepo,
+	}
+	txMgr := &mockTxManager{txRepo: txRepo}
+
+	svc := &userService{
+		userRepo:          userRepo,
+		passwordResetRepo: resetRepo,
+		ruleService:       ruleSvc,
+		txManager:         txMgr,
+	}
+
+	userID := uint(42)
+	appID := uint(0)
+
+	// Crear el token que se usará para el cambio de contraseña
+	tokenUsed, _, err := svc.GenerateResetToken(userID, appID)
+	if err != nil {
+		t.Fatalf("Error al generar token de reset: %v", err)
+	}
+
+	// Simular un token secundario activo en BD para el mismo usuario
+	dummyHash := sha256.Sum256([]byte("extra-token-plain"))
+	dummyReset := &model.PasswordReset{
+		UserID:        userID,
+		ApplicationID: appID,
+		TokenHash:     dummyHash[:],
+		ExpiresAt:     time.Now().Add(1 * time.Hour),
+	}
+	if err := resetRepo.CreatePasswordReset(dummyReset); err != nil {
+		t.Fatalf("Error creando dummy reset: %v", err)
+	}
+
+	// Ejecutar ResetPassword usando tokenUsed
+	newPassword := "NewValidPassword123!"
+	err = svc.ResetPassword(tokenUsed, newPassword)
+	if err != nil {
+		t.Fatalf("ResetPassword fallo: %v", err)
+	}
+
+	// Ambos tokens (el usado y el extra) deben estar invalidados
+	_, err = resetRepo.FindValidPasswordReset(tokenUsed)
+	if err == nil {
+		t.Errorf("se esperaba que tokenUsed estuviera invalidado tras ResetPassword")
+	}
+
+	_, err = resetRepo.FindValidPasswordReset("extra-token-plain")
+	if err == nil {
+		t.Errorf("se esperaba que el token extra estuviera invalidado tras ResetPassword")
+	}
+
+	// Verificar que la contraseña fue actualizada
+	if resetRepo.updatedPasswords[userID] == "" {
+		t.Errorf("se esperaba que la contraseña haya sido actualizada en repo")
+	}
 }
 

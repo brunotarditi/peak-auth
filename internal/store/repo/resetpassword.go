@@ -15,6 +15,7 @@ type PasswordResetRepository interface {
 	MarkPasswordResetUsed(resetID uint, usedAt time.Time) error
 	CreatePasswordReset(reset *model.PasswordReset) error
 	CountResetsThisMonth(userID uint) (int64, error)
+	InvalidateAllUserTokens(userID uint) error
 }
 
 type passwordReset struct {
@@ -69,4 +70,11 @@ func (r *passwordReset) CountResetsThisMonth(userID uint) (int64, error) {
 		Where("user_id = ? AND created_at >= ?", userID, startOfDay).
 		Count(&count).Error
 	return count, err
+}
+
+func (r *passwordReset) InvalidateAllUserTokens(userID uint) error {
+	now := time.Now()
+	return r.db.Model(&model.PasswordReset{}).
+		Where("user_id = ? AND used_at IS NULL AND expires_at > ?", userID, now).
+		UpdateColumn("used_at", now).Error
 }

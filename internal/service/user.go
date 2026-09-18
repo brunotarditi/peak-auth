@@ -371,6 +371,11 @@ func (s *userService) GenerateResetToken(userID, appID uint) (string, []byte, er
 		return "", nil, err
 	}
 
+	// Invalidate all previous unused tokens before creating a new one
+	if err := s.passwordResetRepo.InvalidateAllUserTokens(userID); err != nil {
+		return "", nil, err
+	}
+
 	reset := &model.PasswordReset{
 		UserID:        userID,
 		ApplicationID: appID,
@@ -409,6 +414,11 @@ func (s *userService) CanRequestPasswordReset(userID uint) (bool, error) {
 func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 	plainToken, tokenHash, err := util.GenerateToken(32)
 	if err != nil {
+		return err
+	}
+
+	// Invalidate all previous unused tokens before creating a new one
+	if err := s.passwordResetRepo.InvalidateAllUserTokens(user.ID); err != nil {
 		return err
 	}
 
@@ -474,6 +484,10 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 		}
 		if err := tx.PasswordResets().MarkPasswordResetUsed(reset.ID, now); err != nil {
 			return fmt.Errorf("error al actualizar estado del token: %w", err)
+		}
+		// Invalidate all other unused tokens for this user to prevent reuse
+		if err := tx.PasswordResets().InvalidateAllUserTokens(reset.UserID); err != nil {
+			return fmt.Errorf("error al invalidar tokens previos: %w", err)
 		}
 		// Al restablecer la contraseña con el token de email, queda verificado.
 		if err := tx.Users().UpdateColumn("is_verified", true, reset.UserID); err != nil {
