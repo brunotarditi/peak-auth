@@ -37,11 +37,12 @@ type JWTManager struct {
 
 // CustomClaims define qué info viajará en el token
 type CustomClaims struct {
-	Username    string   `json:"username"`
-	AppID       string   `json:"app_id"`
-	Roles       []string `json:"roles"`
-	MfaVerified bool     `json:"mfa_verified"`
-	TokenType   string   `json:"token_type"`
+	Username     string   `json:"username"`
+	AppID        string   `json:"app_id"`
+	Roles        []string `json:"roles"`
+	MfaVerified  bool     `json:"mfa_verified"`
+	TokenType    string   `json:"token_type"`
+	AuthzVersion uint     `json:"authz_version"` // User authorization version for immediate revocation
 	jwt.RegisteredClaims
 }
 
@@ -146,13 +147,15 @@ func (m *JWTManager) SetActiveKey(newKid string, newPrivKey *rsa.PrivateKey, kee
 // GenerateToken crea un nuevo token JWT para un usuario y aplicación específicos.
 // El token incluye el issuer (Peak Auth) y la audiencia (app_id), de modo que cada
 // aplicación pueda validar que el token fue emitido específicamente para ella.
-func (m *JWTManager) GenerateToken(userID uint, username string, appID string, roles []string, duration time.Duration, mfaVerified bool) (string, error) {
+// También incluye authzVersion para permitir revocación inmediata de tokens.
+func (m *JWTManager) GenerateToken(userID uint, username string, appID string, roles []string, duration time.Duration, mfaVerified bool, authzVersion uint) (string, error) {
 	claims := CustomClaims{
-		Username:    username,
-		AppID:       appID,
-		Roles:       roles,
-		MfaVerified: mfaVerified,
-		TokenType:   "access",
+		Username:     username,
+		AppID:        appID,
+		Roles:        roles,
+		MfaVerified:  mfaVerified,
+		TokenType:    "access",
+		AuthzVersion: authzVersion,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   fmt.Sprintf("%d", userID),
 			Issuer:    tokenIssuer(),

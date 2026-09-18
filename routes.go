@@ -77,6 +77,12 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		TokenManager: app.TokenManager,
 	}
 
+	introspectCtrl := &controller.IntrospectController{
+		TokenManager: app.TokenManager,
+		UserRepo:     app.UserRepo,
+		UarRepo:      app.UarRepo,
+	}
+
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
 	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
@@ -144,6 +150,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		api.POST("/login/mfa/webauthn/register/finish", loginLimiter, loginCtrl.FinishWebAuthnRegistrationLogin)
 		api.POST("/register", loginLimiter, middleware.AppAuthMiddleware(app.AppRepo), registerCtrl.Register)
 		api.POST("/refresh", loginLimiter, userCtrl.Refresh)
+		// Token introspection endpoint for online validation (requires app authentication)
+		api.POST("/introspect", middleware.AppAuthMiddleware(app.AppRepo), introspectCtrl.Introspect)
 	}
 
 	// ============================================================================

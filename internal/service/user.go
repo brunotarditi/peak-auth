@@ -187,7 +187,7 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	}
 
 	// 4. Generar Token JWT
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, false)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, false, user.AuthzVersion)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -609,7 +609,7 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 
 	duration := time.Duration(expireMinutes) * time.Minute
 
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
 	if err != nil {
 		return "", 0, false, false, "", err
 	}
@@ -708,7 +708,7 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 	}
 
 	// 2. Generar nuevo Access Token preservando el aseguramiento de MFA original
-	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration, rt.MfaCompleted)
+	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration, rt.MfaCompleted, user.AuthzVersion)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -858,7 +858,7 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 	}
 
 	// 4. Generar Token JWT
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, mfaCompleted)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, mfaCompleted, user.AuthzVersion)
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -945,7 +945,7 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 	}
 
 	duration := time.Duration(expireMinutes) * time.Minute
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true)
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
 	if err != nil {
 		return "", 0, err
 	}
