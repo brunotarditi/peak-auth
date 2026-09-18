@@ -152,3 +152,16 @@ type MfaAttemptTracker struct {
 	ExpiresAt      time.Time `gorm:"index;not null"`                                // When this tracker expires
 	User           User      `gorm:"foreignKey:UserID"`
 }
+
+// UserConsent tracks user authorization grants to OAuth clients
+// to prevent silent authorization without explicit user approval
+type UserConsent struct {
+	gorm.Model
+	UserID        uint        `gorm:"uniqueIndex:idx_user_client_consent;not null;index"`
+	ClientID      string      `gorm:"type:varchar(255);uniqueIndex:idx_user_client_consent;not null;index"`
+	ApplicationID uint        `gorm:"not null;index"`
+	User          User        `gorm:"foreignKey:UserID"`
+	Application   Application `gorm:"foreignKey:ApplicationID"`
+	GrantedAt     time.Time   `gorm:"not null"`
+	ExpiresAt     *time.Time  `gorm:"index"` // Optional: consent can expire after a period
+}

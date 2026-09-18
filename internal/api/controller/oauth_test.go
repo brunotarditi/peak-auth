@@ -29,11 +29,15 @@ import (
 // --- Mocks para pruebas OAuth del Controller ---
 
 type testOAuthRepo struct {
-	codes map[string]*model.OAuthCode
+	codes    map[string]*model.OAuthCode
+	consents map[string]bool // key: "userID:clientID"
 }
 
 func newTestOAuthRepo() *testOAuthRepo {
-	return &testOAuthRepo{codes: make(map[string]*model.OAuthCode)}
+	return &testOAuthRepo{
+		codes:    make(map[string]*model.OAuthCode),
+		consents: make(map[string]bool),
+	}
 }
 
 func (r *testOAuthRepo) CreateCode(code *model.OAuthCode) error {
@@ -51,6 +55,23 @@ func (r *testOAuthRepo) GetAndConsumeCode(codeStr string) (*model.OAuthCode, err
 }
 
 func (r *testOAuthRepo) DeleteExpiredCodes() error { return nil }
+
+func (r *testOAuthRepo) HasValidConsent(userID uint, clientID string) (bool, error) {
+	key := fmt.Sprintf("%d:%s", userID, clientID)
+	return r.consents[key], nil
+}
+
+func (r *testOAuthRepo) CreateConsent(consent *model.UserConsent) error {
+	key := fmt.Sprintf("%d:%s", consent.UserID, consent.ClientID)
+	r.consents[key] = true
+	return nil
+}
+
+func (r *testOAuthRepo) RevokeConsent(userID uint, clientID string) error {
+	key := fmt.Sprintf("%d:%s", userID, clientID)
+	delete(r.consents, key)
+	return nil
+}
 
 type testAppRepo struct {
 	apps map[string]*model.Application
@@ -320,13 +341,21 @@ func TestOAuth_Authorize_InactiveUser_RedirectsToLogin(t *testing.T) {
 // TestOAuth_PKCE_FullFlow_And_ReplayProtection prueba el flujo E2E completo:
 // authorize con sesión activa -> emite código -> canje por token con PKCE verifier -> rechazo en reintento (replay).
 func TestOAuth_PKCE_FullFlow_And_ReplayProtection(t *testing.T) {
-	r, tm, _, _ := setupOAuthControllerTest(t)
+	r, tm, oauthRepo, _ := setupOAuthControllerTest(t)
 
 	// 1. Crear sesión SSO válida de Peak Auth
 	sessionToken, err := tm.GenerateToken(42, "user@client.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
 	if err != nil {
 		t.Fatalf("error creando token de sesión: %v", err)
 	}
+
+	// 1.5. Grant consent for the user to the client (simulating prior consent)
+	oauthRepo.CreateConsent(&model.UserConsent{
+		UserID:        42,
+		ClientID:      "client-portal",
+		ApplicationID: 10,
+		GrantedAt:     time.Now(),
+	})
 
 	// 2. Generar PKCE verifier y challenge (S256)
 	codeVerifier := "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk0123456789"
@@ -429,9 +458,17 @@ func TestOAuth_PKCE_FullFlow_And_ReplayProtection(t *testing.T) {
 
 // TestOAuth_PKCE_WrongVerifier_Rejected comprueba que un code_verifier incorrecto cause invalid_grant
 func TestOAuth_PKCE_WrongVerifier_Rejected(t *testing.T) {
-	r, tm, _, _ := setupOAuthControllerTest(t)
+	r, tm, oauthRepo, _ := setupOAuthControllerTest(t)
 
 	sessionToken, _ := tm.GenerateToken(10, "u@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
+
+	// Grant consent
+	oauthRepo.CreateConsent(&model.UserConsent{
+		UserID:        10,
+		ClientID:      "client-portal",
+		ApplicationID: 10,
+		GrantedAt:     time.Now(),
+	})
 
 	codeVerifier := "legitimate-code-verifier-string-1234567890"
 	h := sha256.Sum256([]byte(codeVerifier))
@@ -472,9 +509,17 @@ func TestOAuth_PKCE_WrongVerifier_Rejected(t *testing.T) {
 
 // TestOAuth_InvalidClientSecret_Rejected comprueba que credenciales inválidas impidan el canje
 func TestOAuth_InvalidClientSecret_Rejected(t *testing.T) {
-	r, tm, _, _ := setupOAuthControllerTest(t)
+	r, tm, oauthRepo, _ := setupOAuthControllerTest(t)
 
 	sessionToken, _ := tm.GenerateToken(10, "u@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
+
+	// Grant consent
+	oauthRepo.CreateConsent(&model.UserConsent{
+		UserID:        10,
+		ClientID:      "client-portal",
+		ApplicationID: 10,
+		GrantedAt:     time.Now(),
+	})
 
 	authURL := fmt.Sprintf("/oauth/authorize?client_id=client-portal&redirect_uri=%s&response_type=code",
 		url.QueryEscape("https://portal.client.com/oauth/callback"),
@@ -529,6 +574,78 @@ func TestOAuth_Authorize_UnknownClientID_Rejected(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("se esperaba 400 Bad Request por client_id desconocido, obtenido: %d", w.Code)
+	}
+}
+
+// TestOAuth_Authorize_WithoutConsent_RedirectsToConsentPage verifica que sin consentimiento previo se redirija a la página de consentimiento
+func TestOAuth_Authorize_WithoutConsent_RedirectsToConsentPage(t *testing.T) {
+	r, tm, _, _ := setupOAuthControllerTest(t)
+
+	// Create valid session but NO consent
+	sessionToken, err := tm.GenerateToken(42, "user@client.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
+	if err != nil {
+		t.Fatalf("error creando token de sesión: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/oauth/authorize?client_id=client-portal&redirect_uri=https://portal.client.com/oauth/callback&response_type=code&state=test-state", nil)
+	req.AddCookie(&http.Cookie{Name: "peak_session", Value: sessionToken})
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("se esperaba 302 Found redirigiendo a consent, obtenido: %d", w.Code)
+	}
+
+	location := w.Header().Get("Location")
+	if !strings.HasPrefix(location, "/oauth/consent") {
+		t.Fatalf("se esperaba redirección a /oauth/consent, obtenido: %s", location)
+	}
+
+	// Verify OAuth parameters are preserved in redirect
+	if !strings.Contains(location, "client_id=client-portal") {
+		t.Fatalf("client_id no preservado en redirección a consent: %s", location)
+	}
+	if !strings.Contains(location, "state=test-state") {
+		t.Fatalf("state no preservado en redirección a consent: %s", location)
+	}
+}
+
+// TestOAuth_Authorize_WithConsent_IssuesCodeDirectly verifica que con consentimiento previo se emita el código directamente
+func TestOAuth_Authorize_WithConsent_IssuesCodeDirectly(t *testing.T) {
+	r, tm, oauthRepo, _ := setupOAuthControllerTest(t)
+
+	// Create valid session AND grant consent
+	sessionToken, err := tm.GenerateToken(42, "user@client.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
+	if err != nil {
+		t.Fatalf("error creando token de sesión: %v", err)
+	}
+
+	oauthRepo.CreateConsent(&model.UserConsent{
+		UserID:        42,
+		ClientID:      "client-portal",
+		ApplicationID: 10,
+		GrantedAt:     time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/oauth/authorize?client_id=client-portal&redirect_uri=https://portal.client.com/oauth/callback&response_type=code&state=test-state", nil)
+	req.AddCookie(&http.Cookie{Name: "peak_session", Value: sessionToken})
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("se esperaba 302 Found redirigiendo a callback, obtenido: %d", w.Code)
+	}
+
+	location := w.Header().Get("Location")
+	if !strings.HasPrefix(location, "https://portal.client.com/oauth/callback") {
+		t.Fatalf("se esperaba redirección a callback con código, obtenido: %s", location)
+	}
+
+	// Verify code is present
+	redirectParsed, _ := url.Parse(location)
+	code := redirectParsed.Query().Get("code")
+	if code == "" {
+		t.Fatalf("código de autorización no incluido en callback: %s", location)
 	}
 }
 

@@ -108,6 +108,15 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		oauth.GET("/logout", oauthCtrl.LogoutEndpoint)   // Federated Logout (GET)
 		oauth.POST("/logout", oauthCtrl.LogoutEndpoint)  // Federated Logout (POST)
 
+		// Consent page for user authorization approval
+		oauthConsent := oauth.Group("/consent")
+		oauthConsent.Use(middleware.CSRFMiddleware())
+		{
+			oauthConsent.GET("", oauthCtrl.GetConsentPage)
+			oauthConsent.POST("/approve", oauthCtrl.PostConsentApprove)
+			oauthConsent.POST("/deny", oauthCtrl.PostConsentDeny)
+		}
+
 		// Flujo público de login para Web (SSO) protegido con CSRF
 		oauthWeb := oauth.Group("/login")
 		oauthWeb.Use(middleware.CSRFMiddleware())
