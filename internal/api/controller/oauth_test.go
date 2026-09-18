@@ -97,6 +97,7 @@ var _ repo.ApplicationRepository = (*testAppRepo)(nil)
 type testUserService struct {
 	service.UserService
 	completeLoginFn func(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error)
+	findUserFn      func(userID uint) (*model.User, error)
 }
 
 func (u *testUserService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
@@ -106,7 +107,23 @@ func (u *testUserService) CompleteLoginWithMfa(userID uint, publicAppID string, 
 	return response.TokenResponse{}, nil
 }
 
+func (u *testUserService) FindVerifiedUserByID(userID uint) (*model.User, error) {
+	if u.findUserFn != nil {
+		return u.findUserFn(userID)
+	}
+	return &model.User{
+		Email:        "user@client.com",
+		IsActive:     true,
+		IsVerified:   true,
+		AuthzVersion: 0,
+	}, nil
+}
+
 func setupOAuthControllerTest(t *testing.T) (*gin.Engine, *auth.JWTManager, *testOAuthRepo, *testAppRepo) {
+	return setupOAuthControllerTestWithUser(t, nil)
+}
+
+func setupOAuthControllerTestWithUser(t *testing.T, customUserSvc *testUserService) (*gin.Engine, *auth.JWTManager, *testOAuthRepo, *testAppRepo) {
 	t.Helper()
 
 	// Generar clave privada RSA para el test
@@ -137,18 +154,21 @@ func setupOAuthControllerTest(t *testing.T) (*gin.Engine, *auth.JWTManager, *tes
 	oauthRepo := newTestOAuthRepo()
 	oauthSvc := service.NewOAuthService(oauthRepo, appRepo)
 
-	mockUserSvc := &testUserService{
-		completeLoginFn: func(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
-			token, err := tm.GenerateToken(userID, "user@client.com", publicAppID, []string{"USER"}, time.Hour, mfaCompleted, 0)
-			if err != nil {
-				return response.TokenResponse{}, err
-			}
-			return response.TokenResponse{
-				AccessToken:  token,
-				RefreshToken: "dummy_refresh_token",
-				ExpiresIn:    3600,
-			}, nil
-		},
+	mockUserSvc := customUserSvc
+	if mockUserSvc == nil {
+		mockUserSvc = &testUserService{
+			completeLoginFn: func(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
+				token, err := tm.GenerateToken(userID, "user@client.com", publicAppID, []string{"USER"}, time.Hour, mfaCompleted, 0)
+				if err != nil {
+					return response.TokenResponse{}, err
+				}
+				return response.TokenResponse{
+					AccessToken:  token,
+					RefreshToken: "dummy_refresh_token",
+					ExpiresIn:    3600,
+				}, nil
+			},
+		}
 	}
 
 	ctrl := &OAuthController{
@@ -191,6 +211,109 @@ func TestOAuth_Authorize_RedirectsToLoginWhenNoSession(t *testing.T) {
 	}
 	if !strings.Contains(location, "client_id=client-portal") || !strings.Contains(location, "state=state-123") {
 		t.Fatalf("la redirección a login no preservó los parámetros requeridos: %s", location)
+	}
+}
+
+// TestOAuth_Authorize_PasswordResetRevocation_RedirectsToLogin verifica que una sesión emitida previa a un cambio de contraseña sea invalidada
+func TestOAuth_Authorize_PasswordResetRevocation_RedirectsToLogin(t *testing.T) {
+	resetTime := time.Now().Add(10 * time.Minute)
+	userSvc := &testUserService{
+		findUserFn: func(userID uint) (*model.User, error) {
+			return &model.User{
+				Email:             "user@client.com",
+				IsActive:          true,
+				IsVerified:        true,
+				PasswordChangedAt: &resetTime,
+				AuthzVersion:      0,
+			}, nil
+		},
+	}
+	r, tm, _, _ := setupOAuthControllerTestWithUser(t, userSvc)
+
+	// Token emitido antes del cambio de contraseña
+	sessionToken, err := tm.GenerateToken(42, "user@client.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
+	if err != nil {
+		t.Fatalf("error creando token de sesión: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/oauth/authorize?client_id=client-portal&redirect_uri=https://portal.client.com/oauth/callback&response_type=code&state=state-123", nil)
+	req.AddCookie(&http.Cookie{Name: "peak_session", Value: sessionToken})
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("se esperaba 302 Found redirigiendo a login, obtenido: %d", w.Code)
+	}
+	location := w.Header().Get("Location")
+	if !strings.HasPrefix(location, "/oauth/login") {
+		t.Fatalf("se esperaba redirección a /oauth/login por cambio de contraseña, obtenido: %s", location)
+	}
+}
+
+// TestOAuth_Authorize_AuthzVersionMismatch_RedirectsToLogin verifica que un token con authz_version revocado sea invalidado
+func TestOAuth_Authorize_AuthzVersionMismatch_RedirectsToLogin(t *testing.T) {
+	userSvc := &testUserService{
+		findUserFn: func(userID uint) (*model.User, error) {
+			return &model.User{
+				Email:        "user@client.com",
+				IsActive:     true,
+				IsVerified:   true,
+				AuthzVersion: 5, // Usuario revocado con versión superior
+			}, nil
+		},
+	}
+	r, tm, _, _ := setupOAuthControllerTestWithUser(t, userSvc)
+
+	// Token emitido con authz_version = 0
+	sessionToken, err := tm.GenerateToken(42, "user@client.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
+	if err != nil {
+		t.Fatalf("error creando token de sesión: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/oauth/authorize?client_id=client-portal&redirect_uri=https://portal.client.com/oauth/callback&response_type=code&state=state-123", nil)
+	req.AddCookie(&http.Cookie{Name: "peak_session", Value: sessionToken})
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("se esperaba 302 Found redirigiendo a login, obtenido: %d", w.Code)
+	}
+	location := w.Header().Get("Location")
+	if !strings.HasPrefix(location, "/oauth/login") {
+		t.Fatalf("se esperaba redirección a /oauth/login por authz_version mismatch, obtenido: %s", location)
+	}
+}
+
+// TestOAuth_Authorize_InactiveUser_RedirectsToLogin verifica que un usuario desactivado no pueda continuar la sesión SSO
+func TestOAuth_Authorize_InactiveUser_RedirectsToLogin(t *testing.T) {
+	userSvc := &testUserService{
+		findUserFn: func(userID uint) (*model.User, error) {
+			return &model.User{
+				Email:        "user@client.com",
+				IsActive:     false, // Desactivado
+				IsVerified:   true,
+				AuthzVersion: 0,
+			}, nil
+		},
+	}
+	r, tm, _, _ := setupOAuthControllerTestWithUser(t, userSvc)
+
+	sessionToken, err := tm.GenerateToken(42, "user@client.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
+	if err != nil {
+		t.Fatalf("error creando token de sesión: %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/oauth/authorize?client_id=client-portal&redirect_uri=https://portal.client.com/oauth/callback&response_type=code&state=state-123", nil)
+	req.AddCookie(&http.Cookie{Name: "peak_session", Value: sessionToken})
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Fatalf("se esperaba 302 Found redirigiendo a login, obtenido: %d", w.Code)
+	}
+	location := w.Header().Get("Location")
+	if !strings.HasPrefix(location, "/oauth/login") {
+		t.Fatalf("se esperaba redirección a /oauth/login por usuario inactivo, obtenido: %s", location)
 	}
 }
 
