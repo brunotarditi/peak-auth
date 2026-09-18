@@ -55,36 +55,36 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 
 	if err != nil || claims == nil {
 		// No hay sesión, redirigir a la pantalla de login público de OAuth propagando PKCE si vino
-		url := url.URL{Path: "/oauth/login"}
-		query := url.Query()
-		query.Set("client_id", clientID)
-		query.Set("redirect_uri", redirectURI)
-		query.Set("state", state)
-
-		if codeChallenge != "" {
-			query.Set("code_challenge", codeChallenge)
-			query.Set("code_challenge_method", codeChallengeMethod)
-		}
-		url.RawQuery = query.Encode()
-		ctx.Redirect(http.StatusFound, url.String())
+		c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
 		return
 	}
 
 	userID, err := parseUserIDFromSubject(claims.Subject)
 	if err != nil {
-		url := url.URL{Path: "/oauth/login"}
-		query := url.Query()
-		query.Set("client_id", clientID)
-		query.Set("redirect_uri", redirectURI)
-		query.Set("state", state)
-
-		if codeChallenge != "" {
-			query.Set("code_challenge", codeChallenge)
-			query.Set("code_challenge_method", codeChallengeMethod)
-		}
-		url.RawQuery = query.Encode()
-		ctx.Redirect(http.StatusFound, url.String())
+		c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
 		return
+	}
+
+	// Validar que el token no haya sido invalidado por cambio de contraseña o revocación
+	if c.UserService != nil {
+		user, err := c.UserService.FindVerifiedUserByID(userID)
+		if err != nil || user == nil || !user.IsActive {
+			// Usuario no encontrado, inactivo o no verificado - redirigir a login
+			c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+			return
+		}
+
+		// Si la contraseña fue restablecida con posterioridad a la emisión del token, invalidarlo
+		if user.PasswordChangedAt != nil && claims.IssuedAt != nil && claims.IssuedAt.Time.Before(*user.PasswordChangedAt) {
+			c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+			return
+		}
+
+		// Verificar que el token no haya sido revocado (authz_version mismatch)
+		if claims.AuthzVersion != user.AuthzVersion {
+			c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+			return
+		}
 	}
 
 	// Validar si la app destino exige MFA_POLICY
@@ -99,34 +99,13 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 						if !c.MfaService.IsMfaEnabled(userID) {
 							mfaToken, _ := c.TokenManager.GenerateMFAPendingToken(userID, claims.Username, clientID)
 							c.setMfaCookie(ctx, mfaToken)
-							redirectURL := url.URL{Path: "/oauth/login/mfa/setup"}
-							query := redirectURL.Query()
-							query.Set("client_id", clientID)
-							query.Set("redirect_uri", redirectURI)
-							query.Set("state", state)
-
-							if codeChallenge != "" {
-								query.Set("code_challenge", codeChallenge)
-								query.Set("code_challenge_method", codeChallengeMethod)
-							}
-							redirectURL.RawQuery = query.Encode()
-							ctx.Redirect(http.StatusFound, redirectURL.String())
+							c.redirectToOAuthLogin(ctx, "/oauth/login/mfa/setup", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
 							return
 						}
 						if !claims.MfaVerified {
 							mfaToken, _ := c.TokenManager.GenerateMFAPendingToken(userID, claims.Username, clientID)
 							c.setMfaCookie(ctx, mfaToken)
-							redirectURL := url.URL{Path: "/oauth/login/mfa"}
-							query := redirectURL.Query()
-							query.Set("client_id", clientID)
-							query.Set("redirect_uri", redirectURI)
-							query.Set("state", state)
-							if codeChallenge != "" {
-								query.Set("code_challenge", codeChallenge)
-								query.Set("code_challenge_method", codeChallengeMethod)
-							}
-							redirectURL.RawQuery = query.Encode()
-							ctx.Redirect(http.StatusFound, redirectURL.String())
+							c.redirectToOAuthLogin(ctx, "/oauth/login/mfa", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
 							return
 						}
 					}
@@ -844,4 +823,19 @@ func (c *OAuthController) LogoutEndpoint(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Sesión cerrada correctamente"})
+}
+
+func (c *OAuthController) redirectToOAuthLogin(ctx *gin.Context, path, clientID, redirectURI, state, codeChallenge, codeChallengeMethod string) {
+	redirectURL := url.URL{Path: path}
+	query := redirectURL.Query()
+	query.Set("client_id", clientID)
+	query.Set("redirect_uri", redirectURI)
+	query.Set("state", state)
+
+	if codeChallenge != "" {
+		query.Set("code_challenge", codeChallenge)
+		query.Set("code_challenge_method", codeChallengeMethod)
+	}
+	redirectURL.RawQuery = query.Encode()
+	ctx.Redirect(http.StatusFound, redirectURL.String())
 }
