@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -24,10 +25,12 @@ func (ctrl *RoleController) PostRole(c *gin.Context) {
 	}
 
 	if err := ctrl.RoleService.CreateRole(req.Name); err != nil {
+		audit.EventResult(c, "role.create", "role="+req.Name, false, err.Error())
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		return
 	}
 
+	audit.EventResult(c, "role.create", "role="+req.Name, true, "")
 	c.JSON(http.StatusOK, gin.H{"message": "Rol global creado con éxito"})
 }
 
@@ -43,10 +46,12 @@ func (ctrl *RoleController) DeleteRole(c *gin.Context) {
 	}
 
 	if err := ctrl.RoleService.DeleteRole(req.Name); err != nil {
+		audit.EventResult(c, "role.delete", "role="+req.Name, false, err.Error())
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		return
 	}
 
+	audit.EventResult(c, "role.delete", "role="+req.Name, true, "")
 	c.JSON(http.StatusOK, gin.H{"message": "Rol eliminado con éxito"})
 }
 
