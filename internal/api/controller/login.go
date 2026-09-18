@@ -8,6 +8,7 @@ import (
 	"peak-auth/internal/audit"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
+	"peak-auth/internal/util"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -72,7 +73,7 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 
 	if mfaRequired {
 		// Extract user ID from the mfaToken to create server-side transaction
-		claims, err := ctrl.TokenManager.VerifyMFAPendingToken(mfaToken, "")
+		claims, err := ctrl.TokenManager.VerifyMFAPendingToken(mfaToken, util.AppIdPeakAuth)
 		if err != nil {
 			c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("Error en autenticación MFA"))
 			return
@@ -94,7 +95,7 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 		// Store only the opaque transaction ID in cookie, not the JWT
 		ctrl.setMfaTransactionCookie(c, transactionID)
 		ctrl.clearMfaCookie(c) // Clear any old JWT cookie
-		
+
 		if mfaSetupRequired {
 			c.Redirect(http.StatusSeeOther, "/admin/login/mfa/setup")
 		} else {
@@ -120,7 +121,7 @@ func (ctrl *LoginController) PostLogout(c *gin.Context) {
 // GetAdminMfaForm renderiza la vista para que el administrador valide su MFA
 func (ctrl *LoginController) GetAdminMfaForm(c *gin.Context) {
 	ctrl.setNoCacheHeaders(c)
-	
+
 	// Get MFA transaction from server-side store
 	txn, err := ctrl.getMfaTransactionFromCookie(c)
 	if err != nil {
@@ -148,7 +149,7 @@ func (ctrl *LoginController) GetAdminMfaForm(c *gin.Context) {
 // GetAdminMfaSetupForm renderiza la vista para configurar forzosamente el MFA
 func (ctrl *LoginController) GetAdminMfaSetupForm(c *gin.Context) {
 	ctrl.setNoCacheHeaders(c)
-	
+
 	// Get MFA transaction from server-side store
 	_, err := ctrl.getMfaTransactionFromCookie(c)
 	if err != nil {
