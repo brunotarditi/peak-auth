@@ -122,7 +122,7 @@ import (
 func main() {
     client, err := peakauth.New(peakauth.Config{
         IssuerURL:    "https://auth.tuempresa.com",
-        ClientID:     "libreria-mariela",
+        ClientID:     "tu-empresa",
         ClientSecret: "tu-client-secret", // Requerido para introspección
     })
     if err != nil {
@@ -187,7 +187,7 @@ import { peakAuthMiddleware } from '@brunotarditi/peak-auth/express';
 const app = express();
 const peakAuth = new PeakAuthClient({
   issuerUrl: 'https://auth.tuempresa.com',
-  clientId: 'libreria-mariela',
+  clientId: 'tu-empresa',
   clientSecret: 'tu-client-secret', // Requerido para introspección
 });
 
