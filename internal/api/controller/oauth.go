@@ -87,6 +87,65 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 		return
 	}
 
+	// Validar que el token no haya sido invalidado por cambio de contraseña o revocación
+	if c.UserService != nil {
+		user, err := c.UserService.FindVerifiedUserByID(userID)
+		if err != nil || user == nil || !user.IsActive {
+			// Usuario no encontrado, inactivo o no verificado - redirigir a login
+			url := url.URL{Path: "/oauth/login"}
+			query := url.Query()
+			query.Set("client_id", clientID)
+			query.Set("redirect_uri", redirectURI)
+			query.Set("state", state)
+
+			if codeChallenge != "" {
+				query.Set("code_challenge", codeChallenge)
+				query.Set("code_challenge_method", codeChallengeMethod)
+			}
+			url.RawQuery = query.Encode()
+			ctx.Redirect(http.StatusFound, url.String())
+			return
+		}
+
+		// Si la contraseña fue restablecida con posterioridad a la emisión del token, invalidarlo
+		if user.PasswordChangedAt != nil && claims.IssuedAt != nil {
+			if claims.IssuedAt.Time.Before(*user.PasswordChangedAt) {
+				// Token emitido antes del cambio de contraseña - redirigir a login
+				url := url.URL{Path: "/oauth/login"}
+				query := url.Query()
+				query.Set("client_id", clientID)
+				query.Set("redirect_uri", redirectURI)
+				query.Set("state", state)
+
+				if codeChallenge != "" {
+					query.Set("code_challenge", codeChallenge)
+					query.Set("code_challenge_method", codeChallengeMethod)
+				}
+				url.RawQuery = query.Encode()
+				ctx.Redirect(http.StatusFound, url.String())
+				return
+			}
+		}
+
+		// Verificar que el token no haya sido revocado (authz_version mismatch)
+		if claims.AuthzVersion != user.AuthzVersion {
+			// Token revocado - redirigir a login
+			url := url.URL{Path: "/oauth/login"}
+			query := url.Query()
+			query.Set("client_id", clientID)
+			query.Set("redirect_uri", redirectURI)
+			query.Set("state", state)
+
+			if codeChallenge != "" {
+				query.Set("code_challenge", codeChallenge)
+				query.Set("code_challenge_method", codeChallengeMethod)
+			}
+			url.RawQuery = query.Encode()
+			ctx.Redirect(http.StatusFound, url.String())
+			return
+		}
+	}
+
 	// Validar si la app destino exige MFA_POLICY
 	if c.AppService != nil && c.RuleService != nil {
 		targetApp, err := c.AppService.GetAppDetails(clientID)

@@ -73,6 +73,14 @@ func (ctrl *IntrospectController) Introspect(c *gin.Context) {
 		return
 	}
 
+	// Si la contraseña fue restablecida con posterioridad a la emisión del token, invalidarlo
+	if user.PasswordChangedAt != nil && claims.IssuedAt != nil {
+		if claims.IssuedAt.Time.Before(*user.PasswordChangedAt) {
+			c.JSON(http.StatusOK, IntrospectResponse{Active: false})
+			return
+		}
+	}
+
 	// Verificar que el token no haya sido revocado (authz_version mismatch)
 	if claims.AuthzVersion != user.AuthzVersion {
 		c.JSON(http.StatusOK, IntrospectResponse{Active: false})
