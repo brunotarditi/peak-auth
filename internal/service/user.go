@@ -347,12 +347,21 @@ func (s *userService) FindVerifiedUser(email string) (*model.User, error) {
 	return &user, nil
 }
 
-// FindVerifiedUserByID retorna el usuario si existe y está verificado por email.
+// FindVerifiedUserByID retorna el usuario si existe, está verificado por email y está activo.
 func (s *userService) FindVerifiedUserByID(id uint) (*model.User, error) {
 	user, err := s.userRepo.FindById(id)
 	if err != nil {
 		return nil, fmt.Errorf("usuario no encontrado")
 	}
+
+	if !user.IsVerified {
+		return nil, fmt.Errorf("usuario no verificado")
+	}
+
+	if !user.IsActive {
+		return nil, fmt.Errorf("usuario desactivado")
+	}
+
 	return &user, nil
 }
 
