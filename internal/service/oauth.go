@@ -17,6 +17,8 @@ type OAuthService interface {
 	GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string, mfaCompleted bool) (string, error)
 	ExchangeCodeForToken(clientID, clientSecret, codeStr, redirectURI, codeVerifier string) (uint, bool, error)
 	StartCleanupTask(interval time.Duration)
+	HasValidConsent(userID uint, clientID string) (bool, error)
+	GrantConsent(userID uint, clientID string) error
 }
 
 type oauthService struct {
@@ -173,4 +175,30 @@ func (s *oauthService) StartCleanupTask(interval time.Duration) {
 			_ = s.oauthRepo.DeleteExpiredCodes()
 		}
 	}()
+}
+
+func (s *oauthService) HasValidConsent(userID uint, clientID string) (bool, error) {
+	return s.oauthRepo.HasValidConsent(userID, clientID)
+}
+
+func (s *oauthService) GrantConsent(userID uint, clientID string) error {
+	// Verify the client exists and is active
+	app, err := s.appRepo.FindByAppID(clientID)
+	if err != nil {
+		return errors.New("client_id inválido")
+	}
+
+	if !app.IsActive {
+		return errors.New("la aplicación está desactivada")
+	}
+
+	consent := &model.UserConsent{
+		UserID:        userID,
+		ClientID:      clientID,
+		ApplicationID: app.ID,
+		GrantedAt:     time.Now(),
+		ExpiresAt:     nil, // Consent does not expire by default
+	}
+
+	return s.oauthRepo.CreateConsent(consent)
 }

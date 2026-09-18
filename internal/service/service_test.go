@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -29,11 +30,15 @@ type testError struct{ msg string }
 func (e *testError) Error() string { return e.msg }
 
 type mockOAuthRepo struct {
-	codes map[string]*model.OAuthCode
+	codes    map[string]*model.OAuthCode
+	consents map[string]bool // key: "userID:clientID"
 }
 
 func newMockOAuthRepo() *mockOAuthRepo {
-	return &mockOAuthRepo{codes: make(map[string]*model.OAuthCode)}
+	return &mockOAuthRepo{
+		codes:    make(map[string]*model.OAuthCode),
+		consents: make(map[string]bool),
+	}
 }
 
 func (m *mockOAuthRepo) CreateCode(code *model.OAuthCode) error {
@@ -51,6 +56,23 @@ func (m *mockOAuthRepo) GetAndConsumeCode(codeStr string) (*model.OAuthCode, err
 }
 
 func (m *mockOAuthRepo) DeleteExpiredCodes() error {
+	return nil
+}
+
+func (m *mockOAuthRepo) HasValidConsent(userID uint, clientID string) (bool, error) {
+	key := fmt.Sprintf("%d:%s", userID, clientID)
+	return m.consents[key], nil
+}
+
+func (m *mockOAuthRepo) CreateConsent(consent *model.UserConsent) error {
+	key := fmt.Sprintf("%d:%s", consent.UserID, consent.ClientID)
+	m.consents[key] = true
+	return nil
+}
+
+func (m *mockOAuthRepo) RevokeConsent(userID uint, clientID string) error {
+	key := fmt.Sprintf("%d:%s", userID, clientID)
+	delete(m.consents, key)
 	return nil
 }
 

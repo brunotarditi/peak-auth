@@ -114,6 +114,19 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 		}
 	}
 
+	// Check if user has previously granted consent to this client
+	hasConsent, err := c.OAuthService.HasValidConsent(userID, clientID)
+	if err != nil {
+		c.renderError(ctx, http.StatusInternalServerError, "Error Interno", "No se pudo verificar el consentimiento del usuario.")
+		return
+	}
+
+	// If no consent exists, redirect to consent page
+	if !hasConsent {
+		c.redirectToConsentPage(ctx, clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+		return
+	}
+
 	// 2. Generar Authorization Code (con soporte PKCE)
 	mfaCompleted := claims.MfaVerified
 	code, err := c.OAuthService.GenerateAuthorizationCode(userID, clientID, redirectURI, codeChallenge, codeChallengeMethod, mfaCompleted)
@@ -823,6 +836,164 @@ func (c *OAuthController) LogoutEndpoint(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Sesión cerrada correctamente"})
+}
+
+// GetConsentPage renders the consent page where users approve or deny authorization
+func (c *OAuthController) GetConsentPage(ctx *gin.Context) {
+	clientID := ctx.Query("client_id")
+	redirectURI := ctx.Query("redirect_uri")
+	state := ctx.Query("state")
+	codeChallenge := ctx.Query("code_challenge")
+	codeChallengeMethod := ctx.Query("code_challenge_method")
+
+	if clientID == "" || redirectURI == "" {
+		ctx.String(http.StatusBadRequest, "Parámetros inválidos")
+		return
+	}
+
+	// Validate client and redirect URI
+	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
+		return
+	}
+
+	// Verify user session
+	cookie, err := ctx.Cookie("peak_session")
+	if err != nil || cookie == "" {
+		c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+		return
+	}
+
+	claims, err := c.TokenManager.VerifyTokenForApp(cookie, util.AppIdPeakAuth)
+	if err != nil || claims == nil {
+		c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+		return
+	}
+
+	// Get application details to display to user
+	var appName, appDescription string
+	if c.AppService != nil {
+		app, err := c.AppService.GetAppDetails(clientID)
+		if err == nil {
+			appName = app.Name
+			appDescription = app.Description
+		}
+	}
+	if appName == "" {
+		appName = clientID
+	}
+
+	csrf, _ := ctx.Get("csrf_token")
+	ctx.HTML(http.StatusOK, "oauth_consent.html", gin.H{
+		"ClientID":            clientID,
+		"ClientName":          appName,
+		"ClientDescription":   appDescription,
+		"RedirectURI":         redirectURI,
+		"State":               state,
+		"CodeChallenge":       codeChallenge,
+		"CodeChallengeMethod": codeChallengeMethod,
+		"CSRFToken":           csrf,
+		"UserEmail":           claims.Username,
+	})
+}
+
+// PostConsentApprove handles user approval of authorization
+func (c *OAuthController) PostConsentApprove(ctx *gin.Context) {
+	clientID := ctx.PostForm("client_id")
+	redirectURI := ctx.PostForm("redirect_uri")
+	state := ctx.PostForm("state")
+	codeChallenge := ctx.PostForm("code_challenge")
+	codeChallengeMethod := ctx.PostForm("code_challenge_method")
+
+	if clientID == "" || redirectURI == "" {
+		ctx.String(http.StatusBadRequest, "Parámetros inválidos")
+		return
+	}
+
+	// Validate client and redirect URI
+	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
+		return
+	}
+
+	// Verify user session
+	cookie, err := ctx.Cookie("peak_session")
+	if err != nil || cookie == "" {
+		c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+		return
+	}
+
+	claims, err := c.TokenManager.VerifyTokenForApp(cookie, util.AppIdPeakAuth)
+	if err != nil || claims == nil {
+		c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+		return
+	}
+
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+		return
+	}
+
+	// Grant consent
+	if err := c.OAuthService.GrantConsent(userID, clientID); err != nil {
+		c.renderError(ctx, http.StatusInternalServerError, "Error Interno", "No se pudo registrar el consentimiento.")
+		return
+	}
+
+	// Redirect back to authorize endpoint to complete the flow
+	authURL := url.URL{Path: "/oauth/authorize"}
+	query := authURL.Query()
+	query.Set("client_id", clientID)
+	query.Set("redirect_uri", redirectURI)
+	query.Set("response_type", "code")
+	query.Set("state", state)
+	if codeChallenge != "" {
+		query.Set("code_challenge", codeChallenge)
+		query.Set("code_challenge_method", codeChallengeMethod)
+	}
+	authURL.RawQuery = query.Encode()
+	ctx.Redirect(http.StatusFound, authURL.String())
+}
+
+// PostConsentDeny handles user denial of authorization
+func (c *OAuthController) PostConsentDeny(ctx *gin.Context) {
+	clientID := ctx.PostForm("client_id")
+	redirectURI := ctx.PostForm("redirect_uri")
+	state := ctx.PostForm("state")
+
+	if clientID == "" || redirectURI == "" {
+		ctx.String(http.StatusBadRequest, "Parámetros inválidos")
+		return
+	}
+
+	// Validate client and redirect URI
+	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
+		return
+	}
+
+	// Redirect back to client with access_denied error
+	errRedirect := fmt.Sprintf("%s?error=access_denied&error_description=%s&state=%s",
+		redirectURI,
+		url.QueryEscape("El usuario denegó la autorización"),
+		url.QueryEscape(state))
+	ctx.Redirect(http.StatusFound, errRedirect)
+}
+
+func (c *OAuthController) redirectToConsentPage(ctx *gin.Context, clientID, redirectURI, state, codeChallenge, codeChallengeMethod string) {
+	redirectURL := url.URL{Path: "/oauth/consent"}
+	query := redirectURL.Query()
+	query.Set("client_id", clientID)
+	query.Set("redirect_uri", redirectURI)
+	query.Set("state", state)
+
+	if codeChallenge != "" {
+		query.Set("code_challenge", codeChallenge)
+		query.Set("code_challenge_method", codeChallengeMethod)
+	}
+	redirectURL.RawQuery = query.Encode()
+	ctx.Redirect(http.StatusFound, redirectURL.String())
 }
 
 func (c *OAuthController) redirectToOAuthLogin(ctx *gin.Context, path, clientID, redirectURI, state, codeChallenge, codeChallengeMethod string) {

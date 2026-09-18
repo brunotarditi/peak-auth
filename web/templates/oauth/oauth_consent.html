@@ -1,0 +1,121 @@
+{{ define "oauth_consent.html" }}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autorizar Aplicación - Peak Auth</title>
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="{{ js "config.js" }}"></script>
+    <script src="{{ js "common.js" }}"></script>
+</head>
+
+<body class="layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
+    </div>
+
+    <div class="auth-container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div class="navbar-logo-wrapper" style="display: inline-flex; padding: 0.75rem; border-radius: 1rem; background: var(--bg-surface); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: 1rem;">
+                <img src="/static/img/logo.svg" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
+            </div>
+            <h1 class="peak-card-title" style="font-size: 1.875rem;">Autorizar Aplicación</h1>
+            <p class="peak-card-subtitle" style="font-size: 0.875rem; font-weight: 500;">Revisa los permisos solicitados</p>
+        </div>
+
+        <!-- Tarjeta de Consentimiento -->
+        <div class="glass-panel">
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-card); border-radius: 0.5rem; border: 1px solid var(--border-light);">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                    <svg style="width: 1.5rem; height: 1.5rem; color: var(--brand-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <div>
+                        <h3 style="font-size: 1rem; font-weight: 600; color: var(--text-main); margin: 0;">{{ .ClientName }}</h3>
+                        {{ if .ClientDescription }}
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.25rem 0 0 0;">{{ .ClientDescription }}</p>
+                        {{ end }}
+                    </div>
+                </div>
+                <p style="font-size: 0.875rem; color: var(--text-secondary); margin: 0;">
+                    Esta aplicación solicita acceso a tu cuenta de Peak Auth.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem; border: 1px solid var(--border-light);">
+                <h4 style="font-size: 0.875rem; font-weight: 600; color: var(--text-main); margin: 0 0 0.75rem 0;">Permisos solicitados:</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <li style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <svg style="width: 1rem; height: 1rem; color: var(--success-600);" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Acceder a tu información de perfil</span>
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <svg style="width: 1rem; height: 1rem; color: var(--success-600);" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Verificar tu identidad</span>
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);">
+                        <svg style="width: 1rem; height: 1rem; color: var(--success-600);" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Mantener tu sesión activa</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div style="margin-bottom: 1.5rem; padding: 0.875rem; background: var(--warning-50); border-radius: 0.5rem; border: 1px solid var(--warning-200);">
+                <div style="display: flex; gap: 0.5rem;">
+                    <svg style="width: 1.25rem; height: 1.25rem; color: var(--warning-600); flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    <p style="font-size: 0.8125rem; color: var(--warning-800); margin: 0; line-height: 1.5;">
+                        Solo autoriza aplicaciones en las que confíes. Esta aplicación podrá acceder a tu información mientras mantengas la autorización activa.
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <form action="/oauth/consent/approve" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                    <input type="hidden" name="client_id" value="{{ .ClientID }}">
+                    <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
+                    <input type="hidden" name="state" value="{{ .State }}">
+                    <input type="hidden" name="code_challenge" value="{{ .CodeChallenge }}">
+                    <input type="hidden" name="code_challenge_method" value="{{ .CodeChallengeMethod }}">
+                    <button type="submit" class="peak-btn peak-btn-primary peak-btn-block">
+                        Autorizar y Continuar
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </button>
+                </form>
+
+                <form action="/oauth/consent/deny" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                    <input type="hidden" name="client_id" value="{{ .ClientID }}">
+                    <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
+                    <input type="hidden" name="state" value="{{ .State }}">
+                    <button type="submit" class="peak-btn peak-btn-secondary peak-btn-block">
+                        Cancelar
+                    </button>
+                </form>
+            </div>
+
+            <p style="text-align: center; font-size: 0.75rem; color: var(--text-muted); margin-top: 1rem;">
+                Conectado como <strong>{{ .UserEmail }}</strong>
+            </p>
+        </div>
+
+        <p style="text-align: center; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; margin-top: 2rem;">
+            Secured by Peak <span style="color: var(--brand-600); font-weight: 700;">Auth</span> SSO
+        </p>
+    </div>
+</body>
+
+</html>
+{{ end }}
