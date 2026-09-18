@@ -239,7 +239,7 @@ func TestAuthMiddleware(t *testing.T) {
 			name: "Token válido y MFA completado (Acceso OK)",
 			path: "/api/v1/protected",
 			setupRequest: func(req *http.Request) {
-				token, _ := manager.GenerateToken(1, "user@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true)
+				token, _ := manager.GenerateToken(1, "user@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
 				req.Header.Set("Authorization", "Bearer "+token)
 			},
 			expectedStatus: http.StatusOK,
@@ -248,7 +248,7 @@ func TestAuthMiddleware(t *testing.T) {
 			name: "Admin con token válido (Acceso OK)",
 			path: "/admin/dashboard",
 			setupRequest: func(req *http.Request) {
-				token, _ := manager.GenerateToken(1, "admin@test.com", util.AppIdPeakAuth, []string{"ADMIN"}, time.Hour, true)
+				token, _ := manager.GenerateToken(1, "admin@test.com", util.AppIdPeakAuth, []string{"ADMIN"}, time.Hour, true, 0)
 				req.AddCookie(&http.Cookie{Name: "admin_token", Value: token})
 			},
 			expectedStatus: http.StatusOK,
@@ -300,7 +300,7 @@ func TestAuthMiddleware_PasswordResetRevocation(t *testing.T) {
 	manager := newTestJWTManager(t)
 
 	// Token emitido en T0
-	tokenT0, err := manager.GenerateToken(42, "user@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true)
+	tokenT0, err := manager.GenerateToken(42, "user@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
 	if err != nil {
 		t.Fatalf("error generando token: %v", err)
 	}
@@ -333,10 +333,46 @@ func TestAuthMiddleware_PasswordResetRevocation(t *testing.T) {
 	}
 }
 
+func TestAuthMiddleware_AuthzVersionMismatch_Revoked(t *testing.T) {
+	manager := newTestJWTManager(t)
+
+	// Token emitido con authz_version = 1
+	tokenOld, err := manager.GenerateToken(42, "user@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 1)
+	if err != nil {
+		t.Fatalf("error generando token: %v", err)
+	}
+
+	// El usuario en base de datos incrementó su authz_version a 2 por revocación
+	repo := &mockUserRepo{
+		user: model.User{
+			Email:        "user@test.com",
+			IsActive:     true,
+			IsVerified:   true,
+			AuthzVersion: 2,
+		},
+	}
+
+	w := httptest.NewRecorder()
+	_, engine := gin.CreateTestContext(w)
+	engine.Use(AuthMiddleware(manager, repo))
+	engine.GET("/api/v1/protected", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenOld)
+	engine.ServeHTTP(w, req)
+
+	// Debe ser rechazado porque el authz_version del token no coincide con el del usuario
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Esperaba 401 Unauthorized por token revocado (authz_version mismatch), obtuvo %d", w.Code)
+	}
+}
+
 func TestAuthMiddleware_InactiveUserRejected(t *testing.T) {
 	manager := newTestJWTManager(t)
 
-	token, _ := manager.GenerateToken(42, "user@test.com", util.AppIdPeakAuth, []string{"ADMIN"}, time.Hour, true)
+	token, _ := manager.GenerateToken(42, "user@test.com", util.AppIdPeakAuth, []string{"ADMIN"}, time.Hour, true, 0)
 
 	repo := &mockUserRepo{
 		user: model.User{
@@ -383,7 +419,7 @@ func TestAdminGuestMiddleware(t *testing.T) {
 	})
 
 	t.Run("Usuario con admin_token válido y MFA verificado es redirigido a /admin", func(t *testing.T) {
-		token, _ := manager.GenerateToken(1, "admin@peak.local", util.AppIdPeakAuth, []string{"ADMIN"}, time.Hour, true)
+		token, _ := manager.GenerateToken(1, "admin@peak.local", util.AppIdPeakAuth, []string{"ADMIN"}, time.Hour, true, 0)
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodGet, "/admin/login", nil)

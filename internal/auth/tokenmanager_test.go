@@ -33,7 +33,7 @@ func newTestManager(t *testing.T) *JWTManager {
 
 func TestGenerateAndVerifyToken(t *testing.T) {
 	m := newTestManager(t)
-	tok, err := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour, true)
+	tok, err := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour, true, 0)
 	if err != nil {
 		t.Fatalf("GenerateToken falló: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestGenerateAndVerifyToken(t *testing.T) {
 // Un token emitido para "app-a" no debe validar como audiencia "app-b".
 func TestVerifyTokenForApp_AudienceMismatch(t *testing.T) {
 	m := newTestManager(t)
-	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, time.Hour, true)
+	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, time.Hour, true, 0)
 
 	if _, err := m.VerifyTokenForApp(tok, "app-b"); err == nil {
 		t.Fatal("se esperaba error por audiencia incorrecta (app-b)")
@@ -63,7 +63,7 @@ func TestVerifyTokenForApp_AudienceMismatch(t *testing.T) {
 // Un token expirado debe ser rechazado.
 func TestVerifyToken_Expired(t *testing.T) {
 	m := newTestManager(t)
-	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, -time.Minute, true)
+	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, -time.Minute, true, 0)
 	if _, err := m.VerifyToken(tok); err == nil {
 		t.Fatal("se esperaba error por token expirado")
 	}
@@ -72,7 +72,7 @@ func TestVerifyToken_Expired(t *testing.T) {
 // Un token de otro issuer debe ser rechazado.
 func TestVerifyToken_WrongIssuer(t *testing.T) {
 	m := newTestManager(t)
-	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, time.Hour, true)
+	tok, _ := m.GenerateToken(1, "u@e.com", "app-a", nil, time.Hour, true, 0)
 
 	// Cambiamos el issuer esperado: el token tiene "peak-auth", ahora exigimos otro.
 	t.Setenv("JWT_ISSUER", "otro-emisor")
@@ -98,7 +98,7 @@ func TestMFAPendingToken(t *testing.T) {
 	}
 
 	// VerifyMFAPendingToken debe rechazar tokens normales de acceso
-	normalTok, _ := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour, true)
+	normalTok, _ := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour, true, 0)
 	if _, err := m.VerifyMFAPendingToken(normalTok, "mi-app"); err == nil {
 		t.Fatal("VerifyMFAPendingToken debería rechazar un token normal")
 	}
@@ -108,7 +108,7 @@ func TestGetJWKS_And_TokenKidHeader(t *testing.T) {
 	m := newTestManager(t)
 
 	// 1. Verificar que el token emitido incluya el header "kid" correspondiente
-	tok, err := m.GenerateToken(10, "admin@example.com", "app-test", []string{"ADMIN"}, time.Hour, true)
+	tok, err := m.GenerateToken(10, "admin@example.com", "app-test", []string{"ADMIN"}, time.Hour, true, 0)
 	if err != nil {
 		t.Fatalf("GenerateToken falló: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestMultiKeyRotation_GracePeriod(t *testing.T) {
 	m := newTestManager(t)
 
 	// Emitir token con Clave 1
-	tok1, err := m.GenerateToken(1, "user1@example.com", "app-1", []string{"USER"}, time.Hour, true)
+	tok1, err := m.GenerateToken(1, "user1@example.com", "app-1", []string{"USER"}, time.Hour, true, 0)
 	if err != nil {
 		t.Fatalf("GenerateToken con clave 1 falló: %v", err)
 	}
@@ -182,7 +182,7 @@ func TestMultiKeyRotation_GracePeriod(t *testing.T) {
 	}
 
 	// 3. Emitir token con la nueva Clave 2
-	tok2, err := m.GenerateToken(2, "user2@example.com", "app-1", []string{"ADMIN"}, time.Hour, true)
+	tok2, err := m.GenerateToken(2, "user2@example.com", "app-1", []string{"ADMIN"}, time.Hour, true, 0)
 	if err != nil {
 		t.Fatalf("GenerateToken con clave 2 falló: %v", err)
 	}

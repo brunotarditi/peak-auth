@@ -58,6 +58,11 @@ func AuthMiddleware(manager *auth.JWTManager, userRepo ...repo.UserRepository) g
 					return
 				}
 			}
+			// Verificar que el token no haya sido revocado (authz_version mismatch)
+			if jsonToken.AuthzVersion != user.AuthzVersion {
+				handleAuthError(c, fmt.Errorf("token invalidado por revocación de acceso"))
+				return
+			}
 		}
 
 		c.Set("user_id", uint(userID))

@@ -33,11 +33,12 @@ type Config struct {
 
 // Claims representa la información decodificada de un Access Token de Peak Auth.
 type Claims struct {
-	Username    string   `json:"username"`
-	AppID       string   `json:"app_id"`
-	Roles       []string `json:"roles"`
-	MfaVerified bool     `json:"mfa_verified"`
-	TokenType   string   `json:"token_type"`
+	Username     string   `json:"username"`
+	AppID        string   `json:"app_id"`
+	Roles        []string `json:"roles"`
+	MfaVerified  bool     `json:"mfa_verified"`
+	TokenType    string   `json:"token_type"`
+	AuthzVersion uint     `json:"authz_version"` // User authorization version for immediate revocation
 	jwt.RegisteredClaims
 }
 
@@ -82,3 +83,20 @@ type jwk struct {
 type jwksResponse struct {
 	Keys []jwk `json:"keys"`
 }
+
+// IntrospectionResponse representa la respuesta del endpoint /api/v1/introspect según RFC 7662.
+type IntrospectionResponse struct {
+	Active      bool     `json:"active"`
+	Sub         string   `json:"sub,omitempty"`
+	Username    string   `json:"username,omitempty"`
+	Aud         string   `json:"aud,omitempty"`
+	Iss         string   `json:"iss,omitempty"`
+	Exp         int64    `json:"exp,omitempty"`
+	Iat         int64    `json:"iat,omitempty"`
+	Scope       string   `json:"scope,omitempty"`
+	ClientID    string   `json:"client_id,omitempty"`
+	TokenType   string   `json:"token_type,omitempty"`
+	MfaVerified bool     `json:"mfa_verified,omitempty"`
+	Roles       []string `json:"roles,omitempty"`
+}
+

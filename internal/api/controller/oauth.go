@@ -338,7 +338,7 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "Identificador de usuario inválido.")
 		return
 	}
-	ssoJWT, err := c.TokenManager.GenerateToken(uid, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, false)
+	ssoJWT, err := c.TokenManager.GenerateToken(uid, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, false, claims.AuthzVersion)
 	if err != nil {
 		c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "No se pudo generar la sesión SSO.")
 		return
@@ -458,7 +458,14 @@ func (c *OAuthController) PostPublicLoginMfaTotp(ctx *gin.Context) {
 	// Clear attempt tracker on successful validation
 	service.DeleteApiMfaAttemptTracker(tokenKey)
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
+	// Fetch user to get current authz_version
+	user, err := c.UserService.FindVerifiedUserByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo verificar el usuario"})
+		return
+	}
+
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
@@ -526,7 +533,14 @@ func (c *OAuthController) PostPublicLoginMfaRecovery(ctx *gin.Context) {
 	// Clear attempt tracker on successful validation
 	service.DeleteApiMfaAttemptTracker(tokenKey)
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
+	// Fetch user to get current authz_version
+	user, err := c.UserService.FindVerifiedUserByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo verificar el usuario"})
+		return
+	}
+
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
@@ -599,7 +613,14 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 
 	service.DeleteWebAuthnSession(sessionKey)
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
+	// Fetch user to get current authz_version
+	user, err := c.UserService.FindVerifiedUserByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo verificar el usuario"})
+		return
+	}
+
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
@@ -673,7 +694,14 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 	// Clear attempt tracker on successful validation
 	service.DeleteApiMfaAttemptTracker(tokenKey)
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
+	// Fetch user to get current authz_version
+	user, err := c.UserService.FindVerifiedUserByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo verificar el usuario"})
+		return
+	}
+
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
@@ -755,7 +783,14 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 
 	service.DeleteWebAuthnSession(sessionKey)
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true)
+	// Fetch user to get current authz_version
+	user, err := c.UserService.FindVerifiedUserByID(userID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo verificar el usuario"})
+		return
+	}
+
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return

@@ -139,7 +139,7 @@ func setupOAuthControllerTest(t *testing.T) (*gin.Engine, *auth.JWTManager, *tes
 
 	mockUserSvc := &testUserService{
 		completeLoginFn: func(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
-			token, err := tm.GenerateToken(userID, "user@client.com", publicAppID, []string{"USER"}, time.Hour, mfaCompleted)
+			token, err := tm.GenerateToken(userID, "user@client.com", publicAppID, []string{"USER"}, time.Hour, mfaCompleted, 0)
 			if err != nil {
 				return response.TokenResponse{}, err
 			}
@@ -200,7 +200,7 @@ func TestOAuth_PKCE_FullFlow_And_ReplayProtection(t *testing.T) {
 	r, tm, _, _ := setupOAuthControllerTest(t)
 
 	// 1. Crear sesión SSO válida de Peak Auth
-	sessionToken, err := tm.GenerateToken(42, "user@client.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true)
+	sessionToken, err := tm.GenerateToken(42, "user@client.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
 	if err != nil {
 		t.Fatalf("error creando token de sesión: %v", err)
 	}
@@ -308,7 +308,7 @@ func TestOAuth_PKCE_FullFlow_And_ReplayProtection(t *testing.T) {
 func TestOAuth_PKCE_WrongVerifier_Rejected(t *testing.T) {
 	r, tm, _, _ := setupOAuthControllerTest(t)
 
-	sessionToken, _ := tm.GenerateToken(10, "u@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true)
+	sessionToken, _ := tm.GenerateToken(10, "u@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
 
 	codeVerifier := "legitimate-code-verifier-string-1234567890"
 	h := sha256.Sum256([]byte(codeVerifier))
@@ -351,7 +351,7 @@ func TestOAuth_PKCE_WrongVerifier_Rejected(t *testing.T) {
 func TestOAuth_InvalidClientSecret_Rejected(t *testing.T) {
 	r, tm, _, _ := setupOAuthControllerTest(t)
 
-	sessionToken, _ := tm.GenerateToken(10, "u@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true)
+	sessionToken, _ := tm.GenerateToken(10, "u@test.com", util.AppIdPeakAuth, []string{"USER"}, time.Hour, true, 0)
 
 	authURL := fmt.Sprintf("/oauth/authorize?client_id=client-portal&redirect_uri=%s&response_type=code",
 		url.QueryEscape("https://portal.client.com/oauth/callback"),

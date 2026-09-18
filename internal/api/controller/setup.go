@@ -112,7 +112,7 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		return
 	}
 
-	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, "System Root", util.AppIdPeakAuth, []string{"ROOT"}, 24*time.Hour, true)
+	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, "System Root", util.AppIdPeakAuth, []string{"ROOT"}, 24*time.Hour, true, user.AuthzVersion)
 	if err != nil {
 		ctrl.renderError(c, http.StatusInternalServerError, "Error del Sistema", "No se pudo generar la sesión administrativa.")
 		return

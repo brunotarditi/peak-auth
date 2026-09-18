@@ -347,3 +347,47 @@ func parseRSAPublicKey(nStr, eStr string) (*rsa.PublicKey, error) {
 		E: e,
 	}, nil
 }
+
+// IntrospectToken realiza una validación online del token contra el servidor de autorización.
+// Este método consulta el endpoint /api/v1/introspect para verificar el estado actual del token,
+// incluyendo si ha sido revocado. Requiere que el cliente tenga configurado ClientSecret.
+func (c *Client) IntrospectToken(ctx context.Context, tokenString string) (*IntrospectionResponse, error) {
+	if c.config.ClientSecret == "" {
+		return nil, fmt.Errorf("peakauth: ClientSecret es requerido para introspección")
+	}
+
+	payload, err := json.Marshal(map[string]string{
+		"token": tokenString,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error codificando payload: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.config.IssuerURL+"/api/v1/introspect", bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("error creando request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("X-App-Id", c.config.ClientID)
+	req.Header.Set("X-App-Secret", c.config.ClientSecret)
+
+	resp, err := c.config.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error llamando a /api/v1/introspect: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("introspección falló con status: %d", resp.StatusCode)
+	}
+
+	var introspectResp IntrospectionResponse
+	if err := json.NewDecoder(resp.Body).Decode(&introspectResp); err != nil {
+		return nil, fmt.Errorf("error decodificando respuesta de introspección: %w", err)
+	}
+
+	return &introspectResp, nil
+}
+

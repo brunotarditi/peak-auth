@@ -193,6 +193,15 @@ func (s *applicationService) RevokeUserFromApp(userID, appID uint) error {
 	if s.refreshTokenRepo != nil {
 		_ = s.refreshTokenRepo.DeleteByUserAndApp(userID, appID)
 	}
+	
+	// Increment authz_version to immediately invalidate all existing access tokens
+	if s.userRepo != nil {
+		user, err := s.userRepo.FindById(userID)
+		if err == nil {
+			_ = s.userRepo.UpdateColumn("authz_version", user.AuthzVersion+1, userID)
+		}
+	}
+	
 	return nil
 }
 
