@@ -157,7 +157,7 @@ func TestMultiKeyRotation_GracePeriod(t *testing.T) {
 	m := newTestManager(t)
 
 	// Emitir token con Clave 1
-	tok1, err := m.GenerateToken(1, "user1@example.com", "app-1", []string{"USER"}, time.Hour, true)
+	tok1, err := m.GenerateToken(1, "user1@example.com", "app-1", []string{"USER"}, time.Hour, true, 0)
 	if err != nil {
 		t.Fatalf("GenerateToken con clave 1 falló: %v", err)
 	}

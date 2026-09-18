@@ -86,7 +86,7 @@ type User struct {
 	MfaEnabled        bool       `gorm:"default:false" json:"mfa_enabled"`
 	LastLogin         time.Time  `json:"last_login"`
 	PasswordChangedAt *time.Time `json:"password_changed_at,omitempty"`
-	AuthzVersion      uint       `gorm:"default:0;not null" json:"-"` // Incremented on revocation to invalidate existing tokens
+	AuthzVersion      uint       `gorm:"default:0;not null;index" json:"-"` // Incremented on revocation to invalidate existing tokens
 	Profile           Profile    `gorm:"foreignKey:UserID"`
 }
 
