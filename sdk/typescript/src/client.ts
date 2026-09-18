@@ -199,6 +199,14 @@ export class PeakAuthClient {
   }
 
   /**
+   * Indica si el cliente tiene configurado un clientSecret,
+   * lo cual permite realizar validación online mediante introspección.
+   */
+  hasClientSecret(): boolean {
+    return !!this.config.clientSecret;
+  }
+
+  /**
    * Obtiene y cachea la configuración OIDC de descubrimiento desde /.well-known/openid-configuration.
    */
   async getOpenIDConfiguration(): Promise<OpenIDConfiguration> {

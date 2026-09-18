@@ -29,7 +29,7 @@ func main() {
 	client, err := peakauth.New(peakauth.Config{
 		IssuerURL: "https://auth.tuempresa.com", // o http://localhost:8080
 		ClientID:  "tu_client_id",
-		ClientSecret: "tu_client_secret", // Opcional si usas PKCE
+		ClientSecret: "tu_client_secret", // Requerido para validación con revocación inmediata
 		RedirectURI:  "https://tu-app.com/callback",
 	})
 	if err != nil {
@@ -37,6 +37,13 @@ func main() {
 	}
 }
 ```
+
+> **⚠️ Importante - Validación de Revocación:**
+> 
+> - **Con `ClientSecret` configurado (recomendado):** El middleware usa automáticamente validación online vía `/api/v1/introspect`, verificando revocación inmediata de tokens.
+> - **Sin `ClientSecret`:** El middleware usa validación offline (solo firma y expiración). Los tokens emitidos antes de revocar acceso seguirán siendo aceptados hasta su expiración natural.
+> 
+> Para aplicaciones en producción que requieren revocación inmediata de sesiones, configure siempre `ClientSecret`.
 
 ---
 
@@ -59,6 +66,7 @@ func main() {
 	client, _ := peakauth.New(peakauth.Config{
 		IssuerURL: "https://auth.tuempresa.com",
 		ClientID:  "mi-aplicacion",
+		ClientSecret: "mi-client-secret", // Requerido para detección de revocación
 		// ExpectedIssuer: "peak-auth", // Por defecto es "peak-auth" (coincide con el claim 'iss' del JWT)
 	})
 
@@ -70,6 +78,7 @@ func main() {
 	})
 
 	// Ruta protegida (cualquier usuario con token válido)
+	// Con ClientSecret configurado, verifica automáticamente revocación
 	r.GET("/api/profile", peakauthgin.Middleware(client), func(c *gin.Context) {
 		claims, _ := peakauthgin.ClaimsFromContext(c)
 		c.JSON(http.StatusOK, gin.H{
@@ -86,6 +95,26 @@ func main() {
 
 	r.Run(":3000")
 }
+```
+
+### Validación Offline vs Online
+
+Por defecto, si el cliente tiene `ClientSecret` configurado, el middleware usa **validación online** (introspección) que verifica revocación inmediata. Si no tiene `ClientSecret`, usa **validación offline** (solo firma y expiración).
+
+Para forzar un modo específico:
+
+```go
+// Forzar validación online (requiere ClientSecret)
+useIntrospection := true
+r.GET("/api/secure", peakauthgin.MiddlewareWithOptions(client, peakauthgin.MiddlewareOptions{
+	UseIntrospection: &useIntrospection,
+}), handler)
+
+// Forzar validación offline (NO verifica revocación - usar solo si comprende las implicaciones)
+useOffline := false
+r.GET("/api/fast", peakauthgin.MiddlewareWithOptions(client, peakauthgin.MiddlewareOptions{
+	UseIntrospection: &useOffline,
+}), handler)
 ```
 
 ---
@@ -106,6 +135,7 @@ func main() {
 	client, _ := peakauth.New(peakauth.Config{
 		IssuerURL: "https://auth.tuempresa.com",
 		ClientID:  "mi-aplicacion",
+		ClientSecret: "mi-client-secret", // Requerido para detección de revocación
 	})
 
 	mux := http.NewServeMux()
@@ -116,6 +146,7 @@ func main() {
 	})
 
 	// Proteger con el middleware estándar
+	// Con ClientSecret configurado, verifica automáticamente revocación
 	mux.Handle("/api/admin", client.HTTPMiddleware("ADMIN")(adminHandler))
 
 	http.ListenAndServe(":3000", mux)

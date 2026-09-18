@@ -13,8 +13,14 @@ export interface NextAuthOptions {
   requiredRoles?: string[];
 
   /**
-   * Si es true, utiliza validación online vía /api/v1/introspect para verificar revocación inmediata.
-   * Requiere que el cliente tenga configurado clientSecret. Por defecto: false (validación offline).
+   * Controla el modo de validación del token:
+   *   - undefined (por defecto): usa introspección automáticamente si clientSecret está configurado
+   *   - true: fuerza validación online vía /api/v1/introspect (requiere clientSecret)
+   *   - false: fuerza validación offline (solo firma/expiración, NO detecta revocación)
+   *
+   * ADVERTENCIA: La validación offline (false) NO verifica revocación de tokens.
+   * Los tokens emitidos antes de revocar acceso seguirán siendo aceptados hasta su expiración.
+   * Solo use validación offline si comprende las implicaciones de seguridad.
    */
   useIntrospection?: boolean;
 }
@@ -22,7 +28,7 @@ export interface NextAuthOptions {
 /**
  * Extrae y valida el JWT de una petición estándar de Next.js (Route Handler o Server Action).
  * Busca el token primero en el encabezado Authorization: Bearer, y luego en cookies.
- * Si useIntrospection es true, realiza validación online para detectar revocación inmediata.
+ * Por defecto, usa introspección online si clientSecret está configurado para detectar revocación inmediata.
  */
 export async function verifyNextRequest(
   request: Request,
@@ -50,7 +56,12 @@ export async function verifyNextRequest(
 
   let claims: PeakClaims;
 
-  if (options?.useIntrospection) {
+  // Determinar modo de validación: por defecto usa introspección si clientSecret está disponible
+  const useIntrospection = options?.useIntrospection !== undefined
+    ? options.useIntrospection
+    : client.hasClientSecret();
+
+  if (useIntrospection) {
     // Validación online con verificación de revocación
     const introspection = await client.introspectToken(token);
     if (!introspection.active) {
@@ -71,7 +82,7 @@ export async function verifyNextRequest(
       iat: introspection.iat,
     };
   } else {
-    // Validación offline tradicional (solo firma y expiración)
+    // Validación offline tradicional (solo firma y expiración, NO verifica revocación)
     claims = await client.verifyToken(token);
   }
 

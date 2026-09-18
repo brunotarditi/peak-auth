@@ -12,10 +12,15 @@ import (
 type MiddlewareOptions struct {
 	// RequiredRoles especifica los roles necesarios para acceder al recurso.
 	RequiredRoles []string
-	// UseIntrospection si es true, utiliza validación online vía /api/v1/introspect
-	// para verificar revocación inmediata. Requiere ClientSecret configurado.
-	// Por defecto: false (validación offline).
-	UseIntrospection bool
+	// UseIntrospection controla el modo de validación del token:
+	//   - nil (por defecto): usa introspección automáticamente si ClientSecret está configurado
+	//   - true: fuerza validación online vía /api/v1/introspect (requiere ClientSecret)
+	//   - false: fuerza validación offline (solo firma/expiración, NO detecta revocación)
+	//
+	// ADVERTENCIA: La validación offline (false) NO verifica revocación de tokens.
+	// Los tokens emitidos antes de revocar acceso seguirán siendo aceptados hasta su expiración.
+	// Solo use validación offline si comprende las implicaciones de seguridad.
+	UseIntrospection *bool
 }
 
 // Middleware retorna un middleware para Gin que valida tokens JWT contra Peak Auth.
@@ -43,7 +48,16 @@ func MiddlewareWithOptions(client *peakauth.Client, opts MiddlewareOptions) gin.
 
 		var userRoles []string
 
-		if opts.UseIntrospection {
+		// Determinar modo de validación: por defecto usa introspección si ClientSecret está disponible
+		useIntrospection := false
+		if opts.UseIntrospection != nil {
+			useIntrospection = *opts.UseIntrospection
+		} else {
+			// Modo automático: usar introspección si el cliente tiene ClientSecret configurado
+			useIntrospection = client.HasClientSecret()
+		}
+
+		if useIntrospection {
 			// Validación online con verificación de revocación
 			introspection, err := client.IntrospectToken(ctx.Request.Context(), tokenStr)
 			if err != nil {
@@ -65,7 +79,7 @@ func MiddlewareWithOptions(client *peakauth.Client, opts MiddlewareOptions) gin.
 			ctx.Set("introspection", introspection)
 			ctx.Set("user", introspection)
 		} else {
-			// Validación offline tradicional (solo firma y expiración)
+			// Validación offline tradicional (solo firma y expiración, NO verifica revocación)
 			claims, err := client.VerifyTokenWithContext(ctx.Request.Context(), tokenStr)
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{

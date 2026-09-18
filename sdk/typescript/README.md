@@ -28,11 +28,18 @@ import { PeakAuthClient } from '@brunotarditi/peak-auth';
 const peakAuth = new PeakAuthClient({
   issuerUrl: 'https://auth.tuempresa.com', // o http://localhost:8080
   clientId: 'tu_client_id',
-  clientSecret: 'tu_client_secret', // Opcional si solo usas PKCE
+  clientSecret: 'tu_client_secret', // Requerido para validación con revocación inmediata
   redirectUri: 'https://tu-app.com/api/auth/callback',
   // expectedIssuer: 'peak-auth', // Por defecto "peak-auth" (coincide con claim 'iss' del JWT)
 });
 ```
+
+> **⚠️ Importante - Validación de Revocación:**
+> 
+> - **Con `clientSecret` configurado (recomendado):** El middleware usa automáticamente validación online vía `/api/v1/introspect`, verificando revocación inmediata de tokens.
+> - **Sin `clientSecret`:** El middleware usa validación offline (solo firma y expiración). Los tokens emitidos antes de revocar acceso seguirán siendo aceptados hasta su expiración natural.
+> 
+> Para aplicaciones en producción que requieren revocación inmediata de sesiones, configure siempre `clientSecret`.
 
 ---
 
@@ -51,6 +58,7 @@ const app = express();
 const peakAuth = new PeakAuthClient({
   issuerUrl: 'https://auth.tuempresa.com',
   clientId: 'tu_client_id',
+  clientSecret: 'tu_client_secret', // Requerido para detección de revocación
 });
 
 // Ruta pública
@@ -59,6 +67,7 @@ app.get('/api/public', (req, res) => {
 });
 
 // Ruta protegida (cualquier usuario autenticado con token válido)
+// Con clientSecret configurado, verifica automáticamente revocación
 app.get('/api/protected', peakAuthMiddleware(peakAuth), (req, res) => {
   // El usuario decodificado está disponible en req.user
   res.json({
@@ -77,6 +86,26 @@ app.get(
 );
 
 app.listen(3000, () => console.log('Servidor corriendo en el puerto 3000'));
+```
+
+### Validación Offline vs Online
+
+Por defecto, si el cliente tiene `clientSecret` configurado, el middleware usa **validación online** (introspección) que verifica revocación inmediata. Si no tiene `clientSecret`, usa **validación offline** (solo firma y expiración).
+
+Para forzar un modo específico:
+
+```typescript
+// Forzar validación online (requiere clientSecret)
+app.get('/api/secure', 
+  peakAuthMiddleware(peakAuth, { useIntrospection: true }), 
+  handler
+);
+
+// Forzar validación offline (NO verifica revocación - usar solo si comprende las implicaciones)
+app.get('/api/fast', 
+  peakAuthMiddleware(peakAuth, { useIntrospection: false }), 
+  handler
+);
 ```
 
 ---
@@ -140,11 +169,13 @@ import { verifyNextRequest } from '@brunotarditi/peak-auth/nextjs';
 const peakAuth = new PeakAuthClient({
   issuerUrl: process.env.PEAK_AUTH_URL!,
   clientId: process.env.PEAK_CLIENT_ID!,
+  clientSecret: process.env.PEAK_CLIENT_SECRET!, // Requerido para detección de revocación
 });
 
 export async function GET(request: Request) {
   try {
     // Valida automáticamente desde el header Authorization o desde cookies
+    // Con clientSecret configurado, verifica automáticamente revocación
     const user = await verifyNextRequest(request, peakAuth, {
       requiredRoles: ['USER'],
     });

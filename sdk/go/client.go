@@ -391,3 +391,9 @@ func (c *Client) IntrospectToken(ctx context.Context, tokenString string) (*Intr
 	return &introspectResp, nil
 }
 
+// HasClientSecret indica si el cliente tiene configurado un ClientSecret,
+// lo cual permite realizar validación online mediante introspección.
+func (c *Client) HasClientSecret() bool {
+	return c.config.ClientSecret != ""
+}
+
