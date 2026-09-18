@@ -49,6 +49,10 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	mfaRepo := repo.NewMfaRepository(db)
 	oauthRepo := repo.NewOAuthRepository(db)
 	txManager := repo.NewTransactionManager(db)
+	mfaAttemptRepo := repo.NewMfaAttemptRepository(db)
+
+	// Initialize MFA attempt tracking with database backend
+	service.InitMfaAttemptTracking(mfaAttemptRepo)
 
 	// 2. Inicializar Servicios inyectando los repos
 	ruleService := service.NewApplicationRuleService(ruleRepo, uarRepo, roleRepo, appRepo)

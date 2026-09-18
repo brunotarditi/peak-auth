@@ -139,3 +139,15 @@ type Migration struct {
 	Name      string    `gorm:"type:varchar(255);uniqueIndex;not null"`
 	CreatedAt time.Time
 }
+
+// MfaAttemptTracker tracks failed MFA attempts per challenge/token in the database
+// to enforce rate limits consistently across all application instances
+type MfaAttemptTracker struct {
+	gorm.Model
+	ChallengeKey   string    `gorm:"type:varchar(255);uniqueIndex;not null;index"` // Unique identifier for the MFA challenge/token
+	UserID         uint      `gorm:"not null;index"`                                // User attempting MFA
+	FailedAttempts int       `gorm:"default:0;not null"`                            // Number of failed attempts
+	Locked         bool      `gorm:"default:false;not null;index"`                  // Whether this challenge is locked
+	ExpiresAt      time.Time `gorm:"index;not null"`                                // When this tracker expires
+	User           User      `gorm:"foreignKey:UserID"`
+}

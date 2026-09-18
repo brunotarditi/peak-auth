@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"peak-auth/internal/store/model"
+	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
 	"sync"
 	"time"
@@ -15,6 +16,26 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 )
+
+// Global repository instance for MFA attempt tracking
+// This will be initialized by the application setup
+var mfaAttemptRepo repo.MfaAttemptRepository
+
+// InitMfaAttemptTracking initializes the database-backed MFA attempt tracking
+func InitMfaAttemptTracking(repo repo.MfaAttemptRepository) {
+	mfaAttemptRepo = repo
+	// Start background cleanup of expired trackers
+	go cleanupExpiredMfaAttempts()
+}
+
+func cleanupExpiredMfaAttempts() {
+	ticker := time.NewTicker(5 * time.Minute)
+	for range ticker.C {
+		if mfaAttemptRepo != nil {
+			_ = mfaAttemptRepo.CleanupExpired()
+		}
+	}
+}
 
 var webAuthnInstance *webauthn.WebAuthn
 
@@ -268,22 +289,47 @@ func ConsumeMfaTransaction(transactionID string) error {
 }
 
 // RecordMfaFailedAttempt increments the failed attempt counter for an MFA transaction
-// and locks it if the maximum number of attempts (5) is exceeded.
+// using database-backed tracking to work across all instances.
 // Returns an error if the transaction is now locked.
 func RecordMfaFailedAttempt(transactionID string) error {
+	// Also update in-memory state for consistency
 	mfaTransactionMutex.Lock()
-	defer mfaTransactionMutex.Unlock()
-
 	txn, exists := mfaTransactionCache[transactionID]
+	if exists {
+		txn.FailedAttempts++
+	}
+	mfaTransactionMutex.Unlock()
+
 	if !exists {
 		return fmt.Errorf("transacción MFA no encontrada")
 	}
 
-	txn.FailedAttempts++
+	// Use database-backed tracking for cross-instance consistency
+	if mfaAttemptRepo == nil {
+		// Fallback to in-memory only if repo not initialized
+		mfaTransactionMutex.Lock()
+		defer mfaTransactionMutex.Unlock()
+		const maxMfaAttempts = 5
+		if txn.FailedAttempts >= maxMfaAttempts {
+			txn.Locked = true
+			return fmt.Errorf("transacción MFA bloqueada por exceso de intentos fallidos")
+		}
+		return nil
+	}
 
 	const maxMfaAttempts = 5
-	if txn.FailedAttempts >= maxMfaAttempts {
-		txn.Locked = true
+	locked, err := mfaAttemptRepo.RecordFailedAttempt(transactionID, txn.UserID, maxMfaAttempts)
+	if err != nil {
+		return fmt.Errorf("error registrando intento fallido: %w", err)
+	}
+
+	if locked {
+		// Update in-memory state
+		mfaTransactionMutex.Lock()
+		if txn, exists := mfaTransactionCache[transactionID]; exists {
+			txn.Locked = true
+		}
+		mfaTransactionMutex.Unlock()
 		return fmt.Errorf("transacción MFA bloqueada por exceso de intentos fallidos")
 	}
 
@@ -297,81 +343,25 @@ func DeleteMfaTransaction(transactionID string) {
 	delete(mfaTransactionCache, transactionID)
 }
 
-// API MFA Token Attempt Tracking - For tracking failed attempts on API MFA tokens
+// API MFA Token Attempt Tracking - Database-backed tracking for API MFA tokens
 // that are sent directly in requests (not stored server-side like admin transactions)
 
-type apiMfaAttemptTracker struct {
-	FailedAttempts int
-	Locked         bool
-	ExpiresAt      time.Time
-}
-
-const maxApiMfaAttemptCacheSize = 10000
-
-var (
-	apiMfaAttemptCache = make(map[string]*apiMfaAttemptTracker)
-	apiMfaAttemptMutex sync.RWMutex
-)
-
-func init() {
-	go cleanupApiMfaAttempts()
-}
-
-func cleanupApiMfaAttempts() {
-	ticker := time.NewTicker(1 * time.Minute)
-	for range ticker.C {
-		apiMfaAttemptMutex.Lock()
-		now := time.Now()
-		for k, v := range apiMfaAttemptCache {
-			if now.After(v.ExpiresAt) {
-				delete(apiMfaAttemptCache, k)
-			}
-		}
-		apiMfaAttemptMutex.Unlock()
-	}
-}
-
 // RecordApiMfaFailedAttempt increments the failed attempt counter for an API MFA token
-// and locks it if the maximum number of attempts (5) is exceeded.
+// using database-backed tracking to work across all instances.
 // The tokenKey should be a hash or unique identifier of the MFA token.
 // Returns an error if the token is now locked.
-func RecordApiMfaFailedAttempt(tokenKey string) error {
-	apiMfaAttemptMutex.Lock()
-	defer apiMfaAttemptMutex.Unlock()
-
-	// Control de memoria contra ataques DoS
-	if len(apiMfaAttemptCache) >= maxApiMfaAttemptCacheSize {
-		now := time.Now()
-		// Purgar expirados primero
-		for k, v := range apiMfaAttemptCache {
-			if now.After(v.ExpiresAt) {
-				delete(apiMfaAttemptCache, k)
-			}
-		}
-		// Si aún supera el umbral, desalojar la primera entrada arbitraria
-		if len(apiMfaAttemptCache) >= maxApiMfaAttemptCacheSize {
-			for k := range apiMfaAttemptCache {
-				delete(apiMfaAttemptCache, k)
-				break
-			}
-		}
+func RecordApiMfaFailedAttempt(tokenKey string, userID uint) error {
+	if mfaAttemptRepo == nil {
+		return fmt.Errorf("MFA attempt tracking not initialized")
 	}
-
-	tracker, exists := apiMfaAttemptCache[tokenKey]
-	if !exists {
-		tracker = &apiMfaAttemptTracker{
-			FailedAttempts: 0,
-			Locked:         false,
-			ExpiresAt:      time.Now().Add(5 * time.Minute),
-		}
-		apiMfaAttemptCache[tokenKey] = tracker
-	}
-
-	tracker.FailedAttempts++
 
 	const maxMfaAttempts = 5
-	if tracker.FailedAttempts >= maxMfaAttempts {
-		tracker.Locked = true
+	locked, err := mfaAttemptRepo.RecordFailedAttempt(tokenKey, userID, maxMfaAttempts)
+	if err != nil {
+		return fmt.Errorf("error registrando intento fallido: %w", err)
+	}
+
+	if locked {
 		return fmt.Errorf("token MFA bloqueado por exceso de intentos fallidos")
 	}
 
@@ -379,28 +369,26 @@ func RecordApiMfaFailedAttempt(tokenKey string) error {
 }
 
 // IsApiMfaTokenLocked checks if an API MFA token is locked due to excessive failures
+// using database-backed tracking to work across all instances.
 func IsApiMfaTokenLocked(tokenKey string) bool {
-	apiMfaAttemptMutex.RLock()
-	defer apiMfaAttemptMutex.RUnlock()
-
-	tracker, exists := apiMfaAttemptCache[tokenKey]
-	if !exists {
+	if mfaAttemptRepo == nil {
 		return false
 	}
 
-	// Check if expired
-	if time.Now().After(tracker.ExpiresAt) {
+	locked, err := mfaAttemptRepo.IsLocked(tokenKey)
+	if err != nil {
+		// Log error but don't block on database errors
 		return false
 	}
 
-	return tracker.Locked
+	return locked
 }
 
 // DeleteApiMfaAttemptTracker removes an API MFA attempt tracker (called on successful validation)
 func DeleteApiMfaAttemptTracker(tokenKey string) {
-	apiMfaAttemptMutex.Lock()
-	defer apiMfaAttemptMutex.Unlock()
-	delete(apiMfaAttemptCache, tokenKey)
+	if mfaAttemptRepo != nil {
+		_ = mfaAttemptRepo.ClearAttempts(tokenKey)
+	}
 }
 
 // webAuthnUserWrapper implementa webauthn.User para interactuar con la librería
