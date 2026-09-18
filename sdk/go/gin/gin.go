@@ -8,10 +8,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// MiddlewareOptions configura el comportamiento del middleware de autenticación.
+type MiddlewareOptions struct {
+	// RequiredRoles especifica los roles necesarios para acceder al recurso.
+	RequiredRoles []string
+	// UseIntrospection si es true, utiliza validación online vía /api/v1/introspect
+	// para verificar revocación inmediata. Requiere ClientSecret configurado.
+	// Por defecto: false (validación offline).
+	UseIntrospection bool
+}
+
 // Middleware retorna un middleware para Gin que valida tokens JWT contra Peak Auth.
 // Si se especifican requiredRoles, valida que el usuario posea al menos uno de ellos.
 // Guarda las claims en el contexto con las claves "claims" y "user".
 func Middleware(client *peakauth.Client, requiredRoles ...string) gin.HandlerFunc {
+	return MiddlewareWithOptions(client, MiddlewareOptions{
+		RequiredRoles: requiredRoles,
+	})
+}
+
+// MiddlewareWithOptions retorna un middleware con opciones avanzadas de configuración.
+func MiddlewareWithOptions(client *peakauth.Client, opts MiddlewareOptions) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" || !strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
@@ -23,19 +40,49 @@ func Middleware(client *peakauth.Client, requiredRoles ...string) gin.HandlerFun
 		}
 
 		tokenStr := strings.TrimSpace(authHeader[7:])
-		claims, err := client.VerifyTokenWithContext(ctx.Request.Context(), tokenStr)
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error":   "invalid_token",
-				"message": err.Error(),
-			})
-			return
+
+		var userRoles []string
+
+		if opts.UseIntrospection {
+			// Validación online con verificación de revocación
+			introspection, err := client.IntrospectToken(ctx.Request.Context(), tokenStr)
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "invalid_token",
+					"message": err.Error(),
+				})
+				return
+			}
+			if !introspection.Active {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "invalid_token",
+					"message": "Token revocado o inválido",
+				})
+				return
+			}
+			userRoles = introspection.Roles
+			// Guardar información de introspección en el contexto
+			ctx.Set("introspection", introspection)
+			ctx.Set("user", introspection)
+		} else {
+			// Validación offline tradicional (solo firma y expiración)
+			claims, err := client.VerifyTokenWithContext(ctx.Request.Context(), tokenStr)
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"error":   "invalid_token",
+					"message": err.Error(),
+				})
+				return
+			}
+			userRoles = claims.Roles
+			ctx.Set("claims", claims)
+			ctx.Set("user", claims)
 		}
 
-		if len(requiredRoles) > 0 {
+		if len(opts.RequiredRoles) > 0 {
 			hasRole := false
-			for _, required := range requiredRoles {
-				for _, userRole := range claims.Roles {
+			for _, required := range opts.RequiredRoles {
+				for _, userRole := range userRoles {
 					if userRole == required {
 						hasRole = true
 						break
@@ -55,8 +102,6 @@ func Middleware(client *peakauth.Client, requiredRoles ...string) gin.HandlerFun
 			}
 		}
 
-		ctx.Set("claims", claims)
-		ctx.Set("user", claims)
 		ctx.Next()
 	}
 }

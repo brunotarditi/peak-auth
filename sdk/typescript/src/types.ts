@@ -53,6 +53,7 @@ export interface PeakClaims extends JWTPayload {
   roles: string[];
   mfa_verified: boolean;
   token_type: string;
+  authz_version: number;
 }
 
 export interface OpenIDConfiguration {
@@ -66,4 +67,19 @@ export interface OpenIDConfiguration {
   code_challenge_methods_supported: string[];
   token_endpoint_auth_methods_supported: string[];
   [key: string]: unknown;
+}
+
+export interface IntrospectionResponse {
+  active: boolean;
+  sub?: string;
+  username?: string;
+  aud?: string;
+  iss?: string;
+  exp?: number;
+  iat?: number;
+  scope?: string;
+  client_id?: string;
+  token_type?: string;
+  mfa_verified?: boolean;
+  roles?: string[];
 }

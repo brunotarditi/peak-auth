@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -109,7 +110,12 @@ func (m *mockUserRepo) FindByEmail(email string) (model.User, error) {
 	}
 	return m.user, nil
 }
-func (m *mockUserRepo) FindById(ID uint) (model.User, error)                             { return m.user, nil }
+func (m *mockUserRepo) FindById(ID uint) (model.User, error) {
+	if m.err != nil {
+		return model.User{}, m.err
+	}
+	return m.user, nil
+}
 func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error    { return nil }
 
 type mockUARRepo struct {
@@ -998,6 +1004,76 @@ func TestRefreshToken_PreservesMfaAssuranceLevel(t *testing.T) {
 		}
 		if !newRt.MfaCompleted {
 			t.Fatalf("El nuevo RefreshToken debió persistir MfaCompleted=true")
+		}
+	})
+}
+
+func TestUserService_FindVerifiedUserByID(t *testing.T) {
+	t.Run("Usuario activo y verificado retorna usuario exitosamente", func(t *testing.T) {
+		repo := &mockUserRepo{
+			user: model.User{
+				Email:      "active@test.com",
+				IsActive:   true,
+				IsVerified: true,
+			},
+		}
+		svc := &userService{userRepo: repo}
+		user, err := svc.FindVerifiedUserByID(1)
+		if err != nil {
+			t.Fatalf("se esperaba éxito, obtenido error: %v", err)
+		}
+		if user.Email != "active@test.com" {
+			t.Errorf("email esperado 'active@test.com', obtenido: %s", user.Email)
+		}
+	})
+
+	t.Run("Usuario no verificado es rechazado", func(t *testing.T) {
+		repo := &mockUserRepo{
+			user: model.User{
+				Email:      "unverified@test.com",
+				IsActive:   true,
+				IsVerified: false,
+			},
+		}
+		svc := &userService{userRepo: repo}
+		user, err := svc.FindVerifiedUserByID(1)
+		if err == nil {
+			t.Fatalf("se esperaba error para usuario no verificado, obtenido user: %+v", user)
+		}
+		if err.Error() != "usuario no verificado" {
+			t.Errorf("error esperado 'usuario no verificado', obtenido: %v", err)
+		}
+	})
+
+	t.Run("Usuario desactivado es rechazado", func(t *testing.T) {
+		repo := &mockUserRepo{
+			user: model.User{
+				Email:      "inactive@test.com",
+				IsActive:   false,
+				IsVerified: true,
+			},
+		}
+		svc := &userService{userRepo: repo}
+		user, err := svc.FindVerifiedUserByID(1)
+		if err == nil {
+			t.Fatalf("se esperaba error para usuario desactivado, obtenido user: %+v", user)
+		}
+		if err.Error() != "usuario desactivado" {
+			t.Errorf("error esperado 'usuario desactivado', obtenido: %v", err)
+		}
+	})
+
+	t.Run("Usuario inexistente retorna error", func(t *testing.T) {
+		repo := &mockUserRepo{
+			err: errors.New("record not found"),
+		}
+		svc := &userService{userRepo: repo}
+		user, err := svc.FindVerifiedUserByID(999)
+		if err == nil {
+			t.Fatalf("se esperaba error para usuario inexistente, obtenido user: %+v", user)
+		}
+		if err.Error() != "usuario no encontrado" {
+			t.Errorf("error esperado 'usuario no encontrado', obtenido: %v", err)
 		}
 	})
 }
