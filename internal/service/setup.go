@@ -1,7 +1,9 @@
 package service
 
 import (
+	"crypto/rand"
 	"crypto/subtle"
+	"encoding/hex"
 	"errors"
 	"log"
 	"time"
@@ -123,6 +125,18 @@ func (s *setupService) InitializeSystem(port string) {
 	log.Printf("Acceda a %s/setup para inicializar la cuenta maestra ROOT.", baseURL)
 	if s.setupToken != "" {
 		log.Printf("Autenticación requerida con SETUP_TOKEN configurado en entorno.")
+	} else {
+		// Generate ephemeral token when SETUP_TOKEN is not configured
+		tokenBytes := make([]byte, 32)
+		if _, err := rand.Read(tokenBytes); err != nil {
+			log.Printf("Error generando token efímero: %v", err)
+			return
+		}
+		s.ephemeralToken = hex.EncodeToString(tokenBytes)
+		s.tokenExpiry = time.Now().Add(2 * time.Hour)
+		log.Printf("⚠️  Token de instalación efímero generado (válido por 2 horas):")
+		log.Printf("    %s", s.ephemeralToken)
+		log.Printf("    Use este token para autenticarse en %s/setup", baseURL)
 	}
 	log.Printf("================================================================")
 }
@@ -141,16 +155,24 @@ func (s *setupService) ValidateSetupToken(token string) error {
 		return nil
 	}
 
-	// Si no se configuró SETUP_TOKEN, se permite en primer arranque
-	first, _ := s.setupRepo.IsFirstRun()
-	if first {
+	// Si no se configuró SETUP_TOKEN, validar contra el token efímero generado
+	if s.ephemeralToken != "" {
+		// Check if ephemeral token has expired
+		if time.Now().After(s.tokenExpiry) {
+			return errors.New("el token efímero ha expirado")
+		}
+		if token == "" || subtle.ConstantTimeCompare([]byte(s.ephemeralToken), []byte(token)) != 1 {
+			return errors.New("token de instalación inválido")
+		}
 		return nil
 	}
-	return errors.New("el sistema ya ha sido configurado")
+
+	// Si no hay token configurado ni efímero generado, rechazar
+	return errors.New("no se ha generado un token de instalación válido")
 }
 
 func (s *setupService) RequiresToken() bool {
-	return s.setupToken != ""
+	return s.setupToken != "" || s.ephemeralToken != ""
 }
 
 func (s *setupService) CompleteSetup(rootUser model.User) {
