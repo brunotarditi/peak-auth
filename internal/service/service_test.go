@@ -471,6 +471,139 @@ func TestOAuthPKCEAndRedirectValidation(t *testing.T) {
 	})
 }
 
+func TestOAuthRedirectURISecurityValidation(t *testing.T) {
+	oauthRepo := newMockOAuthRepo()
+	appRepo := newMockAppRepo()
+
+	oauthSvc := &oauthService{
+		oauthRepo: oauthRepo,
+		appRepo:   appRepo,
+	}
+
+	t.Run("HTTPS redirect URIs are accepted", func(t *testing.T) {
+		clientID := "https-client"
+		redirectURI := "https://secure.example.com/callback"
+		appRepo.apps[clientID] = &model.Application{
+			AppID:       clientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		err := oauthSvc.ValidateClientRedirect(clientID, redirectURI)
+		if err != nil {
+			t.Fatalf("HTTPS redirect URI should be accepted, got error: %v", err)
+		}
+	})
+
+	t.Run("HTTP redirect URI to non-loopback address is rejected", func(t *testing.T) {
+		clientID := "insecure-client"
+		redirectURI := "http://insecure.example.com/callback"
+		appRepo.apps[clientID] = &model.Application{
+			AppID:       clientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		err := oauthSvc.ValidateClientRedirect(clientID, redirectURI)
+		if err == nil {
+			t.Fatalf("HTTP redirect URI to non-loopback address should be rejected")
+		}
+		if !strings.Contains(err.Error(), "HTTPS") && !strings.Contains(err.Error(), "loopback") {
+			t.Fatalf("error message should mention HTTPS or loopback requirement, got: %v", err)
+		}
+	})
+
+	t.Run("HTTP redirect URI to localhost is accepted", func(t *testing.T) {
+		clientID := "localhost-client"
+		redirectURI := "http://localhost:8080/callback"
+		appRepo.apps[clientID] = &model.Application{
+			AppID:       clientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		err := oauthSvc.ValidateClientRedirect(clientID, redirectURI)
+		if err != nil {
+			t.Fatalf("HTTP redirect URI to localhost should be accepted, got error: %v", err)
+		}
+	})
+
+	t.Run("HTTP redirect URI to 127.0.0.1 is accepted", func(t *testing.T) {
+		clientID := "loopback-ipv4-client"
+		redirectURI := "http://127.0.0.1:3000/callback"
+		appRepo.apps[clientID] = &model.Application{
+			AppID:       clientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		err := oauthSvc.ValidateClientRedirect(clientID, redirectURI)
+		if err != nil {
+			t.Fatalf("HTTP redirect URI to 127.0.0.1 should be accepted, got error: %v", err)
+		}
+	})
+
+	t.Run("HTTP redirect URI to [::1] is accepted", func(t *testing.T) {
+		clientID := "loopback-ipv6-client"
+		redirectURI := "http://[::1]:3000/callback"
+		appRepo.apps[clientID] = &model.Application{
+			AppID:       clientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		err := oauthSvc.ValidateClientRedirect(clientID, redirectURI)
+		if err != nil {
+			t.Fatalf("HTTP redirect URI to [::1] should be accepted, got error: %v", err)
+		}
+	})
+
+	t.Run("HTTP redirect URI to 192.168.1.1 is rejected", func(t *testing.T) {
+		clientID := "private-ip-client"
+		redirectURI := "http://192.168.1.1/callback"
+		appRepo.apps[clientID] = &model.Application{
+			AppID:       clientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		err := oauthSvc.ValidateClientRedirect(clientID, redirectURI)
+		if err == nil {
+			t.Fatalf("HTTP redirect URI to private IP should be rejected")
+		}
+	})
+
+	t.Run("Invalid URI format is rejected", func(t *testing.T) {
+		clientID := "invalid-uri-client"
+		redirectURI := "not a valid uri with spaces"
+		appRepo.apps[clientID] = &model.Application{
+			AppID:       clientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		err := oauthSvc.ValidateClientRedirect(clientID, redirectURI)
+		if err == nil {
+			t.Fatalf("Invalid URI format should be rejected")
+		}
+	})
+
+	t.Run("Custom scheme is rejected", func(t *testing.T) {
+		clientID := "custom-scheme-client"
+		redirectURI := "myapp://callback"
+		appRepo.apps[clientID] = &model.Application{
+			AppID:       clientID,
+			RedirectURL: redirectURI,
+			IsActive:    true,
+		}
+
+		err := oauthSvc.ValidateClientRedirect(clientID, redirectURI)
+		if err == nil {
+			t.Fatalf("Custom URI scheme should be rejected")
+		}
+	})
+}
+
 // --- Tests MFA ---
 
 func TestRecoveryCodeHashingAndVerification(t *testing.T) {

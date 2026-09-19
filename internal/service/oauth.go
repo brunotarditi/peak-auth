@@ -6,6 +6,8 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
+	"net"
+	"net/url"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"strings"
@@ -49,7 +51,57 @@ func (s *oauthService) ValidateClientRedirect(clientID, redirectURI string) erro
 		return errors.New("redirect_uri no coincide con la registrada")
 	}
 
+	// Validate that the redirect URI uses HTTPS or is a loopback HTTP URI
+	// This prevents authorization codes from being transmitted over unencrypted connections
+	if err := validateRedirectURISecurity(cleanReqURL); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// validateRedirectURISecurity ensures redirect URIs use HTTPS except for loopback addresses
+// Per OAuth 2.0 Security Best Current Practice (draft-ietf-oauth-security-topics)
+func validateRedirectURISecurity(redirectURI string) error {
+	parsedURL, err := url.Parse(redirectURI)
+	if err != nil {
+		return errors.New("redirect_uri tiene formato inválido")
+	}
+
+	scheme := strings.ToLower(parsedURL.Scheme)
+
+	// HTTPS is always allowed
+	if scheme == "https" {
+		return nil
+	}
+
+	// HTTP is only allowed for loopback addresses (localhost exception)
+	if scheme == "http" {
+		host := parsedURL.Hostname()
+		if isLoopbackAddress(host) {
+			return nil
+		}
+		return errors.New("redirect_uri debe usar HTTPS excepto para direcciones loopback")
+	}
+
+	// Other schemes (custom URI schemes) are not supported for web-based OAuth
+	return errors.New("redirect_uri debe usar HTTPS o HTTP para loopback")
+}
+
+// isLoopbackAddress checks if a hostname is a loopback address
+func isLoopbackAddress(host string) bool {
+	// Check for localhost
+	if strings.ToLower(host) == "localhost" {
+		return true
+	}
+
+	// Parse as IP address
+	ip := net.ParseIP(host)
+	if ip != nil {
+		return ip.IsLoopback()
+	}
+
+	return false
 }
 
 func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string, mfaCompleted bool) (string, error) {
