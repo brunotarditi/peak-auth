@@ -21,6 +21,13 @@ type MfaAttemptRepository interface {
 	
 	// CleanupExpired removes expired attempt trackers
 	CleanupExpired() error
+	
+	// MarkConsumed atomically marks a challenge as consumed (locked) to prevent replay
+	// Returns an error if the challenge was already consumed or locked
+	MarkConsumed(challengeKey string, userID uint) error
+	
+	// IsConsumed checks if a challenge has been consumed
+	IsConsumed(challengeKey string) (bool, error)
 }
 
 type mfaAttemptRepository struct {
@@ -97,4 +104,57 @@ func (r *mfaAttemptRepository) ClearAttempts(challengeKey string) error {
 // CleanupExpired removes expired attempt trackers
 func (r *mfaAttemptRepository) CleanupExpired() error {
 	return r.db.Where("expires_at < ?", time.Now()).Delete(&model.MfaAttemptTracker{}).Error
+}
+
+// MarkConsumed atomically marks a challenge as consumed to prevent replay attacks
+// Returns an error if the challenge was already consumed/locked
+func (r *mfaAttemptRepository) MarkConsumed(challengeKey string, userID uint) error {
+	// Attempt to insert a locked tracker atomically
+	// If it already exists, the unique constraint will prevent insertion
+	tracker := model.MfaAttemptTracker{
+		ChallengeKey:   challengeKey,
+		UserID:         userID,
+		FailedAttempts: 0,
+		Locked:         true,
+		ExpiresAt:      time.Now().Add(5 * time.Minute),
+	}
+	
+	// Use a transaction to ensure atomicity
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Check if already exists and is locked
+		var existing model.MfaAttemptTracker
+		err := tx.Where("challenge_key = ?", challengeKey).First(&existing).Error
+		
+		if err == nil {
+			// Record exists - check if already consumed/locked
+			if existing.Locked {
+				return gorm.ErrDuplicatedKey // Token already consumed
+			}
+			// Update to locked
+			return tx.Model(&existing).Update("locked", true).Error
+		}
+		
+		if err != gorm.ErrRecordNotFound {
+			return err
+		}
+		
+		// Record doesn't exist - create it as locked
+		return tx.Create(&tracker).Error
+	})
+}
+
+// IsConsumed checks if a challenge has been consumed (marked as locked for replay prevention)
+func (r *mfaAttemptRepository) IsConsumed(challengeKey string) (bool, error) {
+	var tracker model.MfaAttemptTracker
+	err := r.db.Where("challenge_key = ? AND locked = ? AND expires_at > ?", 
+		challengeKey, true, time.Now()).First(&tracker).Error
+	
+	if err == gorm.ErrRecordNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	
+	return true, nil
 }
