@@ -6,6 +6,7 @@ import (
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
+	"peak-auth/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -84,7 +85,6 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 
 	// Lógica inteligente: Si el usuario fue invitado (onboarding),
 	// le generamos un token de reset para que ponga su pass ahora mismo.
-	resetToken := ""
 	needsPassword := false
 
 	// Si logramos generar un token de reset, es porque queremos que lo use
@@ -92,14 +92,28 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 		// Si el usuario no tiene login previo o marcamos que necesita pass
 		if user.LastLogin.IsZero() {
 			needsPassword = true
-			// Generar token de reset al vuelo
+			// Generar token de reset al vuelo y almacenarlo en cookie segura
 			plainReset, _, _ := c.UserService.GenerateResetToken(userID, appID)
-			resetToken = plainReset
+			ctx.SetSameSite(http.SameSiteStrictMode)
+			ctx.SetCookie(
+				"reset_token",
+				plainReset,
+				3600,
+				"/reset-password",
+				"",
+				util.IsProduction(),
+				true,
+			)
 		}
 	}
 
+	// Cabeceras defensivas para evitar almacenamiento en caché o fugas por Referer
+	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Expires", "0")
+	ctx.Header("Referrer-Policy", "no-referrer")
+
 	ctx.HTML(200, "verify_email.html", gin.H{
 		"NeedsPassword": needsPassword,
-		"ResetToken":    resetToken,
 	})
 }

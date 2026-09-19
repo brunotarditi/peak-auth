@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -452,6 +453,52 @@ func TestSetupTOTPLogin_RejectsWhenMfaAlreadyEnabled(t *testing.T) {
 
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("Esperaba 403 Forbidden al intentar re-enrolar MFA cuando ya está activo, obtuvo %d", w.Code)
+	}
+}
+
+func TestGetResetPassword_ReadsFromCookieAndSetsDefensiveHeaders(t *testing.T) {
+	ctrl := &UserController{}
+	r := gin.New()
+	tmpl := template.Must(template.New("reset_password.html").Parse("<html>Token:{{.token}}</html>"))
+	r.SetHTMLTemplate(tmpl)
+	r.GET("/reset-password", ctrl.GetResetPassword)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/reset-password", nil)
+	req.AddCookie(&http.Cookie{Name: "reset_token", Value: "secure_cookie_token_123"})
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Esperaba 200 OK con token en cookie, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "secure_cookie_token_123") {
+		t.Fatalf("El template debió recibir el token desde la cookie, body: %s", w.Body.String())
+	}
+	// Validar cabeceras defensivas
+	if w.Header().Get("Referrer-Policy") != "no-referrer" {
+		t.Errorf("Esperaba Referrer-Policy: no-referrer, obtuvo: %s", w.Header().Get("Referrer-Policy"))
+	}
+	if !strings.Contains(w.Header().Get("Cache-Control"), "no-store") {
+		t.Errorf("Esperaba Cache-Control no-store, obtuvo: %s", w.Header().Get("Cache-Control"))
+	}
+}
+
+func TestGetResetPassword_FallbackToQuery(t *testing.T) {
+	ctrl := &UserController{}
+	r := gin.New()
+	tmpl := template.Must(template.New("reset_password.html").Parse("<html>Token:{{.token}}</html>"))
+	r.SetHTMLTemplate(tmpl)
+	r.GET("/reset-password", ctrl.GetResetPassword)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/reset-password?token=query_fallback_token_456", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Esperaba 200 OK con token en query fallback, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "query_fallback_token_456") {
+		t.Fatalf("El template debió recibir el token desde query param, body: %s", w.Body.String())
 	}
 }
 

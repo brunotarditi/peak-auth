@@ -30,7 +30,7 @@
             </p>
 
             {{ if .NeedsPassword }}
-            <a href="/reset-password?token={{ .ResetToken }}" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; text-decoration: none;">
+            <a href="/reset-password" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; text-decoration: none;">
                 <span>Establecer Contraseña</span>
                 {{template "icon-forward"}}
             </a>

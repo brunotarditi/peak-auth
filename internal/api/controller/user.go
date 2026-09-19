@@ -21,11 +21,24 @@ type UserController struct {
 
 // GetResetPassword muestra el formulario de cambio de contraseña
 func (c *UserController) GetResetPassword(ctx *gin.Context) {
-	token := ctx.Query("token")
+	// Intentar obtener el token desde la cookie segura (flujo desde verificación de email)
+	token, err := ctx.Cookie("reset_token")
+
+	// Fallback al parámetro query para compatibilidad con correos de reseteo directo
+	if err != nil || token == "" {
+		token = ctx.Query("token")
+	}
+
 	if token == "" {
 		c.renderError(ctx, http.StatusBadRequest, "Token Requerido", "El token de restablecimiento es requerido.")
 		return
 	}
+
+	// Cabeceras defensivas para evitar almacenamiento en caché o fugas por Referer
+	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Expires", "0")
+	ctx.Header("Referrer-Policy", "no-referrer")
 
 	// Renderizamos el template de reset-password
 	csrf, _ := ctx.Get("csrf_token")
@@ -55,6 +68,18 @@ func (c *UserController) PostResetPassword(ctx *gin.Context) {
 		ctx.String(http.StatusBadRequest, "No se pudo actualizar la contraseña. Verifique que el enlace sea válido y no haya expirado.")
 		return
 	}
+
+	// Limpiar la cookie reset_token tras completar el restablecimiento con éxito
+	ctx.SetSameSite(http.SameSiteStrictMode)
+	ctx.SetCookie(
+		"reset_token",
+		"",
+		-1,
+		"/reset-password",
+		"",
+		util.IsProduction(),
+		true,
+	)
 
 	ctx.String(http.StatusOK, "Contraseña actualizada. Ya puedes iniciar sesión en tu aplicación.")
 }
