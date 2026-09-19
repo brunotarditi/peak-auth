@@ -20,12 +20,37 @@ func TestValidatePasswordLength(t *testing.T) {
 }
 
 func TestValidateMinimumPasswordPolicy(t *testing.T) {
+	// Test length requirement
 	if err := ValidateMinimumPasswordPolicy("1234567"); err == nil {
 		t.Fatal("password con menos de 8 caracteres debería fallar")
 	}
-	if err := ValidateMinimumPasswordPolicy("12345678"); err != nil {
-		t.Fatalf("password con 8 caracteres debería ser válida: %v", err)
+
+	// Test that simple 8-character password without complexity fails
+	if err := ValidateMinimumPasswordPolicy("12345678"); err == nil {
+		t.Fatal("password sin complejidad debería fallar")
 	}
+
+	// Test missing uppercase
+	if err := ValidateMinimumPasswordPolicy("abc123!@"); err == nil {
+		t.Fatal("password sin mayúscula debería fallar")
+	}
+
+	// Test missing number
+	if err := ValidateMinimumPasswordPolicy("Abcdefg!"); err == nil {
+		t.Fatal("password sin dígito debería fallar")
+	}
+
+	// Test missing symbol
+	if err := ValidateMinimumPasswordPolicy("Abcd1234"); err == nil {
+		t.Fatal("password sin símbolo debería fallar")
+	}
+
+	// Test valid password with all requirements
+	if err := ValidateMinimumPasswordPolicy("Abc123!@"); err != nil {
+		t.Fatalf("password válida con todos los requisitos fue rechazada: %v", err)
+	}
+
+	// Test bcrypt length limit
 	over := make([]byte, 73)
 	for i := range over {
 		over[i] = 'a'

@@ -856,10 +856,10 @@ func TestValidateRegistration_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing
 		t.Fatalf("se esperaba rechazo por contraseña corta (<8), obtenido: %v", err)
 	}
 
-	// Password con 8 o más caracteres debe ser aceptada
-	policy, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{Password: "12345678"})
+	// Password válida con complejidad debe ser aceptada
+	policy, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{Password: "ValidPass123!"})
 	if err != nil {
-		t.Fatalf("se esperaba éxito para contraseña de 8 caracteres, obtenido: %v", err)
+		t.Fatalf("se esperaba éxito para contraseña válida con requisitos base, obtenido: %v", err)
 	}
 	if policy.DefaultRole != "USER" {
 		t.Fatalf("se esperaba default_role USER, obtenido: %s", policy.DefaultRole)
@@ -910,10 +910,10 @@ func TestResetPassword_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing.T) {
 		t.Fatalf("se esperaba error de contraseña mínima de 8 caracteres, obtenido: %v", err)
 	}
 
-	// 2. Password de 8 o más caracteres debe ser aceptada
-	err = userSvc.ResetPassword(tokenPlain, "validPass123")
+	// 2. Password válida con complejidad debe ser aceptada
+	err = userSvc.ResetPassword(tokenPlain, "ValidPass123!")
 	if err != nil {
-		t.Fatalf("se esperaba éxito al resetear contraseña de >=8 caracteres, obtenido: %v", err)
+		t.Fatalf("se esperaba éxito al resetear contraseña con requisitos base, obtenido: %v", err)
 	}
 }
 

@@ -139,16 +139,35 @@ func ValidatePasswordStrength(password string) bool {
 // ValidateMinimumPasswordPolicy enforces a baseline password policy when no active PWD_POLICY exists.
 // This prevents weak passwords from being set during password reset or other operations when
 // application rules are missing, deactivated, or misconfigured.
+// This enforces the same baseline complexity as the default PWD_POLICY to ensure consistent
+// security requirements across all password-setting paths.
 func ValidateMinimumPasswordPolicy(password string) error {
 	if err := ValidatePasswordLength(password); err != nil {
 		return err
 	}
 
-	// Enforce a minimum length of 8 characters as a security baseline
+	// Enforce the same baseline requirements as the default PWD_POLICY:
+	// min_length: 8, require_uppercase: true, require_numbers: true, require_symbols: true
 	if len(password) < 8 {
 		return fmt.Errorf("la contraseña debe tener al menos 8 caracteres")
 	}
 
+	matched, _ := regexp.MatchString("[A-Z]", password)
+	if !matched {
+		return fmt.Errorf("la contraseña debe contener al menos una letra mayúscula")
+	}
+
+	matched, _ = regexp.MatchString("[0-9]", password)
+	if !matched {
+		return fmt.Errorf("la contraseña debe contener al menos un dígito")
+	}
+
+	matched, _ = regexp.MatchString("[^A-Za-z0-9]", password)
+	if !matched {
+		return fmt.Errorf("la contraseña debe contener al menos un símbolo")
+	}
+
 	return nil
 }
+
 
