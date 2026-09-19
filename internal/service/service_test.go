@@ -1676,6 +1676,64 @@ func TestApplicationService_UpdateColumns_IndependentUpdates(t *testing.T) {
 	}
 }
 
+type mockMfaAttemptRepo struct {
+	consumed map[string]bool
+	locked   map[string]bool
+}
+
+func (m *mockMfaAttemptRepo) RecordFailedAttempt(challengeKey string, userID uint, maxAttempts int) (bool, error) {
+	return false, nil
+}
+func (m *mockMfaAttemptRepo) IsLocked(challengeKey string) (bool, error) {
+	return m.locked[challengeKey], nil
+}
+func (m *mockMfaAttemptRepo) ClearAttempts(challengeKey string) error {
+	delete(m.locked, challengeKey)
+	return nil
+}
+func (m *mockMfaAttemptRepo) CleanupExpired() error { return nil }
+func (m *mockMfaAttemptRepo) MarkConsumed(challengeKey string, userID uint) error {
+	if m.consumed[challengeKey] {
+		return errors.New("token ya consumido")
+	}
+	m.consumed[challengeKey] = true
+	return nil
+}
+func (m *mockMfaAttemptRepo) IsConsumed(challengeKey string) (bool, error) {
+	return m.consumed[challengeKey], nil
+}
+
+func TestApiMfaToken_AtomicConsumptionAndReplayPrevention(t *testing.T) {
+	mockRepo := &mockMfaAttemptRepo{
+		consumed: make(map[string]bool),
+		locked:   make(map[string]bool),
+	}
+	InitMfaAttemptTracking(mockRepo)
+
+	tokenKey := "api_mfa_1_test_token"
+
+	// 1. Antes de consumirse, IsApiMfaTokenConsumed debe ser false
+	if IsApiMfaTokenConsumed(tokenKey) {
+		t.Fatalf("se esperaba que el token no estuviera consumido inicialmente")
+	}
+
+	// 2. Primer consumo debe ser exitoso
+	if err := ConsumeApiMfaToken(tokenKey, 1); err != nil {
+		t.Fatalf("primer ConsumeApiMfaToken debió tener éxito: %v", err)
+	}
+
+	// 3. Después del consumo, IsApiMfaTokenConsumed debe ser true
+	if !IsApiMfaTokenConsumed(tokenKey) {
+		t.Fatalf("se esperaba que el token estuviera marcado como consumido")
+	}
+
+	// 4. Segundo intento de consumo con el mismo token (intento de replay) debe fallar
+	if err := ConsumeApiMfaToken(tokenKey, 1); err == nil {
+		t.Fatalf("se esperaba que el segundo intento de consumo fallara")
+	}
+}
+
+
 
 
 
