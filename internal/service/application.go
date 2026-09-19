@@ -228,11 +228,14 @@ func (s *applicationService) UpdateApp(appID string, description, redirectURL st
 	}
 
 	wasActive := app.IsActive
-	app.Description = description
-	app.RedirectURL = redirectURL
-	app.IsActive = isActive
 
-	if err := s.repo.Update(&app); err != nil {
+	// Usar actualización específica por columnas para evitar condiciones de carrera (Lost Update)
+	columns := map[string]interface{}{
+		"description":  description,
+		"redirect_url": redirectURL,
+		"is_active":    isActive,
+	}
+	if err := s.repo.UpdateColumns(app.ID, columns); err != nil {
 		return err
 	}
 
@@ -263,8 +266,11 @@ func (s *applicationService) RegenerateSecret(appID string) (string, error) {
 		return "", err
 	}
 
-	app.SecretKey = hashedSecret
-	err = s.repo.Update(&app)
+	// Usar actualización específica por columnas para no sobrescribir metadata concurrente
+	columns := map[string]interface{}{
+		"secret_key": hashedSecret,
+	}
+	err = s.repo.UpdateColumns(app.ID, columns)
 	if err != nil {
 		return "", err
 	}

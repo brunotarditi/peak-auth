@@ -105,6 +105,7 @@ func (r *testAppRepo) ValidateSecret(appID, secret string) (model.Application, e
 
 func (r *testAppRepo) Create(app *model.Application) error                          { return nil }
 func (r *testAppRepo) Update(app *model.Application) error                          { return nil }
+func (r *testAppRepo) UpdateColumns(id uint, columns map[string]interface{}) error  { return nil }
 func (r *testAppRepo) Delete(id uint) error                                         { return nil }
 func (r *testAppRepo) FindByID(id uint) (model.Application, error)                  { return model.Application{}, nil }
 func (r *testAppRepo) FindByName(name string) (model.Application, error)            { return model.Application{}, nil }

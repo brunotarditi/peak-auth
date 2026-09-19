@@ -105,6 +105,26 @@ func (m *mockAppRepo) ValidateSecret(appID, secret string) (model.Application, e
 
 func (m *mockAppRepo) Create(app *model.Application) error { return nil }
 func (m *mockAppRepo) Update(app *model.Application) error { return nil }
+func (m *mockAppRepo) UpdateColumns(id uint, columns map[string]interface{}) error {
+	for _, a := range m.apps {
+		if a.ID == id {
+			if desc, ok := columns["description"].(string); ok {
+				a.Description = desc
+			}
+			if red, ok := columns["redirect_url"].(string); ok {
+				a.RedirectURL = red
+			}
+			if act, ok := columns["is_active"].(bool); ok {
+				a.IsActive = act
+			}
+			if sec, ok := columns["secret_key"].(string); ok {
+				a.SecretKey = sec
+			}
+			return nil
+		}
+	}
+	return nil
+}
 func (m *mockAppRepo) Delete(id uint) error                { return nil }
 func (m *mockAppRepo) FindByID(id uint) (model.Application, error) {
 	for _, a := range m.apps {
@@ -1604,6 +1624,58 @@ func TestSetupService_ConfiguredToken(t *testing.T) {
 		t.Fatalf("se esperaba éxito con token coincidente: %v", err)
 	}
 }
+
+func TestApplicationService_UpdateColumns_IndependentUpdates(t *testing.T) {
+	initialSecret := "initial-secret-hash-123"
+	app := &model.Application{
+		ID:          1,
+		AppID:       "test-client",
+		Name:        "Test Client",
+		Description: "Initial description",
+		RedirectURL: "https://example.com/callback",
+		SecretKey:   initialSecret,
+		IsActive:    true,
+	}
+
+	appRepo := newMockAppRepo()
+	appRepo.apps["test-client"] = app
+
+	svc := NewApplicationService(appRepo, nil, nil, nil, nil, nil, nil, nil)
+
+	// 1. UpdateApp: debe modificar metadata pero NO tocar el secret
+	err := svc.UpdateApp("test-client", "Updated description", "https://example.com/new-callback", true)
+	if err != nil {
+		t.Fatalf("UpdateApp falló: %v", err)
+	}
+	if app.Description != "Updated description" {
+		t.Errorf("se esperaba descripción actualizada, obtenido: %s", app.Description)
+	}
+	if app.RedirectURL != "https://example.com/new-callback" {
+		t.Errorf("se esperaba redirect_url actualizada, obtenido: %s", app.RedirectURL)
+	}
+	if app.SecretKey != initialSecret {
+		t.Errorf("UpdateApp no debió modificar SecretKey")
+	}
+
+	// 2. RegenerateSecret: debe modificar el secret pero NO tocar descripción ni redirect_url
+	newPlainSecret, err := svc.RegenerateSecret("test-client")
+	if err != nil {
+		t.Fatalf("RegenerateSecret falló: %v", err)
+	}
+	if newPlainSecret == "" {
+		t.Fatalf("se esperaba un plainSecret generado")
+	}
+	if app.SecretKey == initialSecret {
+		t.Errorf("se esperaba que el secret cambiara")
+	}
+	if app.Description != "Updated description" {
+		t.Errorf("RegenerateSecret no debió modificar la descripción")
+	}
+	if app.RedirectURL != "https://example.com/new-callback" {
+		t.Errorf("RegenerateSecret no debió modificar la redirect_url")
+	}
+}
+
 
 
 

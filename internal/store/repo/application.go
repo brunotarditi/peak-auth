@@ -18,6 +18,7 @@ type ApplicationRepository interface {
 	FindByName(name string) (model.Application, error)
 	ValidateSecret(appID string, secret string) (model.Application, error)
 	Update(app *model.Application) error
+	UpdateColumns(id uint, columns map[string]interface{}) error
 	Delete(id uint) error
 	GetAppsWithUserCount() ([]response.AppStatsResponse, error)
 	GetAppsForUser(userID uint) ([]response.AppStatsResponse, error)
@@ -77,6 +78,12 @@ func (r *applicationRepository) ValidateSecret(appID string, secret string) (mod
 // Update actualiza una aplicación.
 func (r *applicationRepository) Update(app *model.Application) error {
 	return r.db.Save(app).Error
+}
+
+// UpdateColumns actualiza solo las columnas especificadas de una aplicación.
+// Esto previene condiciones de carrera de lost-update al modificar solo campos específicos.
+func (r *applicationRepository) UpdateColumns(id uint, columns map[string]interface{}) error {
+	return r.db.Model(&model.Application{}).Where("id = ?", id).Updates(columns).Error
 }
 
 // Delete hace un soft delete de la aplicación.
