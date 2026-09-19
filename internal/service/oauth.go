@@ -43,9 +43,8 @@ func (s *oauthService) ValidateClientRedirect(clientID, redirectURI string) erro
 		return errors.New("la aplicación está desactivada")
 	}
 
-	cleanAppURL := strings.TrimRight(strings.TrimSpace(app.RedirectURL), "/")
-	cleanReqURL := strings.TrimRight(strings.TrimSpace(redirectURI), "/")
-	if cleanAppURL != cleanReqURL {
+	// RFC 6749 Section 3.1.2: redirect_uri must match exactly
+	if app.RedirectURL != redirectURI {
 		return errors.New("redirect_uri no coincide con la registrada")
 	}
 
@@ -131,10 +130,9 @@ func (s *oauthService) ExchangeCodeForToken(clientID, clientSecret, codeStr, red
 	}
 
 	// 5. Validación estricta de redirect_uri (RFC 6749 Sección 4.1.3)
+	// RFC 6749 Section 4.1.3: redirect_uri must match exactly
 	if code.RedirectURI != "" || redirectURI != "" {
-		cleanRedirectReq := strings.TrimRight(strings.TrimSpace(redirectURI), "/")
-		cleanRedirectCode := strings.TrimRight(strings.TrimSpace(code.RedirectURI), "/")
-		if cleanRedirectReq != cleanRedirectCode {
+		if redirectURI != code.RedirectURI {
 			return 0, false, errors.New("redirect_uri no coincide con la asociada al código de autorización")
 		}
 	}
