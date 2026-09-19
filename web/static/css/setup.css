@@ -14,11 +14,21 @@
             align-items: center;
             justify-content: center;
         }
-        .checklist-item.text-emerald-500 {
-            color: var(--emerald-500) !important;
-        }
-        .checklist-item.text-rose-500 {
+.checklist-item.text-success,
+.checklist-item.text-emerald-500,
+.checklist-item.is-valid {
+    color: var(--emerald-500) !important;
+}
+
+.checklist-item.text-danger,
+.checklist-item.text-rose-500,
+.checklist-item.is-invalid {
     color: var(--rose-500) !important;
+}
+
+.peak-input.input-error {
+    border-color: var(--rose-500) !important;
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15) !important;
 }
 
 .setup-warning-banner {
@@ -37,4 +47,37 @@
     background-color: var(--amber-950);
     border-color: var(--amber-800);
     color: var(--amber-300);
+}
+
+/* Password Visibility Toggle */
+.password-toggle-wrapper {
+    position: relative;
+}
+
+.password-toggle-wrapper .password-toggle-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding: 0 0.875rem;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.password-toggle-wrapper .password-toggle-btn:hover {
+    color: var(--text-main);
+}
+
+.password-toggle-wrapper:focus-within .password-toggle-btn,
+.password-toggle-wrapper.has-value .password-toggle-btn {
+    opacity: 1;
+    pointer-events: auto;
 }

@@ -154,12 +154,29 @@ function peakAlert(title, text, icon = 'error') {
 /**
  * Alternar visibilidad de contraseña en el campo de login
  * @param {string} fieldId - ID del campo input tipo password
+ * @param {HTMLElement} [btn] - Botón que ejecutó la acción
  */
-function toggleLoginPassword(fieldId) {
+function toggleLoginPassword(fieldId, btn) {
     const input = document.getElementById(fieldId);
     if (!input) return;
 
-    input.type = input.type === 'password' ? 'text' : 'password';
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+
+    const button = btn || (typeof event !== 'undefined' && event ? event.currentTarget : null);
+    if (button) {
+        const eyeOpen = button.querySelector('.icon-eye-open');
+        const eyeClosed = button.querySelector('.icon-eye-closed');
+        if (eyeOpen && eyeClosed) {
+            if (isPassword) {
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            } else {
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            }
+        }
+    }
 }
 
 /**

@@ -70,6 +70,11 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 			return err
 		}
 
+		// La app raíz del sistema (Peak Auth) requiere MFA obligatorio por defecto
+		if err := tx.Rules().UpdateRuleValue(rootApp.ID, "MFA_POLICY", []byte(`{"mode": "REQUIRED"}`)); err != nil {
+			return err
+		}
+
 		// Roles por defecto del sistema
 		adminRole := model.Role{Name: "ADMIN", IsDefault: true}
 		userRole := model.Role{Name: "USER", IsDefault: true}

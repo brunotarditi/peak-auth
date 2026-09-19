@@ -25,22 +25,29 @@ const updateRequirementUI = (id, isValid, isSubmitAttempt = false) => {
     const errorIcon = el.querySelector('.error-icon');
 
     // Limpiar estados previos
-    el.classList.remove('text-success', 'text-danger', 'text-slate-400', 'text-emerald-500', 'text-rose-500', 'text-rose-600');
+    el.classList.remove('text-success', 'text-danger', 'is-valid', 'is-invalid');
     checkIcon.classList.add('hidden');
     errorIcon.classList.add('hidden');
 
     if (isValid) {
-        el.classList.add('text-success');
+        el.classList.add('text-success', 'is-valid');
         checkIcon.classList.remove('hidden');
     } else if (isSubmitAttempt) {
-        el.classList.add('text-danger');
+        el.classList.add('text-danger', 'is-invalid');
         errorIcon.classList.remove('hidden');
-    } else {
-        el.classList.add('text-slate-400');
     }
 };
 
 passwordInput.addEventListener('input', () => {
+    const wrapper = passwordInput.closest('.password-toggle-wrapper');
+    if (wrapper) {
+        if (passwordInput.value.length > 0) {
+            wrapper.classList.add('has-value');
+        } else {
+            wrapper.classList.remove('has-value');
+        }
+    }
+
     let allValid = true;
     Object.keys(requirements).forEach(key => {
         const isValid = passwordInput.value.match(requirements[key].regex);
@@ -49,14 +56,14 @@ passwordInput.addEventListener('input', () => {
     });
 
     if (allValid) {
-        passwordInput.classList.remove('border-danger', 'ring-danger');
+        passwordInput.classList.remove('input-error');
     }
 });
 
 emailInput.addEventListener('input', () => {
     if (validateEmail(emailInput.value)) {
         emailError.classList.add('hidden');
-        emailInput.classList.remove('border-danger', 'ring-danger');
+        emailInput.classList.remove('input-error');
     }
 });
 
@@ -72,14 +79,13 @@ setupForm.addEventListener('submit', (e) => {
 
     if (!isEmailValid) {
         emailError.classList.remove('hidden');
-        emailError.classList.add('text-danger');
-        emailInput.classList.add('border-danger', 'ring-danger');
+        emailInput.classList.add('input-error');
         e.preventDefault();
     }
 
-        if (!isPasswordValid) {
-            passwordInput.classList.add('border-danger', 'ring-danger');
-            e.preventDefault();
-        }
-    });
-})();
+    if (!isPasswordValid) {
+        passwordInput.classList.add('input-error');
+        e.preventDefault();
+    }
+});
+})();
