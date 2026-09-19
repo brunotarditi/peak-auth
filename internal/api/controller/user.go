@@ -19,18 +19,52 @@ type UserController struct {
 	MfaService  service.MfaService
 }
 
-// GetResetPassword muestra el formulario de cambio de contraseña
-func (c *UserController) GetResetPassword(ctx *gin.Context) {
-	// Intentar obtener el token desde la cookie segura (flujo desde verificación de email)
-	token, err := ctx.Cookie("reset_token")
-
-	// Fallback al parámetro query para compatibilidad con correos de reseteo directo
-	if err != nil || token == "" {
-		token = ctx.Query("token")
+// GetResetPasswordExchange handles the bootstrap token exchange from email URLs.
+// It validates the one-time bootstrap token, exchanges it for the actual reset token,
+// and delivers that token via HttpOnly cookie before redirecting to the reset form.
+// This prevents the live password-reset credential from appearing in URLs.
+func (c *UserController) GetResetPasswordExchange(ctx *gin.Context) {
+	bootstrapToken := ctx.Query("bootstrap")
+	if bootstrapToken == "" {
+		c.renderError(ctx, http.StatusBadRequest, "Token Requerido", "El token de restablecimiento es requerido.")
+		return
 	}
 
-	if token == "" {
-		c.renderError(ctx, http.StatusBadRequest, "Token Requerido", "El token de restablecimiento es requerido.")
+	// Exchange the bootstrap token for the actual reset token
+	resetToken, err := c.UserService.ExchangeBootstrapForResetToken(bootstrapToken)
+	if err != nil {
+		c.renderError(ctx, http.StatusBadRequest, "Token Inválido", err.Error())
+		return
+	}
+
+	// Set the reset token in an HttpOnly cookie
+	ctx.SetSameSite(http.SameSiteStrictMode)
+	ctx.SetCookie(
+		"reset_token",
+		resetToken,
+		3600, // 1 hour
+		"/reset-password",
+		"",
+		util.IsProduction(),
+		true, // HttpOnly
+	)
+
+	// Defensive headers
+	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Expires", "0")
+	ctx.Header("Referrer-Policy", "no-referrer")
+
+	// Redirect to the reset form (without any token in the URL)
+	ctx.Redirect(http.StatusFound, "/reset-password")
+}
+
+// GetResetPassword muestra el formulario de cambio de contraseña
+func (c *UserController) GetResetPassword(ctx *gin.Context) {
+	// Only accept token from secure HttpOnly cookie (no query parameter fallback)
+	token, err := ctx.Cookie("reset_token")
+	if err != nil || token == "" {
+		c.renderError(ctx, http.StatusBadRequest, "Token Requerido", "El token de restablecimiento es requerido. Por favor, utilice el enlace enviado a su correo electrónico.")
 		return
 	}
 

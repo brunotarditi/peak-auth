@@ -92,7 +92,7 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 		// Si el usuario no tiene login previo o marcamos que necesita pass
 		if user.LastLogin.IsZero() {
 			needsPassword = true
-			// Generar token de reset al vuelo y almacenarlo en cookie segura
+			// Generate reset token and bootstrap token for the cookie flow
 			plainReset, _, _ := c.UserService.GenerateResetToken(userID, appID)
 			ctx.SetSameSite(http.SameSiteStrictMode)
 			ctx.SetCookie(

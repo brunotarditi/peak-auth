@@ -36,6 +36,7 @@ type UserService interface {
 	ResendVerification(userID uint, appID string) error
 	CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error)
 	CompleteAdminLoginWithMfa(userID uint) (string, int, error)
+	ExchangeBootstrapForResetToken(bootstrapToken string) (string, error)
 }
 
 type userService struct {
@@ -410,7 +411,10 @@ func (s *userService) CanRequestPasswordReset(userID uint) (bool, error) {
 	return true, nil
 }
 
-// SendResetEmail crea un token de restablecimiento, lo guarda y envía el email.
+// SendResetEmail creates a reset token with a bootstrap token wrapper and sends the email.
+// The bootstrap token is sent in the email URL and can be exchanged once for the actual
+// reset token delivered via HttpOnly cookie, preventing the live credential from appearing
+// in URLs, browser history, or telemetry.
 func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 	plainToken, tokenHash, err := util.GenerateToken(32)
 	if err != nil {
@@ -432,7 +436,23 @@ func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 		return err
 	}
 
-	if err := s.emailService.SendPasswordResetEmail(user.Email, plainToken); err != nil {
+	// Generate a one-time bootstrap token for the email URL
+	plainBootstrap, bootstrapHash, err := util.GenerateToken(32)
+	if err != nil {
+		return err
+	}
+
+	bootstrap := &model.PasswordResetBootstrap{
+		PasswordResetID: reset.ID,
+		BootstrapHash:   bootstrapHash,
+		ExpiresAt:       time.Now().Add(1 * time.Hour),
+	}
+	if err := s.passwordResetRepo.CreateBootstrapToken(bootstrap); err != nil {
+		return err
+	}
+
+	// Send the bootstrap token in the email, not the actual reset token
+	if err := s.emailService.SendPasswordResetEmail(user.Email, plainBootstrap); err != nil {
 		return fmt.Errorf("error enviando email: %v", err)
 	}
 	return nil
@@ -986,4 +1006,51 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 
 	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
 	return token, expireMinutes, nil
+}
+
+// ExchangeBootstrapForResetToken validates a one-time bootstrap token from an email URL
+// and returns the actual password reset token. This prevents the live reset credential
+// from appearing in URLs, browser history, or telemetry.
+func (s *userService) ExchangeBootstrapForResetToken(bootstrapToken string) (string, error) {
+	now := time.Now()
+
+	// Find and validate the bootstrap token
+	bootstrap, err := s.passwordResetRepo.FindValidBootstrap(bootstrapToken)
+	if err != nil {
+		return "", fmt.Errorf("el enlace de restablecimiento es inválido o ha expirado")
+	}
+
+	// Mark the bootstrap token as used (one-time use only)
+	if err := s.passwordResetRepo.MarkBootstrapUsed(bootstrap.ID, now); err != nil {
+		return "", fmt.Errorf("el enlace de restablecimiento ya fue utilizado")
+	}
+
+	// Verify the associated reset token is still valid
+	if bootstrap.PasswordReset.UsedAt != nil {
+		return "", fmt.Errorf("el token de restablecimiento ya fue utilizado")
+	}
+	if bootstrap.PasswordReset.ExpiresAt.Before(now) {
+		return "", fmt.Errorf("el token de restablecimiento ha expirado")
+	}
+
+	// Generate a new plain token for the actual reset (not stored, only its hash exists)
+	// We need to return a token that can be validated by FindValidPasswordReset
+	// Since we already have the hash in the database, we need to generate a token that matches it
+	// However, we can't reverse the hash, so we need to generate a new token and update the hash
+	plainToken, tokenHash, err := util.GenerateToken(32)
+	if err != nil {
+		return "", fmt.Errorf("error generando token de restablecimiento")
+	}
+
+	// Update the password reset with the new token hash
+	// This ensures the token we return is the only valid one
+	if err := s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
+		return tx.DB().Model(&model.PasswordReset{}).
+			Where("id = ?", bootstrap.PasswordResetID).
+			Update("token_hash", tokenHash).Error
+	}); err != nil {
+		return "", fmt.Errorf("error actualizando token de restablecimiento")
+	}
+
+	return plainToken, nil
 }

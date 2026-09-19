@@ -47,6 +47,19 @@ type PasswordReset struct {
 	UsedAt        *time.Time
 }
 
+// PasswordResetBootstrap is a one-time-use token sent in email URLs that can be
+// exchanged server-side for the actual reset token delivered via HttpOnly cookie.
+// This prevents the live reset credential from appearing in URLs, browser history,
+// or telemetry while maintaining email-based password reset functionality.
+type PasswordResetBootstrap struct {
+	gorm.Model
+	PasswordResetID uint          `gorm:"not null;index"`
+	PasswordReset   PasswordReset `gorm:"foreignKey:PasswordResetID"`
+	BootstrapHash   []byte        `gorm:"not null"`
+	ExpiresAt       time.Time     `gorm:"not null"`
+	UsedAt          *time.Time
+}
+
 type Profile struct {
 	gorm.Model
 	UserID    uint      `gorm:"uniqueIndex"`

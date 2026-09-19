@@ -16,6 +16,9 @@ type PasswordResetRepository interface {
 	CreatePasswordReset(reset *model.PasswordReset) error
 	CountResetsThisMonth(userID uint) (int64, error)
 	InvalidateAllUserTokens(userID uint) error
+	CreateBootstrapToken(bootstrap *model.PasswordResetBootstrap) error
+	FindValidBootstrap(plainBootstrap string) (*model.PasswordResetBootstrap, error)
+	MarkBootstrapUsed(bootstrapID uint, usedAt time.Time) error
 }
 
 type passwordReset struct {
@@ -84,4 +87,35 @@ func (r *passwordReset) InvalidateAllUserTokens(userID uint) error {
 	return r.db.Model(&model.PasswordReset{}).
 		Where("user_id = ? AND used_at IS NULL AND expires_at > ?", userID, now).
 		UpdateColumn("used_at", now).Error
+}
+
+func (r *passwordReset) CreateBootstrapToken(bootstrap *model.PasswordResetBootstrap) error {
+	return r.db.Create(bootstrap).Error
+}
+
+func (r *passwordReset) FindValidBootstrap(plainBootstrap string) (*model.PasswordResetBootstrap, error) {
+	hashedBootstrap := sha256.Sum256([]byte(plainBootstrap))
+
+	var bootstrap model.PasswordResetBootstrap
+	err := r.db.Preload("PasswordReset").
+		Where("bootstrap_hash = ? AND used_at IS NULL AND expires_at > ?", hashedBootstrap[:], time.Now()).
+		First(&bootstrap).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &bootstrap, nil
+}
+
+func (r *passwordReset) MarkBootstrapUsed(bootstrapID uint, usedAt time.Time) error {
+	result := r.db.Model(&model.PasswordResetBootstrap{}).
+		Where("id = ? AND used_at IS NULL", bootstrapID).
+		UpdateColumn("used_at", usedAt)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }

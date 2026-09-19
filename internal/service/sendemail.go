@@ -97,9 +97,10 @@ func (s *EmailService) SendVerificationEmail(toEmail string, token string, appNa
 	return s.Provider.Send(subject, toEmail, html)
 }
 
-func (s *EmailService) SendPasswordResetEmail(toEmail string, token string) error {
+func (s *EmailService) SendPasswordResetEmail(toEmail string, bootstrapToken string) error {
 	baseURL := util.BaseURL()
-	link := fmt.Sprintf("%s/reset-password?token=%s", baseURL, url.QueryEscape(token))
+	// Send bootstrap token to exchange endpoint, not directly to reset-password
+	link := fmt.Sprintf("%s/reset-password/exchange?bootstrap=%s", baseURL, url.QueryEscape(bootstrapToken))
 	subject := "Restablece tu contraseña - Peak Auth"
 
 	logoURL := fmt.Sprintf("%s/static/img/logo.png", baseURL)
@@ -114,9 +115,10 @@ func (s *EmailService) SendPasswordResetEmail(toEmail string, token string) erro
 	return s.Provider.Send(subject, toEmail, html)
 }
 
-func (s *EmailService) SendActivationEmail(toEmail string, token string, appName string) error {
+func (s *EmailService) SendActivationEmail(toEmail string, bootstrapToken string, appName string) error {
 	baseURL := util.BaseURL()
-	link := fmt.Sprintf("%s/reset-password?token=%s", baseURL, url.QueryEscape(token))
+	// Send bootstrap token to exchange endpoint, not directly to reset-password
+	link := fmt.Sprintf("%s/reset-password/exchange?bootstrap=%s", baseURL, url.QueryEscape(bootstrapToken))
 	subject := fmt.Sprintf("Bienvenido a %s - Activa tu cuenta", appName)
 
 	logoURL := fmt.Sprintf("%s/static/img/logo.png", baseURL)

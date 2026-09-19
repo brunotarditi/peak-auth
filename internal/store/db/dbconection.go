@@ -74,6 +74,7 @@ func AutoMigrate() {
 		&model.UserApplicationRole{},
 		&model.EmailVerification{},
 		&model.PasswordReset{},
+		&model.PasswordResetBootstrap{},
 		&model.RefreshToken{},
 		&model.ApplicationRules{},
 		&model.UserMfaCredential{},

@@ -12,6 +12,7 @@ type TxRepository interface {
 	EmailVerifications() EmailVerificationRepository
 	RefreshTokens() RefreshTokenRepository
 	Mfa() MfaRepository
+	DB() *gorm.DB
 }
 
 type TransactionManager interface {
@@ -61,6 +62,10 @@ func (u *unitOfWork) RefreshTokens() RefreshTokenRepository {
 
 func (u *unitOfWork) Mfa() MfaRepository {
 	return NewMfaRepository(u.db)
+}
+
+func (u *unitOfWork) DB() *gorm.DB {
+	return u.db
 }
 
 type transactionManager struct {

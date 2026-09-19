@@ -483,22 +483,22 @@ func TestGetResetPassword_ReadsFromCookieAndSetsDefensiveHeaders(t *testing.T) {
 	}
 }
 
-func TestGetResetPassword_FallbackToQuery(t *testing.T) {
+func TestGetResetPassword_RejectsQueryParameter(t *testing.T) {
 	ctrl := &UserController{}
 	r := gin.New()
-	tmpl := template.Must(template.New("reset_password.html").Parse("<html>Token:{{.token}}</html>"))
+	tmpl := template.Must(template.New("error.html").Parse("<html>Error:{{.Message}}</html>"))
 	r.SetHTMLTemplate(tmpl)
 	r.GET("/reset-password", ctrl.GetResetPassword)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/reset-password?token=query_fallback_token_456", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/reset-password?token=query_token_should_be_rejected", nil)
 	r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("Esperaba 200 OK con token en query fallback, obtuvo %d: %s", w.Code, w.Body.String())
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("Esperaba 400 Bad Request al rechazar token en query param, obtuvo %d: %s", w.Code, w.Body.String())
 	}
-	if !strings.Contains(w.Body.String(), "query_fallback_token_456") {
-		t.Fatalf("El template debió recibir el token desde query param, body: %s", w.Body.String())
+	if strings.Contains(w.Body.String(), "query_token_should_be_rejected") {
+		t.Fatalf("El token de query param no debió ser procesado, body: %s", w.Body.String())
 	}
 }
 
