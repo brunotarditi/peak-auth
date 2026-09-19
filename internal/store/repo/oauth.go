@@ -1,10 +1,12 @@
 package repo
 
 import (
+	"errors"
 	"peak-auth/internal/store/model"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type OAuthRepository interface {
@@ -31,14 +33,25 @@ func (r *oauthRepository) CreateCode(code *model.OAuthCode) error {
 func (r *oauthRepository) GetAndConsumeCode(codeStr string) (*model.OAuthCode, error) {
 	var code model.OAuthCode
 	
-	// Utilizar una transacción para asegurar que el uso sea verdaderamente ONE-TIME
+	// Utilizar una transacción con bloqueo a nivel de fila para asegurar que el uso sea estrictamente ONE-TIME
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("code = ?", codeStr).First(&code).Error; err != nil {
+		// Bloquear la fila con SELECT ... FOR UPDATE para evitar lecturas concurrentes
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("code = ?", codeStr).
+			First(&code).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("code = ?", codeStr).Delete(&model.OAuthCode{}).Error; err != nil {
-			return err
+		
+		// Eliminar el código y verificar que exactamente una fila fue afectada
+		result := tx.Where("code = ?", codeStr).Delete(&model.OAuthCode{})
+		if result.Error != nil {
+			return result.Error
 		}
+		
+		if result.RowsAffected != 1 {
+			return errors.New("el código de autorización ya fue consumido")
+		}
+		
 		return nil
 	})
 	
