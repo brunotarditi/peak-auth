@@ -436,6 +436,12 @@ func (c *OAuthController) PostPublicLoginMfaTotp(ctx *gin.Context) {
 		return
 	}
 
+	// Check if token has already been consumed (replay prevention)
+	if service.IsApiMfaTokenConsumed(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
+
 	if err := c.MfaService.ValidateTOTPCode(userID, req.Code); err != nil {
 		// Record failed attempt and check if token should be locked
 		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
@@ -447,8 +453,11 @@ func (c *OAuthController) PostPublicLoginMfaTotp(ctx *gin.Context) {
 		return
 	}
 
-	// Clear attempt tracker on successful validation
-	service.DeleteApiMfaAttemptTracker(tokenKey)
+	// Consume the MFA token to prevent replay attacks
+	if err := service.ConsumeApiMfaToken(tokenKey, userID); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
 
 	// Fetch user to get current authz_version
 	user, err := c.UserService.FindVerifiedUserByID(userID)
@@ -511,6 +520,12 @@ func (c *OAuthController) PostPublicLoginMfaRecovery(ctx *gin.Context) {
 		return
 	}
 
+	// Check if token has already been consumed (replay prevention)
+	if service.IsApiMfaTokenConsumed(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
+
 	if err := c.MfaService.ValidateRecoveryCode(userID, req.Code); err != nil {
 		// Record failed attempt and check if token should be locked
 		if lockErr := service.RecordApiMfaFailedAttempt(tokenKey, userID); lockErr != nil {
@@ -522,8 +537,11 @@ func (c *OAuthController) PostPublicLoginMfaRecovery(ctx *gin.Context) {
 		return
 	}
 
-	// Clear attempt tracker on successful validation
-	service.DeleteApiMfaAttemptTracker(tokenKey)
+	// Consume the MFA token to prevent replay attacks
+	if err := service.ConsumeApiMfaToken(tokenKey, userID); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
 
 	// Fetch user to get current authz_version
 	user, err := c.UserService.FindVerifiedUserByID(userID)
@@ -582,6 +600,12 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 		return
 	}
 
+	// Check if token has already been consumed (replay prevention)
+	if service.IsApiMfaTokenConsumed(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
+
 	sessionKey := fmt.Sprintf("wa_login_%s", mfaToken)
 	sessionData, exists := service.GetWebAuthnSession(sessionKey)
 	if !exists {
@@ -600,8 +624,11 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 		return
 	}
 
-	// Clear attempt tracker on successful validation
-	service.DeleteApiMfaAttemptTracker(tokenKey)
+	// Consume the MFA token to prevent replay attacks
+	if err := service.ConsumeApiMfaToken(tokenKey, userID); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
 
 	service.DeleteWebAuthnSession(sessionKey)
 
@@ -671,6 +698,12 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 		return
 	}
 
+	// Check if token has already been consumed (replay prevention)
+	if service.IsApiMfaTokenConsumed(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
+
 	recoveryCodes, err := c.MfaService.VerifyAndActivateTOTP(userID, req.Code)
 	if err != nil {
 		// Record failed attempt and check if token should be locked
@@ -683,8 +716,11 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 		return
 	}
 
-	// Clear attempt tracker on successful validation
-	service.DeleteApiMfaAttemptTracker(tokenKey)
+	// Consume the MFA token to prevent replay attacks
+	if err := service.ConsumeApiMfaToken(tokenKey, userID); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
 
 	// Fetch user to get current authz_version
 	user, err := c.UserService.FindVerifiedUserByID(userID)
@@ -752,6 +788,12 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 		return
 	}
 
+	// Check if token has already been consumed (replay prevention)
+	if service.IsApiMfaTokenConsumed(tokenKey) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
+
 	sessionKey := fmt.Sprintf("wa_reg_%s", mfaToken)
 	sessionData, exists := service.GetWebAuthnSession(sessionKey)
 	if !exists {
@@ -770,8 +812,11 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 		return
 	}
 
-	// Clear attempt tracker on successful validation
-	service.DeleteApiMfaAttemptTracker(tokenKey)
+	// Consume the MFA token to prevent replay attacks
+	if err := service.ConsumeApiMfaToken(tokenKey, userID); err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
+		return
+	}
 
 	service.DeleteWebAuthnSession(sessionKey)
 

@@ -392,6 +392,36 @@ func DeleteApiMfaAttemptTracker(tokenKey string) {
 	}
 }
 
+// ConsumeApiMfaToken atomically marks an API MFA token as consumed to prevent replay attacks
+// Returns an error if the token was already consumed
+func ConsumeApiMfaToken(tokenKey string, userID uint) error {
+	if mfaAttemptRepo == nil {
+		return fmt.Errorf("MFA attempt tracking not initialized")
+	}
+	
+	err := mfaAttemptRepo.MarkConsumed(tokenKey, userID)
+	if err != nil {
+		return fmt.Errorf("token MFA ya fue utilizado o expiró")
+	}
+	
+	return nil
+}
+
+// IsApiMfaTokenConsumed checks if an API MFA token has already been consumed
+func IsApiMfaTokenConsumed(tokenKey string) bool {
+	if mfaAttemptRepo == nil {
+		return false
+	}
+	
+	consumed, err := mfaAttemptRepo.IsConsumed(tokenKey)
+	if err != nil {
+		// Log error but don't block on database errors
+		return false
+	}
+	
+	return consumed
+}
+
 // webAuthnUserWrapper implementa webauthn.User para interactuar con la librería
 type webAuthnUserWrapper struct {
 	user        *model.User
