@@ -11,6 +11,7 @@ type RefreshTokenRepository interface {
 	Create(token *model.RefreshToken) error
 	FindByToken(token string) (model.RefreshToken, error)
 	DeleteByToken(token string) error
+	DeleteByTokenAtomic(token string) (int64, error)
 	DeleteByUser(userID uint) error
 	DeleteByUserAndApp(userID, appID uint) error
 	DeleteByApp(appID uint) error
@@ -36,6 +37,11 @@ func (r *refreshTokenRepository) FindByToken(token string) (model.RefreshToken, 
 
 func (r *refreshTokenRepository) DeleteByToken(token string) error {
 	return r.db.Where("token = ?", token).Delete(&model.RefreshToken{}).Error
+}
+
+func (r *refreshTokenRepository) DeleteByTokenAtomic(token string) (int64, error) {
+	result := r.db.Where("token = ? AND expires_at > ?", token, time.Now()).Delete(&model.RefreshToken{})
+	return result.RowsAffected, result.Error
 }
 
 func (r *refreshTokenRepository) DeleteByUser(userID uint) error {

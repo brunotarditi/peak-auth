@@ -761,13 +761,18 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		MfaCompleted:  rt.MfaCompleted,
 	}
 
-	// 4. Rotación atómica: persistir el nuevo y eliminar el viejo en una transacción.
-	//    Si algo falla, no se borra el token vigente (el usuario no pierde la sesión).
+	// 4. Rotación atómica: consumir el token viejo (verificando que se elimine exactamente 1 fila)
+	// y persistir el nuevo en una transacción. Esto previene que solicitudes concurrentes
+	// con el mismo refresh token puedan ambas tener éxito.
 	if err := s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
-		if err := tx.RefreshTokens().Create(&newRtModel); err != nil {
+		rowsAffected, err := tx.RefreshTokens().DeleteByTokenAtomic(tokenHashStr)
+		if err != nil {
 			return err
 		}
-		return tx.RefreshTokens().DeleteByToken(tokenHashStr)
+		if rowsAffected != 1 {
+			return fmt.Errorf("refresh token ya fue usado o expiró")
+		}
+		return tx.RefreshTokens().Create(&newRtModel)
 	}); err != nil {
 		return response.TokenResponse{}, fmt.Errorf("error al rotar el refresh token: %w", err)
 	}

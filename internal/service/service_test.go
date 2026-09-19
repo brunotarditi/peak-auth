@@ -208,6 +208,16 @@ func (m *mockRefreshTokenRepo) DeleteByToken(token string) error {
 	return nil
 }
 
+func (m *mockRefreshTokenRepo) DeleteByTokenAtomic(token string) (int64, error) {
+	if m.tokens != nil {
+		if _, ok := m.tokens[token]; ok {
+			delete(m.tokens, token)
+			return 1, nil
+		}
+	}
+	return 0, nil
+}
+
 func (m *mockRefreshTokenRepo) DeleteByUser(userID uint) error { return nil }
 func (m *mockRefreshTokenRepo) DeleteByUserAndApp(userID, appID uint) error {
 	m.deletedByUserAndApp = true
@@ -336,6 +346,10 @@ type mockRuleServiceForReset struct {
 
 func (m *mockRuleServiceForReset) FindRulesByAppID(appID uint) ([]model.ApplicationRules, error) {
 	return m.rules, nil
+}
+
+func (m *mockRuleServiceForReset) ValidateLogin(appID, userID uint) error {
+	return nil
 }
 
 // --- Tests OAuth ---
@@ -1365,6 +1379,74 @@ func TestUserService_ResetPassword_PreventsTokenReuse(t *testing.T) {
 	err = svc.ResetPassword(token, "AnotherPassword123!")
 	if err == nil {
 		t.Fatalf("Se esperaba error al reutilizar el token de reset, pero no fallo")
+	}
+}
+
+func TestUserService_Refresh_AtomicRotationAndPreventsConcurrentReuse(t *testing.T) {
+	tm := newServiceTestJWTManager(t)
+	refreshRepo := newMockRefreshTokenRepo()
+	userRepo := &mockUserRepo{
+		user: model.User{
+			ID:         1,
+			Email:      "test@example.com",
+			IsActive:   true,
+			IsVerified: true,
+		},
+	}
+	appRepo := newMockAppRepo()
+	appRepo.apps["client-app-1"] = &model.Application{
+		Model:    gorm.Model{ID: 1},
+		AppID:    "client-app-1",
+		IsActive: true,
+	}
+	uarRepo := &mockUARRepo{
+		roles: map[uint][]string{1: {"USER"}},
+	}
+	ruleSvc := &mockRuleServiceForReset{rules: nil}
+	txRepo := &mockTxRepo{
+		refreshRepo: refreshRepo,
+		userRepo:    userRepo,
+	}
+	txMgr := &mockTxManager{txRepo: txRepo}
+
+	svc := &userService{
+		userRepo:         userRepo,
+		appRepo:          appRepo,
+		uarRepo:          uarRepo,
+		refreshTokenRepo: refreshRepo,
+		ruleService:      ruleSvc,
+		tokenManager:     tm,
+		txManager:        txMgr,
+	}
+
+	rawToken := "sample_refresh_token_to_rotate_123"
+	hash := sha256.Sum256([]byte(rawToken))
+	tokenHashStr := hex.EncodeToString(hash[:])
+
+	rt := &model.RefreshToken{
+		UserID:        1,
+		ApplicationID: 1,
+		Token:         tokenHashStr,
+		ExpiresAt:     time.Now().Add(1 * time.Hour),
+	}
+	if err := refreshRepo.Create(rt); err != nil {
+		t.Fatalf("error creando refresh token: %v", err)
+	}
+
+	// Primer intento de refresh: debe tener éxito y rotar el token
+	resp, err := svc.Refresh(rawToken)
+	if err != nil {
+		t.Fatalf("primer Refresh debió tener éxito: %v", err)
+	}
+	if resp.RefreshToken == "" || resp.AccessToken == "" {
+		t.Fatalf("se esperaban tokens no vacíos en la respuesta")
+	}
+
+	// Segundo intento con el MISMO refresh token (intento de reutilización concurrente):
+	// Debe ser rechazado porque el token viejo ya fue consumido atómicamente
+	_, err = svc.Refresh(rawToken)
+	if err == nil {
+		t.Fatalf("se esperaba que el segundo Refresh fallara al intentar reutilizar el refresh token")
 	}
 }
 
