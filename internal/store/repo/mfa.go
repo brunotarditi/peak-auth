@@ -15,6 +15,7 @@ type MfaRepository interface {
 	FindAllCredentialsByUser(userID uint) ([]model.UserMfaCredential, error)
 	ActivateCredential(credID uint) error
 	UpdateCredentialSecret(credID uint, secret string) error
+	UpdateCredentialSecretAtomic(credID uint, oldSecret string, newSecret string) error
 	DeleteCredentialsByUser(userID uint) error
 	DeleteCredential(credID uint) error
 
@@ -75,6 +76,25 @@ func (r *mfaRepository) ActivateCredential(credID uint) error {
 
 func (r *mfaRepository) UpdateCredentialSecret(credID uint, secret string) error {
 	return r.db.Model(&model.UserMfaCredential{}).Where("id = ?", credID).Update("secret", secret).Error
+}
+
+// UpdateCredentialSecretAtomic realiza una actualización atómica compare-and-swap del secret de la credencial.
+// Solo actualiza si el secret actual coincide con oldSecret, evitando condiciones de carrera donde
+// autenticaciones concurrentes pudieran sobrescribir un contador más nuevo con un estado viejo.
+func (r *mfaRepository) UpdateCredentialSecretAtomic(credID uint, oldSecret string, newSecret string) error {
+	result := r.db.Model(&model.UserMfaCredential{}).
+		Where("id = ? AND secret = ?", credID, oldSecret).
+		Update("secret", newSecret)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }
 
 func (r *mfaRepository) DeleteCredentialsByUser(userID uint) error {

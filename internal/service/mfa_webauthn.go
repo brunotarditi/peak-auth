@@ -594,19 +594,39 @@ func (s *mfaService) FinishWebAuthnLogin(userID uint, session *webauthn.SessionD
 		return fmt.Errorf("validación WebAuthn fallida: %w", err)
 	}
 
-	// Persistir el contador actualizado del autenticador en la BD para detección de clonación (RFC WebAuthn)
-	for _, dbCred := range creds {
-		if dbCred.Type == "WEBAUTHN" && dbCred.IsActive {
+	// Persistir el contador actualizado del autenticador en la BD para detección de clonación (RFC WebAuthn).
+	// Este paso es OBLIGATORIO: si falla, rechazamos el login para garantizar que el contador
+	// siempre refleje el estado más reciente del autenticador.
+	var matchedCred *model.UserMfaCredential
+	var oldSecret string
+
+	for i := range creds {
+		if creds[i].Type == "WEBAUTHN" && creds[i].IsActive {
 			var storedCred webauthn.Credential
-			if err := json.Unmarshal([]byte(dbCred.Secret), &storedCred); err == nil {
+			if err := json.Unmarshal([]byte(creds[i].Secret), &storedCred); err == nil {
 				if bytes.Equal(storedCred.ID, updatedCredential.ID) {
-					if updatedJSON, err := json.Marshal(updatedCredential); err == nil {
-						_ = s.mfaRepo.UpdateCredentialSecret(dbCred.ID, string(updatedJSON))
-					}
+					matchedCred = &creds[i]
+					oldSecret = creds[i].Secret
 					break
 				}
 			}
 		}
+	}
+
+	if matchedCred == nil {
+		return fmt.Errorf("no se encontró la credencial correspondiente en la base de datos")
+	}
+
+	updatedJSON, err := json.Marshal(updatedCredential)
+	if err != nil {
+		return fmt.Errorf("error serializando credencial actualizada: %w", err)
+	}
+
+	// Actualización atómica: solo actualiza si el secret no ha cambiado desde que lo leímos.
+	// Esto previene que autenticaciones paralelas sobrescriban un contador más nuevo con estado obsoleto.
+	err = s.mfaRepo.UpdateCredentialSecretAtomic(matchedCred.ID, oldSecret, string(updatedJSON))
+	if err != nil {
+		return fmt.Errorf("error persistiendo contador de autenticador actualizado: %w", err)
 	}
 
 	return nil
