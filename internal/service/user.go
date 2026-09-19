@@ -371,18 +371,16 @@ func (s *userService) GenerateResetToken(userID, appID uint) (string, []byte, er
 		return "", nil, err
 	}
 
-	// Invalidate all previous unused tokens before creating a new one
-	if err := s.passwordResetRepo.InvalidateAllUserTokens(userID); err != nil {
-		return "", nil, err
-	}
-
 	reset := &model.PasswordReset{
 		UserID:        userID,
 		ApplicationID: appID,
 		TokenHash:     tokenHash,
 		ExpiresAt:     time.Now().Add(1 * time.Hour),
 	}
-	if err := s.passwordResetRepo.CreatePasswordReset(reset); err != nil {
+	
+	// Atomically invalidate all previous unused tokens and create the new one
+	// This prevents race conditions where multiple tokens could be active simultaneously
+	if err := s.passwordResetRepo.InvalidateAllUserTokensAndCreate(userID, reset); err != nil {
 		return "", nil, err
 	}
 
@@ -417,18 +415,16 @@ func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 		return err
 	}
 
-	// Invalidate all previous unused tokens before creating a new one
-	if err := s.passwordResetRepo.InvalidateAllUserTokens(user.ID); err != nil {
-		return err
-	}
-
 	reset := &model.PasswordReset{
 		UserID:        user.ID,
 		ApplicationID: appID,
 		TokenHash:     tokenHash,
 		ExpiresAt:     time.Now().Add(1 * time.Hour),
 	}
-	if err := s.passwordResetRepo.CreatePasswordReset(reset); err != nil {
+	
+	// Atomically invalidate all previous unused tokens and create the new one
+	// This prevents race conditions where multiple tokens could be active simultaneously
+	if err := s.passwordResetRepo.InvalidateAllUserTokensAndCreate(user.ID, reset); err != nil {
 		return err
 	}
 
@@ -456,8 +452,9 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 
 	// 3. Execute all operations atomically within a transaction
 	return s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
-		// 3a. Find and validate the reset token inside the transaction
-		reset, err := tx.PasswordResets().FindValidPasswordReset(token)
+		// 3a. Find and validate the reset token inside the transaction WITH ROW LOCK
+		// This prevents concurrent redemptions of the same token
+		reset, err := tx.PasswordResets().FindValidPasswordResetWithLock(token)
 		if err != nil {
 			return fmt.Errorf("el token de restablecimiento es inválido o ha expirado")
 		}
@@ -483,19 +480,20 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 		}
 
 		// 3d. CRITICAL: Claim the token FIRST (atomic test-and-set)
-		// This ensures only one concurrent request can proceed
+		// This ensures only one concurrent request can proceed with this specific token
 		if err := tx.PasswordResets().MarkPasswordResetUsed(reset.ID, now); err != nil {
 			return fmt.Errorf("el token ya ha sido utilizado o no es válido")
 		}
 
-		// 3e. Update password only after successfully claiming the token
-		if err := tx.PasswordResets().UpdatePassword(reset.UserID, hashed); err != nil {
-			return fmt.Errorf("error al actualizar contraseña: %w", err)
-		}
-
-		// 3f. Invalidate all other unused tokens for this user to prevent reuse
+		// 3e. Invalidate all other unused tokens for this user to prevent reuse
+		// This must happen BEFORE updating the password to ensure no other token can be used
 		if err := tx.PasswordResets().InvalidateAllUserTokens(reset.UserID); err != nil {
 			return fmt.Errorf("error al invalidar tokens previos: %w", err)
+		}
+
+		// 3f. Update password only after successfully claiming the token and invalidating others
+		if err := tx.PasswordResets().UpdatePassword(reset.UserID, hashed); err != nil {
+			return fmt.Errorf("error al actualizar contraseña: %w", err)
 		}
 
 		// 3g. Mark user as verified when resetting password via email token

@@ -293,6 +293,21 @@ func (m *mockPasswordResetRepo) InvalidateAllUserTokens(userID uint) error {
 	return nil
 }
 
+// InvalidateAllUserTokensAndCreate atomically invalidates all existing tokens and creates a new one
+func (m *mockPasswordResetRepo) InvalidateAllUserTokensAndCreate(userID uint, reset *model.PasswordReset) error {
+	// Simulate atomic operation: invalidate then create
+	if err := m.InvalidateAllUserTokens(userID); err != nil {
+		return err
+	}
+	return m.CreatePasswordReset(reset)
+}
+
+// FindValidPasswordResetWithLock is the same as FindValidPasswordReset in the mock
+// since we don't need to simulate locking behavior in tests
+func (m *mockPasswordResetRepo) FindValidPasswordResetWithLock(plainToken string) (*model.PasswordReset, error) {
+	return m.FindValidPasswordReset(plainToken)
+}
+
 type mockTxRepo struct {
 	repo.TxRepository
 	refreshRepo       repo.RefreshTokenRepository
