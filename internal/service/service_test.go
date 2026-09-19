@@ -789,6 +789,86 @@ func TestCreateRule_ForbidsAdminRoleInPublicMode(t *testing.T) {
 	}
 }
 
+func TestValidateRegistration_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing.T) {
+	ruleRepo := &mockRuleRepo{
+		rules: []model.ApplicationRules{
+			{
+				Code:  "REGISTRATION_POLICY",
+				Value: []byte(`{"mode":"public","default_role":"USER"}`),
+			},
+		},
+	}
+	appRepo := newMockAppRepo()
+	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
+
+	// Password con menos de 8 caracteres debe ser rechazada
+	_, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{Password: "short"})
+	if err == nil || !strings.Contains(err.Error(), "al menos 8 caracteres") {
+		t.Fatalf("se esperaba rechazo por contraseña corta (<8), obtenido: %v", err)
+	}
+
+	// Password con 8 o más caracteres debe ser aceptada
+	policy, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{Password: "12345678"})
+	if err != nil {
+		t.Fatalf("se esperaba éxito para contraseña de 8 caracteres, obtenido: %v", err)
+	}
+	if policy.DefaultRole != "USER" {
+		t.Fatalf("se esperaba default_role USER, obtenido: %s", policy.DefaultRole)
+	}
+}
+
+func TestResetPassword_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing.T) {
+	userRepo := &mockUserRepo{
+		user: model.User{Model: gorm.Model{ID: 1}, Email: "user@test.com", IsActive: true, IsVerified: true},
+	}
+	tokenPlain := "plain_reset_token_1234567890123456"
+	h := sha256.Sum256([]byte(tokenPlain))
+	tokenHash := h[:]
+
+	pwdResetRepo := newMockPasswordResetRepo()
+	pwdResetRepo.tokens[hex.EncodeToString(tokenHash)] = &model.PasswordReset{
+		Model:         gorm.Model{ID: 10},
+		UserID:        1,
+		ApplicationID: 1,
+		TokenHash:     tokenHash,
+		ExpiresAt:     time.Now().Add(1 * time.Hour),
+	}
+
+	refreshRepo := newMockRefreshTokenRepo()
+	txRepo := &mockTxRepo{
+		refreshRepo:       refreshRepo,
+		passwordResetRepo: pwdResetRepo,
+		userRepo:          userRepo,
+	}
+	txMgr := &mockTxManager{txRepo: txRepo}
+
+	// App sin PWD_POLICY configurada (solo devuelve lista vacía)
+	ruleSvc := &mockRuleServiceForReset{
+		rules: []model.ApplicationRules{},
+	}
+
+	userSvc := &userService{
+		userRepo:          userRepo,
+		passwordResetRepo: pwdResetRepo,
+		refreshTokenRepo:  refreshRepo,
+		ruleService:       ruleSvc,
+		txManager:         txMgr,
+	}
+
+	// 1. Password corta (<8 chars) debe ser rechazada
+	err := userSvc.ResetPassword(tokenPlain, "short")
+	if err == nil || !strings.Contains(err.Error(), "al menos 8 caracteres") {
+		t.Fatalf("se esperaba error de contraseña mínima de 8 caracteres, obtenido: %v", err)
+	}
+
+	// 2. Password de 8 o más caracteres debe ser aceptada
+	err = userSvc.ResetPassword(tokenPlain, "validPass123")
+	if err != nil {
+		t.Fatalf("se esperaba éxito al resetear contraseña de >=8 caracteres, obtenido: %v", err)
+	}
+}
+
+
 // --- Tests Application Service ---
 
 func TestRevokeUserFromApp_DeletesRefreshTokens(t *testing.T) {

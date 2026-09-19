@@ -50,9 +50,11 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 	}
 
 	var policy *util.RegistrationPolicy
+	policyFound := false
 	for _, rule := range rules {
 		switch rule.Code {
 		case "PWD_POLICY":
+			policyFound = true
 			if err := util.ValidatePasswordPolicy(rule.Value, req.Password); err != nil {
 				return nil, err
 			}
@@ -62,6 +64,14 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 				return nil, err
 			}
 			policy = regRule
+		}
+	}
+
+	// Enforce minimum password policy when no active PWD_POLICY exists
+	// This prevents weak passwords when rules are deleted, deactivated, or misconfigured
+	if !policyFound {
+		if err := util.ValidateMinimumPasswordPolicy(req.Password); err != nil {
+			return nil, err
 		}
 	}
 

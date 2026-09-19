@@ -471,11 +471,20 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 		// 3c. Validate password policy for the application
 		rules, err := s.ruleService.FindRulesByAppID(reset.ApplicationID)
 		if err == nil {
+			policyFound := false
 			for _, r := range rules {
 				if r.Code == "PWD_POLICY" {
+					policyFound = true
 					if err := util.ValidatePasswordPolicy(r.Value, newPassword); err != nil {
 						return err
 					}
+				}
+			}
+			// Enforce minimum password policy when no active PWD_POLICY exists
+			// This prevents weak passwords when rules are deleted, deactivated, or misconfigured
+			if !policyFound {
+				if err := util.ValidateMinimumPasswordPolicy(newPassword); err != nil {
+					return err
 				}
 			}
 		} else if reset.ApplicationID != 0 {

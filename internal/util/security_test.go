@@ -19,6 +19,22 @@ func TestValidatePasswordLength(t *testing.T) {
 	}
 }
 
+func TestValidateMinimumPasswordPolicy(t *testing.T) {
+	if err := ValidateMinimumPasswordPolicy("1234567"); err == nil {
+		t.Fatal("password con menos de 8 caracteres debería fallar")
+	}
+	if err := ValidateMinimumPasswordPolicy("12345678"); err != nil {
+		t.Fatalf("password con 8 caracteres debería ser válida: %v", err)
+	}
+	over := make([]byte, 73)
+	for i := range over {
+		over[i] = 'a'
+	}
+	if err := ValidateMinimumPasswordPolicy(string(over)); err == nil {
+		t.Fatal("password de más de 72 caracteres debería fallar")
+	}
+}
+
 func TestValidatePasswordPolicy_LengthAndComplexity(t *testing.T) {
 	rule := []byte(`{"min_length":8,"require_uppercase":true,"require_numbers":true,"require_symbols":true}`)
 	if err := ValidatePasswordPolicy(rule, "Abc1!def"); err != nil {
