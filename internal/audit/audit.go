@@ -15,7 +15,7 @@ import (
 //	action: verbo de la acción (ej. "app.create", "secret.regenerate")
 //	target: recurso afectado (ej. "app=mi-app", "user=42")
 func Event(c *gin.Context, action, target string) {
-	log.Printf("[audit] action=%s actor=%q ip=%s target=%s", action, actorEmail(c), c.ClientIP(), target)
+	log.Printf("[audit] action=%s actor=%q ip=%s target=%q", action, actorEmail(c), c.ClientIP(), target)
 }
 
 // EventResult registra una acción incluyendo su resultado (ok/falla) y un detalle.
@@ -24,7 +24,7 @@ func EventResult(c *gin.Context, action, target string, success bool, detail str
 	if !success {
 		status = "fail"
 	}
-	log.Printf("[audit] action=%s actor=%q ip=%s target=%s status=%s detail=%q",
+	log.Printf("[audit] action=%s actor=%q ip=%s target=%q status=%s detail=%q",
 		action, actorEmail(c), c.ClientIP(), target, status, detail)
 }
 

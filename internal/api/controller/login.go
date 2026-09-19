@@ -59,9 +59,12 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 	email := c.PostForm("email")
 	password := c.PostForm("password")
 
+	// Sanitize email for audit logging to prevent log injection attacks
+	sanitizedEmail := sanitizeForLogging(email)
+
 	token, expireMinutes, mfaRequired, mfaSetupRequired, mfaToken, err := ctrl.UserService.AdminLogin(email, password)
 	if err != nil {
-		audit.EventResult(c, "admin.login", "email="+email, false, err.Error())
+		audit.EventResult(c, "admin.login", "email="+sanitizedEmail, false, err.Error())
 		// Sanitizar mensaje para el usuario evitando filtrar detalles internos
 		userErrMsg := "Credenciales inválidas"
 		if strings.Contains(strings.ToLower(err.Error()), "inactiva") || strings.Contains(strings.ToLower(err.Error()), "bloqueada") {
@@ -104,7 +107,7 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 		return
 	}
 
-	audit.EventResult(c, "admin.login", "email="+email, true, "")
+	audit.EventResult(c, "admin.login", "email="+sanitizedEmail, true, "")
 
 	ctrl.setAdminCookie(c, token, expireMinutes*60)
 	c.Redirect(http.StatusSeeOther, "/admin")

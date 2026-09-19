@@ -20,6 +20,18 @@ func parseUserIDFromSubject(sub string) (uint, error) {
 	return uint(val), nil
 }
 
+// sanitizeForLogging removes control characters (including newlines and carriage returns)
+// from user input to prevent log injection attacks.
+func sanitizeForLogging(input string) string {
+	return strings.Map(func(r rune) rune {
+		// Remove control characters (0x00-0x1F) and DEL (0x7F)
+		if r < 0x20 || r == 0x7F {
+			return -1 // Drop character
+		}
+		return r
+	}, input)
+}
+
 type BaseController struct{}
 
 // setAdminCookie establece la cookie de sesión administrativa con flags seguras centralizadas.

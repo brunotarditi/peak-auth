@@ -39,6 +39,25 @@ func TestExtractMfaToken_RejectsQueryParam(t *testing.T) {
 	}
 }
 
+func TestSanitizeForLogging(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"user@example.com", "user@example.com"},
+		{"user@example.com\r\n[audit] fake entry", "user@example.com[audit] fake entry"},
+		{"null\x00byte\x1bescape", "nullbyteescape"},
+		{"clean_string_123", "clean_string_123"},
+	}
+
+	for _, tt := range tests {
+		got := sanitizeForLogging(tt.input)
+		if got != tt.expected {
+			t.Errorf("sanitizeForLogging(%q) = %q, want %q", tt.input, got, tt.expected)
+		}
+	}
+}
+
 func TestExtractMfaToken_AcceptsHttpOnlyCookie(t *testing.T) {
 	ctrl := &BaseController{}
 	var extracted string
