@@ -65,12 +65,8 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 	token, expireMinutes, mfaRequired, mfaSetupRequired, mfaToken, err := ctrl.UserService.AdminLogin(email, password)
 	if err != nil {
 		audit.EventResult(c, "admin.login", "email="+sanitizedEmail, false, err.Error())
-		// Sanitizar mensaje para el usuario evitando filtrar detalles internos
-		userErrMsg := "Credenciales inválidas"
-		if strings.Contains(strings.ToLower(err.Error()), "inactiva") || strings.Contains(strings.ToLower(err.Error()), "bloqueada") {
-			userErrMsg = err.Error()
-		}
-		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape(userErrMsg))
+		// Use the error message from the service, which is already generic to prevent enumeration
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape(err.Error()))
 		return
 	}
 

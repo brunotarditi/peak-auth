@@ -522,12 +522,17 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 }
 
 // AdminLogin valida credenciales y permisos para acceder al panel administrativo.
+// To prevent account enumeration, this function always performs password verification
+// before checking account state, and returns a generic error message for all failures.
 func (s *userService) AdminLogin(email, password string) (string, int, bool, bool, string, error) {
+	// Generic error message used for all authentication failures to prevent enumeration
+	genericError := fmt.Errorf("las credenciales de administrador son inválidas")
+
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		// Mitigación de timing attack y user enumeration
 		util.CheckPasswordHash("dummy", "$2a$10$FKTUgxnqSnUp8kDjnTFlyOn3s165yiYmcLxXeNv7NavMY3DH19IIq")
-		return "", 0, false, false, "", fmt.Errorf("las credenciales de administrador son inválidas")
+		return "", 0, false, false, "", genericError
 	}
 
 	peakApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
@@ -585,42 +590,56 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 		}
 	}
 
-	if !canAccessPanel {
-		return "", 0, false, false, "", fmt.Errorf("el usuario no tiene permisos administrativos")
-	}
+	// Store authorization failure but do NOT return yet - check password first
+	authzFailed := !canAccessPanel
 
-	// 2. Aplicar política de intentos fallidos (solo si NO es ROOT)
+	// 2. Check lock status but do NOT return yet - check password first
+	accountLocked := false
 	if !isRoot {
 		if user.FailedLogins >= uint(maxFails) {
 			if time.Since(user.UpdatedAt) >= 30*24*time.Hour {
+				// Auto-unlock after 30 days
 				s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
 				user.FailedLogins = 0
 			} else {
-				daysLeft := 30 - int(time.Since(user.UpdatedAt).Hours()/24)
-				if daysLeft < 1 {
-					daysLeft = 1
-				}
-				return "", 0, false, false, "", fmt.Errorf("cuenta bloqueada por exceso de intentos fallidos. Se desbloqueará automáticamente en %d días o contacte al administrador", daysLeft)
+				accountLocked = true
 			}
 		}
 	}
 
-	if !user.IsActive {
-		return "", 0, false, false, "", fmt.Errorf("usuario desactivado")
-	}
+	// Store account state but do NOT return yet - check password first
+	accountInactive := !user.IsActive
+	accountUnverified := !user.IsVerified
 
-	if !user.IsVerified {
-		return "", 0, false, false, "", fmt.Errorf("la cuenta no está verificada")
-	}
+	// 3. ALWAYS verify password regardless of account state to prevent timing attacks and enumeration
+	passwordValid := util.CheckPasswordHash(password, user.Password)
 
-	// 3. Verificar password
-	if !util.CheckPasswordHash(password, user.Password) {
+	// 4. Now check all failure conditions AFTER password verification
+	if !passwordValid {
 		if !isRoot {
 			s.userRepo.UpdateColumn("failed_logins", user.FailedLogins+1, user.ID)
 		}
-		return "", 0, false, false, "", fmt.Errorf("las credenciales son inválidas")
+		return "", 0, false, false, "", genericError
 	}
 
+	// Password is valid - now check authorization and account state
+	if authzFailed {
+		return "", 0, false, false, "", genericError
+	}
+
+	if accountLocked {
+		return "", 0, false, false, "", genericError
+	}
+
+	if accountInactive {
+		return "", 0, false, false, "", genericError
+	}
+
+	if accountUnverified {
+		return "", 0, false, false, "", genericError
+	}
+
+	// All checks passed - reset failed login counter
 	s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
 
 	// Validar MFA_POLICY para la app de administración (peak-auth)

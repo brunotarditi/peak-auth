@@ -161,7 +161,8 @@ func (m *mockUserRepo) FindById(ID uint) (model.User, error) {
 func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error    { return nil }
 
 type mockUARRepo struct {
-	roles map[uint][]string
+	roles                map[uint][]string
+	hasAdminRoleInAnyApp *bool
 }
 
 func (m *mockUARRepo) AssignRole(userID, appID, roleID uint) error                                    { return nil }
@@ -181,7 +182,12 @@ func (m *mockUARRepo) GetUsersWithRolesByApp(appID uint) ([]response.UserAppRow,
 func (m *mockUARRepo) GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error) { return nil, 0, nil }
 func (m *mockUARRepo) BelongsToApp(userID, appID uint) (bool, error)                                 { return true, nil }
 func (m *mockUARRepo) IsAppAdmin(userID, appID uint) (bool, error)                                   { return true, nil }
-func (m *mockUARRepo) HasAdminRoleInAnyApp(userID uint) (bool, error)                                 { return true, nil }
+func (m *mockUARRepo) HasAdminRoleInAnyApp(userID uint) (bool, error) {
+	if m.hasAdminRoleInAnyApp != nil {
+		return *m.hasAdminRoleInAnyApp, nil
+	}
+	return true, nil
+}
 
 type mockRuleRepo struct {
 	rules []model.ApplicationRules
@@ -525,9 +531,13 @@ func TestRecoveryCodeHashingAndVerification(t *testing.T) {
 // --- Tests User Service ---
 
 func TestAdminLogin_RejectsDeactivatedUser(t *testing.T) {
+	// Hash for password "testpass123"
+	hashedPassword, _ := util.HashPassword("testpass123")
+
 	userRepo := &mockUserRepo{
 		user: model.User{
 			Email:      "admin@peak.test",
+			Password:   hashedPassword,
 			IsActive:   false,
 			IsVerified: true,
 		},
@@ -548,11 +558,50 @@ func TestAdminLogin_RejectsDeactivatedUser(t *testing.T) {
 		ruleService: ruleSvc,
 	}
 
-	_, _, _, _, _, err := svc.AdminLogin("admin@peak.test", "")
-	if err == nil || err.Error() != "usuario desactivado" {
-		t.Fatalf("Esperaba error 'usuario desactivado', pero obtuvo: %v", err)
+	// Test with correct password - should return generic error to prevent enumeration
+	_, _, _, _, _, err := svc.AdminLogin("admin@peak.test", "testpass123")
+	if err == nil || err.Error() != "las credenciales de administrador son inválidas" {
+		t.Fatalf("Esperaba error genérico para prevenir enumeración, pero obtuvo: %v", err)
 	}
 }
+
+func TestAdminLogin_RejectsNonAdminUserWithGenericError(t *testing.T) {
+	hashedPassword, _ := util.HashPassword("testpass123")
+
+	userRepo := &mockUserRepo{
+		user: model.User{
+			Email:      "regular@peak.test",
+			Password:   hashedPassword,
+			IsActive:   true,
+			IsVerified: true,
+		},
+	}
+	appRepo := newMockAppRepo()
+	peakApp := &model.Application{Name: "Peak Auth", AppID: util.AppIdPeakAuth}
+	appRepo.apps[util.AppIdPeakAuth] = peakApp
+
+	// Usuario sin roles administrativos
+	noAdmin := false
+	uarRepo := &mockUARRepo{
+		roles:                map[uint][]string{0: {"USER"}},
+		hasAdminRoleInAnyApp: &noAdmin,
+	}
+	ruleSvc := NewApplicationRuleService(&mockRuleRepo{}, uarRepo, nil, appRepo)
+
+	svc := &userService{
+		userRepo:    userRepo,
+		appRepo:     appRepo,
+		uarRepo:     uarRepo,
+		ruleService: ruleSvc,
+	}
+
+	// Debe retornar el error genérico sin filtrar si es o no admin
+	_, _, _, _, _, err := svc.AdminLogin("regular@peak.test", "testpass123")
+	if err == nil || err.Error() != "las credenciales de administrador son inválidas" {
+		t.Fatalf("Esperaba error genérico para usuario no-admin, pero obtuvo: %v", err)
+	}
+}
+
 
 func TestCompleteLoginWithMfa_RejectsDeactivatedUser(t *testing.T) {
 	userRepo := &mockUserRepo{
