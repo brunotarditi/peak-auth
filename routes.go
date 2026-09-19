@@ -86,6 +86,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
 	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
+	tokenLimiter := middleware.RateLimitMiddleware(20, time.Minute)
 
 	// ============================================================================
 	// OIDC & JWKS DISCOVERY (Público, CORS abierto para SDKs y librerías cliente)
@@ -103,8 +104,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	oauth.Use(middleware.RequireHTTPSMiddleware())
 	{
 		oauth.GET("/authorize", oauthCtrl.AuthorizeEndpoint)
-		oauth.POST("/token", oauthCtrl.TokenEndpoint)    // Token Exchange (S2S o SPA)
-		oauth.OPTIONS("/token", oauthCtrl.TokenEndpoint) // Preflight CORS para clientes SPA
+		oauth.POST("/token", tokenLimiter, oauthCtrl.TokenEndpoint) // Token Exchange (S2S o SPA)
+		oauth.OPTIONS("/token", oauthCtrl.TokenEndpoint)            // Preflight CORS para clientes SPA
 		oauth.GET("/logout", oauthCtrl.LogoutEndpoint)   // Federated Logout (GET)
 		oauth.POST("/logout", oauthCtrl.LogoutEndpoint)  // Federated Logout (POST)
 
