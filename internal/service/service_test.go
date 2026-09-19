@@ -1450,3 +1450,85 @@ func TestUserService_Refresh_AtomicRotationAndPreventsConcurrentReuse(t *testing
 	}
 }
 
+func TestOAuth_ValidateRedirectURISecurity(t *testing.T) {
+	tests := []struct {
+		name    string
+		uri     string
+		wantErr bool
+	}{
+		{"HTTPS standard", "https://example.com/callback", false},
+		{"HTTPS with port and path", "https://portal.mycompany.com:8443/oauth/callback", false},
+		{"HTTP localhost", "http://localhost:3000/callback", false},
+		{"HTTP localhost with sub-domain", "http://app.localhost:8080/cb", false},
+		{"HTTP 127.0.0.1", "http://127.0.0.1:8080/callback", false},
+		{"HTTP 127.0.0.2", "http://127.0.0.2:8080/callback", false},
+		{"HTTP IPv6 loopback", "http://[::1]:8080/callback", false},
+		{"Custom mobile scheme RFC 8252 (myapp)", "myapp://oauth-callback", false},
+		{"Custom mobile scheme RFC 8252 (reverse DNS)", "com.example.app:/oauth2redirect", false},
+		{"HTTP external domain (insecure)", "http://example.com/callback", true},
+		{"HTTP private LAN IP (insecure)", "http://192.168.1.100:3000/callback", true},
+		{"HTTP 10.x LAN IP (insecure)", "http://10.0.0.1:3000/callback", true},
+		{"Javascript scheme (dangerous)", "javascript:alert(1)", true},
+		{"Data scheme (dangerous)", "data:text/html,test", true},
+		{"File scheme (dangerous)", "file:///etc/passwd", true},
+		{"URI with fragment RFC 6749 violation", "https://example.com/callback#token=abc", true},
+		{"Empty string", "", true},
+		{"Relative path without scheme", "/callback", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateRedirectURISecurity(tt.uri)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateRedirectURISecurity(%q) error = %v, wantErr %v", tt.uri, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestOAuth_ValidateClientRedirect_Security(t *testing.T) {
+	mockRepo := newMockOAuthRepo()
+	mockApp := &mockAppRepo{
+		apps: map[string]*model.Application{
+			"valid-web": {
+				AppID:       "valid-web",
+				RedirectURL: "https://web.example.com/callback",
+				IsActive:    true,
+			},
+			"valid-mobile": {
+				AppID:       "valid-mobile",
+				RedirectURL: "myapp://oauth/callback",
+				IsActive:    true,
+			},
+			"insecure-app": {
+				AppID:       "insecure-app",
+				RedirectURL: "http://insecure.com/callback",
+				IsActive:    true,
+			},
+		},
+	}
+
+	svc := NewOAuthService(mockRepo, mockApp)
+
+	// Valid HTTPS redirect
+	if err := svc.ValidateClientRedirect("valid-web", "https://web.example.com/callback"); err != nil {
+		t.Fatalf("se esperaba éxito para URI HTTPS válida, error: %v", err)
+	}
+
+	// Valid mobile scheme redirect
+	if err := svc.ValidateClientRedirect("valid-mobile", "myapp://oauth/callback"); err != nil {
+		t.Fatalf("se esperaba éxito para URI de app móvil (RFC 8252), error: %v", err)
+	}
+
+	// Insecure HTTP to external host must be rejected even if matching registered app
+	if err := svc.ValidateClientRedirect("insecure-app", "http://insecure.com/callback"); err == nil {
+		t.Fatalf("se esperaba rechazo para URI HTTP no local")
+	}
+
+	// Mismatch redirect URI
+	if err := svc.ValidateClientRedirect("valid-web", "https://web.example.com/other"); err == nil {
+		t.Fatalf("se esperaba error por discordancia de redirect_uri")
+	}
+}
+
+

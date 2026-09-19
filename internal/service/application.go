@@ -41,6 +41,10 @@ func NewApplicationService(repo repo.ApplicationRepository, userRepo repo.UserRe
 }
 
 func (s *applicationService) CreateApp(name, description, redirectURL string, isActive bool) (model.Application, string, error) {
+	if err := ValidateRedirectURISecurity(redirectURL); err != nil {
+		return model.Application{}, "", err
+	}
+
 	plainSecret, _, err := util.GenerateToken(32)
 	if err != nil {
 		return model.Application{}, "", err
@@ -210,6 +214,10 @@ func (s *applicationService) GetAppDetails(publicAppID string) (model.Applicatio
 }
 
 func (s *applicationService) UpdateApp(appID string, description, redirectURL string, isActive bool) error {
+	if err := ValidateRedirectURISecurity(redirectURL); err != nil {
+		return err
+	}
+
 	if appID == util.AppIdPeakAuth {
 		isActive = true
 	}

@@ -6,6 +6,8 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
+	"net"
+	"net/url"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"strings"
@@ -34,6 +36,10 @@ func NewOAuthService(oauthRepo repo.OAuthRepository, appRepo repo.ApplicationRep
 }
 
 func (s *oauthService) ValidateClientRedirect(clientID, redirectURI string) error {
+	if err := ValidateRedirectURISecurity(redirectURI); err != nil {
+		return err
+	}
+
 	app, err := s.appRepo.FindByAppID(clientID)
 	if err != nil {
 		return errors.New("client_id inválido")
@@ -49,6 +55,67 @@ func (s *oauthService) ValidateClientRedirect(clientID, redirectURI string) erro
 	}
 
 	return nil
+}
+
+// disallowedRedirectSchemes define esquemas de URI peligrosos no permitidos para redirecciones OAuth.
+var disallowedRedirectSchemes = map[string]struct{}{
+	"javascript": {},
+	"data":       {},
+	"vbscript":   {},
+	"file":       {},
+	"about":      {},
+	"blob":       {},
+}
+
+// ValidateRedirectURISecurity enforces that redirect URIs use HTTPS,
+// allows HTTP only for loopback addresses (RFC 8252 section 7.3),
+// and allows custom URI schemes for native mobile apps (RFC 8252 section 7.1).
+func ValidateRedirectURISecurity(redirectURI string) error {
+	if redirectURI == "" {
+		return errors.New("redirect_uri no puede estar vacía")
+	}
+
+	parsed, err := url.Parse(redirectURI)
+	if err != nil || parsed.Scheme == "" {
+		return errors.New("redirect_uri inválida: debe ser una URI absoluta válida")
+	}
+
+	scheme := strings.ToLower(parsed.Scheme)
+
+	// Prohibir esquemas peligrosos
+	if _, blocked := disallowedRedirectSchemes[scheme]; blocked {
+		return errors.New("esquema de redirect_uri no permitido por seguridad")
+	}
+
+	// RFC 6749 Section 3.1.2: El endpoint de redirección NO debe incluir fragmento
+	if parsed.Fragment != "" {
+		return errors.New("redirect_uri no debe contener fragmento (#)")
+	}
+
+	switch scheme {
+	case "https":
+		if parsed.Host == "" {
+			return errors.New("redirect_uri inválida: host faltante")
+		}
+		return nil
+	case "http":
+		host := parsed.Hostname()
+		if isLoopbackAddress(host) {
+			return nil
+		}
+		return errors.New("redirect_uri debe usar HTTPS excepto para direcciones locales (loopback)")
+	default:
+		// Esquemas personalizados (native apps según RFC 8252)
+		return nil
+	}
+}
+
+func isLoopbackAddress(host string) bool {
+	if strings.EqualFold(host, "localhost") || strings.HasSuffix(strings.ToLower(host), ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func (s *oauthService) GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string, mfaCompleted bool) (string, error) {
