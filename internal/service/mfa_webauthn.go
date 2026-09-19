@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -588,9 +589,24 @@ func (s *mfaService) FinishWebAuthnLogin(userID uint, session *webauthn.SessionD
 		return fmt.Errorf("sesión WebAuthn inválida o expirada")
 	}
 
-	_, err = wa.FinishLogin(wUser, *session, r)
+	updatedCredential, err := wa.FinishLogin(wUser, *session, r)
 	if err != nil {
 		return fmt.Errorf("validación WebAuthn fallida: %w", err)
+	}
+
+	// Persistir el contador actualizado del autenticador en la BD para detección de clonación (RFC WebAuthn)
+	for _, dbCred := range creds {
+		if dbCred.Type == "WEBAUTHN" && dbCred.IsActive {
+			var storedCred webauthn.Credential
+			if err := json.Unmarshal([]byte(dbCred.Secret), &storedCred); err == nil {
+				if bytes.Equal(storedCred.ID, updatedCredential.ID) {
+					if updatedJSON, err := json.Marshal(updatedCredential); err == nil {
+						_ = s.mfaRepo.UpdateCredentialSecret(dbCred.ID, string(updatedJSON))
+					}
+					break
+				}
+			}
+		}
 	}
 
 	return nil

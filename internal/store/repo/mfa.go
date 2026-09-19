@@ -14,6 +14,7 @@ type MfaRepository interface {
 	FindPendingCredentialByUserAndType(userID uint, credType string) (*model.UserMfaCredential, error)
 	FindAllCredentialsByUser(userID uint) ([]model.UserMfaCredential, error)
 	ActivateCredential(credID uint) error
+	UpdateCredentialSecret(credID uint, secret string) error
 	DeleteCredentialsByUser(userID uint) error
 	DeleteCredential(credID uint) error
 
@@ -70,6 +71,10 @@ func (r *mfaRepository) FindAllCredentialsByUser(userID uint) ([]model.UserMfaCr
 
 func (r *mfaRepository) ActivateCredential(credID uint) error {
 	return r.db.Model(&model.UserMfaCredential{}).Where("id = ?", credID).Update("is_active", true).Error
+}
+
+func (r *mfaRepository) UpdateCredentialSecret(credID uint, secret string) error {
+	return r.db.Model(&model.UserMfaCredential{}).Where("id = ?", credID).Update("secret", secret).Error
 }
 
 func (r *mfaRepository) DeleteCredentialsByUser(userID uint) error {
