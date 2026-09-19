@@ -81,7 +81,8 @@ func (s *EmailService) SendVerificationEmail(toEmail string, token string, appNa
 	}
 
 	baseURL := util.BaseURL()
-	link := fmt.Sprintf("%s/verify?token=%s", baseURL, url.QueryEscape(token))
+	// Use URL fragment (#) instead of query parameter to prevent token from appearing in request logs
+	link := fmt.Sprintf("%s/verify#token=%s", baseURL, url.QueryEscape(token))
 	subject := fmt.Sprintf("Activa tu cuenta en %s", appName)
 
 	logoURL := fmt.Sprintf("%s/static/img/logo.png", baseURL)
@@ -99,7 +100,8 @@ func (s *EmailService) SendVerificationEmail(toEmail string, token string, appNa
 
 func (s *EmailService) SendPasswordResetEmail(toEmail string, token string) error {
 	baseURL := util.BaseURL()
-	link := fmt.Sprintf("%s/reset-password?token=%s", baseURL, url.QueryEscape(token))
+	// Use URL fragment (#) instead of query parameter to prevent token from appearing in request logs
+	link := fmt.Sprintf("%s/reset-password#token=%s", baseURL, url.QueryEscape(token))
 	subject := "Restablece tu contraseña - Peak Auth"
 
 	logoURL := fmt.Sprintf("%s/static/img/logo.png", baseURL)
@@ -116,7 +118,8 @@ func (s *EmailService) SendPasswordResetEmail(toEmail string, token string) erro
 
 func (s *EmailService) SendActivationEmail(toEmail string, token string, appName string) error {
 	baseURL := util.BaseURL()
-	link := fmt.Sprintf("%s/reset-password?token=%s", baseURL, url.QueryEscape(token))
+	// Use URL fragment (#) instead of query parameter to prevent token from appearing in request logs
+	link := fmt.Sprintf("%s/reset-password#token=%s", baseURL, url.QueryEscape(token))
 	subject := fmt.Sprintf("Bienvenido a %s - Activa tu cuenta", appName)
 
 	logoURL := fmt.Sprintf("%s/static/img/logo.png", baseURL)

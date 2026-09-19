@@ -62,34 +62,47 @@ func (ctrl *RegisterController) PostUsersInApp(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Usuario vinculado con éxito"})
 }
 
-// GetVerifyEmail maneja la verificación de email vía GET
+// GetVerifyEmail shows the verification landing page that extracts token from URL fragment
 func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
-	token := ctx.Query("token")
-	if token == "" {
-		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
-			"Title":   "Token requerido",
-			"Message": "El token de verificación es requerido.",
-		})
+	// Apply defensive headers to prevent token leakage
+	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Referrer-Policy", "no-referrer")
+	
+	// Render landing page that will extract token from fragment and POST it
+	ctx.HTML(200, "verify_landing.html", gin.H{})
+}
+
+// PostVerifyEmail handles the actual verification via POST (token in body, not URL)
+func (c *RegisterController) PostVerifyEmail(ctx *gin.Context) {
+	// Apply defensive headers
+	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Referrer-Policy", "no-referrer")
+	
+	var req struct {
+		Token string `json:"token" binding:"required"`
+	}
+	
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Token requerido"})
 		return
 	}
 
-	userID, appID, err := c.UserService.VerifyEmail(token)
+	userID, appID, err := c.UserService.VerifyEmail(req.Token)
 	if err != nil {
-		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
-			"Title":   "Verificación fallida",
-			"Message": "El enlace de verificación es inválido o ha expirado.",
-		})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "El enlace de verificación es inválido o ha expirado"})
 		return
 	}
 
 	// Lógica inteligente: Si el usuario fue invitado (onboarding),
-	// le generamos un token de reset para que ponga su pass ahora mismo.
-	resetToken := ""
+	// generamos un token de reset pero lo devolvemos en la respuesta JSON
+	// para que el frontend lo maneje sin exponerlo en la URL
 	needsPassword := false
+	resetToken := ""
 
-	// Si logramos generar un token de reset, es porque queremos que lo use
 	if user, err := c.UserService.FindVerifiedUserByID(userID); err == nil {
-		// Si el usuario no tiene login previo o marcamos que necesita pass
+		// Si el usuario no tiene login previo, necesita establecer contraseña
 		if user.LastLogin.IsZero() {
 			needsPassword = true
 			// Generar token de reset al vuelo
@@ -98,8 +111,9 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 		}
 	}
 
-	ctx.HTML(200, "verify_email.html", gin.H{
-		"NeedsPassword": needsPassword,
-		"ResetToken":    resetToken,
+	ctx.JSON(200, gin.H{
+		"success":       true,
+		"needsPassword": needsPassword,
+		"resetToken":    resetToken,
 	})
 }

@@ -140,6 +140,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	r.GET("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
 	r.POST("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
 	r.GET("/verify", middleware.RequireHTTPSMiddleware(), registerCtrl.GetVerifyEmail)
+	r.POST("/verify", middleware.RequireHTTPSMiddleware(), registerCtrl.PostVerifyEmail)
 	r.GET("/reset-password", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.GetResetPassword)
 	r.POST("/reset-password", resetLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.PostResetPassword)
 

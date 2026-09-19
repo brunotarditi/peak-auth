@@ -19,24 +19,27 @@ type UserController struct {
 	MfaService  service.MfaService
 }
 
-// GetResetPassword muestra el formulario de cambio de contraseña
+// GetResetPassword shows the reset password landing page that extracts token from URL fragment
 func (c *UserController) GetResetPassword(ctx *gin.Context) {
-	token := ctx.Query("token")
-	if token == "" {
-		c.renderError(ctx, http.StatusBadRequest, "Token Requerido", "El token de restablecimiento es requerido.")
-		return
-	}
-
-	// Renderizamos el template de reset-password
+	// Apply defensive headers to prevent token leakage
+	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Referrer-Policy", "no-referrer")
+	
+	// Render landing page that will extract token from fragment
 	csrf, _ := ctx.Get("csrf_token")
-	ctx.HTML(200, "reset_password.html", gin.H{
-		"token":     token,
+	ctx.HTML(200, "reset_password_landing.html", gin.H{
 		"CSRFToken": csrf,
 	})
 }
 
 // PostResetPassword procesa el cambio de contraseña
 func (c *UserController) PostResetPassword(ctx *gin.Context) {
+	// Apply defensive headers
+	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Referrer-Policy", "no-referrer")
+	
 	token := ctx.PostForm("token")
 	password := ctx.PostForm("password")
 	confirm := ctx.PostForm("confirm_password")

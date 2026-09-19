@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peak Auth - Verificando Email</title>
+    <script src="{{ js "config.js" }}"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+</head>
+
+<body class="bg-pattern layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
+    </div>
+
+    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
+        <div class="glass-panel" style="padding: 3rem 2rem; text-align: center;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 2rem; border: 1px solid var(--border-light);">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 4rem; height: 4rem;">
+            </div>
+
+            <div id="loading" style="display: block;">
+                <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main); margin-bottom: 1rem;">Verificando tu <span style="color: var(--emerald-500);">Email</span></h1>
+                <p style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; line-height: 1.625; margin-bottom: 2.5rem;">
+                    Por favor espera mientras confirmamos tu dirección de correo electrónico...
+                </p>
+                <div style="display: inline-block; width: 3rem; height: 3rem; border: 4px solid var(--border-light); border-top-color: var(--brand-600); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            </div>
+
+            <div id="success" style="display: none;">
+                <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main); margin-bottom: 1rem;">¡Email <span style="color: var(--emerald-500);">Verificado!</span></h1>
+                <p style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; line-height: 1.625; margin-bottom: 2.5rem;">
+                    Tu dirección de correo electrónico ha sido confirmada con éxito.
+                </p>
+                <div id="action-container"></div>
+            </div>
+
+            <div id="error" style="display: none;">
+                <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main); margin-bottom: 1rem;">Verificación <span style="color: var(--red-500);">Fallida</span></h1>
+                <p id="error-message" style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; line-height: 1.625; margin-bottom: 2.5rem;">
+                    El enlace de verificación es inválido o ha expirado.
+                </p>
+                <a href="/admin/login" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; text-decoration: none;">
+                    <span>Ir al Inicio de Sesión</span>
+                </a>
+            </div>
+        </div>
+
+        <p style="text-align: center; color: var(--slate-400); font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2.5rem;">
+            Peak Auth Security Protocol Verified
+        </p>
+    </div>
+
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script>
+        (function() {
+            // Extract token from URL fragment (not sent to server in request)
+            const fragment = window.location.hash.substring(1);
+            const params = new URLSearchParams(fragment);
+            const token = params.get('token');
+
+            // Immediately clear the URL fragment from browser history
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', window.location.pathname);
+            }
+
+            if (!token) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error-message').textContent = 'No se proporcionó un token de verificación.';
+                return;
+            }
+
+            // POST the token to the server (never in URL)
+            fetch('/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token: token })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.success) {
+                    document.getElementById('success').style.display = 'block';
+                    
+                    const actionContainer = document.getElementById('action-container');
+                    if (data.needsPassword && data.resetToken) {
+                        // Store token in sessionStorage (not in URL) and redirect
+                        sessionStorage.setItem('reset_token', data.resetToken);
+                        actionContainer.innerHTML = '<a href="/reset-password" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; text-decoration: none;"><span>Establecer Contraseña</span></a>';
+                    } else {
+                        actionContainer.innerHTML = '<a href="/admin/login" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; background-color: var(--text-main); color: var(--bg-surface); text-decoration: none; border: none;"><span>Ir al Inicio de Sesión</span></a>';
+                    }
+                } else {
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error-message').textContent = data.error || 'El enlace de verificación es inválido o ha expirado.';
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error-message').textContent = 'Ocurrió un error al verificar tu email. Por favor intenta nuevamente.';
+            });
+        })();
+    </script>
+</body>
+
+</html>
