@@ -116,7 +116,14 @@ func (r *mfaRepository) FindUnusedRecoveryCodesByUser(userID uint) ([]model.User
 }
 
 func (r *mfaRepository) MarkRecoveryCodeUsed(codeID uint) error {
-	return r.db.Model(&model.UserRecoveryCode{}).Where("id = ?", codeID).Update("is_used", true).Error
+	result := r.db.Model(&model.UserRecoveryCode{}).Where("id = ? AND is_used = ?", codeID, false).Update("is_used", true)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *mfaRepository) DeleteRecoveryCodesByUser(userID uint) error {
