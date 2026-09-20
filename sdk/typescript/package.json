@@ -39,7 +39,7 @@
   "author": "Bruno Tarditi",
   "license": "MIT",
   "dependencies": {
-    "jose": "^5.9.6"
+    "jose": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
