@@ -267,7 +267,8 @@ func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
 
 	transactionID := ctrl.extractMfaTransactionID(c)
 	sessionKey := fmt.Sprintf("wa_login_%s", transactionID)
-	sessionData, exists := service.GetWebAuthnSession(sessionKey)
+	// Atomically retrieve and delete the session to prevent replay attacks
+	sessionData, exists := service.GetAndDeleteWebAuthnSession(sessionKey)
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesión WebAuthn expirada o no encontrada"})
 		return
@@ -286,9 +287,6 @@ func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Invalida el desafío WebAuthn para prevenir reuso (single-use challenge)
-	service.DeleteWebAuthnSession(sessionKey)
 
 	// Consume the MFA transaction (one-time use)
 	if err := service.ConsumeMfaTransaction(transactionID); err != nil {
@@ -381,7 +379,8 @@ func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
 
 	transactionID := ctrl.extractMfaTransactionID(c)
 	sessionKey := fmt.Sprintf("wa_reg_%s", transactionID)
-	sessionData, exists := service.GetWebAuthnSession(sessionKey)
+	// Atomically retrieve and delete the session to prevent replay attacks
+	sessionData, exists := service.GetAndDeleteWebAuthnSession(sessionKey)
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesión WebAuthn expirada o no encontrada"})
 		return
@@ -398,9 +397,6 @@ func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Delete session from cache
-	service.DeleteWebAuthnSession(sessionKey)
 
 	// Consume the MFA transaction (one-time use)
 	if err := service.ConsumeMfaTransaction(transactionID); err != nil {
@@ -779,7 +775,8 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 	}
 
 	sessionKey := fmt.Sprintf("wa_reg_%s", mfaToken)
-	sessionData, exists := service.GetWebAuthnSession(sessionKey)
+	// Atomically retrieve and delete the session to prevent replay attacks
+	sessionData, exists := service.GetAndDeleteWebAuthnSession(sessionKey)
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesión WebAuthn expirada o no encontrada"})
 		return
@@ -789,9 +786,6 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Delete session from cache
-	service.DeleteWebAuthnSession(sessionKey)
 
 	// Consume the MFA token to prevent replay attacks
 	if err := service.ConsumeApiMfaToken(tokenKey, userID); err != nil {

@@ -146,6 +146,22 @@ func DeleteWebAuthnSession(key string) {
 	delete(waSessionCache, key)
 }
 
+// GetAndDeleteWebAuthnSession atomically retrieves and deletes a WebAuthn session
+// This prevents replay attacks by ensuring the session can only be consumed once
+func GetAndDeleteWebAuthnSession(key string) (*webauthn.SessionData, bool) {
+	waSessionMutex.Lock()
+	defer waSessionMutex.Unlock()
+	
+	session, exists := waSessionCache[key]
+	if !exists || time.Now().After(session.expiresAt) {
+		return nil, false
+	}
+	
+	// Atomically delete the session before returning it
+	delete(waSessionCache, key)
+	return session.data, true
+}
+
 // MFA Transaction Store - Server-side state for MFA pending flows
 // This prevents replay attacks by binding MFA tokens to server-side transactions
 // that are consumed on first successful use.
@@ -529,22 +545,35 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 		}
 	}
 
+	// Encode credential ID as base64 for storage and uniqueness checking
+	credentialIDBase64 := base64.StdEncoding.EncodeToString(credential.ID)
+
 	// Serializar credencial a JSON
 	credJSON, err := json.Marshal(credential)
 	if err != nil {
 		return fmt.Errorf("error guardando credencial WebAuthn: %w", err)
 	}
 
-	// Guardar en base de datos
+	// Guardar en base de datos con el credential ID para unicidad
 	newCred := &model.UserMfaCredential{
-		UserID:   userID,
-		Type:     "WEBAUTHN",
-		Name:     "Llave de Seguridad Passkey",
-		Secret:   string(credJSON),
-		IsActive: true,
+		UserID:       userID,
+		Type:         "WEBAUTHN",
+		Name:         "Llave de Seguridad Passkey",
+		Secret:       string(credJSON),
+		CredentialID: &credentialIDBase64,
+		IsActive:     true,
 	}
 
 	if err := s.mfaRepo.CreateCredential(newCred); err != nil {
+		// Check if this is a duplicate key error (credential already registered)
+		// GORM/SQLite/PostgreSQL/MySQL all include "UNIQUE constraint" or "duplicate" in the error message
+		errMsg := err.Error()
+		if bytes.Contains([]byte(errMsg), []byte("UNIQUE")) || 
+		   bytes.Contains([]byte(errMsg), []byte("duplicate")) ||
+		   bytes.Contains([]byte(errMsg), []byte("Duplicate")) {
+			// This is an idempotent replay - credential already exists
+			return fmt.Errorf("esta credencial ya está registrada")
+		}
 		return fmt.Errorf("error creando registro de credencial WebAuthn en BD: %w", err)
 	}
 
