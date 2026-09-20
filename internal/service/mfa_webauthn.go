@@ -532,6 +532,19 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 		return fmt.Errorf("error validando registro WebAuthn: %w", err)
 	}
 
+	// Verificar si la credencial ya existe para este usuario
+	existingCreds, _ := s.mfaRepo.FindAllCredentialsByUser(userID)
+	for _, c := range existingCreds {
+		if c.Type == "WEBAUTHN" {
+			var existingCred webauthn.Credential
+			if err := json.Unmarshal([]byte(c.Secret), &existingCred); err == nil {
+				if bytes.Equal(existingCred.ID, credential.ID) {
+					return fmt.Errorf("esta credencial ya está registrada")
+				}
+			}
+		}
+	}
+
 	// Encode credential ID as base64 for storage and uniqueness checking
 	credentialIDBase64 := base64.StdEncoding.EncodeToString(credential.ID)
 
@@ -547,7 +560,7 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 		Type:         "WEBAUTHN",
 		Name:         "Llave de Seguridad Passkey",
 		Secret:       string(credJSON),
-		CredentialID: credentialIDBase64,
+		CredentialID: &credentialIDBase64,
 		IsActive:     true,
 	}
 
