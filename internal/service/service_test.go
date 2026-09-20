@@ -277,7 +277,18 @@ func newMockPasswordResetRepo() *mockPasswordResetRepo {
 }
 
 func (m *mockPasswordResetRepo) CheckLastTimeTokenReset(userId uint) (time.Time, error) {
-	return time.Time{}, nil
+	var latest time.Time
+	for _, tok := range m.userTokens[userId] {
+		if tok.UsedAt == nil && (tok.ExpiresAt.IsZero() || tok.ExpiresAt.After(time.Now())) {
+			if tok.CreatedAt.After(latest) {
+				latest = tok.CreatedAt
+			}
+		}
+	}
+	if latest.IsZero() {
+		return time.Time{}, gorm.ErrRecordNotFound
+	}
+	return latest, nil
 }
 
 func (m *mockPasswordResetRepo) FindValidPasswordReset(plainToken string) (*model.PasswordReset, error) {
@@ -314,6 +325,9 @@ func (m *mockPasswordResetRepo) MarkPasswordResetUsed(resetID uint, usedAt time.
 func (m *mockPasswordResetRepo) CreatePasswordReset(reset *model.PasswordReset) error {
 	m.nextID++
 	reset.ID = m.nextID
+	if reset.CreatedAt.IsZero() {
+		reset.CreatedAt = time.Now()
+	}
 	m.userTokens[reset.UserID] = append(m.userTokens[reset.UserID], reset)
 	if len(reset.TokenHash) > 0 {
 		key := hex.EncodeToString(reset.TokenHash)
@@ -2153,6 +2167,64 @@ func TestVerifyEmail_AtomicClaimAndReplayPrevention(t *testing.T) {
 	_, _, err = svc.VerifyEmail(rawToken)
 	if err == nil || !strings.Contains(err.Error(), "token inválido o expirado") {
 		t.Fatalf("se esperaba rechazo por token ya consumido/expirado, obtenido: %v", err)
+	}
+}
+
+func TestSendResetEmail_AtomicEligibilityAndQuota(t *testing.T) {
+	resetRepo := newMockPasswordResetRepo()
+	txRepo := &mockTxRepo{passwordResetRepo: resetRepo}
+	txMgr := &mockTxManager{txRepo: txRepo}
+
+	svc := &userService{
+		txManager:         txMgr,
+		passwordResetRepo: resetRepo,
+	}
+
+	user := &model.User{
+		Model: gorm.Model{ID: 10},
+		Email: "test@example.com",
+	}
+
+	// 1. Primer envío exitoso
+	err := svc.SendResetEmail(user, 1)
+	if err != nil {
+		t.Fatalf("primer SendResetEmail debió tener éxito: %v", err)
+	}
+	if len(resetRepo.userTokens[10]) != 1 {
+		t.Fatalf("se esperaba 1 token creado, hay: %d", len(resetRepo.userTokens[10]))
+	}
+
+	// 2. Intento inmediato dentro de los 15 minutos debe fallar por cooldown atómico
+	err = svc.SendResetEmail(user, 1)
+	if err == nil || !strings.Contains(err.Error(), "debe esperar al menos 15 minutos") {
+		t.Fatalf("se esperaba error por cooldown de 15 minutos, obtenido: %v", err)
+	}
+
+	// 3. Simular que pasaron 20 minutos
+	for _, tok := range resetRepo.userTokens[10] {
+		tok.CreatedAt = time.Now().Add(-20 * time.Minute)
+	}
+
+	// Segundo envío exitoso tras pasar el cooldown
+	err = svc.SendResetEmail(user, 1)
+	if err != nil {
+		t.Fatalf("segundo SendResetEmail debió tener éxito tras cooldown: %v", err)
+	}
+
+	// 4. Simular que pasaron otros 20 minutos y que ya se alcanzaron 5 restablecimientos este mes
+	for _, tok := range resetRepo.userTokens[10] {
+		tok.CreatedAt = time.Now().Add(-20 * time.Minute)
+	}
+	for i := 0; i < 3; i++ {
+		resetRepo.userTokens[10] = append(resetRepo.userTokens[10], &model.PasswordReset{
+			UserID:    10,
+			CreatedAt: time.Now().Add(-time.Duration(i+1) * time.Hour),
+		})
+	}
+	// Ahora hay >= 5 tokens
+	err = svc.SendResetEmail(user, 1)
+	if err == nil || !strings.Contains(err.Error(), "límite mensual alcanzado") {
+		t.Fatalf("se esperaba error por cuota mensual alcanzada, obtenido: %v", err)
 	}
 }
 

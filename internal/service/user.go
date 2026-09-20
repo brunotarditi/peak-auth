@@ -428,30 +428,62 @@ func (s *userService) CanRequestPasswordReset(userID uint) (bool, error) {
 	return true, nil
 }
 
-// SendResetEmail crea un token de restablecimiento, lo guarda y envía el email.
+// SendResetEmail atomically checks eligibility, creates a token, and sends the email.
+// The eligibility check and reset creation are performed within a transaction to prevent
+// concurrent requests from bypassing cooldown and monthly quota limits.
 func (s *userService) SendResetEmail(user *model.User, appID uint) error {
+	// Generate token before transaction (expensive cryptographic operation)
 	plainToken, tokenHash, err := util.GenerateToken(32)
 	if err != nil {
 		return err
 	}
 
-	// Invalidate all previous unused tokens before creating a new one
-	if err := s.passwordResetRepo.InvalidateAllUserTokens(user.ID); err != nil {
+	// Perform eligibility check and reset creation atomically within a transaction
+	if err := s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
+		// Check cooldown: ensure at least 15 minutes since last reset
+		lastReset, err := tx.PasswordResets().CheckLastTimeTokenReset(user.ID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if err == nil && !lastReset.IsZero() && time.Since(lastReset) < 15*time.Minute {
+			return fmt.Errorf("debe esperar al menos 15 minutos entre solicitudes de reset")
+		}
+
+		// Check monthly quota: ensure fewer than 5 resets this month
+		count, err := tx.PasswordResets().CountResetsThisMonth(user.ID)
+		if err != nil {
+			return err
+		}
+		if count >= 5 {
+			return fmt.Errorf("límite mensual alcanzado: solo se permiten 5 restablecimientos por mes")
+		}
+
+		// Invalidate all previous unused tokens before creating a new one
+		if err := tx.PasswordResets().InvalidateAllUserTokens(user.ID); err != nil {
+			return err
+		}
+
+		// Create the new reset token
+		reset := &model.PasswordReset{
+			UserID:        user.ID,
+			ApplicationID: appID,
+			TokenHash:     tokenHash,
+			ExpiresAt:     time.Now().Add(1 * time.Hour),
+		}
+		if err := tx.PasswordResets().CreatePasswordReset(reset); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
 		return err
 	}
 
-	reset := &model.PasswordReset{
-		UserID:        user.ID,
-		ApplicationID: appID,
-		TokenHash:     tokenHash,
-		ExpiresAt:     time.Now().Add(1 * time.Hour),
-	}
-	if err := s.passwordResetRepo.CreatePasswordReset(reset); err != nil {
-		return err
-	}
-
-	if err := s.emailService.SendPasswordResetEmail(user.Email, plainToken); err != nil {
-		return fmt.Errorf("error enviando email: %v", err)
+	// Send email after successful transaction commit
+	if s.emailService != nil {
+		if err := s.emailService.SendPasswordResetEmail(user.Email, plainToken); err != nil {
+			return fmt.Errorf("error enviando email: %v", err)
+		}
 	}
 	return nil
 }

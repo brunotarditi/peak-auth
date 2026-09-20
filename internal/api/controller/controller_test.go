@@ -808,4 +808,101 @@ func TestMfaChallengeKey(t *testing.T) {
 	}
 }
 
+type mockUserDashboardService struct {
+	service.UserService
+	findVerifiedUserByIDFn func(id uint) (*model.User, error)
+	sendResetEmailFn       func(user *model.User, appID uint) error
+}
+
+func (m *mockUserDashboardService) FindVerifiedUserByID(id uint) (*model.User, error) {
+	if m.findVerifiedUserByIDFn != nil {
+		return m.findVerifiedUserByIDFn(id)
+	}
+	u := &model.User{Email: "user@test.com", IsActive: true, IsVerified: true}
+	u.ID = id
+	return u, nil
+}
+
+func (m *mockUserDashboardService) SendResetEmail(user *model.User, appID uint) error {
+	if m.sendResetEmailFn != nil {
+		return m.sendResetEmailFn(user, appID)
+	}
+	return nil
+}
+
+type mockAppDashboardService struct {
+	service.ApplicationService
+	getAppDetailsFn    func(appID string) (model.Application, error)
+	userBelongsToAppFn func(userID, appID uint) (bool, error)
+}
+
+func (m *mockAppDashboardService) GetAppDetails(appID string) (model.Application, error) {
+	if m.getAppDetailsFn != nil {
+		return m.getAppDetailsFn(appID)
+	}
+	app := model.Application{AppID: appID}
+	app.ID = 1
+	return app, nil
+}
+
+func (m *mockAppDashboardService) UserBelongsToApp(userID, appID uint) (bool, error) {
+	if m.userBelongsToAppFn != nil {
+		return m.userBelongsToAppFn(userID, appID)
+	}
+	return true, nil
+}
+
+func TestPostSendResetPassword_RateLimitingAndAtomicity(t *testing.T) {
+	t.Run("Success sends email and returns 200", func(t *testing.T) {
+		userSvc := &mockUserDashboardService{}
+		appSvc := &mockAppDashboardService{}
+		ctrl := &DashboardController{
+			UserService: userSvc,
+			AppService:  appSvc,
+		}
+
+		r := gin.New()
+		r.POST("/apps/:id/users/:user_id/send-reset", ctrl.PostSendResetPassword)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/apps/app-1/users/42/send-reset", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("esperaba 200 OK, obtuvo %d: %s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "Email de recuperación enviado correctamente") {
+			t.Errorf("respuesta inesperada: %s", w.Body.String())
+		}
+	})
+
+	t.Run("Rate limit error from SendResetEmail returns 429 Too Many Requests", func(t *testing.T) {
+		userSvc := &mockUserDashboardService{
+			sendResetEmailFn: func(user *model.User, appID uint) error {
+				return fmt.Errorf("debe esperar al menos 15 minutos entre solicitudes de reset")
+			},
+		}
+		appSvc := &mockAppDashboardService{}
+		ctrl := &DashboardController{
+			UserService: userSvc,
+			AppService:  appSvc,
+		}
+
+		r := gin.New()
+		r.POST("/apps/:id/users/:user_id/send-reset", ctrl.PostSendResetPassword)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/apps/app-1/users/42/send-reset", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusTooManyRequests {
+			t.Fatalf("esperaba 429 Too Many Requests, obtuvo %d: %s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "debe esperar al menos 15 minutos") {
+			t.Errorf("respuesta inesperada: %s", w.Body.String())
+		}
+	})
+}
+
+
 

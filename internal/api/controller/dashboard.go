@@ -6,6 +6,7 @@ import (
 	"peak-auth/internal/api/middleware"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/service"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -90,18 +91,6 @@ func (ctrl *DashboardController) PostSendResetPassword(c *gin.Context) {
 		return
 	}
 
-	// Rate limit de reset
-	canReset, err := ctrl.UserService.CanRequestPasswordReset(userID)
-	if err != nil {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Debe esperar antes de solicitar un nuevo reset de contraseña"})
-		return
-	}
-
-	if !canReset {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Debe esperar al menos 15 minutos entre solicitudes de reset"})
-		return
-	}
-
 	appIDParam := c.Param("id")
 	app, err := ctrl.AppService.GetAppDetails(appIDParam)
 	if err != nil {
@@ -116,7 +105,12 @@ func (ctrl *DashboardController) PostSendResetPassword(c *gin.Context) {
 		return
 	}
 
+	// SendResetEmail verifica la elegibilidad atómicamente dentro de la transacción y crea el token
 	if err := ctrl.UserService.SendResetEmail(user, app.ID); err != nil {
+		if strings.Contains(err.Error(), "debe esperar") || strings.Contains(err.Error(), "límite mensual") {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+			return
+		}
 		internalErrorJSON(c, "SendResetEmail", err)
 		return
 	}
