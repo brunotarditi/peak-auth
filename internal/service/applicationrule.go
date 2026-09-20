@@ -138,15 +138,8 @@ func (s *applicationRuleService) CreateRule(appID uint, code string, value []byt
 		}
 	}
 	if code == "SESSION_POLICY" {
-		sess, err := util.ParseSessionPolicy(value)
-		if err != nil {
+		if _, err := util.ValidateSessionPolicy(value); err != nil {
 			return fmt.Errorf("política de sesión inválida: %w", err)
-		}
-		if sess.TokenExpirationMinutes < 5 {
-			return fmt.Errorf("la duración del token debe ser al menos 5 minutos")
-		}
-		if sess.TokenExpirationMinutes > 10080 {
-			return fmt.Errorf("la duración del token no puede exceder 10080 minutos (7 días)")
 		}
 	}
 	return s.ruleRepo.CreateRule(appID, code, value)
@@ -167,15 +160,8 @@ func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value 
 	}
 
 	if code == "SESSION_POLICY" {
-		sess, err := util.ParseSessionPolicy(value)
-		if err != nil {
+		if _, err := util.ValidateSessionPolicy(value); err != nil {
 			return fmt.Errorf("política de sesión inválida: %w", err)
-		}
-		if sess.TokenExpirationMinutes < 5 {
-			return fmt.Errorf("la duración del token debe ser al menos 5 minutos")
-		}
-		if sess.TokenExpirationMinutes > 10080 {
-			return fmt.Errorf("la duración del token no puede exceder 10080 minutos (7 días)")
 		}
 	}
 

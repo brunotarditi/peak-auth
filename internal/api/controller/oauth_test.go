@@ -970,3 +970,121 @@ func TestOAuth_TokenEndpoint_CORSPreflight(t *testing.T) {
 	}
 }
 
+type mockOAuthAppService struct {
+	service.ApplicationService
+	app model.Application
+}
+
+func (m *mockOAuthAppService) GetAppDetails(appID string) (model.Application, error) {
+	if appID == m.app.AppID {
+		return m.app, nil
+	}
+	return model.Application{}, fmt.Errorf("app no encontrada")
+}
+
+type mockOAuthRuleService struct {
+	service.ApplicationRuleService
+	rules []model.ApplicationRules
+}
+
+func (m *mockOAuthRuleService) FindRulesByAppID(appID uint) ([]model.ApplicationRules, error) {
+	return m.rules, nil
+}
+
+func TestOAuth_SSOSessionCookieDuration_RespectsSessionPolicy(t *testing.T) {
+	_, tm, _, _ := setupOAuthControllerTest(t)
+
+	// 1. Caso con política configurada a 45 minutos
+	ctrl := &OAuthController{
+		TokenManager: tm,
+		AppService: &mockOAuthAppService{
+			app: model.Application{
+				ID:    1,
+				AppID: util.AppIdPeakAuth,
+			},
+		},
+		RuleService: &mockOAuthRuleService{
+			rules: []model.ApplicationRules{
+				{
+					Code:  "SESSION_POLICY",
+					Value: []byte(`{"token_expiration_minutes": 45}`),
+				},
+			},
+		},
+	}
+
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+
+	err := ctrl.setSSOSessionCookie(ctx, 1, "user@test.com", true, 1)
+	if err != nil {
+		t.Fatalf("setSSOSessionCookie falló inesperadamente: %v", err)
+	}
+
+	setCookie := w.Header().Get("Set-Cookie")
+	if !strings.Contains(setCookie, "peak_session=") {
+		t.Fatalf("se esperaba cookie peak_session, obtenido: %s", setCookie)
+	}
+	// 45 minutos = 2700 segundos
+	if !strings.Contains(setCookie, "Max-Age=2700") {
+		t.Fatalf("se esperaba Max-Age=2700 para política de 45m, obtenido: %s", setCookie)
+	}
+
+	// 2. Caso por defecto (sin SESSION_POLICY): debe usar 15 minutos = 900 segundos
+	ctrlDefault := &OAuthController{
+		TokenManager: tm,
+		AppService: &mockOAuthAppService{
+			app: model.Application{
+				ID:    1,
+				AppID: util.AppIdPeakAuth,
+			},
+		},
+		RuleService: &mockOAuthRuleService{
+			rules: []model.ApplicationRules{},
+		},
+	}
+
+	wDef := httptest.NewRecorder()
+	ctxDef, _ := gin.CreateTestContext(wDef)
+	ctxDef.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+
+	err = ctrlDefault.setSSOSessionCookie(ctxDef, 1, "user@test.com", true, 1)
+	if err != nil {
+		t.Fatalf("setSSOSessionCookie default falló inesperadamente: %v", err)
+	}
+
+	setCookieDef := wDef.Header().Get("Set-Cookie")
+	if !strings.Contains(setCookieDef, "Max-Age=900") {
+		t.Fatalf("se esperaba Max-Age=900 para valor por defecto (15m), obtenido: %s", setCookieDef)
+	}
+
+	// 3. Caso inválido (duración fuera de rango): debe fallar fail-closed
+	ctrlInvalid := &OAuthController{
+		TokenManager: tm,
+		AppService: &mockOAuthAppService{
+			app: model.Application{
+				ID:    1,
+				AppID: util.AppIdPeakAuth,
+			},
+		},
+		RuleService: &mockOAuthRuleService{
+			rules: []model.ApplicationRules{
+				{
+					Code:  "SESSION_POLICY",
+					Value: []byte(`{"token_expiration_minutes": 2}`),
+				},
+			},
+		},
+	}
+
+	wInv := httptest.NewRecorder()
+	ctxInv, _ := gin.CreateTestContext(wInv)
+	ctxInv.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+
+	err = ctrlInvalid.setSSOSessionCookie(ctxInv, 1, "user@test.com", true, 1)
+	if err == nil || !strings.Contains(err.Error(), "menor al mínimo permitido") {
+		t.Fatalf("se esperaba error fail-closed por duración < 5m, obtenido: %v", err)
+	}
+}
+

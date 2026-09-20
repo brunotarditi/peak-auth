@@ -17,14 +17,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	// Conservative fallback token duration when SESSION_POLICY cannot be read or parsed
-	defaultTokenExpirationMinutes = 15
-	// Maximum allowed token expiration to prevent excessively long-lived tokens
-	maxTokenExpirationMinutes = 10080 // 7 days
-	// Minimum allowed token expiration to prevent unusably short tokens
-	minTokenExpirationMinutes = 5
-)
 
 type UserService interface {
 	Register(req request.RegisterRequest) (model.User, error)
@@ -76,22 +68,16 @@ func (s *userService) resolveTokenDuration(appID uint) (time.Duration, error) {
 
 	for _, r := range rules {
 		if r.Code == "SESSION_POLICY" {
-			sess, err := util.ParseSessionPolicy(r.Value)
+			sess, err := util.ValidateSessionPolicy(r.Value)
 			if err != nil {
 				return 0, fmt.Errorf("no se pudo interpretar la política de sesión: %w", err)
-			}
-			if sess.TokenExpirationMinutes < minTokenExpirationMinutes {
-				return 0, fmt.Errorf("la duración del token (%d minutos) es menor al mínimo permitido (%d minutos)", sess.TokenExpirationMinutes, minTokenExpirationMinutes)
-			}
-			if sess.TokenExpirationMinutes > maxTokenExpirationMinutes {
-				return 0, fmt.Errorf("la duración del token (%d minutos) excede el máximo permitido (%d minutos)", sess.TokenExpirationMinutes, maxTokenExpirationMinutes)
 			}
 			return time.Duration(sess.TokenExpirationMinutes) * time.Minute, nil
 		}
 	}
 
 	// No SESSION_POLICY found, use conservative default
-	return time.Duration(defaultTokenExpirationMinutes) * time.Minute, nil
+	return time.Duration(util.DefaultTokenExpirationMinutes) * time.Minute, nil
 }
 
 // Login valida credenciales, comprueba estado del usuario y genera un token JWT.
@@ -184,13 +170,14 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	for _, r := range rules {
 		if r.Code == "MFA_POLICY" {
 			policy, err := util.ParseMfaPolicy(r.Value)
-			if err == nil {
-				switch policy.Mode {
-				case "REQUIRED":
-					mfaRequiredByPolicy = true
-				case "DISABLED":
-					mfaDisabledByPolicy = true
-				}
+			if err != nil {
+				return response.TokenResponse{}, fmt.Errorf("no se pudo interpretar la política de MFA: %w", err)
+			}
+			switch policy.Mode {
+			case "REQUIRED":
+				mfaRequiredByPolicy = true
+			case "DISABLED":
+				mfaDisabledByPolicy = true
 			}
 		}
 	}
@@ -675,13 +662,14 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 	for _, r := range rules {
 		if r.Code == "MFA_POLICY" {
 			policy, err := util.ParseMfaPolicy(r.Value)
-			if err == nil {
-				switch policy.Mode {
-				case "REQUIRED":
-					mfaRequiredByPolicy = true
-				case "DISABLED":
-					mfaDisabledByPolicy = true
-				}
+			if err != nil {
+				return "", 0, false, false, "", fmt.Errorf("no se pudo interpretar la política de MFA: %w", err)
+			}
+			switch policy.Mode {
+			case "REQUIRED":
+				mfaRequiredByPolicy = true
+			case "DISABLED":
+				mfaDisabledByPolicy = true
 			}
 		}
 	}

@@ -95,7 +95,11 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 			for _, r := range rules {
 				if r.Code == "MFA_POLICY" {
 					policy, err := util.ParseMfaPolicy(r.Value)
-					if err == nil && policy.Mode == "REQUIRED" {
+					if err != nil {
+						c.renderError(ctx, http.StatusInternalServerError, "Error Interno", "No se pudo interpretar la política de MFA.")
+						return
+					}
+					if policy.Mode == "REQUIRED" {
 						if !c.MfaService.IsMfaEnabled(userID) {
 							mfaToken, _ := c.TokenManager.GenerateMFAPendingToken(userID, claims.Username, clientID)
 							c.setMfaCookie(ctx, mfaToken)
@@ -330,14 +334,10 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "Identificador de usuario inválido.")
 		return
 	}
-	ssoJWT, err := c.TokenManager.GenerateToken(uid, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, false, claims.AuthzVersion)
-	if err != nil {
+	if err := c.setSSOSessionCookie(ctx, uid, claims.Username, false, claims.AuthzVersion); err != nil {
 		c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "No se pudo generar la sesión SSO.")
 		return
 	}
-
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("peak_session", ssoJWT, 86400, "/", "", util.IsProduction(), true)
 
 	authURL := fmt.Sprintf("/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&state=%s",
 		url.QueryEscape(clientID), url.QueryEscape(redirectURI), url.QueryEscape(state))
@@ -466,15 +466,12 @@ func (c *OAuthController) PostPublicLoginMfaTotp(ctx *gin.Context) {
 		return
 	}
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
-	if err != nil {
+	if err := c.setSSOSessionCookie(ctx, userID, claims.Username, true, user.AuthzVersion); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
 	}
 
 	c.clearMfaCookie(ctx)
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("peak_session", ssoJWT, 86400, "/", "", util.IsProduction(), true)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
@@ -550,15 +547,12 @@ func (c *OAuthController) PostPublicLoginMfaRecovery(ctx *gin.Context) {
 		return
 	}
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
-	if err != nil {
+	if err := c.setSSOSessionCookie(ctx, userID, claims.Username, true, user.AuthzVersion); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
 	}
 
 	c.clearMfaCookie(ctx)
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("peak_session", ssoJWT, 86400, "/", "", util.IsProduction(), true)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
@@ -639,15 +633,12 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 		return
 	}
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
-	if err != nil {
+	if err := c.setSSOSessionCookie(ctx, userID, claims.Username, true, user.AuthzVersion); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
 	}
 
 	c.clearMfaCookie(ctx)
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("peak_session", ssoJWT, 86400, "/", "", util.IsProduction(), true)
 
 	ctx.JSON(http.StatusOK, gin.H{"success": true})
 }
@@ -729,15 +720,12 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 		return
 	}
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
-	if err != nil {
+	if err := c.setSSOSessionCookie(ctx, userID, claims.Username, true, user.AuthzVersion); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
 	}
 
 	c.clearMfaCookie(ctx)
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("peak_session", ssoJWT, 86400, "/", "", util.IsProduction(), true)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message":        "MFA activado con éxito",
@@ -827,20 +815,50 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 		return
 	}
 
-	ssoJWT, err := c.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, 24*time.Hour, true, user.AuthzVersion)
-	if err != nil {
+	if err := c.setSSOSessionCookie(ctx, userID, claims.Username, true, user.AuthzVersion); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo generar sesión SSO"})
 		return
 	}
 
 	c.clearMfaCookie(ctx)
-	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("peak_session", ssoJWT, 86400, "/", "", util.IsProduction(), true)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Passkey registrada con éxito",
 		"success": true,
 	})
+}
+
+// setSSOSessionCookie emite el token JWT y la cookie central peak_session resolviendo dinámicamente
+// la duración configurada en SESSION_POLICY para la aplicación raíz (peak-auth).
+func (c *OAuthController) setSSOSessionCookie(ctx *gin.Context, userID uint, username string, mfaVerified bool, authzVersion uint) error {
+	duration := time.Duration(util.DefaultTokenExpirationMinutes) * time.Minute
+	if c.AppService != nil && c.RuleService != nil {
+		app, err := c.AppService.GetAppDetails(util.AppIdPeakAuth)
+		if err == nil {
+			rules, rerr := c.RuleService.FindRulesByAppID(app.ID)
+			if rerr == nil {
+				for _, r := range rules {
+					if r.Code == "SESSION_POLICY" {
+						sess, perr := util.ValidateSessionPolicy(r.Value)
+						if perr != nil {
+							return fmt.Errorf("política de sesión SSO inválida: %w", perr)
+						}
+						duration = time.Duration(sess.TokenExpirationMinutes) * time.Minute
+						break
+					}
+				}
+			}
+		}
+	}
+
+	ssoJWT, err := c.TokenManager.GenerateToken(userID, username, util.AppIdPeakAuth, []string{"SSO_SESSION"}, duration, mfaVerified, authzVersion)
+	if err != nil {
+		return fmt.Errorf("no se pudo generar la sesión SSO: %w", err)
+	}
+
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("peak_session", ssoJWT, int(duration.Seconds()), "/", "", util.IsProduction(), true)
+	return nil
 }
 
 // LogoutEndpoint maneja el Federated Logout (Single Logout) de OAuth2/OIDC.

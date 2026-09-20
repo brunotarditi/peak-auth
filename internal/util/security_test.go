@@ -1,6 +1,9 @@
 package util
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestValidatePasswordLength(t *testing.T) {
 	if err := ValidatePasswordLength("corta"); err != nil {
@@ -113,5 +116,85 @@ func TestEnvHelpers(t *testing.T) {
 	}
 	if SameOriginRequest("https://evil.com", "auth.example.com") {
 		t.Fatal("host distinto no debería ser same-origin")
+	}
+}
+
+func TestValidateSessionPolicy_BoundsAndFormats(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantErr     bool
+		errContains string
+		wantMinutes int
+	}{
+		{
+			name:        "duración válida mínima (5 min)",
+			input:       `{"token_expiration_minutes": 5}`,
+			wantErr:     false,
+			wantMinutes: 5,
+		},
+		{
+			name:        "duración válida común (15 min)",
+			input:       `{"token_expiration_minutes": 15}`,
+			wantErr:     false,
+			wantMinutes: 15,
+		},
+		{
+			name:        "duración válida máxima (10080 min / 7 días)",
+			input:       `{"token_expiration_minutes": 10080}`,
+			wantErr:     false,
+			wantMinutes: 10080,
+		},
+		{
+			name:        "duración menor al mínimo (4 min)",
+			input:       `{"token_expiration_minutes": 4}`,
+			wantErr:     true,
+			errContains: "menor al mínimo permitido",
+		},
+		{
+			name:        "duración cero",
+			input:       `{"token_expiration_minutes": 0}`,
+			wantErr:     true,
+			errContains: "menor al mínimo permitido",
+		},
+		{
+			name:        "duración negativa",
+			input:       `{"token_expiration_minutes": -10}`,
+			wantErr:     true,
+			errContains: "menor al mínimo permitido",
+		},
+		{
+			name:        "duración excede el máximo (10081 min)",
+			input:       `{"token_expiration_minutes": 10081}`,
+			wantErr:     true,
+			errContains: "excede el máximo permitido",
+		},
+		{
+			name:        "JSON malformado",
+			input:       `{token_expiration_minutes: 60`,
+			wantErr:     true,
+			errContains: "invalid SESSION_POLICY rule",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			sess, err := ValidateSessionPolicy([]byte(tc.input))
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("se esperaba error pero fue nil")
+				}
+				if !strings.Contains(err.Error(), tc.errContains) {
+					t.Fatalf("se esperaba error conteniendo %q, obtenido: %v", tc.errContains, err)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("no se esperaba error, obtenido: %v", err)
+				}
+				if sess.TokenExpirationMinutes != tc.wantMinutes {
+					t.Fatalf("TokenExpirationMinutes = %d, esperado: %d", sess.TokenExpirationMinutes, tc.wantMinutes)
+				}
+			}
+		})
 	}
 }

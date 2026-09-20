@@ -106,6 +106,21 @@ func ParseSessionPolicy(raw []byte) (*SessionPolicy, error) {
 	return &r, nil
 }
 
+// ValidateSessionPolicy parses the session policy and ensures token_expiration_minutes is within valid bounds.
+func ValidateSessionPolicy(raw []byte) (*SessionPolicy, error) {
+	sess, err := ParseSessionPolicy(raw)
+	if err != nil {
+		return nil, err
+	}
+	if sess.TokenExpirationMinutes < MinTokenExpirationMinutes {
+		return nil, fmt.Errorf("la duración del token (%d minutos) es menor al mínimo permitido (%d minutos)", sess.TokenExpirationMinutes, MinTokenExpirationMinutes)
+	}
+	if sess.TokenExpirationMinutes > MaxTokenExpirationMinutes {
+		return nil, fmt.Errorf("la duración del token (%d minutos) excede el máximo permitido (%d minutos)", sess.TokenExpirationMinutes, MaxTokenExpirationMinutes)
+	}
+	return sess, nil
+}
+
 // ParseAuthzPolicy extracts authorization constraints
 func ParseAuthzPolicy(raw []byte) (*AuthzPolicy, error) {
 	var r AuthzPolicy

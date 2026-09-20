@@ -838,27 +838,250 @@ func TestCreateRule_ForbidsAdminRoleInPublicMode(t *testing.T) {
 	}
 }
 
-func TestSessionPolicy_DurationBoundsValidation(t *testing.T) {
+func TestSessionPolicy_MutationAndResolutionBoundsValidation(t *testing.T) {
 	ruleRepo := &mockRuleRepo{}
 	appRepo := newMockAppRepo()
 	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
 
-	// Menos de 5 minutos debe ser rechazado
-	err := ruleSvc.CreateRule(1, "SESSION_POLICY", []byte(`{"token_expiration_minutes": 4}`))
-	if err == nil || !strings.Contains(err.Error(), "al menos 5 minutos") {
-		t.Fatalf("se esperaba rechazo por duración menor a 5 minutos, obtenido: %v", err)
+	tests := []struct {
+		name        string
+		val         string
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:    "duración mínima válida (5 minutos)",
+			val:     `{"token_expiration_minutes": 5}`,
+			wantErr: false,
+		},
+		{
+			name:    "duración estándar válida (15 minutos)",
+			val:     `{"token_expiration_minutes": 15}`,
+			wantErr: false,
+		},
+		{
+			name:    "duración máxima válida (10080 minutos / 7 días)",
+			val:     `{"token_expiration_minutes": 10080}`,
+			wantErr: false,
+		},
+		{
+			name:        "duración menor al mínimo (4 minutos)",
+			val:         `{"token_expiration_minutes": 4}`,
+			wantErr:     true,
+			errContains: "menor al mínimo permitido",
+		},
+		{
+			name:        "duración cero",
+			val:         `{"token_expiration_minutes": 0}`,
+			wantErr:     true,
+			errContains: "menor al mínimo permitido",
+		},
+		{
+			name:        "duración negativa",
+			val:         `{"token_expiration_minutes": -5}`,
+			wantErr:     true,
+			errContains: "menor al mínimo permitido",
+		},
+		{
+			name:        "duración excede el máximo (10081 minutos)",
+			val:         `{"token_expiration_minutes": 10081}`,
+			wantErr:     true,
+			errContains: "excede el máximo permitido",
+		},
+		{
+			name:        "JSON malformado",
+			val:         `{token_expiration_minutes: 60`,
+			wantErr:     true,
+			errContains: "política de sesión inválida",
+		},
 	}
 
-	// Más de 10080 minutos (7 días) debe ser rechazado
-	err = ruleSvc.CreateRule(1, "SESSION_POLICY", []byte(`{"token_expiration_minutes": 10081}`))
-	if err == nil || !strings.Contains(err.Error(), "no puede exceder 10080 minutos") {
-		t.Fatalf("se esperaba rechazo por duración mayor a 7 días, obtenido: %v", err)
+	for _, tc := range tests {
+		t.Run("CreateRule_"+tc.name, func(t *testing.T) {
+			err := ruleSvc.CreateRule(1, "SESSION_POLICY", []byte(tc.val))
+			if tc.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tc.errContains) {
+					t.Fatalf("se esperaba error conteniendo %q, obtenido: %v", tc.errContains, err)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("no se esperaba error, obtenido: %v", err)
+				}
+			}
+		})
+
+		t.Run("UpdateRuleValue_"+tc.name, func(t *testing.T) {
+			err := ruleSvc.UpdateRuleValue(1, "SESSION_POLICY", []byte(tc.val))
+			if tc.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tc.errContains) {
+					t.Fatalf("se esperaba error conteniendo %q, obtenido: %v", tc.errContains, err)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("no se esperaba error, obtenido: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestResolveTokenDuration_TableDriven(t *testing.T) {
+	tests := []struct {
+		name         string
+		rules        []model.ApplicationRules
+		wantDuration time.Duration
+		wantErr      bool
+		errContains  string
+	}{
+		{
+			name:         "sin regla SESSION_POLICY usa valor por defecto conservador (15 min)",
+			rules:        []model.ApplicationRules{},
+			wantDuration: 15 * time.Minute,
+			wantErr:      false,
+		},
+		{
+			name: "duración mínima válida (5 min)",
+			rules: []model.ApplicationRules{
+				{Code: "SESSION_POLICY", Value: []byte(`{"token_expiration_minutes": 5}`)},
+			},
+			wantDuration: 5 * time.Minute,
+			wantErr:      false,
+		},
+		{
+			name: "duración máxima válida (10080 min)",
+			rules: []model.ApplicationRules{
+				{Code: "SESSION_POLICY", Value: []byte(`{"token_expiration_minutes": 10080}`)},
+			},
+			wantDuration: 10080 * time.Minute,
+			wantErr:      false,
+		},
+		{
+			name: "duración por debajo de 5 min retorna error fail-closed",
+			rules: []model.ApplicationRules{
+				{Code: "SESSION_POLICY", Value: []byte(`{"token_expiration_minutes": 4}`)},
+			},
+			wantErr:     true,
+			errContains: "menor al mínimo permitido",
+		},
+		{
+			name: "duración por encima de 10080 min retorna error fail-closed",
+			rules: []model.ApplicationRules{
+				{Code: "SESSION_POLICY", Value: []byte(`{"token_expiration_minutes": 10081}`)},
+			},
+			wantErr:     true,
+			errContains: "excede el máximo permitido",
+		},
+		{
+			name: "JSON corrupto retorna error fail-closed",
+			rules: []model.ApplicationRules{
+				{Code: "SESSION_POLICY", Value: []byte(`{invalid json}`)},
+			},
+			wantErr:     true,
+			errContains: "no se pudo interpretar la política de sesión",
+		},
 	}
 
-	// Duración válida (ej. 60 minutos) debe ser aceptada
-	err = ruleSvc.CreateRule(1, "SESSION_POLICY", []byte(`{"token_expiration_minutes": 60}`))
-	if err != nil {
-		t.Fatalf("se esperaba éxito para duración válida de 60 minutos: %v", err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := &userService{
+				ruleService: &mockRuleServiceForMfa{rules: tc.rules},
+			}
+			dur, err := svc.resolveTokenDuration(1)
+			if tc.wantErr {
+				if err == nil || !strings.Contains(err.Error(), tc.errContains) {
+					t.Fatalf("se esperaba error conteniendo %q, obtenido: %v", tc.errContains, err)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("no se esperaba error, obtenido: %v", err)
+				}
+				if dur != tc.wantDuration {
+					t.Fatalf("duración obtenida %v, esperada %v", dur, tc.wantDuration)
+				}
+			}
+		})
+	}
+}
+
+func TestLogin_FailsClosedOnMalformedMfaPolicy(t *testing.T) {
+	appRepo := newMockAppRepo()
+	appRepo.apps["test-app"] = &model.Application{
+		Model:    gorm.Model{ID: 1},
+		AppID:    "test-app",
+		IsActive: true,
+	}
+
+	hash, _ := util.HashPassword("ValidPassword123!")
+	userRepo := &mockUserRepo{
+		user: model.User{
+			Model:      gorm.Model{ID: 1},
+			Email:      "user@test.com",
+			Password:   hash,
+			IsActive:   true,
+			IsVerified: true,
+		},
+	}
+
+	svc := &userService{
+		userRepo: userRepo,
+		appRepo:  appRepo,
+		uarRepo:  &mockUARRepo{roles: map[uint][]string{1: {"USER"}}},
+		ruleService: &mockRuleServiceForMfa{
+			rules: []model.ApplicationRules{
+				{Code: "MFA_POLICY", Value: []byte(`{malformed mfa policy`)},
+			},
+		},
+	}
+
+	_, err := svc.Login(request.LoginRequest{
+		Email:    "user@test.com",
+		Password: "ValidPassword123!",
+	}, "test-app")
+
+	if err == nil || !strings.Contains(err.Error(), "no se pudo interpretar la política de MFA") {
+		t.Fatalf("se esperaba fallo fail-closed por política de MFA corrupta, obtenido: %v", err)
+	}
+}
+
+func TestAdminLogin_FailsClosedOnMalformedMfaPolicy(t *testing.T) {
+	appRepo := newMockAppRepo()
+	appRepo.apps[util.AppIdPeakAuth] = &model.Application{
+		Model:    gorm.Model{ID: 1},
+		AppID:    util.AppIdPeakAuth,
+		IsActive: true,
+	}
+
+	hash, _ := util.HashPassword("AdminPass123!")
+	userRepo := &mockUserRepo{
+		user: model.User{
+			Model:      gorm.Model{ID: 1},
+			Email:      "admin@peakauth.com",
+			Password:   hash,
+			IsActive:   true,
+			IsVerified: true,
+		},
+	}
+
+	uarRepo := &mockUARRepo{
+		roles: map[uint][]string{
+			1: {"ROOT"},
+		},
+	}
+
+	svc := &userService{
+		userRepo: userRepo,
+		appRepo:  appRepo,
+		uarRepo:  uarRepo,
+		ruleService: &mockRuleServiceForMfa{
+			rules: []model.ApplicationRules{
+				{Code: "MFA_POLICY", Value: []byte(`{malformed json`)},
+			},
+		},
+	}
+
+	_, _, _, _, _, err := svc.AdminLogin("admin@peakauth.com", "AdminPass123!")
+	if err == nil || !strings.Contains(err.Error(), "no se pudo interpretar la política de MFA") {
+		t.Fatalf("se esperaba fallo fail-closed por política de MFA corrupta en AdminLogin, obtenido: %v", err)
 	}
 }
 
