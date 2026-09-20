@@ -1032,7 +1032,6 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
 	}
 
-	duration := time.Duration(expireMinutes) * time.Minute
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
 	if err != nil {
 		return "", 0, err

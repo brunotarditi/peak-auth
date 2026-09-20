@@ -838,6 +838,31 @@ func TestCreateRule_ForbidsAdminRoleInPublicMode(t *testing.T) {
 	}
 }
 
+func TestSessionPolicy_DurationBoundsValidation(t *testing.T) {
+	ruleRepo := &mockRuleRepo{}
+	appRepo := newMockAppRepo()
+	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
+
+	// Menos de 5 minutos debe ser rechazado
+	err := ruleSvc.CreateRule(1, "SESSION_POLICY", []byte(`{"token_expiration_minutes": 4}`))
+	if err == nil || !strings.Contains(err.Error(), "al menos 5 minutos") {
+		t.Fatalf("se esperaba rechazo por duración menor a 5 minutos, obtenido: %v", err)
+	}
+
+	// Más de 10080 minutos (7 días) debe ser rechazado
+	err = ruleSvc.CreateRule(1, "SESSION_POLICY", []byte(`{"token_expiration_minutes": 10081}`))
+	if err == nil || !strings.Contains(err.Error(), "no puede exceder 10080 minutos") {
+		t.Fatalf("se esperaba rechazo por duración mayor a 7 días, obtenido: %v", err)
+	}
+
+	// Duración válida (ej. 60 minutos) debe ser aceptada
+	err = ruleSvc.CreateRule(1, "SESSION_POLICY", []byte(`{"token_expiration_minutes": 60}`))
+	if err != nil {
+		t.Fatalf("se esperaba éxito para duración válida de 60 minutos: %v", err)
+	}
+}
+
+
 func TestValidateRegistration_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing.T) {
 	ruleRepo := &mockRuleRepo{
 		rules: []model.ApplicationRules{
