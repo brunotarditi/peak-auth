@@ -17,6 +17,15 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// Conservative fallback token duration when SESSION_POLICY cannot be read or parsed
+	defaultTokenExpirationMinutes = 15
+	// Maximum allowed token expiration to prevent excessively long-lived tokens
+	maxTokenExpirationMinutes = 10080 // 7 days
+	// Minimum allowed token expiration to prevent unusably short tokens
+	minTokenExpirationMinutes = 5
+)
+
 type UserService interface {
 	Register(req request.RegisterRequest) (model.User, error)
 	Login(req request.LoginRequest, publicAppID string) (response.TokenResponse, error)
@@ -55,6 +64,34 @@ type userService struct {
 // NewUserService crea una instancia de UserService con las dependencias necesarias.
 func NewUserService(userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository, ruleService ApplicationRuleService, tokenManager *auth.JWTManager, emailVerificationRepo repo.EmailVerificationRepository, passwordResetRepo repo.PasswordResetRepository, emailService *EmailService, refreshTokenRepo repo.RefreshTokenRepository, txManager repo.TransactionManager) UserService {
 	return &userService{userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, appRepo: appRepo, ruleService: ruleService, tokenManager: tokenManager, emailVerificationRepo: emailVerificationRepo, passwordResetRepo: passwordResetRepo, emailService: emailService, refreshTokenRepo: refreshTokenRepo, txManager: txManager}
+}
+
+// resolveTokenDuration safely retrieves and validates the token expiration duration from SESSION_POLICY.
+// It fails closed by returning an error if the policy cannot be read or parsed, or if the value is out of bounds.
+func (s *userService) resolveTokenDuration(appID uint) (time.Duration, error) {
+	rules, err := s.ruleService.FindRulesByAppID(appID)
+	if err != nil {
+		return 0, fmt.Errorf("no se pudo obtener la política de sesión: %w", err)
+	}
+
+	for _, r := range rules {
+		if r.Code == "SESSION_POLICY" {
+			sess, err := util.ParseSessionPolicy(r.Value)
+			if err != nil {
+				return 0, fmt.Errorf("no se pudo interpretar la política de sesión: %w", err)
+			}
+			if sess.TokenExpirationMinutes < minTokenExpirationMinutes {
+				return 0, fmt.Errorf("la duración del token (%d minutos) es menor al mínimo permitido (%d minutos)", sess.TokenExpirationMinutes, minTokenExpirationMinutes)
+			}
+			if sess.TokenExpirationMinutes > maxTokenExpirationMinutes {
+				return 0, fmt.Errorf("la duración del token (%d minutos) excede el máximo permitido (%d minutos)", sess.TokenExpirationMinutes, maxTokenExpirationMinutes)
+			}
+			return time.Duration(sess.TokenExpirationMinutes) * time.Minute, nil
+		}
+	}
+
+	// No SESSION_POLICY found, use conservative default
+	return time.Duration(defaultTokenExpirationMinutes) * time.Minute, nil
 }
 
 // Login valida credenciales, comprueba estado del usuario y genera un token JWT.
@@ -136,14 +173,9 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	}
 
 	// 4. Aplicar duración de sesión (SESSION_POLICY)
-	duration := time.Hour * 24
-	for _, r := range rules {
-		if r.Code == "SESSION_POLICY" {
-			sess, err := util.ParseSessionPolicy(r.Value)
-			if err == nil && sess.TokenExpirationMinutes > 0 {
-				duration = time.Duration(sess.TokenExpirationMinutes) * time.Minute
-			}
-		}
+	duration, err := s.resolveTokenDuration(app.ID)
+	if err != nil {
+		return response.TokenResponse{}, err
 	}
 
 	// 3.6 Validar MFA_POLICY y MfaEnabled
@@ -540,20 +572,15 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 		return "", 0, false, false, "", fmt.Errorf("error interno del sistema")
 	}
 
+	// Get SESSION_POLICY for maxFails (used before password check to prevent enumeration)
 	maxFails := 5
-	expireMinutes := 720
 	rules, err := s.ruleService.FindRulesByAppID(peakApp.ID)
 	if err == nil {
 		for _, r := range rules {
 			if r.Code == "SESSION_POLICY" {
 				sess, err := util.ParseSessionPolicy(r.Value)
-				if err == nil {
-					if sess.MaxFailedLogins > 0 {
-						maxFails = sess.MaxFailedLogins
-					}
-					if sess.TokenExpirationMinutes > 0 {
-						expireMinutes = sess.TokenExpirationMinutes
-					}
+				if err == nil && sess.MaxFailedLogins > 0 {
+					maxFails = sess.MaxFailedLogins
 				}
 			}
 		}
@@ -661,6 +688,13 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 
 	shouldTriggerMFA := (mfaRequiredByPolicy && !user.MfaEnabled) || (user.MfaEnabled && !mfaDisabledByPolicy)
 
+	// Resolve token duration with fail-closed behavior
+	duration, err := s.resolveTokenDuration(peakApp.ID)
+	if err != nil {
+		return "", 0, false, false, "", err
+	}
+	expireMinutes := int(duration.Minutes())
+
 	if shouldTriggerMFA {
 		mfaToken, err := s.tokenManager.GenerateMFAPendingToken(user.ID, user.Email, peakApp.AppID)
 		if err != nil {
@@ -668,8 +702,6 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 		}
 		return "", expireMinutes, true, !user.MfaEnabled, mfaToken, nil
 	}
-
-	duration := time.Duration(expireMinutes) * time.Minute
 
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
 	if err != nil {
@@ -745,17 +777,10 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 	}
 
 	// 1. Duración según SESSION_POLICY
-	duration := time.Hour * 24
-	rules, err := s.ruleService.FindRulesByAppID(app.ID)
-	if err == nil {
-		for _, r := range rules {
-			if r.Code == "SESSION_POLICY" {
-				sess, err := util.ParseSessionPolicy(r.Value)
-				if err == nil && sess.TokenExpirationMinutes > 0 {
-					duration = time.Duration(sess.TokenExpirationMinutes) * time.Minute
-				}
-			}
-		}
+	duration, err := s.resolveTokenDuration(app.ID)
+	if err != nil {
+		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
+		return response.TokenResponse{}, err
 	}
 
 	// 1.5 Obtener roles para el JWT
@@ -890,25 +915,28 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 	}
 
 	// 2. Aplicar duración de sesión (SESSION_POLICY) y validar MFA_POLICY
-	duration := time.Hour * 24
+	duration, err := s.resolveTokenDuration(app.ID)
+	if err != nil {
+		return response.TokenResponse{}, err
+	}
+
 	rules, err := s.ruleService.FindRulesByAppID(app.ID)
-	if err == nil {
-		for _, r := range rules {
-			if r.Code == "SESSION_POLICY" {
-				sess, err := util.ParseSessionPolicy(r.Value)
-				if err == nil && sess.TokenExpirationMinutes > 0 {
-					duration = time.Duration(sess.TokenExpirationMinutes) * time.Minute
-				}
+	if err != nil {
+		return response.TokenResponse{}, fmt.Errorf("no se pudo obtener las reglas de la aplicación: %w", err)
+	}
+
+	for _, r := range rules {
+		if r.Code == "MFA_POLICY" {
+			mfaPol, err := util.ParseMfaPolicy(r.Value)
+			if err != nil {
+				return response.TokenResponse{}, fmt.Errorf("no se pudo interpretar la política de MFA: %w", err)
 			}
-			if r.Code == "MFA_POLICY" {
-				mfaPol, err := util.ParseMfaPolicy(r.Value)
-				if err == nil && mfaPol.Mode == "REQUIRED" {
-					if !user.MfaEnabled {
-						return response.TokenResponse{}, fmt.Errorf("la aplicación requiere autenticación multi-factor (MFA)")
-					}
-					if !mfaCompleted {
-						return response.TokenResponse{}, fmt.Errorf("la aplicación requiere completar autenticación multi-factor (MFA)")
-					}
+			if mfaPol.Mode == "REQUIRED" {
+				if !user.MfaEnabled {
+					return response.TokenResponse{}, fmt.Errorf("la aplicación requiere autenticación multi-factor (MFA)")
+				}
+				if !mfaCompleted {
+					return response.TokenResponse{}, fmt.Errorf("la aplicación requiere completar autenticación multi-factor (MFA)")
 				}
 			}
 		}
@@ -974,18 +1002,11 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 		return "", 0, fmt.Errorf("error interno del sistema")
 	}
 
-	expireMinutes := 720
-	rules, err := s.ruleService.FindRulesByAppID(peakApp.ID)
-	if err == nil {
-		for _, r := range rules {
-			if r.Code == "SESSION_POLICY" {
-				sess, err := util.ParseSessionPolicy(r.Value)
-				if err == nil && sess.TokenExpirationMinutes > 0 {
-					expireMinutes = sess.TokenExpirationMinutes
-				}
-			}
-		}
+	duration, err := s.resolveTokenDuration(peakApp.ID)
+	if err != nil {
+		return "", 0, err
 	}
+	expireMinutes := int(duration.Minutes())
 
 	roleModels, err := s.uarRepo.FindRolesByUserAndApp(user.ID, peakApp.ID)
 	var roles []string
@@ -1011,7 +1032,6 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
 	}
 
-	duration := time.Duration(expireMinutes) * time.Minute
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
 	if err != nil {
 		return "", 0, err
