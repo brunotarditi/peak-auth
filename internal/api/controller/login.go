@@ -23,6 +23,10 @@ type LoginController struct {
 
 // Login maneja el endpoint de login. Espera el header X-App-Id con el AppID público.
 func (c *LoginController) Login(ctx *gin.Context) {
+	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	ctx.Header("Cache-Control", "no-store")
+	ctx.Header("Pragma", "no-cache")
+
 	var req request.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(400, gin.H{"error": "Formato inválido"})
@@ -423,6 +427,10 @@ func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
 
 // VerifyMfaTotp valida el código TOTP para acceso API
 func (ctrl *LoginController) VerifyMfaTotp(c *gin.Context) {
+	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	c.Header("Cache-Control", "no-store")
+	c.Header("Pragma", "no-cache")
+
 	var req struct {
 		MfaToken string `json:"mfa_token" binding:"required"`
 		Code     string `json:"code" binding:"required"`
@@ -495,6 +503,10 @@ func (ctrl *LoginController) VerifyMfaTotp(c *gin.Context) {
 
 // VerifyMfaRecovery valida el código de recuperación para acceso API
 func (ctrl *LoginController) VerifyMfaRecovery(c *gin.Context) {
+	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	c.Header("Cache-Control", "no-store")
+	c.Header("Pragma", "no-cache")
+
 	var req struct {
 		MfaToken string `json:"mfa_token" binding:"required"`
 		Code     string `json:"code" binding:"required"`
@@ -601,6 +613,10 @@ func (ctrl *LoginController) SetupTOTPLogin(c *gin.Context) {
 
 // VerifyTOTPLogin valida el código TOTP enviado para activar el factor durante el login
 func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
+	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	c.Header("Cache-Control", "no-store")
+	c.Header("Pragma", "no-cache")
+
 	var req struct {
 		MfaToken string `json:"mfa_token"`
 		Code     string `json:"code" binding:"required"`
@@ -725,6 +741,10 @@ func (ctrl *LoginController) BeginWebAuthnRegistrationLogin(c *gin.Context) {
 
 // FinishWebAuthnRegistrationLogin finaliza el registro de WebAuthn durante el login forzoso
 func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
+	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	c.Header("Cache-Control", "no-store")
+	c.Header("Pragma", "no-cache")
+
 	mfaToken := ctrl.extractMfaToken(c)
 	if mfaToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "mfa_token es requerido"})

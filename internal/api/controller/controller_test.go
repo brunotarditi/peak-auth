@@ -521,3 +521,42 @@ func TestGetResetPassword_FallbackToQuery(t *testing.T) {
 	}
 }
 
+func TestLogin_And_Refresh_CacheControlHeaders(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	// Test Login Controller headers
+	loginCtrl := &LoginController{}
+	r := gin.New()
+	r.POST("/api/v1/login", loginCtrl.Login)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/login", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Header().Get("Cache-Control") != "no-store" {
+		t.Errorf("se esperaba Cache-Control: no-store en /api/v1/login, obtenido: %s", w.Header().Get("Cache-Control"))
+	}
+	if w.Header().Get("Pragma") != "no-cache" {
+		t.Errorf("se esperaba Pragma: no-cache en /api/v1/login, obtenido: %s", w.Header().Get("Pragma"))
+	}
+
+	// Test Refresh Controller headers
+	userCtrl := &UserController{}
+	rUser := gin.New()
+	rUser.POST("/api/v1/refresh", userCtrl.Refresh)
+
+	wUser := httptest.NewRecorder()
+	reqUser, _ := http.NewRequest(http.MethodPost, "/api/v1/refresh", strings.NewReader(`{}`))
+	reqUser.Header.Set("Content-Type", "application/json")
+	rUser.ServeHTTP(wUser, reqUser)
+
+	if wUser.Header().Get("Cache-Control") != "no-store" {
+		t.Errorf("se esperaba Cache-Control: no-store en /api/v1/refresh, obtenido: %s", wUser.Header().Get("Cache-Control"))
+	}
+	if wUser.Header().Get("Pragma") != "no-cache" {
+		t.Errorf("se esperaba Pragma: no-cache en /api/v1/refresh, obtenido: %s", wUser.Header().Get("Pragma"))
+	}
+}
+
+

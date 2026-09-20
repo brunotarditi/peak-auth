@@ -86,6 +86,10 @@ func (c *UserController) PostResetPassword(ctx *gin.Context) {
 
 // Refresh maneja la renovación de tokens vía refresh token
 func (c *UserController) Refresh(ctx *gin.Context) {
+	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	ctx.Header("Cache-Control", "no-store")
+	ctx.Header("Pragma", "no-cache")
+
 	var req struct {
 		RefreshToken string `json:"refresh_token" binding:"required"`
 	}
