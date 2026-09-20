@@ -31,16 +31,23 @@
             <div style="margin-bottom: 0;" class="form-group">
                 <label class="form-label" for="app_description">Descripción</label>
                 <textarea id="app_description" name="description" rows="4" placeholder="Describe brevemente tu aplicación..."
-                    class="peak-input" style="resize: vertical;">{{ if .App }}{{ .App.Description }}{{ end }}</textarea>
+                    class="peak-input" style="resize: vertical;">{{ if .App }}{{ .App.Description }}{{ else }}{{ .DescriptionValue }}{{ end }}</textarea>
             </div>
 
             <div style="margin-bottom: 0;" class="form-group">
                 <label class="form-label" for="redirect_url">URL de redirección (OAuth 2.0 callback)</label>
-                <input type="text" id="redirect_url" name="redirect_url" value="{{ if .App }}{{ .App.RedirectURL }}{{ end }}" placeholder="Ej: http://localhost:4200/auth/callback" class="peak-input">
+                <input type="text" id="redirect_url" name="redirect_url" value="{{ if .App }}{{ .App.RedirectURL }}{{ else }}{{ .RedirectURLValue }}{{ end }}" placeholder="Ej: http://localhost:4200/auth/callback" required class="peak-input">
+                {{ if .RedirectError }}
+                <p style="font-size: 0.75rem; color: var(--rose-600); font-weight: 700; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                    {{ template "icon-warning" }}
+                    {{ .RedirectError }}
+                </p>
+                {{ else }}
                 <p style="font-size: 0.75rem; color: var(--text-light); font-weight: 500; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
                     <span style="color: var(--brand-500);">{{ template "icon-info" }}</span>
                     Obligatorio para que la redirección tras iniciar sesión funcione (prevención Open Redirect).
                 </p>
+                {{ end }}
             </div>
 
             <div style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 1.5rem; border-radius: var(--radius-xl); display: flex; align-items: center; justify-content: space-between;">

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"peak-auth/internal/util"
 )
 
 // TokenIssuer identifica al emisor (issuer) de los tokens. Puede sobreescribirse
@@ -250,6 +251,10 @@ func (m *JWTManager) resolvePublicKey(kid string) (*rsa.PublicKey, error) {
 // con contraseña fue exitoso pero está pendiente de verificar el segundo factor.
 // No contiene roles de aplicación ya que el login no ha finalizado.
 func (m *JWTManager) GenerateMFAPendingToken(userID uint, username string, appID string) (string, error) {
+	jti, _, err := util.GenerateToken(16)
+	if err != nil {
+		return "", err
+	}
 	claims := CustomClaims{
 		Username:    username,
 		AppID:       appID,
@@ -258,6 +263,7 @@ func (m *JWTManager) GenerateMFAPendingToken(userID uint, username string, appID
 		TokenType:   "mfa_pending",
 	}
 	claims.RegisteredClaims = jwt.RegisteredClaims{
+		ID:        jti,
 		Subject:   fmt.Sprintf("%d", userID),
 		Issuer:    tokenIssuer(),
 		Audience:  jwt.ClaimStrings{appID},

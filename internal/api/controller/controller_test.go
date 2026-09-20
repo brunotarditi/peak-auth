@@ -559,4 +559,253 @@ func TestLogin_And_Refresh_CacheControlHeaders(t *testing.T) {
 	}
 }
 
+type mockAppAdminService struct {
+	service.ApplicationService
+	createAppFn      func(name, description, redirectURL string, isActive bool) (model.Application, string, error)
+	updateAppFn      func(appID string, description, redirectURL string, isActive bool) error
+	validateUniqueFn func(name string) error
+}
+
+func (m *mockAppAdminService) ValidateAppNameUnique(name string) error {
+	if m.validateUniqueFn != nil {
+		return m.validateUniqueFn(name)
+	}
+	return nil
+}
+
+func (m *mockAppAdminService) CreateApp(name, description, redirectURL string, isActive bool) (model.Application, string, error) {
+	if m.createAppFn != nil {
+		return m.createAppFn(name, description, redirectURL, isActive)
+	}
+	return model.Application{Name: name, RedirectURL: redirectURL, IsActive: isActive}, "secret123", nil
+}
+
+func (m *mockAppAdminService) UpdateApp(appID string, description, redirectURL string, isActive bool) error {
+	if m.updateAppFn != nil {
+		return m.updateAppFn(appID, description, redirectURL, isActive)
+	}
+	return nil
+}
+
+type mockRuleAdminService struct {
+	service.ApplicationRuleService
+	createDefaultRulesFn func(appID uint) error
+}
+
+func (m *mockRuleAdminService) CreateDefaultRules(appID uint) error {
+	if m.createDefaultRulesFn != nil {
+		return m.createDefaultRulesFn(appID)
+	}
+	return nil
+}
+
+func TestPostFormApp_Validation(t *testing.T) {
+	tmpl := template.Must(template.New("app_new.html").Parse("<html>app_new:error={{.Error}}|redirect_err={{.RedirectError}}|name={{.NameValue}}|desc={{.DescriptionValue}}</html>"))
+	template.Must(tmpl.New("app_created.html").Parse("<html>app_created:{{.App.Name}}</html>"))
+
+	t.Run("Empty app name returns 400 with inline error", func(t *testing.T) {
+		appSvc := &mockAppAdminService{}
+		ruleSvc := &mockRuleAdminService{}
+		ctrl := &ApplicationController{
+			AppService:  appSvc,
+			RuleService: ruleSvc,
+		}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/admin/apps", ctrl.PostFormApp)
+
+		form := url.Values{}
+		form.Set("name", "")
+		form.Set("redirect_url", "https://example.com/callback")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/admin/apps", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("esperaba 400 Bad Request, obtuvo %d", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "El nombre de la aplicación es requerido.") {
+			t.Errorf("esperaba mensaje de nombre requerido, obtuvo: %s", w.Body.String())
+		}
+	})
+
+	t.Run("Empty redirect_url returns 400 with inline error and preserves values", func(t *testing.T) {
+		appSvc := &mockAppAdminService{}
+		ruleSvc := &mockRuleAdminService{}
+		ctrl := &ApplicationController{
+			AppService:  appSvc,
+			RuleService: ruleSvc,
+		}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/admin/apps", ctrl.PostFormApp)
+
+		form := url.Values{}
+		form.Set("name", "My Cool App")
+		form.Set("description", "A description here")
+		form.Set("redirect_url", "")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/admin/apps", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("esperaba 400 Bad Request, obtuvo %d", w.Code)
+		}
+		body := w.Body.String()
+		if !strings.Contains(body, "La URL de redirección es obligatoria.") {
+			t.Errorf("esperaba error de redirección obligatoria, obtuvo: %s", body)
+		}
+		if !strings.Contains(body, "name=My Cool App") || !strings.Contains(body, "desc=A description here") {
+			t.Errorf("esperaba que se preservaran los valores de name y desc, obtuvo: %s", body)
+		}
+	})
+
+	t.Run("Insecure redirect_url (HTTP non-loopback) returns 400", func(t *testing.T) {
+		appSvc := &mockAppAdminService{}
+		ruleSvc := &mockRuleAdminService{}
+		ctrl := &ApplicationController{
+			AppService:  appSvc,
+			RuleService: ruleSvc,
+		}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/admin/apps", ctrl.PostFormApp)
+
+		form := url.Values{}
+		form.Set("name", "Insecure App")
+		form.Set("redirect_url", "http://insecure.example.com/callback")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/admin/apps", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("esperaba 400 Bad Request, obtuvo %d", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "redirect_uri debe usar HTTPS excepto para direcciones locales") {
+			t.Errorf("esperaba error de HTTPS requerido, obtuvo: %s", w.Body.String())
+		}
+	})
+
+	t.Run("Valid inputs create application successfully", func(t *testing.T) {
+		appSvc := &mockAppAdminService{}
+		ruleSvc := &mockRuleAdminService{}
+		ctrl := &ApplicationController{
+			AppService:  appSvc,
+			RuleService: ruleSvc,
+		}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/admin/apps", ctrl.PostFormApp)
+
+		form := url.Values{}
+		form.Set("name", "Valid App")
+		form.Set("description", "Valid Description")
+		form.Set("redirect_url", "https://valid.example.com/callback")
+		form.Set("is_active", "on")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/admin/apps", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("esperaba 200 OK, obtuvo %d: %s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "app_created:Valid App") {
+			t.Errorf("esperaba renderizado de app_created, obtuvo: %s", w.Body.String())
+		}
+	})
+}
+
+func TestUpdateFormApp_Validation(t *testing.T) {
+	tmpl := template.Must(template.New("error.html").Parse("<html>error:{{.Title}}|{{.Message}}</html>"))
+
+	t.Run("Empty redirect_url returns 400", func(t *testing.T) {
+		appSvc := &mockAppAdminService{}
+		ctrl := &ApplicationController{
+			AppService: appSvc,
+		}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/admin/apps/:id", ctrl.UpdateFormApp)
+
+		form := url.Values{}
+		form.Set("description", "Updated desc")
+		form.Set("redirect_url", "")
+		form.Set("is_active", "on")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/admin/apps/my-app", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("esperaba 400 Bad Request, obtuvo %d", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "La URL de redirección es obligatoria.") {
+			t.Errorf("esperaba error de redirección obligatoria, obtuvo: %s", w.Body.String())
+		}
+	})
+
+	t.Run("Insecure redirect_url returns 400", func(t *testing.T) {
+		appSvc := &mockAppAdminService{}
+		ctrl := &ApplicationController{
+			AppService: appSvc,
+		}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/admin/apps/:id", ctrl.UpdateFormApp)
+
+		form := url.Values{}
+		form.Set("description", "Updated desc")
+		form.Set("redirect_url", "http://insecure.example.com/oauth/callback")
+		form.Set("is_active", "on")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/admin/apps/my-app", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("esperaba 400 Bad Request, obtuvo %d", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "URL de Redirección Inválida") {
+			t.Errorf("esperaba error de URL inválida, obtuvo: %s", w.Body.String())
+		}
+	})
+}
+
+func TestMfaChallengeKey(t *testing.T) {
+	// 1. Con JTI presente, usa JTI
+	key := mfaChallengeKey("oauth_mfa", 1, "jti-123", "1")
+	if key != "oauth_mfa_1_jti-123" {
+		t.Errorf("mfaChallengeKey con JTI inesperado: %s", key)
+	}
+
+	// 2. Sin JTI, fallback a Subject
+	fallbackKey := mfaChallengeKey("oauth_mfa", 1, "", "1")
+	if fallbackKey != "oauth_mfa_1_1" {
+		t.Errorf("mfaChallengeKey fallback inesperado: %s", fallbackKey)
+	}
+
+	// 3. Dos tokens distintos producen claves distintas para el mismo usuario
+	keyA := mfaChallengeKey("oauth_mfa", 1, "tok-aaa", "1")
+	keyB := mfaChallengeKey("oauth_mfa", 1, "tok-bbb", "1")
+	if keyA == keyB {
+		t.Errorf("claves deben ser distintas: %s == %s", keyA, keyB)
+	}
+}
+
 

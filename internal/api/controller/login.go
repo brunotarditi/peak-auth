@@ -455,7 +455,7 @@ func (ctrl *LoginController) VerifyMfaTotp(c *gin.Context) {
 	}
 
 	// Create a unique key for this MFA token to track attempts
-	tokenKey := fmt.Sprintf("api_mfa_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("api_mfa", userID, claims.ID, claims.Subject)
 
 	// Check if token is already locked
 	if service.IsApiMfaTokenLocked(tokenKey) {
@@ -531,7 +531,7 @@ func (ctrl *LoginController) VerifyMfaRecovery(c *gin.Context) {
 	}
 
 	// Create a unique key for this MFA token to track attempts
-	tokenKey := fmt.Sprintf("api_mfa_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("api_mfa", userID, claims.ID, claims.Subject)
 
 	// Check if token is already locked
 	if service.IsApiMfaTokenLocked(tokenKey) {
@@ -654,7 +654,7 @@ func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 	}
 
 	// Create a unique key for this MFA token to track attempts
-	tokenKey := fmt.Sprintf("api_mfa_setup_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("api_mfa_setup", userID, claims.ID, claims.Subject)
 
 	// Check if token is already locked
 	if service.IsApiMfaTokenLocked(tokenKey) {
@@ -770,7 +770,7 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 	}
 
 	// Create a unique key for this MFA token to track attempts and prevent replay
-	tokenKey := fmt.Sprintf("api_mfa_setup_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("api_mfa_setup", userID, claims.ID, claims.Subject)
 
 	// Check if token has already been consumed (replay prevention)
 	if service.IsApiMfaTokenConsumed(tokenKey) {

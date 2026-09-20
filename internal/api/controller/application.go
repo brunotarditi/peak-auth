@@ -6,6 +6,7 @@ import (
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -81,23 +82,59 @@ func (ctrl *ApplicationController) GetEditApp(c *gin.Context) {
 
 // PostFormApp crea una nueva aplicación
 func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
-	name := c.PostForm("name")
-	description := c.PostForm("description")
-	redirectURL := c.PostForm("redirect_url")
+	name := strings.TrimSpace(c.PostForm("name"))
+	description := strings.TrimSpace(c.PostForm("description"))
+	redirectURL := strings.TrimSpace(c.PostForm("redirect_url"))
 	isActive := c.PostForm("is_active") == "on"
 
+	renderNewForm := func(status int, nameErr, redirectErr string) {
+		data := gin.H{
+			"FormAction":       "/admin/apps",
+			"IsEdit":           false,
+			"Breadcrumbs":      []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva aplicación"}},
+			"Title":            "Nueva aplicación",
+			"Action":           "Crear aplicación",
+			"NameValue":        name,
+			"DescriptionValue": description,
+			"RedirectURLValue": redirectURL,
+			"NameReadonly":     false,
+			"NameDisabled":     false,
+			"NameClass":        "",
+			"HelpText":         "El AppID se generará automáticamente",
+			"IsActive":         isActive,
+			"IsLocked":         false,
+			"SubmitDisabled":   false,
+			"StatusApp":        "Activar inmediatamente",
+			"Error":            nameErr,
+			"RedirectError":    redirectErr,
+		}
+		if email, exists := c.Get("user_email"); exists {
+			data["UserEmail"] = email
+		}
+		if token, exists := c.Get("csrf_token"); exists {
+			data["CSRFToken"] = token
+		}
+		c.HTML(status, "app_new.html", data)
+	}
+
 	if name == "" {
-		ctrl.renderError(c, http.StatusBadRequest, "Datos Inválidos", "El nombre de la aplicación es requerido.")
+		renderNewForm(http.StatusBadRequest, "El nombre de la aplicación es requerido.", "")
 		return
 	}
 
 	// Validar que no exista otra app con el mismo nombre
 	if err := ctrl.AppService.ValidateAppNameUnique(name); err != nil {
-		ctrl.renderAdmin(c, "app_new.html", gin.H{
-			"Error":       err.Error(),
-			"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Nueva aplicación"}},
-			"Title":       "Nueva aplicación",
-		})
+		renderNewForm(http.StatusBadRequest, err.Error(), "")
+		return
+	}
+
+	// Validar redirectURL antes de llamar a CreateApp
+	if redirectURL == "" {
+		renderNewForm(http.StatusBadRequest, "", "La URL de redirección es obligatoria.")
+		return
+	}
+	if err := service.ValidateRedirectURISecurity(redirectURL); err != nil {
+		renderNewForm(http.StatusBadRequest, "", err.Error())
 		return
 	}
 
@@ -129,8 +166,8 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 	id := c.Param("id")
 	_ = c.PostForm("name")
-	description := c.PostForm("description")
-	redirectURL := c.PostForm("redirect_url")
+	description := strings.TrimSpace(c.PostForm("description"))
+	redirectURL := strings.TrimSpace(c.PostForm("redirect_url"))
 	isActive := c.PostForm("is_active") == "on"
 
 	// La app raíz no puede desactivarse.
@@ -140,6 +177,16 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 			"Title":       "Operación bloqueada",
 			"Breadcrumbs": []gin.H{{"Label": "Apps", "URL": "/admin"}, {"Label": "Error"}},
 		})
+		return
+	}
+
+	if redirectURL == "" {
+		ctrl.renderError(c, http.StatusBadRequest, "Datos Inválidos", "La URL de redirección es obligatoria.")
+		return
+	}
+
+	if err := service.ValidateRedirectURISecurity(redirectURL); err != nil {
+		ctrl.renderError(c, http.StatusBadRequest, "URL de Redirección Inválida", err.Error())
 		return
 	}
 

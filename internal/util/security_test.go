@@ -1,6 +1,7 @@
 package util
 
 import (
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -196,5 +197,33 @@ func TestValidateSessionPolicy_BoundsAndFormats(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRenderer_ErrorHTML_RendersBaseAdmin(t *testing.T) {
+	renderer, err := NewRenderer("../../web/templates", GetTemplateFuncMap())
+	if err != nil {
+		t.Fatalf("error initializing template renderer: %v", err)
+	}
+
+	r := renderer.Instance("error.html", map[string]any{
+		"Title":   "Error de prueba",
+		"Message": "Algo falló intencionalmente",
+	})
+
+	w := httptest.NewRecorder()
+	if err := r.Render(w); err != nil {
+		t.Fatalf("error rendering error.html: %v", err)
+	}
+
+	body := w.Body.String()
+	if len(body) <= 10 {
+		t.Fatalf("error.html rendered blank content (len=%d): %q", len(body), body)
+	}
+	if !strings.Contains(body, "Algo falló intencionalmente") {
+		t.Errorf("error.html no contiene el mensaje de error: %s", body)
+	}
+	if !strings.Contains(body, "Peak Auth") {
+		t.Errorf("error.html no renderizó el layout base_admin: %s", body)
 	}
 }

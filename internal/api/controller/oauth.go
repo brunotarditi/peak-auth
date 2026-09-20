@@ -428,7 +428,7 @@ func (c *OAuthController) PostPublicLoginMfaTotp(ctx *gin.Context) {
 	}
 
 	// Create a unique key for this MFA token to track attempts
-	tokenKey := fmt.Sprintf("oauth_mfa_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("oauth_mfa", userID, claims.ID, claims.Subject)
 
 	// Check if token is already locked
 	if service.IsApiMfaTokenLocked(tokenKey) {
@@ -509,7 +509,7 @@ func (c *OAuthController) PostPublicLoginMfaRecovery(ctx *gin.Context) {
 	}
 
 	// Create a unique key for this MFA token to track attempts
-	tokenKey := fmt.Sprintf("oauth_mfa_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("oauth_mfa", userID, claims.ID, claims.Subject)
 
 	// Check if token is already locked
 	if service.IsApiMfaTokenLocked(tokenKey) {
@@ -586,7 +586,7 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 	}
 
 	// Create a unique key for this MFA token to track attempts
-	tokenKey := fmt.Sprintf("oauth_mfa_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("oauth_mfa", userID, claims.ID, claims.Subject)
 
 	// Check if token is already locked
 	if service.IsApiMfaTokenLocked(tokenKey) {
@@ -681,7 +681,7 @@ func (c *OAuthController) PostPublicLoginMfaSetupVerify(ctx *gin.Context) {
 	}
 
 	// Create a unique key for this MFA token to track attempts
-	tokenKey := fmt.Sprintf("oauth_mfa_setup_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("oauth_mfa_setup", userID, claims.ID, claims.Subject)
 
 	// Check if token is already locked
 	if service.IsApiMfaTokenLocked(tokenKey) {
@@ -768,7 +768,7 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 	}
 
 	// Create a unique key for this MFA token to track attempts
-	tokenKey := fmt.Sprintf("oauth_mfa_setup_%d_%s", userID, claims.Subject)
+	tokenKey := mfaChallengeKey("oauth_mfa_setup", userID, claims.ID, claims.Subject)
 
 	// Check if token is already locked
 	if service.IsApiMfaTokenLocked(tokenKey) {

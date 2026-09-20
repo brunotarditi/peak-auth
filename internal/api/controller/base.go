@@ -20,6 +20,16 @@ func parseUserIDFromSubject(sub string) (uint, error) {
 	return uint(val), nil
 }
 
+// mfaChallengeKey genera una clave única para rastrear intentos y consumo de MFA por token,
+// usando preferentemente el JTI (claims.ID) y recurriendo al Subject solo como fallback.
+func mfaChallengeKey(prefix string, userID uint, tokenID, subject string) string {
+	key := tokenID
+	if key == "" {
+		key = subject
+	}
+	return fmt.Sprintf("%s_%d_%s", prefix, userID, key)
+}
+
 // sanitizeForLogging removes control characters (including newlines and carriage returns)
 // from user input to prevent log injection attacks.
 func sanitizeForLogging(input string) string {

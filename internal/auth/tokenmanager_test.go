@@ -97,6 +97,23 @@ func TestMFAPendingToken(t *testing.T) {
 		t.Fatalf("claims incorrectos para MFA_PENDING: %+v", claims)
 	}
 
+	if claims.ID == "" {
+		t.Fatal("GenerateMFAPendingToken debe incluir un JTI (claims.ID) único")
+	}
+
+	// Verificar que dos tokens generados consecutivamente tengan JTIs distintos
+	tok2, err := m.GenerateMFAPendingToken(42, "user@example.com", "mi-app")
+	if err != nil {
+		t.Fatalf("GenerateMFAPendingToken tok2 falló: %v", err)
+	}
+	claims2, err := m.VerifyMFAPendingToken(tok2, "mi-app")
+	if err != nil {
+		t.Fatalf("VerifyMFAPendingToken claims2 falló: %v", err)
+	}
+	if claims2.ID == claims.ID {
+		t.Fatalf("dos tokens MFA no deben compartir el mismo JTI: %s == %s", claims.ID, claims2.ID)
+	}
+
 	// VerifyMFAPendingToken debe rechazar tokens normales de acceso
 	normalTok, _ := m.GenerateToken(42, "user@example.com", "mi-app", []string{"USER"}, time.Hour, true, 0)
 	if _, err := m.VerifyMFAPendingToken(normalTok, "mi-app"); err == nil {
