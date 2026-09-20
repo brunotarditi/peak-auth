@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type UserRepository interface {
@@ -15,6 +16,7 @@ type UserRepository interface {
 	FindByEmail(email string) (model.User, error)
 	FindById(ID uint) (model.User, error)
 	UpdateColumn(column string, value interface{}, id uint) error
+	LockUserForUpdate(userID uint) error
 }
 
 type userRepository struct {
@@ -137,4 +139,12 @@ func (r *userRepository) VerifyUserEmailByToken(tokenHash []byte) (uint, uint, e
 	}
 
 	return userID, appID, nil
+}
+
+// LockUserForUpdate acquires a row-level lock on the user record using SELECT ... FOR UPDATE.
+// This serializes concurrent operations on the same user within transactions, preventing race conditions
+// in rate-limiting and quota enforcement logic. Must be called within an active transaction.
+func (r *userRepository) LockUserForUpdate(userID uint) error {
+	var user model.User
+	return r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, userID).Error
 }

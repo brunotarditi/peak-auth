@@ -429,8 +429,9 @@ func (s *userService) CanRequestPasswordReset(userID uint) (bool, error) {
 }
 
 // SendResetEmail atomically checks eligibility, creates a token, and sends the email.
-// The eligibility check and reset creation are performed within a transaction to prevent
-// concurrent requests from bypassing cooldown and monthly quota limits.
+// The eligibility check and reset creation are performed within a transaction with a per-user
+// row lock (SELECT ... FOR UPDATE) to serialize concurrent requests and prevent race conditions
+// that could bypass cooldown and monthly quota limits.
 func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 	// Generate token before transaction (expensive cryptographic operation)
 	plainToken, tokenHash, err := util.GenerateToken(32)
@@ -440,6 +441,14 @@ func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 
 	// Perform eligibility check and reset creation atomically within a transaction
 	if err := s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
+		// Acquire a row-level lock on the user to serialize concurrent reset requests for this user.
+		// This prevents race conditions where multiple concurrent requests could all observe the same
+		// eligible state (e.g., 4 resets this month) and then all proceed to insert, bypassing the
+		// 5-reset monthly limit. The lock is held until the transaction commits or rolls back.
+		if err := tx.Users().LockUserForUpdate(user.ID); err != nil {
+			return err
+		}
+
 		// Check cooldown: ensure at least 15 minutes since last reset
 		lastReset, err := tx.PasswordResets().CheckLastTimeTokenReset(user.ID)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {

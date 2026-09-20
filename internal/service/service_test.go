@@ -167,6 +167,7 @@ func (m *mockUserRepo) FindById(ID uint) (model.User, error) {
 	return m.user, nil
 }
 func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error    { return nil }
+func (m *mockUserRepo) LockUserForUpdate(userID uint) error                          { return nil }
 
 type mockUARRepo struct {
 	roles                map[uint][]string
@@ -2172,7 +2173,8 @@ func TestVerifyEmail_AtomicClaimAndReplayPrevention(t *testing.T) {
 
 func TestSendResetEmail_AtomicEligibilityAndQuota(t *testing.T) {
 	resetRepo := newMockPasswordResetRepo()
-	txRepo := &mockTxRepo{passwordResetRepo: resetRepo}
+	userRepo := &mockUserRepo{}
+	txRepo := &mockTxRepo{passwordResetRepo: resetRepo, userRepo: userRepo}
 	txMgr := &mockTxManager{txRepo: txRepo}
 
 	svc := &userService{

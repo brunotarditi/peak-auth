@@ -245,7 +245,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			apps.DELETE("/users/:user_id", userCtrl.RevokeUserAccess)
 			apps.POST("/users/:user_id/unlock", userCtrl.PostUnlockUser)
 			apps.POST("/users/:user_id/resend-verification", dashboardCtrl.PostResendVerification)
-			apps.POST("/users/:user_id/send-reset", dashboardCtrl.PostSendResetPassword)
+			apps.POST("/users/:user_id/send-reset", resetLimiter, dashboardCtrl.PostSendResetPassword)
 			apps.GET("/rules", appCtrl.GetAppRules)
 			apps.POST("/rules", ruleCtrl.PostDefaultRules)
 			apps.POST("/rules/:code", ruleCtrl.PostAppRule)
