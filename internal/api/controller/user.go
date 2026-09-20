@@ -407,6 +407,8 @@ func (ctrl *UserController) FinishWebAuthnRegistration(c *gin.Context) {
 		return
 	}
 
+	service.DeleteWebAuthnSession(sessionKey)
+
 	// Si queremos devolver los códigos de recuperación para mostrarlos tras configurar
 	status, _ := ctrl.MfaService.GetMfaStatus(userID)
 

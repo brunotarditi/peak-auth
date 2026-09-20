@@ -87,6 +87,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
 	tokenLimiter := middleware.RateLimitMiddleware(20, time.Minute)
+	mfaSetupLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 
 	// ============================================================================
 	// OIDC & JWKS DISCOVERY (Público, CORS abierto para SDKs y librerías cliente)
@@ -168,14 +169,15 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// API V1 Protegida (MFA configuration)
 	// ============================================================================
 	apiPrivate := r.Group("/api/v1")
+	apiPrivate.Use(middleware.RequestBodyLimitMiddleware(1024 * 1024))
 	apiPrivate.Use(middleware.CORSMiddleware())
 	apiPrivate.Use(middleware.AuthMiddleware(app.TokenManager, app.UserRepo))
 	{
 		apiPrivate.POST("/mfa/totp/setup", userCtrl.SetupTOTP)
-		apiPrivate.POST("/mfa/totp/verify", userCtrl.VerifyTOTP)
-		apiPrivate.POST("/mfa/webauthn/setup", userCtrl.BeginWebAuthnRegistration)
-		apiPrivate.POST("/mfa/webauthn/verify", userCtrl.FinishWebAuthnRegistration)
-		apiPrivate.POST("/mfa/totp/disable", userCtrl.DisableMFA)
+		apiPrivate.POST("/mfa/totp/verify", mfaSetupLimiter, userCtrl.VerifyTOTP)
+		apiPrivate.POST("/mfa/webauthn/setup", mfaSetupLimiter, userCtrl.BeginWebAuthnRegistration)
+		apiPrivate.POST("/mfa/webauthn/verify", mfaSetupLimiter, userCtrl.FinishWebAuthnRegistration)
+		apiPrivate.POST("/mfa/totp/disable", mfaSetupLimiter, userCtrl.DisableMFA)
 		apiPrivate.GET("/mfa/status", userCtrl.GetMfaStatus)
 	}
 

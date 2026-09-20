@@ -516,6 +516,19 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 		return fmt.Errorf("error validando registro WebAuthn: %w", err)
 	}
 
+	// Verificar si la credencial ya existe para este usuario
+	existingCreds, _ := s.mfaRepo.FindAllCredentialsByUser(userID)
+	for _, c := range existingCreds {
+		if c.Type == "WEBAUTHN" {
+			var existingCred webauthn.Credential
+			if err := json.Unmarshal([]byte(c.Secret), &existingCred); err == nil {
+				if bytes.Equal(existingCred.ID, credential.ID) {
+					return fmt.Errorf("esta credencial ya está registrada")
+				}
+			}
+		}
+	}
+
 	// Serializar credencial a JSON
 	credJSON, err := json.Marshal(credential)
 	if err != nil {
