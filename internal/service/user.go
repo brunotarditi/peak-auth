@@ -340,17 +340,16 @@ func (s *userService) FindAll() ([]model.User, error) {
 // VerifyEmail verifica el token de email y marca el usuario como verificado.
 // Retorna el UserID y ApplicationID si todo es correcto para redirección inteligente.
 func (s *userService) VerifyEmail(token string) (uint, uint, error) {
-	verification, err := s.emailVerificationRepo.FindEmailVerification(token)
+	// Hash the token to match against stored hash
+	hashedToken := sha256.Sum256([]byte(token))
+
+	// Atomically validate and consume the verification token
+	userID, appID, err := s.userRepo.VerifyUserEmailByToken(hashedToken[:])
 	if err != nil {
 		return 0, 0, fmt.Errorf("token inválido o expirado")
 	}
 
-	// Movemos la lógica de "marcar como verificado" a una operación atómica en el repo
-	if err := s.userRepo.VerifyUserEmail(verification.UserID, verification.ID); err != nil {
-		return 0, 0, err
-	}
-
-	return verification.UserID, verification.ApplicationID, nil
+	return userID, appID, nil
 }
 
 // FindVerifiedUser retorna el usuario si existe y está verificado por email.

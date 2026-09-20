@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -139,13 +140,20 @@ func (m *mockAppRepo) GetAppsWithUserCount() ([]response.AppStatsResponse, error
 func (m *mockAppRepo) GetAppsForUser(userID uint) ([]response.AppStatsResponse, error)  { return nil, nil }
 
 type mockUserRepo struct {
-	user model.User
-	err  error
+	user                 model.User
+	err                  error
+	verifyEmailByTokenFn func(tokenHash []byte) (uint, uint, error)
 }
 
 func (m *mockUserRepo) FindAll() ([]model.User, error)                                   { return nil, nil }
 func (m *mockUserRepo) CreateWithProfile(user *model.User, profile *model.Profile) error { return nil }
 func (m *mockUserRepo) VerifyUserEmail(userID uint, verificationID uint) error          { return nil }
+func (m *mockUserRepo) VerifyUserEmailByToken(tokenHash []byte) (uint, uint, error) {
+	if m.verifyEmailByTokenFn != nil {
+		return m.verifyEmailByTokenFn(tokenHash)
+	}
+	return 0, 0, nil
+}
 func (m *mockUserRepo) FindByEmail(email string) (model.User, error) {
 	if m.err != nil {
 		return model.User{}, m.err
@@ -2107,6 +2115,44 @@ func TestApiMfaToken_AtomicConsumptionAndReplayPrevention(t *testing.T) {
 	// 4. Segundo intento de consumo con el mismo token (intento de replay) debe fallar
 	if err := ConsumeApiMfaToken(tokenKey, 1); err == nil {
 		t.Fatalf("se esperaba que el segundo intento de consumo fallara")
+	}
+}
+
+func TestVerifyEmail_AtomicClaimAndReplayPrevention(t *testing.T) {
+	rawToken := "email_verify_secret_token_123"
+	expectedHash := sha256.Sum256([]byte(rawToken))
+
+	var consumed bool
+	userRepo := &mockUserRepo{
+		verifyEmailByTokenFn: func(tokenHash []byte) (uint, uint, error) {
+			if !bytes.Equal(tokenHash, expectedHash[:]) {
+				return 0, 0, fmt.Errorf("hash no coincide")
+			}
+			if consumed {
+				return 0, 0, gorm.ErrRecordNotFound
+			}
+			consumed = true
+			return 42, 10, nil
+		},
+	}
+
+	svc := &userService{
+		userRepo: userRepo,
+	}
+
+	// 1. Primer intento de verificación exitoso
+	uid, appID, err := svc.VerifyEmail(rawToken)
+	if err != nil {
+		t.Fatalf("se esperaba verificación exitosa, obtenido error: %v", err)
+	}
+	if uid != 42 || appID != 10 {
+		t.Fatalf("se esperaba uid=42 y appID=10, obtenido uid=%d, appID=%d", uid, appID)
+	}
+
+	// 2. Segundo intento con el mismo token (replay) debe fallar
+	_, _, err = svc.VerifyEmail(rawToken)
+	if err == nil || !strings.Contains(err.Error(), "token inválido o expirado") {
+		t.Fatalf("se esperaba rechazo por token ya consumido/expirado, obtenido: %v", err)
 	}
 }
 
