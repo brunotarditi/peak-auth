@@ -298,7 +298,7 @@ func (m *mockMfaServiceForStepUp) ValidateRecoveryCode(userID uint, code string)
 }
 
 func (m *mockMfaServiceForStepUp) SetupTOTP(userID uint, userEmail string) (*response.TOTPSetupResponse, error) {
-	return &response.TOTPSetupResponse{Secret: "JBSWY3DPEHPK3PXP"}, nil
+	return &response.TOTPSetupResponse{Secret: "TEST_MOCK_TOTP_KEY_ONLY"}, nil
 }
 
 func TestDisableMFA_RequiresAuthentication(t *testing.T) {
