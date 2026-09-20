@@ -601,7 +601,8 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 	}
 
 	sessionKey := fmt.Sprintf("wa_login_%s", mfaToken)
-	sessionData, exists := service.GetWebAuthnSession(sessionKey)
+	// Atomically retrieve and delete the session to prevent replay attacks
+	sessionData, exists := service.GetAndDeleteWebAuthnSession(sessionKey)
 	if !exists {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Sesión WebAuthn expirada o no encontrada"})
 		return
@@ -623,8 +624,6 @@ func (c *OAuthController) PostPublicLoginMfaWebAuthnFinish(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
 		return
 	}
-
-	service.DeleteWebAuthnSession(sessionKey)
 
 	// Fetch user to get current authz_version
 	user, err := c.UserService.FindVerifiedUserByID(userID)
@@ -783,7 +782,8 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 	}
 
 	sessionKey := fmt.Sprintf("wa_reg_%s", mfaToken)
-	sessionData, exists := service.GetWebAuthnSession(sessionKey)
+	// Atomically retrieve and delete the session to prevent replay attacks
+	sessionData, exists := service.GetAndDeleteWebAuthnSession(sessionKey)
 	if !exists {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Sesión WebAuthn expirada o no encontrada"})
 		return
@@ -805,8 +805,6 @@ func (c *OAuthController) PostPublicLoginMfaSetupWebAuthnFinish(ctx *gin.Context
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Token MFA ya fue utilizado o expirado"})
 		return
 	}
-
-	service.DeleteWebAuthnSession(sessionKey)
 
 	// Fetch user to get current authz_version
 	user, err := c.UserService.FindVerifiedUserByID(userID)

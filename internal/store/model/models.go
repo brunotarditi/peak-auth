@@ -103,12 +103,13 @@ type UserApplicationRole struct {
 // UserMfaCredential almacena las credenciales MFA del usuario (TOTP o WebAuthn).
 type UserMfaCredential struct {
 	gorm.Model
-	UserID   uint   `gorm:"not null;index" json:"user_id"`
-	Type     string `gorm:"type:varchar(20);not null" json:"type"` // "TOTP" o "WEBAUTHN"
-	Name     string `gorm:"type:varchar(100)" json:"name"`         // Ej: "Google Authenticator", "Mi YubiKey"
-	Secret   string `gorm:"type:text;not null" json:"-"`           // TOTP: AES-256-GCM encrypted secret; WebAuthn: credential JSON
-	IsActive bool   `gorm:"default:false" json:"is_active"`       // Se activa tras la primera verificación exitosa
-	User     User   `gorm:"foreignKey:UserID" json:"-"`
+	UserID       uint   `gorm:"not null;index" json:"user_id"`
+	Type         string `gorm:"type:varchar(20);not null" json:"type"`                                                  // "TOTP" o "WEBAUTHN"
+	Name         string `gorm:"type:varchar(100)" json:"name"`                                                          // Ej: "Google Authenticator", "Mi YubiKey"
+	Secret       string `gorm:"type:text;not null" json:"-"`                                                            // TOTP: AES-256-GCM encrypted secret; WebAuthn: credential JSON
+	CredentialID string `gorm:"type:varchar(512);uniqueIndex:idx_credential_id,where:deleted_at IS NULL" json:"-"`     // WebAuthn credential ID (base64), unique to prevent replay registration
+	IsActive     bool   `gorm:"default:false" json:"is_active"`                                                         // Se activa tras la primera verificación exitosa
+	User         User   `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // UserRecoveryCode almacena los códigos de recuperación hasheados del usuario.

@@ -396,7 +396,8 @@ func (ctrl *UserController) FinishWebAuthnRegistration(c *gin.Context) {
 	userID := val.(uint)
 
 	sessionKey := fmt.Sprintf("wa_reg_%d", userID)
-	sessionData, exists := service.GetWebAuthnSession(sessionKey)
+	// Atomically retrieve and delete the session to prevent replay attacks
+	sessionData, exists := service.GetAndDeleteWebAuthnSession(sessionKey)
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Sesión WebAuthn expirada o no encontrada"})
 		return
@@ -406,8 +407,6 @@ func (ctrl *UserController) FinishWebAuthnRegistration(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	service.DeleteWebAuthnSession(sessionKey)
 
 	// Si queremos devolver los códigos de recuperación para mostrarlos tras configurar
 	status, _ := ctrl.MfaService.GetMfaStatus(userID)
