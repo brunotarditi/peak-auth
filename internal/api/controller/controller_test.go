@@ -10,12 +10,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"peak-auth/internal/api/middleware"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -486,7 +487,7 @@ func TestDisableMFA_MasksInternalDatabaseError(t *testing.T) {
 	if strings.Contains(w.Body.String(), "pq:") || strings.Contains(w.Body.String(), "relation users") {
 		t.Fatalf("Vulnerabilidad presente: se expuso el error interno de base de datos al cliente: %s", w.Body.String())
 	}
-	if !strings.Contains(w.Body.String(), "ocurrió un error procesando la solicitud") {
+	if !strings.Contains(w.Body.String(), "error interno") {
 		t.Fatalf("Se esperaba mensaje genérico al cliente, obtenido: %s", w.Body.String())
 	}
 }
@@ -1194,8 +1195,3 @@ func TestRuleController_RequestBodyLimit(t *testing.T) {
 		}
 	})
 }
-
-
-
-
-

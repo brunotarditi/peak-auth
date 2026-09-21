@@ -355,7 +355,10 @@ func (ctrl *UserController) DisableMFA(c *gin.Context) {
 	}
 
 	if err := ctrl.MfaService.DisableMFA(userID); err != nil {
-		internalErrorJSON(c, "DisableMFA", err)
+		// Log the actual error server-side for diagnostics
+		audit.Event(c, "mfa.disable.error", fmt.Sprintf("user=%d error=%v", userID, err))
+		// Return a generic client-safe message without exposing database/infrastructure details
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "error interno"})
 		return
 	}
 
