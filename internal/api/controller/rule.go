@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
@@ -27,9 +26,11 @@ func (ctrl *RuleController) PostAppRule(c *gin.Context) {
 		return
 	}
 
-	// Read body with bounded decoder to prevent unbounded memory allocation
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
+	// Use streaming JSON decoder to avoid eagerly buffering the entire body.
+	// The body is already wrapped by http.MaxBytesReader via middleware.
+	var body json.RawMessage
+	decoder := json.NewDecoder(c.Request.Body)
+	if err := decoder.Decode(&body); err != nil {
 		// Check if error is due to body size limit exceeded
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) || err.Error() == "http: request body too large" {
@@ -65,9 +66,11 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 		return
 	}
 
-	// Read body with bounded decoder to prevent unbounded memory allocation
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
+	// Use streaming JSON decoder to avoid eagerly buffering the entire body.
+	// The body is already wrapped by http.MaxBytesReader via middleware.
+	var body json.RawMessage
+	decoder := json.NewDecoder(c.Request.Body)
+	if err := decoder.Decode(&body); err != nil {
 		// Check if error is due to body size limit exceeded
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) || err.Error() == "http: request body too large" {
