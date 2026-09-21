@@ -242,11 +242,10 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 
 		// Gestión de Usuarios y configuración por App (requiere admin de ESA app)
 		apps := adminPrivate.Group("/apps/:id")
-		apps.Use(middleware.RequestBodyLimitMiddleware(1024 * 1024)) // Apply 1MB body limit to all routes in this group
 		apps.Use(middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ADMIN"))
 		{
 			apps.GET("/users", userCtrl.GetAppUsers)
-			apps.POST("/users", registerCtrl.PostUsersInApp)
+			apps.POST("/users", middleware.RequestBodyLimitMiddleware(1024*1024), registerCtrl.PostUsersInApp)
 			apps.DELETE("/users/:user_id", userCtrl.RevokeUserAccess)
 			apps.POST("/users/:user_id/unlock", userCtrl.PostUnlockUser)
 			apps.POST("/users/:user_id/resend-verification", dashboardCtrl.PostResendVerification)
@@ -259,7 +258,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			apps.POST("/secret", appCtrl.PostRegenerateSecret)
 
 			// Roles propios de la app (solo si la app tiene el sistema de roles activo)
-			apps.POST("/roles", roleCtrl.PostAppRole)
+			apps.POST("/roles", middleware.RequestBodyLimitMiddleware(256*1024), roleCtrl.PostAppRole)
 			apps.DELETE("/roles/:code", roleCtrl.DeleteAppRole)
 		}
 	}
