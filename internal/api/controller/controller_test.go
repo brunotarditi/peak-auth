@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -276,6 +277,7 @@ type mockMfaServiceForStepUp struct {
 	mfaEnabled bool
 	disabled   bool
 	totpCode   string
+	disableErr error
 }
 
 func (m *mockMfaServiceForStepUp) IsMfaEnabled(userID uint) bool {
@@ -283,6 +285,9 @@ func (m *mockMfaServiceForStepUp) IsMfaEnabled(userID uint) bool {
 }
 
 func (m *mockMfaServiceForStepUp) DisableMFA(userID uint) error {
+	if m.disableErr != nil {
+		return m.disableErr
+	}
 	m.disabled = true
 	return nil
 }
@@ -443,6 +448,46 @@ func TestDisableMFA_SucceedsWithBothValidCredentials(t *testing.T) {
 	}
 	if !mfaSvc.disabled {
 		t.Fatalf("MFA debió haberse desactivado")
+	}
+}
+
+func TestDisableMFA_MasksInternalDatabaseError(t *testing.T) {
+	passHash, _ := util.HashPassword("CorrectPassword123!")
+	userSvc := &mockUserServiceForStepUp{
+		user: &model.User{
+			Password: passHash,
+		},
+	}
+	mfaSvc := &mockMfaServiceForStepUp{
+		mfaEnabled: true,
+		totpCode:   "123456",
+		disableErr: errors.New("pq: connection pool exhausted - relation users table locked"),
+	}
+
+	ctrl := &UserController{
+		UserService: userSvc,
+		MfaService:  mfaSvc,
+	}
+
+	r := gin.New()
+	r.POST("/api/v1/mfa/totp/disable", func(c *gin.Context) {
+		c.Set("user_id", uint(1))
+		ctrl.DisableMFA(c)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/totp/disable", strings.NewReader(`{"password":"CorrectPassword123!","code":"123456"}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("Esperaba 500 Internal Server Error ante fallo en base de datos, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+	if strings.Contains(w.Body.String(), "pq:") || strings.Contains(w.Body.String(), "relation users") {
+		t.Fatalf("Vulnerabilidad presente: se expuso el error interno de base de datos al cliente: %s", w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "ocurrió un error procesando la solicitud") {
+		t.Fatalf("Se esperaba mensaje genérico al cliente, obtenido: %s", w.Body.String())
 	}
 }
 

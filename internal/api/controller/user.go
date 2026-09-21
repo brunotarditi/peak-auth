@@ -355,10 +355,11 @@ func (ctrl *UserController) DisableMFA(c *gin.Context) {
 	}
 
 	if err := ctrl.MfaService.DisableMFA(userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalErrorJSON(c, "DisableMFA", err)
 		return
 	}
 
+	audit.Event(c, "mfa.disable", fmt.Sprintf("user=%d", userID))
 	c.JSON(http.StatusOK, gin.H{"message": "MFA desactivado correctamente"})
 }
 
