@@ -63,9 +63,35 @@ func (ctrl *RegisterController) PostUsersInApp(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Usuario vinculado con éxito"})
 }
 
-// GetVerifyEmail maneja la verificación de email vía GET
+// GetVerifyEmail muestra la página de confirmación previa a la verificación de email (GET no mutador)
 func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 	token := ctx.Query("token")
+	if token == "" {
+		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"Title":   "Token requerido",
+			"Message": "El token de verificación es requerido.",
+		})
+		return
+	}
+
+	// Cabeceras defensivas para evitar almacenamiento en caché o fugas por Referer
+	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	ctx.Header("Pragma", "no-cache")
+	ctx.Header("Expires", "0")
+	ctx.Header("Referrer-Policy", "no-referrer")
+
+	csrfToken, _ := ctx.Get("csrf_token")
+
+	// Muestra la pantalla de confirmación sin consumir el token
+	ctx.HTML(http.StatusOK, "verify_email_confirm.html", gin.H{
+		"Token":      token,
+		"csrf_token": csrfToken,
+	})
+}
+
+// PostVerifyEmail procesa la verificación real del email consumiendo el token (POST mutador)
+func (c *RegisterController) PostVerifyEmail(ctx *gin.Context) {
+	token := ctx.PostForm("token")
 	if token == "" {
 		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
 			"Title":   "Token requerido",
@@ -113,7 +139,8 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 	ctx.Header("Expires", "0")
 	ctx.Header("Referrer-Policy", "no-referrer")
 
-	ctx.HTML(200, "verify_email.html", gin.H{
+	ctx.HTML(http.StatusOK, "verify_email.html", gin.H{
 		"NeedsPassword": needsPassword,
 	})
 }
+

@@ -904,5 +904,176 @@ func TestPostSendResetPassword_RateLimitingAndAtomicity(t *testing.T) {
 	})
 }
 
+// --- Tests Two-Step Email Verification ---
+
+type mockUserServiceForVerify struct {
+	service.UserService
+	verifyEmailFn        func(token string) (uint, uint, error)
+	findVerifiedUserFn   func(id uint) (*model.User, error)
+	generateResetTokenFn func(userID, appID uint) (string, []byte, error)
+}
+
+func (m *mockUserServiceForVerify) VerifyEmail(token string) (uint, uint, error) {
+	if m.verifyEmailFn != nil {
+		return m.verifyEmailFn(token)
+	}
+	return 1, 1, nil
+}
+
+func (m *mockUserServiceForVerify) FindVerifiedUserByID(id uint) (*model.User, error) {
+	if m.findVerifiedUserFn != nil {
+		return m.findVerifiedUserFn(id)
+	}
+	return &model.User{ID: id}, nil
+}
+
+func (m *mockUserServiceForVerify) GenerateResetToken(userID, appID uint) (string, []byte, error) {
+	if m.generateResetTokenFn != nil {
+		return m.generateResetTokenFn(userID, appID)
+	}
+	return "test-reset-token", []byte("hash"), nil
+}
+
+func TestVerifyEmail_TwoStep(t *testing.T) {
+	tmpl := template.Must(template.New("verify_email_confirm.html").Parse("<html>confirm:token={{.Token}}|csrf={{.csrf_token}}</html>"))
+	template.Must(tmpl.New("verify_email.html").Parse("<html>verify_success:needs_pwd={{.NeedsPassword}}</html>"))
+	template.Must(tmpl.New("error.html").Parse("<html>error:title={{.Title}}|msg={{.Message}}</html>"))
+
+	t.Run("GET /verify displays confirm page without consuming token", func(t *testing.T) {
+		verifyCalled := false
+		userSvc := &mockUserServiceForVerify{
+			verifyEmailFn: func(token string) (uint, uint, error) {
+				verifyCalled = true
+				return 1, 1, nil
+			},
+		}
+		ctrl := &RegisterController{UserService: userSvc}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.Use(func(c *gin.Context) {
+			c.Set("csrf_token", "dummy_csrf_token_123")
+			c.Next()
+		})
+		r.GET("/verify", ctrl.GetVerifyEmail)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/verify?token=valid_test_token_abc", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK, obtenido %d: %s", w.Code, w.Body.String())
+		}
+		if verifyCalled {
+			t.Fatalf("GET /verify no debe consumir el token de verificación")
+		}
+		expectedSnippet := "confirm:token=valid_test_token_abc|csrf=dummy_csrf_token_123"
+		if !strings.Contains(w.Body.String(), expectedSnippet) {
+			t.Errorf("respuesta no contiene el token o el csrf_token esperado: %s", w.Body.String())
+		}
+	})
+
+	t.Run("GET /verify without token returns 400", func(t *testing.T) {
+		ctrl := &RegisterController{UserService: &mockUserServiceForVerify{}}
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.GET("/verify", ctrl.GetVerifyEmail)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/verify", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400 Bad Request, obtenido %d", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "Token requerido") {
+			t.Errorf("se esperaba mensaje de error de token requerido, obtenido: %s", w.Body.String())
+		}
+	})
+
+	t.Run("POST /verify with valid token consumes token and verifies user", func(t *testing.T) {
+		consumedToken := ""
+		userSvc := &mockUserServiceForVerify{
+			verifyEmailFn: func(token string) (uint, uint, error) {
+				consumedToken = token
+				return 42, 1, nil
+			},
+			findVerifiedUserFn: func(id uint) (*model.User, error) {
+				return &model.User{ID: id}, nil
+			},
+		}
+		ctrl := &RegisterController{UserService: userSvc}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/verify", ctrl.PostVerifyEmail)
+
+		form := url.Values{}
+		form.Set("token", "valid_verification_token_xyz")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/verify", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK, obtenido %d: %s", w.Code, w.Body.String())
+		}
+		if consumedToken != "valid_verification_token_xyz" {
+			t.Errorf("se esperaba consumo del token 'valid_verification_token_xyz', consumido: %q", consumedToken)
+		}
+		if !strings.Contains(w.Body.String(), "verify_success:needs_pwd=true") {
+			t.Errorf("se esperaba renderizado de verify_success, obtenido: %s", w.Body.String())
+		}
+	})
+
+	t.Run("POST /verify without token returns 400", func(t *testing.T) {
+		ctrl := &RegisterController{UserService: &mockUserServiceForVerify{}}
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/verify", ctrl.PostVerifyEmail)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/verify", strings.NewReader(""))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400 Bad Request, obtenido %d", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "Token requerido") {
+			t.Errorf("se esperaba mensaje de error de token requerido, obtenido: %s", w.Body.String())
+		}
+	})
+
+	t.Run("POST /verify with invalid/expired token returns 400", func(t *testing.T) {
+		userSvc := &mockUserServiceForVerify{
+			verifyEmailFn: func(token string) (uint, uint, error) {
+				return 0, 0, fmt.Errorf("token inválido o expirado")
+			},
+		}
+		ctrl := &RegisterController{UserService: userSvc}
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/verify", ctrl.PostVerifyEmail)
+
+		form := url.Values{}
+		form.Set("token", "expired_token_123")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/verify", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400 Bad Request, obtenido %d", w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "Verificación fallida") {
+			t.Errorf("se esperaba mensaje de verificación fallida, obtenido: %s", w.Body.String())
+		}
+	})
+}
+
+
 
 
