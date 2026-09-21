@@ -242,6 +242,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 
 		// Gestión de Usuarios y configuración por App (requiere admin de ESA app)
 		apps := adminPrivate.Group("/apps/:id")
+		apps.Use(middleware.RequestBodyLimitMiddleware(1024 * 1024)) // Apply 1MB body limit to all routes in this group
 		apps.Use(middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ADMIN"))
 		{
 			apps.GET("/users", userCtrl.GetAppUsers)
