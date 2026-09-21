@@ -19,8 +19,6 @@ type ApplicationController struct {
 	RoleService service.RoleService
 }
 
-// renderAdmin renderiza la plantilla de administración
-
 // GetFormApp renderiza el formulario de creación de aplicación
 func (ctrl *ApplicationController) GetFormApp(c *gin.Context) {
 	ctrl.renderAdmin(c, "app_new.html", gin.H{
@@ -162,7 +160,6 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 }
 
 // UpdateFormApp actualiza una aplicación (descripción y estado activo/inactivo).
-// La ELIMINACIÓN es una operación separada y explícita (ver PostDeleteApp).
 func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 	id := c.Param("id")
 	_ = c.PostForm("name")
@@ -207,7 +204,6 @@ func (ctrl *ApplicationController) PostDeleteApp(c *gin.Context) {
 		return
 	}
 
-	// Solo ROOT puede eliminar (garantizado por RootOnlyMiddleware; defensa en profundidad)
 	isRootVal, _ := c.Get("is_root")
 	isRoot, _ := isRootVal.(bool)
 
@@ -223,7 +219,6 @@ func (ctrl *ApplicationController) PostDeleteApp(c *gin.Context) {
 
 	audit.Event(c, "app.delete", "app="+id)
 
-	// Redirigir al dashboard principal porque la app ya no existe a la vista
 	c.Redirect(http.StatusSeeOther, "/admin")
 }
 
@@ -247,18 +242,18 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 
 	for _, r := range rules {
 		switch r.Code {
-		case "REGISTRATION_POLICY":
+		case util.REGISTRATION_POLICY:
 			regPolicy, _ = util.ParseRegistrationPolicy(r.Value)
-		case "PWD_POLICY":
+		case util.PWD_POLICY:
 			var p util.PasswordPolicy
 			if err := json.Unmarshal(r.Value, &p); err == nil {
 				pwdPolicy = &p
 			}
-		case "SESSION_POLICY":
+		case util.SESSION_POLICY:
 			sessionPolicy, _ = util.ParseSessionPolicy(r.Value)
-		case "AUTHZ_POLICY":
+		case util.AUTHZ_POLICY:
 			authzPolicy, _ = util.ParseAuthzPolicy(r.Value)
-		case "MFA_POLICY":
+		case util.MFA_POLICY:
 			mfaPolicy, _ = util.ParseMfaPolicy(r.Value)
 		}
 	}

@@ -53,12 +53,12 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 	policyFound := false
 	for _, rule := range rules {
 		switch rule.Code {
-		case "PWD_POLICY":
+		case util.PWD_POLICY:
 			policyFound = true
 			if err := util.ValidatePasswordPolicy(rule.Value, req.Password); err != nil {
 				return nil, err
 			}
-		case "REGISTRATION_POLICY":
+		case util.REGISTRATION_POLICY:
 			regRule, err := util.ValidateRegistrationPolicy(rule.Value)
 			if err != nil {
 				return nil, err
@@ -77,7 +77,7 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 
 	// Validación crítica de seguridad:
 	if policy == nil || policy.DefaultRole == "" {
-		return nil, fmt.Errorf("configuración incompleta: la aplicación no tiene un rol por defecto configurado en REGISTRATION_POLICY")
+		return nil, fmt.Errorf("configuración incompleta: la aplicación no tiene un rol por defecto configurado en %s", util.REGISTRATION_POLICY)
 	}
 
 	// Defensa en profundidad: el auto-registro nunca puede otorgar ROOT ni ADMIN.
@@ -104,10 +104,10 @@ func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 
 	for _, rule := range rules {
 		switch rule.Code {
-		case "AUTHZ_POLICY":
+		case util.AUTHZ_POLICY:
 			authzRule, err := util.ParseAuthzPolicy(rule.Value)
 			if err != nil {
-				return fmt.Errorf("regla AUTHZ_POLICY inválida: %w", err)
+				return fmt.Errorf("regla %s inválida: %w", util.AUTHZ_POLICY, err)
 			}
 			// (Futuro: Verificación de roles específicos requeridos si se habilita)
 			if authzRule.EnableRoles {
@@ -127,7 +127,7 @@ func (s *applicationRuleService) CreateDefaultRules(appID uint) error {
 }
 
 func (s *applicationRuleService) CreateRule(appID uint, code string, value []byte) error {
-	if code == "REGISTRATION_POLICY" {
+	if code == util.REGISTRATION_POLICY {
 		if policy, err := util.ParseRegistrationPolicy(value); err == nil {
 			if strings.EqualFold(policy.DefaultRole, "ROOT") {
 				return fmt.Errorf("el rol por defecto no puede ser ROOT")
@@ -137,7 +137,7 @@ func (s *applicationRuleService) CreateRule(appID uint, code string, value []byt
 			}
 		}
 	}
-	if code == "SESSION_POLICY" {
+	if code == util.SESSION_POLICY {
 		if _, err := util.ValidateSessionPolicy(value); err != nil {
 			return fmt.Errorf("política de sesión inválida: %w", err)
 		}
@@ -148,7 +148,7 @@ func (s *applicationRuleService) CreateRule(appID uint, code string, value []byt
 func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value []byte) error {
 	// Defensa transversal: jamás permitir que el rol por defecto del auto-registro
 	// sea ROOT o ADMIN en modo público.
-	if code == "REGISTRATION_POLICY" {
+	if code == util.REGISTRATION_POLICY {
 		if policy, err := util.ParseRegistrationPolicy(value); err == nil {
 			if strings.EqualFold(policy.DefaultRole, "ROOT") {
 				return fmt.Errorf("el rol por defecto no puede ser ROOT")
@@ -159,7 +159,7 @@ func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value 
 		}
 	}
 
-	if code == "SESSION_POLICY" {
+	if code == util.SESSION_POLICY {
 		if _, err := util.ValidateSessionPolicy(value); err != nil {
 			return fmt.Errorf("política de sesión inválida: %w", err)
 		}
@@ -167,13 +167,13 @@ func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value 
 
 	// Protecciones para la App Raíz (resuelta por AppID, no por ID fijo)
 	if s.isRootApp(appID) {
-		if code == "AUTHZ_POLICY" {
+		if code == util.AUTHZ_POLICY {
 			policy, _ := util.ParseAuthzPolicy(value)
 			if !policy.EnableRoles {
 				return fmt.Errorf("la autorización por roles es obligatoria para la aplicación raíz")
 			}
 		}
-		if code == "REGISTRATION_POLICY" {
+		if code == util.REGISTRATION_POLICY {
 			policy, _ := util.ParseRegistrationPolicy(value)
 			if policy.Mode == "public" {
 				return fmt.Errorf("el registro público no está permitido para la aplicación raíz")

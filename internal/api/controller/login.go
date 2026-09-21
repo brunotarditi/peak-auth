@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -394,7 +395,14 @@ func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Demasiados intentos fallidos. Inicie sesión nuevamente"})
 			return
 		}
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		// Distinguish between client validation errors and internal errors
+		if errors.Is(err, service.ErrWebAuthnValidation) {
+			// Client validation error - return fixed message without internal details
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Registro WebAuthn inválido"})
+			return
+		}
+		// Internal error - log details server-side, return generic message to client
+		internalErrorJSON(c, "FinishWebAuthnSetupAdmin", err)
 		return
 	}
 
@@ -783,7 +791,14 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 	}
 
 	if err := ctrl.MfaService.FinishWebAuthnRegistration(userID, sessionData, c.Request); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		// Distinguish between client validation errors and internal errors
+		if errors.Is(err, service.ErrWebAuthnValidation) {
+			// Client validation error - return fixed message without internal details
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Registro WebAuthn inválido"})
+			return
+		}
+		// Internal error - log details server-side, return generic message to client
+		internalErrorJSON(c, "FinishWebAuthnRegistrationLogin", err)
 		return
 	}
 

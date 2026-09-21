@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-webauthn/webauthn/webauthn"
+
 	"peak-auth/internal/api/middleware"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/service"
@@ -275,10 +277,11 @@ func (m *mockUserServiceForStepUp) FindVerifiedUserByID(id uint) (*model.User, e
 
 type mockMfaServiceForStepUp struct {
 	service.MfaService
-	mfaEnabled bool
-	disabled   bool
-	totpCode   string
-	disableErr error
+	mfaEnabled           bool
+	disabled             bool
+	totpCode             string
+	disableErr           error
+	finishWebAuthnRegErr error
 }
 
 func (m *mockMfaServiceForStepUp) IsMfaEnabled(userID uint) bool {
@@ -290,6 +293,13 @@ func (m *mockMfaServiceForStepUp) DisableMFA(userID uint) error {
 		return m.disableErr
 	}
 	m.disabled = true
+	return nil
+}
+
+func (m *mockMfaServiceForStepUp) FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request) error {
+	if m.finishWebAuthnRegErr != nil {
+		return m.finishWebAuthnRegErr
+	}
 	return nil
 }
 
@@ -1195,3 +1205,59 @@ func TestRuleController_RequestBodyLimit(t *testing.T) {
 		}
 	})
 }
+
+func TestFinishWebAuthnRegistration_ErrorHandling(t *testing.T) {
+	t.Run("Validation error returns 400 with fixed client message", func(t *testing.T) {
+		mfaSvc := &mockMfaServiceForStepUp{
+			finishWebAuthnRegErr: service.ErrWebAuthnValidation,
+		}
+		ctrl := &UserController{MfaService: mfaSvc}
+		service.StoreWebAuthnSession("wa_reg_42", &webauthn.SessionData{})
+
+		r := gin.New()
+		r.POST("/api/v1/mfa/webauthn/verify", func(c *gin.Context) {
+			c.Set("user_id", uint(42))
+			ctrl.FinishWebAuthnRegistration(c)
+		})
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/webauthn/verify", strings.NewReader(`{}`))
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400 Bad Request, obtenido %d: %s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "Registro WebAuthn inválido") {
+			t.Errorf("respuesta inesperada: %s", w.Body.String())
+		}
+	})
+
+	t.Run("Internal error masks technical details and returns 500", func(t *testing.T) {
+		mfaSvc := &mockMfaServiceForStepUp{
+			finishWebAuthnRegErr: fmt.Errorf("%w: pq: table mfa_credentials locked", service.ErrWebAuthnInternal),
+		}
+		ctrl := &UserController{MfaService: mfaSvc}
+		service.StoreWebAuthnSession("wa_reg_42", &webauthn.SessionData{})
+
+		r := gin.New()
+		r.POST("/api/v1/mfa/webauthn/verify", func(c *gin.Context) {
+			c.Set("user_id", uint(42))
+			ctrl.FinishWebAuthnRegistration(c)
+		})
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/webauthn/verify", strings.NewReader(`{}`))
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Fatalf("se esperaba 500 Internal Server Error, obtenido %d: %s", w.Code, w.Body.String())
+		}
+		if strings.Contains(w.Body.String(), "pq:") || strings.Contains(w.Body.String(), "mfa_credentials") {
+			t.Fatalf("vulnerabilidad presente: se filtró detalle interno: %s", w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "ocurrió un error procesando la solicitud") {
+			t.Errorf("se esperaba mensaje genérico, obtenido: %s", w.Body.String())
+		}
+	})
+}
+

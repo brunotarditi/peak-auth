@@ -37,7 +37,7 @@ type MfaPolicy struct {
 func ValidateRegistrationPolicy(raw []byte) (*RegistrationPolicy, error) {
 	var r RegistrationPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return nil, fmt.Errorf("invalid REGISTRATION_POLICY rule: %w", err)
+		return nil, fmt.Errorf("invalid %s rule: %w", REGISTRATION_POLICY, err)
 	}
 	if r.Mode != "public" {
 		return nil, fmt.Errorf("el registro público está deshabilitado para esta aplicación")
@@ -49,7 +49,7 @@ func ValidateRegistrationPolicy(raw []byte) (*RegistrationPolicy, error) {
 func ParseRegistrationPolicy(raw []byte) (*RegistrationPolicy, error) {
 	var r RegistrationPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return nil, fmt.Errorf("invalid REGISTRATION_POLICY rule: %w", err)
+		return nil, fmt.Errorf("invalid %s rule: %w", REGISTRATION_POLICY, err)
 	}
 	return &r, nil
 }
@@ -125,7 +125,7 @@ func ValidateSessionPolicy(raw []byte) (*SessionPolicy, error) {
 func ParseAuthzPolicy(raw []byte) (*AuthzPolicy, error) {
 	var r AuthzPolicy
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return nil, fmt.Errorf("invalid AUTHZ_POLICY rule: %w", err)
+		return nil, fmt.Errorf("invalid %s rule: %w", AUTHZ_POLICY, err)
 	}
 	return &r, nil
 }
@@ -184,5 +184,3 @@ func ValidateMinimumPasswordPolicy(password string) error {
 
 	return nil
 }
-
-

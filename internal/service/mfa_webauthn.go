@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,6 +17,14 @@ import (
 
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
+)
+
+// Sentinel errors for distinguishing client validation errors from internal errors
+var (
+	// ErrWebAuthnValidation indicates a client-side validation error (malformed ceremony, invalid signature, etc.)
+	ErrWebAuthnValidation = errors.New("registro WebAuthn inválido")
+	// ErrWebAuthnInternal indicates an internal/infrastructure error (database, initialization, etc.)
+	ErrWebAuthnInternal = errors.New("error interno procesando WebAuthn")
 )
 
 // Global repository instance for MFA attempt tracking
@@ -151,12 +160,12 @@ func DeleteWebAuthnSession(key string) {
 func GetAndDeleteWebAuthnSession(key string) (*webauthn.SessionData, bool) {
 	waSessionMutex.Lock()
 	defer waSessionMutex.Unlock()
-	
+
 	session, exists := waSessionCache[key]
 	if !exists || time.Now().After(session.expiresAt) {
 		return nil, false
 	}
-	
+
 	// Atomically delete the session before returning it
 	delete(waSessionCache, key)
 	return session.data, true
@@ -414,12 +423,12 @@ func ConsumeApiMfaToken(tokenKey string, userID uint) error {
 	if mfaAttemptRepo == nil {
 		return fmt.Errorf("MFA attempt tracking not initialized")
 	}
-	
+
 	err := mfaAttemptRepo.MarkConsumed(tokenKey, userID)
 	if err != nil {
 		return fmt.Errorf("token MFA ya fue utilizado o expiró")
 	}
-	
+
 	return nil
 }
 
@@ -428,13 +437,13 @@ func IsApiMfaTokenConsumed(tokenKey string) bool {
 	if mfaAttemptRepo == nil {
 		return false
 	}
-	
+
 	consumed, err := mfaAttemptRepo.IsConsumed(tokenKey)
 	if err != nil {
 		// Log error but don't block on database errors
 		return false
 	}
-	
+
 	return consumed
 }
 
@@ -510,17 +519,20 @@ func (s *mfaService) BeginWebAuthnRegistration(userID uint, userEmail string) (*
 // FinishWebAuthnRegistration finaliza el registro, guarda la credencial y activa MFA
 func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request) error {
 	if session == nil {
-		return fmt.Errorf("sesión WebAuthn inválida o expirada")
+		// Client validation error - session expired or invalid
+		return ErrWebAuthnValidation
 	}
 
 	wa, err := getWebAuthn()
 	if err != nil {
-		return fmt.Errorf("error inicializando WebAuthn: %w", err)
+		// Internal error - WebAuthn initialization failed
+		return fmt.Errorf("%w: error inicializando WebAuthn: %v", ErrWebAuthnInternal, err)
 	}
 
 	user, err := s.userRepo.FindById(userID)
 	if err != nil {
-		return fmt.Errorf("usuario no encontrado")
+		// Internal error - database lookup failed
+		return fmt.Errorf("%w: usuario no encontrado: %v", ErrWebAuthnInternal, err)
 	}
 
 	wUser := &webAuthnUserWrapper{
@@ -529,7 +541,8 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 
 	credential, err := wa.FinishRegistration(wUser, *session, r)
 	if err != nil {
-		return fmt.Errorf("error validando registro WebAuthn: %w", err)
+		// Client validation error - malformed ceremony, invalid signature, etc.
+		return ErrWebAuthnValidation
 	}
 
 	// Verificar si la credencial ya existe para este usuario
@@ -539,7 +552,8 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 			var existingCred webauthn.Credential
 			if err := json.Unmarshal([]byte(c.Secret), &existingCred); err == nil {
 				if bytes.Equal(existingCred.ID, credential.ID) {
-					return fmt.Errorf("esta credencial ya está registrada")
+					// Client validation error - duplicate credential
+					return ErrWebAuthnValidation
 				}
 			}
 		}
@@ -551,7 +565,8 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 	// Serializar credencial a JSON
 	credJSON, err := json.Marshal(credential)
 	if err != nil {
-		return fmt.Errorf("error guardando credencial WebAuthn: %w", err)
+		// Internal error - JSON marshaling failed
+		return fmt.Errorf("%w: error serializando credencial: %v", ErrWebAuthnInternal, err)
 	}
 
 	// Guardar en base de datos con el credential ID para unicidad
@@ -568,13 +583,14 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 		// Check if this is a duplicate key error (credential already registered)
 		// GORM/SQLite/PostgreSQL/MySQL all include "UNIQUE constraint" or "duplicate" in the error message
 		errMsg := err.Error()
-		if bytes.Contains([]byte(errMsg), []byte("UNIQUE")) || 
-		   bytes.Contains([]byte(errMsg), []byte("duplicate")) ||
-		   bytes.Contains([]byte(errMsg), []byte("Duplicate")) {
-			// This is an idempotent replay - credential already exists
-			return fmt.Errorf("esta credencial ya está registrada")
+		if bytes.Contains([]byte(errMsg), []byte("UNIQUE")) ||
+			bytes.Contains([]byte(errMsg), []byte("duplicate")) ||
+			bytes.Contains([]byte(errMsg), []byte("Duplicate")) {
+			// This is an idempotent replay - credential already exists (client validation error)
+			return ErrWebAuthnValidation
 		}
-		return fmt.Errorf("error creando registro de credencial WebAuthn en BD: %w", err)
+		// Internal error - database persistence failed
+		return fmt.Errorf("%w: error persistiendo credencial: %v", ErrWebAuthnInternal, err)
 	}
 
 	// Activar MFA en el usuario

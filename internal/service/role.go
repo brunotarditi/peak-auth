@@ -141,7 +141,7 @@ func (s *roleService) appHasRolesEnabled(appID uint) bool {
 		return false
 	}
 	for _, r := range rules {
-		if r.Code == "AUTHZ_POLICY" {
+		if r.Code == util.AUTHZ_POLICY {
 			policy, err := util.ParseAuthzPolicy(r.Value)
 			if err != nil {
 				return false

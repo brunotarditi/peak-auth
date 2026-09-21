@@ -2,6 +2,7 @@ package repo
 
 import (
 	"peak-auth/internal/store/model"
+	"peak-auth/internal/util"
 
 	"gorm.io/gorm"
 )
@@ -31,11 +32,11 @@ func (r *applicationRuleRepository) GetRulesByAppID(appID uint) ([]model.Applica
 
 func (r *applicationRuleRepository) CreateDefaultRules(appID uint) error {
 	defs := []model.ApplicationRules{
-		{ApplicationID: appID, Code: "REGISTRATION_POLICY", Value: []byte(`{"mode": "public", "require_email_verification": true, "default_role": "USER"}`), IsActive: true},
-		{ApplicationID: appID, Code: "PWD_POLICY", Value: []byte(`{"min_length": 8, "require_uppercase": true, "require_numbers": true, "require_symbols": true}`), IsActive: true},
-		{ApplicationID: appID, Code: "SESSION_POLICY", Value: []byte(`{"token_expiration_minutes": 1440, "max_failed_logins": 5}`), IsActive: true},
-		{ApplicationID: appID, Code: "AUTHZ_POLICY", Value: []byte(`{"enable_roles": true}`), IsActive: true},
-		{ApplicationID: appID, Code: "MFA_POLICY", Value: []byte(`{"mode": "OPTIONAL"}`), IsActive: true},
+		{ApplicationID: appID, Code: util.REGISTRATION_POLICY, Value: []byte(`{"mode": "public", "require_email_verification": true, "default_role": "USER"}`), IsActive: true},
+		{ApplicationID: appID, Code: util.PWD_POLICY, Value: []byte(`{"min_length": 8, "require_uppercase": true, "require_numbers": true, "require_symbols": true}`), IsActive: true},
+		{ApplicationID: appID, Code: util.SESSION_POLICY, Value: []byte(`{"token_expiration_minutes": 1440, "max_failed_logins": 5}`), IsActive: true},
+		{ApplicationID: appID, Code: util.AUTHZ_POLICY, Value: []byte(`{"enable_roles": true}`), IsActive: true},
+		{ApplicationID: appID, Code: util.MFA_POLICY, Value: []byte(`{"mode": "OPTIONAL"}`), IsActive: true},
 	}
 	for _, d := range defs {
 		if err := r.db.Create(&d).Error; err != nil {

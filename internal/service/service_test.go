@@ -15,13 +15,14 @@ import (
 	"testing"
 	"time"
 
-	"gorm.io/gorm"
 	"peak-auth/internal/api/request"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
+
+	"gorm.io/gorm"
 )
 
 // --- Mocks para pruebas de Service ---
@@ -146,7 +147,7 @@ func (m *mockAppRepo) UpdateColumns(id uint, columns map[string]interface{}) err
 	}
 	return nil
 }
-func (m *mockAppRepo) Delete(id uint) error                { return nil }
+func (m *mockAppRepo) Delete(id uint) error { return nil }
 func (m *mockAppRepo) FindByID(id uint) (model.Application, error) {
 	for _, a := range m.apps {
 		if a.ID == id {
@@ -155,9 +156,13 @@ func (m *mockAppRepo) FindByID(id uint) (model.Application, error) {
 	}
 	return model.Application{}, &testError{msg: "app no encontrada"}
 }
-func (m *mockAppRepo) FindByName(name string) (model.Application, error)                  { return model.Application{}, nil }
-func (m *mockAppRepo) GetAppsWithUserCount() ([]response.AppStatsResponse, error)         { return nil, nil }
-func (m *mockAppRepo) GetAppsForUser(userID uint) ([]response.AppStatsResponse, error)  { return nil, nil }
+func (m *mockAppRepo) FindByName(name string) (model.Application, error) {
+	return model.Application{}, nil
+}
+func (m *mockAppRepo) GetAppsWithUserCount() ([]response.AppStatsResponse, error) { return nil, nil }
+func (m *mockAppRepo) GetAppsForUser(userID uint) ([]response.AppStatsResponse, error) {
+	return nil, nil
+}
 
 type mockUserRepo struct {
 	user                 model.User
@@ -167,7 +172,7 @@ type mockUserRepo struct {
 
 func (m *mockUserRepo) FindAll() ([]model.User, error)                                   { return nil, nil }
 func (m *mockUserRepo) CreateWithProfile(user *model.User, profile *model.Profile) error { return nil }
-func (m *mockUserRepo) VerifyUserEmail(userID uint, verificationID uint) error          { return nil }
+func (m *mockUserRepo) VerifyUserEmail(userID uint, verificationID uint) error           { return nil }
 func (m *mockUserRepo) VerifyUserEmailByToken(tokenHash []byte) (uint, uint, error) {
 	if m.verifyEmailByTokenFn != nil {
 		return m.verifyEmailByTokenFn(tokenHash)
@@ -186,7 +191,7 @@ func (m *mockUserRepo) FindById(ID uint) (model.User, error) {
 	}
 	return m.user, nil
 }
-func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error    { return nil }
+func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error { return nil }
 func (m *mockUserRepo) LockUserForUpdate(userID uint) error                          { return nil }
 
 type mockUARRepo struct {
@@ -194,8 +199,8 @@ type mockUARRepo struct {
 	hasAdminRoleInAnyApp *bool
 }
 
-func (m *mockUARRepo) AssignRole(userID, appID, roleID uint) error                                    { return nil }
-func (m *mockUARRepo) RevokeAccess(userID, appID uint) error                                          { return nil }
+func (m *mockUARRepo) AssignRole(userID, appID, roleID uint) error { return nil }
+func (m *mockUARRepo) RevokeAccess(userID, appID uint) error       { return nil }
 func (m *mockUARRepo) FindRolesByUserAndApp(userID, appID uint) ([]model.Role, error) {
 	if roleNames, ok := m.roles[userID]; ok {
 		var result []model.Role
@@ -206,11 +211,17 @@ func (m *mockUARRepo) FindRolesByUserAndApp(userID, appID uint) ([]model.Role, e
 	}
 	return nil, nil
 }
-func (m *mockUARRepo) GetUserRolesInApp(userID, appID uint) ([]string, error)                         { return m.roles[userID], nil }
-func (m *mockUARRepo) GetUsersWithRolesByApp(appID uint) ([]response.UserAppRow, error)               { return nil, nil }
-func (m *mockUARRepo) GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error) { return nil, 0, nil }
-func (m *mockUARRepo) BelongsToApp(userID, appID uint) (bool, error)                                 { return true, nil }
-func (m *mockUARRepo) IsAppAdmin(userID, appID uint) (bool, error)                                   { return true, nil }
+func (m *mockUARRepo) GetUserRolesInApp(userID, appID uint) ([]string, error) {
+	return m.roles[userID], nil
+}
+func (m *mockUARRepo) GetUsersWithRolesByApp(appID uint) ([]response.UserAppRow, error) {
+	return nil, nil
+}
+func (m *mockUARRepo) GetUsersWithRolesByAppPaginated(appID uint, page, limit int) ([]response.UserAppRow, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockUARRepo) BelongsToApp(userID, appID uint) (bool, error) { return true, nil }
+func (m *mockUARRepo) IsAppAdmin(userID, appID uint) (bool, error)   { return true, nil }
 func (m *mockUARRepo) HasAdminRoleInAnyApp(userID uint) (bool, error) {
 	if m.hasAdminRoleInAnyApp != nil {
 		return *m.hasAdminRoleInAnyApp, nil
@@ -225,10 +236,10 @@ type mockRuleRepo struct {
 func (m *mockRuleRepo) GetRulesByAppID(appID uint) ([]model.ApplicationRules, error) {
 	return m.rules, nil
 }
-func (m *mockRuleRepo) CreateDefaultRules(appID uint) error            { return nil }
-func (m *mockRuleRepo) CreateRule(appID uint, code string, val []byte) error { return nil }
+func (m *mockRuleRepo) CreateDefaultRules(appID uint) error                       { return nil }
+func (m *mockRuleRepo) CreateRule(appID uint, code string, val []byte) error      { return nil }
 func (m *mockRuleRepo) UpdateRuleValue(appID uint, code string, val []byte) error { return nil }
-func (m *mockRuleRepo) DeleteRule(appID uint, code string) error       { return nil }
+func (m *mockRuleRepo) DeleteRule(appID uint, code string) error                  { return nil }
 
 type mockRefreshTokenRepo struct {
 	tokens              map[string]*model.RefreshToken
@@ -676,7 +687,6 @@ func TestAdminLogin_RejectsNonAdminUserWithGenericError(t *testing.T) {
 	}
 }
 
-
 func TestCompleteLoginWithMfa_RejectsDeactivatedUser(t *testing.T) {
 	userRepo := &mockUserRepo{
 		user: model.User{
@@ -869,7 +879,7 @@ func TestValidateRegistration_ForbidsAdminRole(t *testing.T) {
 	ruleRepo := &mockRuleRepo{
 		rules: []model.ApplicationRules{
 			{
-				Code:  "REGISTRATION_POLICY",
+				Code:  util.REGISTRATION_POLICY,
 				Value: []byte("{\"mode\":\"public\",\"default_role\":\"ADMIN\"}"),
 			},
 		},
@@ -887,7 +897,7 @@ func TestValidateRegistration_ForbidsRootRole(t *testing.T) {
 	ruleRepo := &mockRuleRepo{
 		rules: []model.ApplicationRules{
 			{
-				Code:  "REGISTRATION_POLICY",
+				Code:  util.REGISTRATION_POLICY,
 				Value: []byte("{\"mode\":\"public\",\"default_role\":\"ROOT\"}"),
 			},
 		},
@@ -906,7 +916,7 @@ func TestCreateRule_ForbidsAdminRoleInPublicMode(t *testing.T) {
 	appRepo := newMockAppRepo()
 	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
 
-	err := ruleSvc.CreateRule(1, "REGISTRATION_POLICY", []byte("{\"mode\":\"public\",\"default_role\":\"ADMIN\"}"))
+	err := ruleSvc.CreateRule(1, util.REGISTRATION_POLICY, []byte("{\"mode\":\"public\",\"default_role\":\"ADMIN\"}"))
 	if err == nil {
 		t.Fatalf("Esperaba que CreateRule rechazara default_role ADMIN en registro público")
 	}
@@ -1159,12 +1169,11 @@ func TestAdminLogin_FailsClosedOnMalformedMfaPolicy(t *testing.T) {
 	}
 }
 
-
 func TestValidateRegistration_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing.T) {
 	ruleRepo := &mockRuleRepo{
 		rules: []model.ApplicationRules{
 			{
-				Code:  "REGISTRATION_POLICY",
+				Code:  util.REGISTRATION_POLICY,
 				Value: []byte(`{"mode":"public","default_role":"USER"}`),
 			},
 		},
@@ -1238,7 +1247,6 @@ func TestResetPassword_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing.T) {
 		t.Fatalf("se esperaba éxito al resetear contraseña con requisitos base, obtenido: %v", err)
 	}
 }
-
 
 // --- Tests Application Service ---
 
@@ -2280,8 +2288,3 @@ func TestSendResetEmail_AtomicEligibilityAndQuota(t *testing.T) {
 		t.Fatalf("se esperaba error por cuota mensual alcanzada, obtenido: %v", err)
 	}
 }
-
-
-
-
-

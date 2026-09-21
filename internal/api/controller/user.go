@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"peak-auth/internal/audit"
@@ -408,7 +409,14 @@ func (ctrl *UserController) FinishWebAuthnRegistration(c *gin.Context) {
 	}
 
 	if err := ctrl.MfaService.FinishWebAuthnRegistration(userID, sessionData, c.Request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// Distinguish between client validation errors and internal errors
+		if errors.Is(err, service.ErrWebAuthnValidation) {
+			// Client validation error - return fixed message without internal details
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Registro WebAuthn inválido"})
+			return
+		}
+		// Internal error - log details server-side, return generic message to client
+		internalErrorJSON(c, "FinishWebAuthnRegistration", err)
 		return
 	}
 
