@@ -497,7 +497,8 @@ func (ctrl *LoginController) VerifyMfaTotp(c *gin.Context) {
 
 	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID, true)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		audit.EventResult(c, "api.login.mfa_totp_failed", fmt.Sprintf("userID=%d", userID), false, "error al completar login")
+		internalErrorJSON(c, "VerifyMfaTotp", err)
 		return
 	}
 
@@ -573,7 +574,8 @@ func (ctrl *LoginController) VerifyMfaRecovery(c *gin.Context) {
 
 	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID, true)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		audit.EventResult(c, "api.login.mfa_recovery_failed", fmt.Sprintf("userID=%d", userID), false, "error al completar login")
+		internalErrorJSON(c, "VerifyMfaRecovery", err)
 		return
 	}
 
@@ -693,7 +695,7 @@ func (ctrl *LoginController) VerifyTOTPLogin(c *gin.Context) {
 	// Login is complete, generate final token
 	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID, true)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalErrorJSON(c, "SetupTOTPLogin", err)
 		return
 	}
 
@@ -812,7 +814,7 @@ func (ctrl *LoginController) FinishWebAuthnRegistrationLogin(c *gin.Context) {
 	// Login is complete, generate final token
 	response, err := ctrl.UserService.CompleteLoginWithMfa(userID, claims.AppID, true)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalErrorJSON(c, "FinishWebAuthnRegistrationLogin", err)
 		return
 	}
 

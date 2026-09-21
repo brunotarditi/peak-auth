@@ -950,14 +950,16 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 
 	rules, err := s.ruleService.FindRulesByAppID(app.ID)
 	if err != nil {
-		return response.TokenResponse{}, fmt.Errorf("no se pudo obtener las reglas de la aplicación: %w", err)
+		// Sanitize repository/database errors - do not expose internal details
+		return response.TokenResponse{}, fmt.Errorf("no se pudo obtener las reglas de la aplicación")
 	}
 
 	for _, r := range rules {
-		if r.Code == "MFA_POLICY" {
+		if r.Code == util.MFA_POLICY {
 			mfaPol, err := util.ParseMfaPolicy(r.Value)
 			if err != nil {
-				return response.TokenResponse{}, fmt.Errorf("no se pudo interpretar la política de MFA: %w", err)
+				// Sanitize parser errors - do not expose internal details
+				return response.TokenResponse{}, fmt.Errorf("no se pudo interpretar la política de MFA")
 			}
 			if mfaPol.Mode == "REQUIRED" {
 				if !user.MfaEnabled {
@@ -989,7 +991,8 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 	// 5. Generar y Almacenar Refresh Token
 	plainRT, rtHash, err := util.GenerateToken(64)
 	if err != nil {
-		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
+		// Sanitize token generation errors - do not expose internal details
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token")
 	}
 	rt := model.RefreshToken{
 		UserID:        user.ID,
@@ -999,7 +1002,8 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 		MfaCompleted:  mfaCompleted,
 	}
 	if err := s.refreshTokenRepo.Create(&rt); err != nil {
-		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
+		// Sanitize persistence errors - do not expose database/driver details
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token")
 	}
 
 	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
