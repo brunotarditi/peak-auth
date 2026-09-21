@@ -31,7 +31,7 @@ type EmailVerification struct {
 	ApplicationID uint
 	User          User        `gorm:"foreignKey:UserID"`
 	Application   Application `gorm:"foreignKey:ApplicationID"`
-	TokenHash     []byte
+	TokenHash     []byte      `gorm:"index;not null"`
 	ExpiresAt     time.Time
 	UsedAt        *time.Time
 }
@@ -42,7 +42,7 @@ type PasswordReset struct {
 	ApplicationID uint
 	User          User        `gorm:"foreignKey:UserID"`
 	Application   Application `gorm:"foreignKey:ApplicationID"`
-	TokenHash     []byte
+	TokenHash     []byte      `gorm:"index;not null"`
 	ExpiresAt     time.Time
 	UsedAt        *time.Time
 }

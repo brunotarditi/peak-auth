@@ -89,6 +89,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	tokenLimiter := middleware.RateLimitMiddleware(20, time.Minute)
 	mfaSetupLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	setupLimiter := middleware.RateLimitMiddleware(5, time.Minute)
+	verifyLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 
 	// ============================================================================
 	// OIDC & JWKS DISCOVERY (Público, CORS abierto para SDKs y librerías cliente)
@@ -142,7 +143,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	r.POST("/setup/auth", setupLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
 	r.GET("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
 	r.POST("/setup", setupLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
-	r.GET("/verify", middleware.RequireHTTPSMiddleware(), registerCtrl.GetVerifyEmail)
+	r.GET("/verify", verifyLimiter, middleware.RequireHTTPSMiddleware(), registerCtrl.GetVerifyEmail)
 	r.GET("/reset-password", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.GetResetPassword)
 	r.POST("/reset-password", resetLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.PostResetPassword)
 
