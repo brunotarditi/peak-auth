@@ -88,6 +88,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
 	tokenLimiter := middleware.RateLimitMiddleware(20, time.Minute)
 	mfaSetupLimiter := middleware.RateLimitMiddleware(10, time.Minute)
+	setupLimiter := middleware.RateLimitMiddleware(5, time.Minute)
 
 	// ============================================================================
 	// OIDC & JWKS DISCOVERY (Público, CORS abierto para SDKs y librerías cliente)
@@ -138,9 +139,9 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// ============================================================================
 	// SETUP & RECOVERY (Acciones de cuenta y bootstrap inicial)
 	// ============================================================================
-	r.POST("/setup/auth", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
+	r.POST("/setup/auth", setupLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
 	r.GET("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
-	r.POST("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
+	r.POST("/setup", setupLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
 	r.GET("/verify", middleware.RequireHTTPSMiddleware(), registerCtrl.GetVerifyEmail)
 	r.GET("/reset-password", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.GetResetPassword)
 	r.POST("/reset-password", resetLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.PostResetPassword)
@@ -202,9 +203,9 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		adminPublic.POST("/login/mfa/webauthn/finish", loginLimiter, middleware.AdminCSRFMiddleware(), loginCtrl.FinishWebAuthnLoginAdmin)
 
 		// El setup también es accesible desde /admin/setup
-		adminPublic.POST("/setup/auth", setupCtrl.AuthenticateSetup)
+		adminPublic.POST("/setup/auth", setupLimiter, middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
 		adminPublic.GET("/setup", setupCtrl.ShowSetup)
-		adminPublic.POST("/setup", setupCtrl.ProcessSetup)
+		adminPublic.POST("/setup", setupLimiter, middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
 	}
 
 	// ============================================================================
