@@ -380,7 +380,8 @@ func (ctrl *UserController) BeginWebAuthnRegistration(c *gin.Context) {
 
 	options, sessionData, err := ctrl.MfaService.BeginWebAuthnRegistration(userID, email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Internal error - log details server-side, return generic message to client
+		internalErrorJSON(c, "BeginWebAuthnRegistration", err)
 		return
 	}
 
