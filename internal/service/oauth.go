@@ -181,22 +181,13 @@ func (s *oauthService) ExchangeCodeForToken(clientID, clientSecret, codeStr, red
 	}
 
 	// 2. Obtener y consumir el código de un solo uso (One-Time Use Transactional)
-	code, err := s.oauthRepo.GetAndConsumeCode(codeStr)
+	// Validación de client binding y expiración ocurre dentro de la transacción antes de consumir
+	code, err := s.oauthRepo.GetAndConsumeCodeForClient(codeStr, clientID)
 	if err != nil {
 		return 0, false, errors.New("código de autorización inválido o ya utilizado")
 	}
 
-	// 3. Verificar expiración (por si no lo agarró el cleanup)
-	if time.Now().After(code.ExpiresAt) {
-		return 0, false, errors.New("el código de autorización ha expirado")
-	}
-
-	// 4. Verificar que pertenece a este client_id
-	if code.ClientID != clientID {
-		return 0, false, errors.New("el código no pertenece a este client_id")
-	}
-
-	// 5. Validación estricta de redirect_uri (RFC 6749 Sección 4.1.3)
+	// 3. Validación estricta de redirect_uri (RFC 6749 Sección 4.1.3)
 	// RFC 6749 Section 4.1.3: redirect_uri must match exactly
 	if code.RedirectURI != "" || redirectURI != "" {
 		if redirectURI != code.RedirectURI {

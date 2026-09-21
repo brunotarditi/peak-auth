@@ -54,6 +54,26 @@ func (r *testOAuthRepo) GetAndConsumeCode(codeStr string) (*model.OAuthCode, err
 	return code, nil
 }
 
+func (r *testOAuthRepo) GetAndConsumeCodeForClient(codeStr string, clientID string) (*model.OAuthCode, error) {
+	code, exists := r.codes[codeStr]
+	if !exists {
+		return nil, fmt.Errorf("código inválido o expirado")
+	}
+
+	// Validate expiration before consuming
+	if time.Now().After(code.ExpiresAt) {
+		return nil, fmt.Errorf("el código de autorización ha expirado")
+	}
+
+	// Validate client binding before consuming
+	if code.ClientID != clientID {
+		return nil, fmt.Errorf("el código no pertenece a este client_id")
+	}
+
+	delete(r.codes, codeStr)
+	return code, nil
+}
+
 func (r *testOAuthRepo) DeleteExpiredCodes() error { return nil }
 
 func (r *testOAuthRepo) HasValidConsent(userID uint, clientID string) (bool, error) {

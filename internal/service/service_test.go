@@ -56,6 +56,26 @@ func (m *mockOAuthRepo) GetAndConsumeCode(codeStr string) (*model.OAuthCode, err
 	return code, nil
 }
 
+func (m *mockOAuthRepo) GetAndConsumeCodeForClient(codeStr string, clientID string) (*model.OAuthCode, error) {
+	code, exists := m.codes[codeStr]
+	if !exists {
+		return nil, &testError{msg: "código no encontrado"}
+	}
+
+	// Validate expiration before consuming
+	if time.Now().After(code.ExpiresAt) {
+		return nil, &testError{msg: "el código de autorización ha expirado"}
+	}
+
+	// Validate client binding before consuming
+	if code.ClientID != clientID {
+		return nil, &testError{msg: "el código no pertenece a este client_id"}
+	}
+
+	delete(m.codes, codeStr)
+	return code, nil
+}
+
 func (m *mockOAuthRepo) DeleteExpiredCodes() error {
 	return nil
 }
@@ -516,6 +536,37 @@ func TestOAuthPKCEAndRedirectValidation(t *testing.T) {
 		_, _, err = oauthSvc.ExchangeCodeForToken(inactiveClientID, "", inactiveCode, redirectURI, verifier)
 		if err == nil {
 			t.Fatalf("se esperaba rechazo para aplicación desactivada")
+		}
+	})
+
+	t.Run("Intento de canje con client_id ajeno no consume el código", func(t *testing.T) {
+		otherClientID := "other-client-app"
+		otherClientSecret := "othersecret123"
+		appRepo.apps[otherClientID] = &model.Application{
+			AppID:       otherClientID,
+			SecretKey:   otherClientSecret,
+			RedirectURL: "https://otherapp.com/callback",
+			IsActive:    true,
+		}
+
+		dosCode, err := oauthSvc.GenerateAuthorizationCode(101, clientID, redirectURI, challenge, "S256", true)
+		if err != nil {
+			t.Fatalf("error generando código: %v", err)
+		}
+
+		// otherClientID intenta canjear el código perteneciente a clientID
+		_, _, err = oauthSvc.ExchangeCodeForToken(otherClientID, otherClientSecret, dosCode, "https://otherapp.com/callback", verifier)
+		if err == nil {
+			t.Fatalf("se esperaba error al intentar canjear código con client_id ajeno")
+		}
+
+		// El código NO debió ser consumido y debe ser válido para el cliente legítimo
+		uID, _, err := oauthSvc.ExchangeCodeForToken(clientID, clientSecret, dosCode, redirectURI, verifier)
+		if err != nil {
+			t.Fatalf("el código legítimo fue quemado/consumido indebidamente tras intento ajeno: %v", err)
+		}
+		if uID != 101 {
+			t.Fatalf("se esperaba userID 101, obtenido %d", uID)
 		}
 	})
 }
