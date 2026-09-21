@@ -174,6 +174,7 @@ func (m *mockUserRepo) VerifyUserEmailByToken(tokenHash []byte) (uint, uint, err
 	}
 	return 0, 0, nil
 }
+func (m *mockUserRepo) CheckEmailVerificationToken(tokenHash []byte) (bool, bool, error) { return false, false, nil }
 func (m *mockUserRepo) FindByEmail(email string) (model.User, error) {
 	if m.err != nil {
 		return model.User{}, m.err
@@ -541,7 +542,7 @@ func TestOAuthPKCEAndRedirectValidation(t *testing.T) {
 
 	t.Run("Intento de canje con client_id ajeno no consume el código", func(t *testing.T) {
 		otherClientID := "other-client-app"
-		otherClientSecret := "othersecret123"
+		otherClientSecret := "****t123"
 		appRepo.apps[otherClientID] = &model.Application{
 			AppID:       otherClientID,
 			SecretKey:   otherClientSecret,

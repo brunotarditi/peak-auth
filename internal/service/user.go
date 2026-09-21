@@ -23,6 +23,8 @@ type UserService interface {
 	Login(req request.LoginRequest, publicAppID string) (response.TokenResponse, error)
 	FindAll() ([]model.User, error)
 	VerifyEmail(token string) (uint, uint, error)
+	CheckEmailVerificationToken(token string) (bool, bool, error)
+	ResendVerificationEmail(email string) error
 	ResetPassword(token, newPassword string) error
 	FindVerifiedUser(email string) (*model.User, error)
 	FindVerifiedUserByID(id uint) (*model.User, error)
@@ -350,6 +352,65 @@ func (s *userService) VerifyEmail(token string) (uint, uint, error) {
 	}
 
 	return userID, appID, nil
+}
+
+// CheckEmailVerificationToken validates an email verification token without consuming it.
+// Returns (exists, isValid, error) where:
+// - exists: true if a token with this hash exists (even if expired/used)
+// - isValid: true if the token exists, is unused, and not expired
+// - error: any error encountered
+func (s *userService) CheckEmailVerificationToken(token string) (bool, bool, error) {
+	hashedToken := sha256.Sum256([]byte(token))
+	return s.userRepo.CheckEmailVerificationToken(hashedToken[:])
+}
+
+// ResendVerificationEmail generates a new verification token and sends it to the user's email.
+// This allows users to request a fresh verification link if their original token expired or was consumed.
+func (s *userService) ResendVerificationEmail(email string) error {
+	// Find the user by email
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil {
+		return fmt.Errorf("usuario no encontrado")
+	}
+	
+	// Check if user is already verified
+	if user.IsVerified {
+		return fmt.Errorf("el usuario ya está verificado")
+	}
+	
+	// Find the most recent email verification record to get the application ID
+	verification, err := s.emailVerificationRepo.FindMostRecentByUserID(user.ID)
+	if err != nil {
+		return fmt.Errorf("no se encontró solicitud de verificación previa")
+	}
+	
+	// Get the application details
+	app, err := s.appRepo.FindByID(verification.ApplicationID)
+	if err != nil {
+		return fmt.Errorf("aplicación no encontrada")
+	}
+	
+	// Generate a new verification token
+	plainToken := util.GenerateSecureToken(32)
+	hashedToken := sha256.Sum256([]byte(plainToken))
+	
+	newVerification := model.EmailVerification{
+		UserID:        user.ID,
+		ApplicationID: app.ID,
+		TokenHash:     hashedToken[:],
+		ExpiresAt:     time.Now().Add(24 * time.Hour),
+	}
+	
+	if err := s.emailVerificationRepo.CreateEmailVerification(&newVerification); err != nil {
+		return fmt.Errorf("error creando token de verificación: %v", err)
+	}
+	
+	// Send the verification email
+	if err := s.emailService.SendVerificationEmail(user.Email, plainToken, app.Name); err != nil {
+		return fmt.Errorf("error enviando email: %v", err)
+	}
+	
+	return nil
 }
 
 // FindVerifiedUser retorna el usuario si existe y está verificado por email.

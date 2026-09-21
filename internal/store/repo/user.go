@@ -13,6 +13,7 @@ type UserRepository interface {
 	CreateWithProfile(user *model.User, profile *model.Profile) error
 	VerifyUserEmail(userID uint, verificationID uint) error
 	VerifyUserEmailByToken(tokenHash []byte) (uint, uint, error)
+	CheckEmailVerificationToken(tokenHash []byte) (bool, bool, error)
 	FindByEmail(email string) (model.User, error)
 	FindById(ID uint) (model.User, error)
 	UpdateColumn(column string, value interface{}, id uint) error
@@ -139,6 +140,28 @@ func (r *userRepository) VerifyUserEmailByToken(tokenHash []byte) (uint, uint, e
 	}
 
 	return userID, appID, nil
+}
+
+// CheckEmailVerificationToken validates an email verification token without consuming it.
+// Returns (exists, isValid, error) where:
+// - exists: true if a token with this hash exists (even if expired/used)
+// - isValid: true if the token exists, is unused, and not expired
+// - error: any database error encountered
+func (r *userRepository) CheckEmailVerificationToken(tokenHash []byte) (bool, bool, error) {
+	var verification model.EmailVerification
+	
+	// Check if token exists at all
+	err := r.db.Where("token_hash = ?", tokenHash).First(&verification).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, false, nil // Token doesn't exist
+		}
+		return false, false, err // Database error
+	}
+	
+	// Token exists, now check if it's valid (unused and not expired)
+	isValid := verification.UsedAt == nil && verification.ExpiresAt.After(time.Now())
+	return true, isValid, nil
 }
 
 // LockUserForUpdate acquires a row-level lock on the user record using SELECT ... FOR UPDATE.

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peak Auth - Email Enviado</title>
+    <script src="{{ js "config.js" }}"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+</head>
+
+<body class="bg-pattern layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
+    </div>
+
+    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
+        <div class="glass-panel" style="padding: 3rem 2rem; text-align: center;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 2rem; border: 1px solid var(--border-light);">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 4rem; height: 4rem;">
+            </div>
+
+            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main); margin-bottom: 1rem;">Email <span style="color: var(--emerald-500);">Enviado</span></h1>
+            
+            <p style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; line-height: 1.625; margin-bottom: 2.5rem;">
+                Hemos enviado un nuevo enlace de verificación a <strong>{{ .Email }}</strong>. Por favor, revisa tu bandeja de entrada y haz clic en el enlace para verificar tu cuenta.
+            </p>
+
+            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500; line-height: 1.625;">
+                Si no recibes el correo en unos minutos, revisa tu carpeta de spam o correo no deseado.
+            </p>
+        </div>
+
+        <p style="text-align: center; color: var(--slate-400); font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2.5rem;">
+            Peak Auth Security Protocol
+        </p>
+    </div>
+</body>
+
+</html>

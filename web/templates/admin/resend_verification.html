@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peak Auth - Reenviar Verificación</title>
+    <script src="{{ js "config.js" }}"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+</head>
+
+<body class="bg-pattern layout-auth">
+    <div class="auth-bg-shapes">
+        <div class="auth-blob-1"></div>
+        <div class="auth-blob-2"></div>
+    </div>
+
+    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
+        <div class="glass-panel" style="padding: 3rem 2rem;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 2rem; border: 1px solid var(--border-light); width: 100%; justify-content: center;">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 4rem; height: 4rem;">
+            </div>
+
+            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main); margin-bottom: 1rem; text-align: center;">Reenviar <span style="color: var(--emerald-500);">Verificación</span></h1>
+            
+            <p style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; line-height: 1.625; margin-bottom: 2.5rem; text-align: center;">
+                Ingresa tu dirección de correo electrónico y te enviaremos un nuevo enlace de verificación.
+            </p>
+
+            <form method="POST" action="/resend-verification" style="width: 100%;">
+                <input type="hidden" name="csrf_token" value="{{ .csrf_token }}">
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="email" style="display: block; font-size: 0.875rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">
+                        Correo Electrónico
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        required 
+                        placeholder="tu@email.com"
+                        style="width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border-light); border-radius: 0.75rem; font-size: 0.875rem; background-color: var(--bg-surface); color: var(--text-main);"
+                    >
+                </div>
+
+                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; border: none; cursor: pointer; width: 100%;">
+                    <span>Enviar nuevo enlace</span>
+                    {{template "icon-forward"}}
+                </button>
+            </form>
+        </div>
+
+        <p style="text-align: center; color: var(--slate-400); font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2.5rem;">
+            Peak Auth Security Protocol
+        </p>
+    </div>
+</body>
+
+</html>

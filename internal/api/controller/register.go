@@ -80,6 +80,25 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 	ctx.Header("Expires", "0")
 	ctx.Header("Referrer-Policy", "no-referrer")
 
+	// Validate the token without consuming it
+	exists, isValid, err := c.UserService.CheckEmailVerificationToken(token)
+	if err != nil {
+		ctx.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"Title":   "Error del servidor",
+			"Message": "Ocurrió un error al validar el token. Por favor, intenta nuevamente.",
+		})
+		return
+	}
+
+	// If token doesn't exist or is invalid (expired/used), show error with resend option
+	if !exists || !isValid {
+		ctx.HTML(http.StatusBadRequest, "verify_email_error.html", gin.H{
+			"Title":   "Token inválido",
+			"Message": "El enlace de verificación es inválido, ha expirado o ya fue utilizado.",
+		})
+		return
+	}
+
 	csrfToken, _ := ctx.Get("csrf_token")
 
 	// Muestra la pantalla de confirmación sin consumir el token
@@ -102,9 +121,9 @@ func (c *RegisterController) PostVerifyEmail(ctx *gin.Context) {
 
 	userID, appID, err := c.UserService.VerifyEmail(token)
 	if err != nil {
-		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
+		ctx.HTML(http.StatusBadRequest, "verify_email_error.html", gin.H{
 			"Title":   "Verificación fallida",
-			"Message": "El enlace de verificación es inválido o ha expirado.",
+			"Message": "El enlace de verificación es inválido, ha expirado o ya fue utilizado.",
 		})
 		return
 	}
@@ -141,6 +160,39 @@ func (c *RegisterController) PostVerifyEmail(ctx *gin.Context) {
 
 	ctx.HTML(http.StatusOK, "verify_email.html", gin.H{
 		"NeedsPassword": needsPassword,
+	})
+}
+
+// GetResendVerification muestra el formulario para solicitar un nuevo email de verificación
+func (c *RegisterController) GetResendVerification(ctx *gin.Context) {
+	csrfToken, _ := ctx.Get("csrf_token")
+	ctx.HTML(http.StatusOK, "resend_verification.html", gin.H{
+		"csrf_token": csrfToken,
+	})
+}
+
+// PostResendVerification procesa la solicitud de reenvío de email de verificación
+func (c *RegisterController) PostResendVerification(ctx *gin.Context) {
+	email := ctx.PostForm("email")
+	if email == "" {
+		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"Title":   "Email requerido",
+			"Message": "Debes proporcionar tu dirección de correo electrónico.",
+		})
+		return
+	}
+
+	err := c.UserService.ResendVerificationEmail(email)
+	if err != nil {
+		ctx.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"Title":   "Error al reenviar",
+			"Message": err.Error(),
+		})
+		return
+	}
+
+	ctx.HTML(http.StatusOK, "resend_verification_success.html", gin.H{
+		"Email": email,
 	})
 }
 

@@ -975,9 +975,10 @@ func TestPostSendResetPassword_RateLimitingAndAtomicity(t *testing.T) {
 
 type mockUserServiceForVerify struct {
 	service.UserService
-	verifyEmailFn        func(token string) (uint, uint, error)
-	findVerifiedUserFn   func(id uint) (*model.User, error)
-	generateResetTokenFn func(userID, appID uint) (string, []byte, error)
+	verifyEmailFn              func(token string) (uint, uint, error)
+	checkTokenFn               func(token string) (bool, bool, error)
+	findVerifiedUserFn         func(id uint) (*model.User, error)
+	generateResetTokenFn       func(userID, appID uint) (string, []byte, error)
 }
 
 func (m *mockUserServiceForVerify) VerifyEmail(token string) (uint, uint, error) {
@@ -985,6 +986,13 @@ func (m *mockUserServiceForVerify) VerifyEmail(token string) (uint, uint, error)
 		return m.verifyEmailFn(token)
 	}
 	return 1, 1, nil
+}
+
+func (m *mockUserServiceForVerify) CheckEmailVerificationToken(token string) (bool, bool, error) {
+	if m.checkTokenFn != nil {
+		return m.checkTokenFn(token)
+	}
+	return true, true, nil
 }
 
 func (m *mockUserServiceForVerify) FindVerifiedUserByID(id uint) (*model.User, error) {
@@ -1005,6 +1013,7 @@ func TestVerifyEmail_TwoStep(t *testing.T) {
 	tmpl := template.Must(template.New("verify_email_confirm.html").Parse("<html>confirm:token={{.Token}}|csrf={{.csrf_token}}</html>"))
 	template.Must(tmpl.New("verify_email.html").Parse("<html>verify_success:needs_pwd={{.NeedsPassword}}</html>"))
 	template.Must(tmpl.New("error.html").Parse("<html>error:title={{.Title}}|msg={{.Message}}</html>"))
+	template.Must(tmpl.New("verify_email_error.html").Parse("<html>error:title={{.Title}}|msg={{.Message}}</html>"))
 
 	t.Run("GET /verify displays confirm page without consuming token", func(t *testing.T) {
 		verifyCalled := false
@@ -1012,6 +1021,10 @@ func TestVerifyEmail_TwoStep(t *testing.T) {
 			verifyEmailFn: func(token string) (uint, uint, error) {
 				verifyCalled = true
 				return 1, 1, nil
+			},
+			checkTokenFn: func(token string) (bool, bool, error) {
+				// Token validation should be called, but not consumption
+				return true, true, nil
 			},
 		}
 		ctrl := &RegisterController{UserService: userSvc}

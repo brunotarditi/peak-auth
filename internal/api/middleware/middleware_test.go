@@ -293,6 +293,7 @@ func (m *mockUserRepo) FindAll() ([]model.User, error)                          
 func (m *mockUserRepo) CreateWithProfile(user *model.User, profile *model.Profile) error { return nil }
 func (m *mockUserRepo) VerifyUserEmail(userID uint, verificationID uint) error          { return nil }
 func (m *mockUserRepo) VerifyUserEmailByToken(tokenHash []byte) (uint, uint, error)     { return 0, 0, nil }
+func (m *mockUserRepo) CheckEmailVerificationToken(tokenHash []byte) (bool, bool, error) { return false, false, nil }
 func (m *mockUserRepo) FindByEmail(email string) (model.User, error)                     { return m.user, m.err }
 func (m *mockUserRepo) FindById(ID uint) (model.User, error)                             { return m.user, m.err }
 func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error    { return nil }

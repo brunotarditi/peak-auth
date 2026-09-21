@@ -12,6 +12,7 @@ type EmailVerificationRepository interface {
 	CreateEmailVerification(verification *model.EmailVerification) error
 	FindEmailVerification(token string) (*model.EmailVerification, error)
 	FindLatestByUserIDAndAppID(userID, appID uint) (*model.EmailVerification, error)
+	FindMostRecentByUserID(userID uint) (*model.EmailVerification, error)
 }
 
 type emailVerification struct {
@@ -43,5 +44,11 @@ func (r *emailVerification) FindEmailVerification(plainToken string) (*model.Ema
 func (r *emailVerification) FindLatestByUserIDAndAppID(userID, appID uint) (*model.EmailVerification, error) {
 	var verification model.EmailVerification
 	err := r.db.Where("user_id = ? AND application_id = ?", userID, appID).Order("created_at desc").First(&verification).Error
+	return &verification, err
+}
+
+func (r *emailVerification) FindMostRecentByUserID(userID uint) (*model.EmailVerification, error) {
+	var verification model.EmailVerification
+	err := r.db.Where("user_id = ?", userID).Order("created_at desc").First(&verification).Error
 	return &verification, err
 }
