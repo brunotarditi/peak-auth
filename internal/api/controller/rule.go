@@ -26,11 +26,11 @@ func (ctrl *RuleController) PostAppRule(c *gin.Context) {
 		return
 	}
 
-	// Use streaming JSON decoder to avoid eagerly buffering the entire body.
+	// Decode into a generic map to avoid buffering the entire body as json.RawMessage.
 	// The body is already wrapped by http.MaxBytesReader via middleware.
-	var body json.RawMessage
+	var payload map[string]interface{}
 	decoder := json.NewDecoder(c.Request.Body)
-	if err := decoder.Decode(&body); err != nil {
+	if err := decoder.Decode(&payload); err != nil {
 		// Check if error is due to body size limit exceeded
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) || err.Error() == "http: request body too large" {
@@ -38,6 +38,13 @@ func (ctrl *RuleController) PostAppRule(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error leyendo el JSON"})
+		return
+	}
+
+	// Marshal the validated payload back to json.RawMessage for storage
+	body, err := json.Marshal(payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error procesando el JSON"})
 		return
 	}
 
@@ -66,11 +73,11 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 		return
 	}
 
-	// Use streaming JSON decoder to avoid eagerly buffering the entire body.
+	// Decode into a generic map to avoid buffering the entire body as json.RawMessage.
 	// The body is already wrapped by http.MaxBytesReader via middleware.
-	var body json.RawMessage
+	var payload map[string]interface{}
 	decoder := json.NewDecoder(c.Request.Body)
-	if err := decoder.Decode(&body); err != nil {
+	if err := decoder.Decode(&payload); err != nil {
 		// Check if error is due to body size limit exceeded
 		var maxBytesErr *http.MaxBytesError
 		if errors.As(err, &maxBytesErr) || err.Error() == "http: request body too large" {
@@ -78,6 +85,13 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error leyendo el JSON"})
+		return
+	}
+
+	// Marshal the validated payload back to json.RawMessage for validation and storage
+	body, err := json.Marshal(payload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error procesando el JSON"})
 		return
 	}
 

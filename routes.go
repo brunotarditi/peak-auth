@@ -90,6 +90,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	mfaSetupLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	setupLimiter := middleware.RateLimitMiddleware(5, time.Minute)
 	verifyLimiter := middleware.RateLimitMiddleware(10, time.Minute)
+	ruleMutationLimiter := middleware.RateLimitMiddleware(20, time.Minute)
 
 	// ============================================================================
 	// OIDC & JWKS DISCOVERY (Público, CORS abierto para SDKs y librerías cliente)
@@ -251,8 +252,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			apps.POST("/users/:user_id/send-reset", resetLimiter, dashboardCtrl.PostSendResetPassword)
 			apps.GET("/rules", appCtrl.GetAppRules)
 			apps.POST("/rules", ruleCtrl.PostDefaultRules)
-			apps.POST("/rules/:code", middleware.RequestBodyLimitMiddleware(64*1024), ruleCtrl.PostAppRule)
-			apps.PUT("/rules/:code", middleware.RequestBodyLimitMiddleware(64*1024), ruleCtrl.PutAppRule)
+			apps.POST("/rules/:code", ruleMutationLimiter, middleware.RequestBodyLimitMiddleware(64*1024), ruleCtrl.PostAppRule)
+			apps.PUT("/rules/:code", ruleMutationLimiter, middleware.RequestBodyLimitMiddleware(64*1024), ruleCtrl.PutAppRule)
 			apps.DELETE("/rules/:code", ruleCtrl.DeleteAppRule)
 			apps.POST("/secret", appCtrl.PostRegenerateSecret)
 

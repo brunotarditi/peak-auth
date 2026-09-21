@@ -1166,7 +1166,7 @@ func TestRuleController_RequestBodyLimit(t *testing.T) {
 	})
 
 	t.Run("POST /rules rejects body exceeding 64KB with 413", func(t *testing.T) {
-		oversized := strings.Repeat("a", 65*1024)
+		oversized := `{"data":"` + strings.Repeat("a", 65*1024) + `"}`
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodPost, "/apps/app-1/rules/SESSION_POLICY", strings.NewReader(oversized))
 		req.Header.Set("Content-Type", "application/json")
@@ -1181,7 +1181,7 @@ func TestRuleController_RequestBodyLimit(t *testing.T) {
 	})
 
 	t.Run("PUT /rules rejects body exceeding 64KB with 413", func(t *testing.T) {
-		oversized := strings.Repeat("b", 65*1024)
+		oversized := `{"data":"` + strings.Repeat("b", 65*1024) + `"}`
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodPut, "/apps/app-1/rules/SESSION_POLICY", strings.NewReader(oversized))
 		req.Header.Set("Content-Type", "application/json")
