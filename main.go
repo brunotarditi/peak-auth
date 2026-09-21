@@ -2,8 +2,10 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"peak-auth/internal/api/middleware"
 	"peak-auth/internal/app"
@@ -78,13 +80,23 @@ func main() {
 
 	appInstance.SetupService.InitializeSystem(port)
 
+	// Configure HTTP server with timeouts to prevent resource exhaustion
+	srv := &http.Server{
+		Addr:              ":" + port,
+		Handler:           router,
+		ReadTimeout:       15 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
 	// Check if TLS certificates are provided for direct TLS termination
 	tlsCert := os.Getenv("TLS_CERT_FILE")
 	tlsKey := os.Getenv("TLS_KEY_FILE")
 
 	if tlsCert != "" && tlsKey != "" {
 		log.Printf("Starting server with TLS on port %s", port)
-		if err := router.RunTLS(":"+port, tlsCert, tlsKey); err != nil {
+		if err := srv.ListenAndServeTLS(tlsCert, tlsKey); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("error starting TLS server: %v", err)
 		}
 	} else {
@@ -93,7 +105,7 @@ func main() {
 			log.Println("⚠️  Ensure a trusted HTTPS reverse proxy is configured with TRUSTED_PROXIES set.")
 			log.Println("⚠️  To terminate TLS in the application, set TLS_CERT_FILE and TLS_KEY_FILE.")
 		}
-		if err := router.Run(":" + port); err != nil {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("error starting server: %v", err)
 		}
 	}

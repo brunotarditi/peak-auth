@@ -109,8 +109,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		oauth.GET("/authorize", oauthCtrl.AuthorizeEndpoint)
 		oauth.POST("/token", tokenLimiter, oauthCtrl.TokenEndpoint) // Token Exchange (S2S o SPA)
 		oauth.OPTIONS("/token", oauthCtrl.TokenEndpoint)            // Preflight CORS para clientes SPA
-		oauth.GET("/logout", oauthCtrl.LogoutEndpoint)   // Federated Logout (GET)
-		oauth.POST("/logout", oauthCtrl.LogoutEndpoint)  // Federated Logout (POST)
+		oauth.GET("/logout", oauthCtrl.LogoutEndpoint)              // Federated Logout (GET)
+		oauth.POST("/logout", oauthCtrl.LogoutEndpoint)             // Federated Logout (POST)
 
 		// Consent page for user authorization approval
 		oauthConsent := oauth.Group("/consent")
@@ -251,8 +251,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			apps.POST("/users/:user_id/send-reset", resetLimiter, dashboardCtrl.PostSendResetPassword)
 			apps.GET("/rules", appCtrl.GetAppRules)
 			apps.POST("/rules", ruleCtrl.PostDefaultRules)
-			apps.POST("/rules/:code", ruleCtrl.PostAppRule)
-			apps.PUT("/rules/:code", ruleCtrl.PutAppRule)
+			apps.POST("/rules/:code", middleware.RequestBodyLimitMiddleware(64*1024), ruleCtrl.PostAppRule)
+			apps.PUT("/rules/:code", middleware.RequestBodyLimitMiddleware(64*1024), ruleCtrl.PutAppRule)
 			apps.DELETE("/rules/:code", ruleCtrl.DeleteAppRule)
 			apps.POST("/secret", appCtrl.PostRegenerateSecret)
 

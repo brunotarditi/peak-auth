@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"peak-auth/internal/api/middleware"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
@@ -587,14 +588,34 @@ func (m *mockAppAdminService) UpdateApp(appID string, description, redirectURL s
 	return nil
 }
 
+func (m *mockAppAdminService) GetAppDetails(appID string) (model.Application, error) {
+	return model.Application{ID: 1, AppID: appID, Name: "Test App"}, nil
+}
+
 type mockRuleAdminService struct {
 	service.ApplicationRuleService
 	createDefaultRulesFn func(appID uint) error
+	createRuleFn         func(appID uint, code string, val []byte) error
+	updateRuleValueFn    func(appID uint, code string, val []byte) error
 }
 
 func (m *mockRuleAdminService) CreateDefaultRules(appID uint) error {
 	if m.createDefaultRulesFn != nil {
 		return m.createDefaultRulesFn(appID)
+	}
+	return nil
+}
+
+func (m *mockRuleAdminService) CreateRule(appID uint, code string, val []byte) error {
+	if m.createRuleFn != nil {
+		return m.createRuleFn(appID, code, val)
+	}
+	return nil
+}
+
+func (m *mockRuleAdminService) UpdateRuleValue(appID uint, code string, val []byte) error {
+	if m.updateRuleValueFn != nil {
+		return m.updateRuleValueFn(appID, code, val)
 	}
 	return nil
 }
@@ -1073,6 +1094,62 @@ func TestVerifyEmail_TwoStep(t *testing.T) {
 		}
 	})
 }
+
+func TestRuleController_RequestBodyLimit(t *testing.T) {
+	appSvc := &mockAppAdminService{}
+	ruleSvc := &mockRuleAdminService{}
+	ctrl := &RuleController{
+		AppService:  appSvc,
+		RuleService: ruleSvc,
+	}
+
+	r := gin.New()
+	r.POST("/apps/:id/rules/:code", middleware.RequestBodyLimitMiddleware(64*1024), ctrl.PostAppRule)
+	r.PUT("/apps/:id/rules/:code", middleware.RequestBodyLimitMiddleware(64*1024), ctrl.PutAppRule)
+
+	t.Run("POST /rules accepts body within 64KB", func(t *testing.T) {
+		validBody := `{"token_expiration_minutes": 60, "max_failed_logins": 5}`
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/apps/app-1/rules/SESSION_POLICY", strings.NewReader(validBody))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK, obtenido %d: %s", w.Code, w.Body.String())
+		}
+	})
+
+	t.Run("POST /rules rejects body exceeding 64KB with 413", func(t *testing.T) {
+		oversized := strings.Repeat("a", 65*1024)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/apps/app-1/rules/SESSION_POLICY", strings.NewReader(oversized))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusRequestEntityTooLarge {
+			t.Fatalf("se esperaba 413 Request Entity Too Large, obtenido %d: %s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "excede el límite permitido") {
+			t.Errorf("mensaje de error inesperado: %s", w.Body.String())
+		}
+	})
+
+	t.Run("PUT /rules rejects body exceeding 64KB with 413", func(t *testing.T) {
+		oversized := strings.Repeat("b", 65*1024)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPut, "/apps/app-1/rules/SESSION_POLICY", strings.NewReader(oversized))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusRequestEntityTooLarge {
+			t.Fatalf("se esperaba 413 Request Entity Too Large, obtenido %d: %s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "excede el límite permitido") {
+			t.Errorf("mensaje de error inesperado: %s", w.Body.String())
+		}
+	})
+}
+
 
 
 

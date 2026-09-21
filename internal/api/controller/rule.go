@@ -2,6 +2,8 @@ package controller
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
@@ -25,8 +27,15 @@ func (ctrl *RuleController) PostAppRule(c *gin.Context) {
 		return
 	}
 
-	body, err := c.GetRawData()
+	// Read body with bounded decoder to prevent unbounded memory allocation
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		// Check if error is due to body size limit exceeded
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) || err.Error() == "http: request body too large" {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "El cuerpo de la solicitud excede el límite permitido"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error leyendo el JSON"})
 		return
 	}
@@ -56,8 +65,15 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 		return
 	}
 
-	body, err := c.GetRawData()
+	// Read body with bounded decoder to prevent unbounded memory allocation
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		// Check if error is due to body size limit exceeded
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) || err.Error() == "http: request body too large" {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "El cuerpo de la solicitud excede el límite permitido"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error leyendo el JSON"})
 		return
 	}
