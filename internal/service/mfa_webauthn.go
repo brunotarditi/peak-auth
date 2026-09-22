@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"peak-auth/internal/store/model"
@@ -525,14 +526,16 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 
 	wa, err := getWebAuthn()
 	if err != nil {
-		// Internal error - WebAuthn initialization failed
-		return fmt.Errorf("%w: error inicializando WebAuthn: %v", ErrWebAuthnInternal, err)
+		// Log the detailed error server-side for diagnostics
+		log.Printf("[error] FinishWebAuthnRegistration: WebAuthn initialization failed: %v", err)
+		return ErrWebAuthnInternal
 	}
 
 	user, err := s.userRepo.FindById(userID)
 	if err != nil {
-		// Internal error - database lookup failed
-		return fmt.Errorf("%w: usuario no encontrado: %v", ErrWebAuthnInternal, err)
+		// Log the detailed error server-side for diagnostics
+		log.Printf("[error] FinishWebAuthnRegistration: user lookup failed for userID=%d: %v", userID, err)
+		return ErrWebAuthnInternal
 	}
 
 	wUser := &webAuthnUserWrapper{
@@ -565,8 +568,9 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 	// Serializar credencial a JSON
 	credJSON, err := json.Marshal(credential)
 	if err != nil {
-		// Internal error - JSON marshaling failed
-		return fmt.Errorf("%w: error serializando credencial: %v", ErrWebAuthnInternal, err)
+		// Log the detailed error server-side for diagnostics
+		log.Printf("[error] FinishWebAuthnRegistration: credential marshaling failed for userID=%d: %v", userID, err)
+		return ErrWebAuthnInternal
 	}
 
 	// Guardar en base de datos con el credential ID para unicidad
@@ -589,8 +593,9 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 			// This is an idempotent replay - credential already exists (client validation error)
 			return ErrWebAuthnValidation
 		}
-		// Internal error - database persistence failed
-		return fmt.Errorf("%w: error persistiendo credencial: %v", ErrWebAuthnInternal, err)
+		// Log the detailed error server-side for diagnostics
+		log.Printf("[error] FinishWebAuthnRegistration: credential persistence failed for userID=%d: %v", userID, err)
+		return ErrWebAuthnInternal
 	}
 
 	// Activar MFA en el usuario
