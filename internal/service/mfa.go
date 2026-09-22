@@ -167,7 +167,7 @@ func (s *mfaService) VerifyAndActivateTOTP(userID uint, code string) ([]string, 
 
 	// Activar credencial
 	if err := s.mfaRepo.ActivateCredential(cred.ID); err != nil {
-		return nil, fmt.Errorf("error activando credencial TOTP: %w", err)
+		return nil, fmt.Errorf("error activando credencial TOTP")
 	}
 
 	// Activar MFA en el usuario
@@ -176,7 +176,7 @@ func (s *mfaService) VerifyAndActivateTOTP(userID uint, code string) ([]string, 
 	// Generar códigos de recuperación
 	recoveryCodes, err := s.generateAndSaveRecoveryCodes(userID)
 	if err != nil {
-		return nil, fmt.Errorf("error generando códigos de recuperación: %w", err)
+		return nil, fmt.Errorf("error generando códigos de recuperación")
 	}
 
 	return recoveryCodes, nil
@@ -210,7 +210,10 @@ func (s *mfaService) ValidateRecoveryCode(userID uint, code string) error {
 
 	for _, rc := range codes {
 		if verifyRecoveryCodeHash(code, rc.CodeHash) {
-			return s.mfaRepo.MarkRecoveryCodeUsed(rc.ID)
+			if err := s.mfaRepo.MarkRecoveryCodeUsed(rc.ID); err != nil {
+				return fmt.Errorf("error al actualizar código de recuperación")
+			}
+			return nil
 		}
 	}
 
@@ -231,10 +234,10 @@ func (s *mfaService) DisableMFA(userID uint) error {
 		return fmt.Errorf("MFA no está habilitado")
 	}
 	if err := s.mfaRepo.DeleteCredentialsByUser(userID); err != nil {
-		return fmt.Errorf("error eliminando credenciales MFA: %w", err)
+		return fmt.Errorf("error eliminando credenciales MFA")
 	}
 	if err := s.mfaRepo.DeleteRecoveryCodesByUser(userID); err != nil {
-		return fmt.Errorf("error eliminando códigos de recuperación: %w", err)
+		return fmt.Errorf("error eliminando códigos de recuperación")
 	}
 	s.userRepo.UpdateColumn("mfa_enabled", false, userID)
 	return nil
@@ -305,7 +308,7 @@ func (s *mfaService) generateAndSaveRecoveryCodes(userID uint) ([]string, error)
 	}
 
 	if err := s.mfaRepo.CreateRecoveryCodes(dbCodes); err != nil {
-		return nil, fmt.Errorf("error guardando códigos de recuperación: %w", err)
+		return nil, fmt.Errorf("error guardando códigos de recuperación")
 	}
 
 	return plainCodes, nil

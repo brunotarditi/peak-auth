@@ -24,3 +24,15 @@ func CheckTokenSHA256(plainToken string, hashFromDB []byte) bool {
 	hashedToken := sha256.Sum256([]byte(plainToken))
 	return hmac.Equal(hashedToken[:], hashFromDB)
 }
+
+// dummyBcryptHash es un hash bcrypt precalculado con DefaultCost (10).
+// Se utiliza para mitigar timing attacks y user enumeration cuando una cuenta no existe.
+const dummyBcryptHash = "$2a$10$FKTUgxnqSnUp8kDjnTFlyOn3s165yiYmcLxXeNv7NavMY3DH19IIq"
+
+// PerformDummyPasswordCheck ejecuta una comparación bcrypt en tiempo constante contra un hash ficticio.
+// Esto garantiza que el tiempo de respuesta sea indistinguible entre usuarios existentes e inexistentes
+// (defensa contra enumeración de cuentas por análisis de tiempos de respuesta - OWASP).
+func PerformDummyPasswordCheck() {
+	_ = CheckPasswordHash("dummy", dummyBcryptHash)
+}
+

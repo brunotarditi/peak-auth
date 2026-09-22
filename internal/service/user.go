@@ -17,7 +17,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 type UserService interface {
 	Register(req request.RegisterRequest) (model.User, error)
 	Login(req request.LoginRequest, publicAppID string) (response.TokenResponse, error)
@@ -63,14 +62,19 @@ func NewUserService(userRepo repo.UserRepository, roleRepo repo.RoleRepository, 
 func (s *userService) resolveTokenDuration(appID uint) (time.Duration, error) {
 	rules, err := s.ruleService.FindRulesByAppID(appID)
 	if err != nil {
-		return 0, fmt.Errorf("no se pudo obtener la política de sesión: %w", err)
+		// Sanitize repository/database errors - do not expose internal details
+		return 0, fmt.Errorf("no se pudo obtener la política de sesión")
 	}
 
 	for _, r := range rules {
-		if r.Code == "SESSION_POLICY" {
+		if r.Code == util.SESSION_POLICY {
 			sess, err := util.ValidateSessionPolicy(r.Value)
 			if err != nil {
-				return 0, fmt.Errorf("no se pudo interpretar la política de sesión: %w", err)
+				if _, parseErr := util.ParseSessionPolicy(r.Value); parseErr != nil {
+					// Sanitize parser errors - do not expose internal JSON parser details
+					return 0, fmt.Errorf("no se pudo interpretar la política de sesión")
+				}
+				return 0, err
 			}
 			return time.Duration(sess.TokenExpirationMinutes) * time.Minute, nil
 		}
@@ -86,7 +90,7 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
 		// Mitigación de timing attack y user enumeration
-		util.CheckPasswordHash("dummy", "$2a$10$FKTUgxnqSnUp8kDjnTFlyOn3s165yiYmcLxXeNv7NavMY3DH19IIq")
+		util.PerformDummyPasswordCheck()
 		return response.TokenResponse{}, fmt.Errorf("credenciales inválidas")
 	}
 
@@ -115,7 +119,7 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	rules, err := s.ruleService.FindRulesByAppID(app.ID)
 	if err == nil {
 		for _, r := range rules {
-			if r.Code == "SESSION_POLICY" {
+			if r.Code == util.SESSION_POLICY {
 				sess, err := util.ParseSessionPolicy(r.Value)
 				if err == nil && sess.MaxFailedLogins > 0 {
 					maxFails = sess.MaxFailedLogins
@@ -168,10 +172,11 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	mfaRequiredByPolicy := false
 	mfaDisabledByPolicy := false
 	for _, r := range rules {
-		if r.Code == "MFA_POLICY" {
+		if r.Code == util.MFA_POLICY {
 			policy, err := util.ParseMfaPolicy(r.Value)
 			if err != nil {
-				return response.TokenResponse{}, fmt.Errorf("no se pudo interpretar la política de MFA: %w", err)
+				// Sanitize parser errors - do not expose internal details
+				return response.TokenResponse{}, fmt.Errorf("no se pudo interpretar la política de MFA")
 			}
 			switch policy.Mode {
 			case "REQUIRED":
@@ -189,7 +194,8 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	if shouldTriggerMFA {
 		mfaToken, err := s.tokenManager.GenerateMFAPendingToken(user.ID, user.Email, publicAppID)
 		if err != nil {
-			return response.TokenResponse{}, fmt.Errorf("error al generar token MFA: %w", err)
+			// Sanitize token generation errors - do not expose internal details
+			return response.TokenResponse{}, fmt.Errorf("error al generar token MFA")
 		}
 		return response.TokenResponse{
 			MfaRequired:      true,
@@ -214,7 +220,8 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	// 5. Generar y Almacenar Refresh Token
 	plainRT, rtHash, err := util.GenerateToken(64)
 	if err != nil {
-		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
+		// Sanitize token generation errors - do not expose internal details
+		return response.TokenResponse{}, fmt.Errorf("error al generar el token de acceso")
 	}
 	rt := model.RefreshToken{
 		UserID:        user.ID,
@@ -225,7 +232,8 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	}
 	createErr := s.refreshTokenRepo.Create(&rt)
 	if createErr != nil {
-		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", createErr)
+		// Sanitize persistence errors - do not expose database/driver details
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token")
 	}
 
 	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
@@ -532,7 +540,7 @@ func (s *userService) ResetPassword(token, newPassword string) error {
 		if err == nil {
 			policyFound := false
 			for _, r := range rules {
-				if r.Code == "PWD_POLICY" {
+				if r.Code == util.PWD_POLICY {
 					policyFound = true
 					if err := util.ValidatePasswordPolicy(r.Value, newPassword); err != nil {
 						return err
@@ -590,7 +598,7 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 	user, err := s.userRepo.FindByEmail(email)
 	if err != nil {
 		// Mitigación de timing attack y user enumeration
-		util.CheckPasswordHash("dummy", "$2a$10$FKTUgxnqSnUp8kDjnTFlyOn3s165yiYmcLxXeNv7NavMY3DH19IIq")
+		util.PerformDummyPasswordCheck()
 		return "", 0, false, false, "", genericError
 	}
 
@@ -604,7 +612,7 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 	rules, err := s.ruleService.FindRulesByAppID(peakApp.ID)
 	if err == nil {
 		for _, r := range rules {
-			if r.Code == "SESSION_POLICY" {
+			if r.Code == util.SESSION_POLICY {
 				sess, err := util.ParseSessionPolicy(r.Value)
 				if err == nil && sess.MaxFailedLogins > 0 {
 					maxFails = sess.MaxFailedLogins
@@ -700,10 +708,11 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 	mfaRequiredByPolicy := false
 	mfaDisabledByPolicy := false
 	for _, r := range rules {
-		if r.Code == "MFA_POLICY" {
+		if r.Code == util.MFA_POLICY {
 			policy, err := util.ParseMfaPolicy(r.Value)
 			if err != nil {
-				return "", 0, false, false, "", fmt.Errorf("no se pudo interpretar la política de MFA: %w", err)
+				// Sanitize parser errors - do not expose internal details
+				return "", 0, false, false, "", fmt.Errorf("no se pudo interpretar la política de MFA")
 			}
 			switch policy.Mode {
 			case "REQUIRED":
@@ -733,7 +742,8 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
 	if err != nil {
-		return "", 0, false, false, "", err
+		// Sanitize token generation errors - do not expose internal details
+		return "", 0, false, false, "", fmt.Errorf("error al generar el token de acceso")
 	}
 
 	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)
@@ -825,13 +835,15 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 	// 2. Generar nuevo Access Token preservando el aseguramiento de MFA original
 	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration, rt.MfaCompleted, user.AuthzVersion)
 	if err != nil {
-		return response.TokenResponse{}, err
+		// Sanitize token generation errors - do not expose internal details
+		return response.TokenResponse{}, fmt.Errorf("error al generar el token de acceso")
 	}
 
 	// 3. Generar nuevo Refresh Token ANTES de borrar el viejo.
 	plainRT, rtHash, err := util.GenerateToken(64)
 	if err != nil {
-		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token: %w", err)
+		// Sanitize token generation errors - do not expose internal details
+		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token")
 	}
 
 	newRtModel := model.RefreshToken{
@@ -855,7 +867,8 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		}
 		return tx.RefreshTokens().Create(&newRtModel)
 	}); err != nil {
-		return response.TokenResponse{}, fmt.Errorf("error al rotar el refresh token: %w", err)
+		// Sanitize transaction/persistence errors - do not expose database/driver details
+		return response.TokenResponse{}, fmt.Errorf("error al rotar el refresh token")
 	}
 
 	return response.TokenResponse{
@@ -939,7 +952,8 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 
 	// 1. Validar reglas de autorización (AUTHZ_POLICY)
 	if err := s.ruleService.ValidateLogin(app.ID, user.ID); err != nil {
-		return response.TokenResponse{}, err
+		// Sanitize authorization rule errors - do not expose internal details
+		return response.TokenResponse{}, fmt.Errorf("no se pudo validar el acceso del usuario")
 	}
 
 	// 2. Aplicar duración de sesión (SESSION_POLICY) y validar MFA_POLICY
@@ -985,7 +999,8 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 	// 4. Generar Token JWT
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, mfaCompleted, user.AuthzVersion)
 	if err != nil {
-		return response.TokenResponse{}, err
+		// Sanitize token generation errors - do not expose internal details
+		return response.TokenResponse{}, fmt.Errorf("error al generar el token de acceso")
 	}
 
 	// 5. Generar y Almacenar Refresh Token
@@ -1066,7 +1081,8 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 
 	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
 	if err != nil {
-		return "", 0, err
+		// Sanitize token generation errors - do not expose internal details
+		return "", 0, fmt.Errorf("error al generar el token de acceso")
 	}
 
 	s.userRepo.UpdateColumn("last_login", time.Now(), user.ID)

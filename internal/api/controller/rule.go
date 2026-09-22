@@ -111,7 +111,7 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 				return
 			}
 		}
-	case "PWD_POLICY":
+	case util.PWD_POLICY:
 		var params struct {
 			MinLength int `json:"min_length"`
 		}
@@ -121,7 +121,7 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 				return
 			}
 		}
-	case "MFA_POLICY":
+	case util.MFA_POLICY:
 		var params struct {
 			Mode string `json:"mode"`
 		}

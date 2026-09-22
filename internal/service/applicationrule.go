@@ -93,7 +93,8 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 	rules, err := s.ruleRepo.GetRulesByAppID(appID)
 	if err != nil {
-		return err
+		// Sanitize repository/database errors - do not expose internal details
+		return fmt.Errorf("no se pudo obtener las reglas de la aplicación")
 	}
 
 	// 1. Verificar que el usuario pertenezca a la aplicación.
@@ -105,13 +106,9 @@ func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 	for _, rule := range rules {
 		switch rule.Code {
 		case util.AUTHZ_POLICY:
-			authzRule, err := util.ParseAuthzPolicy(rule.Value)
-			if err != nil {
-				return fmt.Errorf("regla %s inválida: %w", util.AUTHZ_POLICY, err)
-			}
-			// (Futuro: Verificación de roles específicos requeridos si se habilita)
-			if authzRule.EnableRoles {
-				// El usuario ya tiene roles (chequeado arriba), se permite el acceso base.
+			if _, err := util.ParseAuthzPolicy(rule.Value); err != nil {
+				// Sanitize parser errors - do not expose internal details
+				return fmt.Errorf("no se pudo interpretar la política de autorización")
 			}
 		}
 	}

@@ -221,7 +221,8 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 	// Para ello utilizamos CompleteLoginWithMfa (que simplemente expide un token JWT para el usuario en la app)
 	response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID, mfaCompleted)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": err.Error()})
+		// Sanitize internal errors - do not expose database/service details
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": "Error al completar la autenticación"})
 		return
 	}
 

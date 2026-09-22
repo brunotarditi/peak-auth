@@ -298,7 +298,8 @@ func (ctrl *LoginController) FinishWebAuthnLoginAdmin(c *gin.Context) {
 	// Completar login admin
 	token, expireMinutes, err := ctrl.UserService.CompleteAdminLoginWithMfa(txn.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Sanitize internal errors - do not expose database/service details
+		internalErrorJSON(c, "FinishWebAuthnLoginAdmin", err)
 		return
 	}
 	ctrl.clearMfaTransactionCookie(c)
@@ -354,7 +355,8 @@ func (ctrl *LoginController) VerifyTOTPSetupAdmin(c *gin.Context) {
 	// Login is complete, generate final token
 	token, expireMinutes, err := ctrl.UserService.CompleteAdminLoginWithMfa(txn.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Sanitize internal errors - do not expose database/service details
+		internalErrorJSON(c, "FinishAdminMfaSetup", err)
 		return
 	}
 
@@ -415,7 +417,8 @@ func (ctrl *LoginController) FinishWebAuthnSetupAdmin(c *gin.Context) {
 	// Login is complete, generate final token
 	token, expireMinutes, err := ctrl.UserService.CompleteAdminLoginWithMfa(txn.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Sanitize internal errors - do not expose database/service details
+		internalErrorJSON(c, "FinishWebAuthnSetupAdmin", err)
 		return
 	}
 
@@ -484,7 +487,7 @@ func (ctrl *LoginController) VerifyMfaTotp(c *gin.Context) {
 			return
 		}
 		audit.EventResult(c, "api.login.mfa_totp_failed", fmt.Sprintf("userID=%d", userID), false, err.Error())
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Código TOTP inválido"})
 		return
 	}
 
@@ -561,7 +564,7 @@ func (ctrl *LoginController) VerifyMfaRecovery(c *gin.Context) {
 			return
 		}
 		audit.EventResult(c, "api.login.mfa_recovery_failed", fmt.Sprintf("userID=%d", userID), false, err.Error())
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Código de recuperación inválido"})
 		return
 	}
 
@@ -883,7 +886,8 @@ func (ctrl *LoginController) PostAdminMfaVerifySetup(c *gin.Context) {
 
 	token, expireMinutes, err := ctrl.UserService.CompleteAdminLoginWithMfa(txn.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Sanitize internal errors - do not expose database/service details
+		internalErrorJSON(c, "PostAdminMfaVerifySetup", err)
 		return
 	}
 
