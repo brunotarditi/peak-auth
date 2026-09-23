@@ -57,6 +57,44 @@ describe('Peak Auth TypeScript SDK', () => {
       assert.strictEqual(parsed.searchParams.get('code_challenge_method'), 'S256');
       assert.strictEqual(parsed.searchParams.get('scope'), 'openid profile');
     });
+
+    it('debe construir la URL de logout con client_id y post_logout_redirect_uri', () => {
+      const client = new PeakAuthClient({
+        issuerUrl: 'https://auth.example.com',
+        clientId: 'my-app',
+        redirectUri: 'https://app.com/default-callback',
+      });
+
+      // 1. Usando redirectUri por defecto del config
+      const urlDefault = client.getLogoutUrl();
+      const parsed1 = new URL(urlDefault);
+      assert.strictEqual(parsed1.origin, 'https://auth.example.com');
+      assert.strictEqual(parsed1.pathname, '/oauth/logout');
+      assert.strictEqual(parsed1.searchParams.get('client_id'), 'my-app');
+      assert.strictEqual(parsed1.searchParams.get('post_logout_redirect_uri'), 'https://app.com/default-callback');
+
+      // 2. Especificando redirectUri personalizado y state
+      const urlCustom = client.getLogoutUrl({
+        redirectUri: 'https://app.com/auth/login',
+        state: 'session-cleared',
+        idTokenHint: 'ey.mock.jwt',
+      });
+      const parsed2 = new URL(urlCustom);
+      assert.strictEqual(parsed2.searchParams.get('client_id'), 'my-app');
+      assert.strictEqual(parsed2.searchParams.get('post_logout_redirect_uri'), 'https://app.com/auth/login');
+      assert.strictEqual(parsed2.searchParams.get('state'), 'session-cleared');
+      assert.strictEqual(parsed2.searchParams.get('id_token_hint'), 'ey.mock.jwt');
+
+      // 3. Sin redirectUri en config ni params
+      const clientNoRedirect = new PeakAuthClient({
+        issuerUrl: 'https://auth.example.com',
+        clientId: 'my-app',
+      });
+      const urlNoRedirect = clientNoRedirect.getLogoutUrl();
+      const parsed3 = new URL(urlNoRedirect);
+      assert.strictEqual(parsed3.searchParams.get('client_id'), 'my-app');
+      assert.strictEqual(parsed3.searchParams.get('post_logout_redirect_uri'), null);
+    });
   });
 
   describe('Token Verification contra JWKS Mock', () => {

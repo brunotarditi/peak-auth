@@ -4,6 +4,7 @@ import type {
   PeakAuthConfig,
   PeakClaims,
   PKCEPair,
+  LogoutUrlParams,
   TokenResponse,
   OpenIDConfiguration,
   IntrospectionResponse,
@@ -67,6 +68,29 @@ export class PeakAuthClient {
     }
     if (params?.scope) {
       url.searchParams.set('scope', params.scope);
+    }
+
+    return url.toString();
+  }
+
+  /**
+   * Construye la URL de cierre de sesión (Federated Logout).
+   * Inyecta automáticamente el clientId registrado para cumplir con las políticas anti Open-Redirect.
+   */
+  getLogoutUrl(params?: LogoutUrlParams): string {
+    const redirect = params?.postLogoutRedirectUri || params?.redirectUri || this.config.redirectUri;
+    const url = new URL(`${this.config.issuerUrl}/oauth/logout`);
+
+    url.searchParams.set('client_id', this.config.clientId);
+
+    if (redirect) {
+      url.searchParams.set('post_logout_redirect_uri', redirect);
+    }
+    if (params?.idTokenHint) {
+      url.searchParams.set('id_token_hint', params.idTokenHint);
+    }
+    if (params?.state) {
+      url.searchParams.set('state', params.state);
     }
 
     return url.toString();

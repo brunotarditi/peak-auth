@@ -891,12 +891,30 @@ func (c *OAuthController) LogoutEndpoint(ctx *gin.Context) {
 			clientID = ctx.PostForm("client_id")
 		}
 
+		// Si no se proporcionó client_id explícito, intentar extraerlo desde id_token_hint (OIDC RP-Initiated Logout)
+		if clientID == "" {
+			idTokenHint := ctx.Query("id_token_hint")
+			if idTokenHint == "" {
+				idTokenHint = ctx.PostForm("id_token_hint")
+			}
+			if idTokenHint != "" && c.TokenManager != nil {
+				claims, err := c.TokenManager.VerifyToken(idTokenHint)
+				if err == nil && claims != nil {
+					if claims.AppID != "" {
+						clientID = claims.AppID
+					} else if len(claims.Audience) > 0 && claims.Audience[0] != "" {
+						clientID = claims.Audience[0]
+					}
+				}
+			}
+		}
+
 		if clientID == "" {
 			c.renderError(ctx, http.StatusBadRequest, "Solicitud Inválida", "client_id es requerido cuando se especifica una URL de redirección.")
 			return
 		}
 
-		if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		if err := c.OAuthService.ValidateLogoutRedirect(clientID, redirectURI); err != nil {
 			c.renderError(ctx, http.StatusBadRequest, "Solicitud No Permitida", "Redirect URI o Client ID inválidos.")
 			return
 		}

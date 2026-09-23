@@ -1,12 +1,13 @@
 {
   "name": "@brunotarditi/peak-auth",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "SDK oficial y liviano de Peak Auth para Node.js, Express y Next.js",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "!dist/*.test.*"
   ],
   "exports": {
     ".": {
@@ -24,7 +25,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test dist/client.test.js"
+    "test": "npm run build && node --test dist/client.test.js",
+    "prepublishOnly": "npm run test"
   },
   "keywords": [
     "peak-auth",

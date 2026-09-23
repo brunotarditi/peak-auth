@@ -16,6 +16,7 @@ import (
 
 type OAuthService interface {
 	ValidateClientRedirect(clientID, redirectURI string) error
+	ValidateLogoutRedirect(clientID, redirectURI string) error
 	GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string, mfaCompleted bool) (string, error)
 	ExchangeCodeForToken(clientID, clientSecret, codeStr, redirectURI, codeVerifier string) (uint, bool, error)
 	StartCleanupTask(interval time.Duration)
@@ -55,6 +56,43 @@ func (s *oauthService) ValidateClientRedirect(clientID, redirectURI string) erro
 	}
 
 	return nil
+}
+
+// ValidateLogoutRedirect valida la URL de destino post-logout de un cliente.
+// Permite coincidencia exacta con la RedirectURL registrada O coincidencia de mismo origen
+// (mismo esquema y mismo host:puerto), protegiendo contra Open Redirect pero permitiendo
+// que la app redirija a su pantalla de login (/auth/login) o inicio (/) tras el logout federado.
+func (s *oauthService) ValidateLogoutRedirect(clientID, redirectURI string) error {
+	if err := ValidateRedirectURISecurity(redirectURI); err != nil {
+		return err
+	}
+
+	app, err := s.appRepo.FindByAppID(clientID)
+	if err != nil {
+		return errors.New("client_id inválido")
+	}
+
+	if !app.IsActive {
+		return errors.New("la aplicación está desactivada")
+	}
+
+	// 1. Coincidencia exacta con la RedirectURL registrada
+	if app.RedirectURL == redirectURI {
+		return nil
+	}
+
+	// 2. Coincidencia de mismo origen (mismo esquema y mismo host:puerto)
+	if app.RedirectURL != "" {
+		appURL, errApp := url.Parse(app.RedirectURL)
+		reqURL, errReq := url.Parse(redirectURI)
+		if errApp == nil && errReq == nil {
+			if strings.EqualFold(appURL.Scheme, reqURL.Scheme) && strings.EqualFold(appURL.Host, reqURL.Host) {
+				return nil
+			}
+		}
+	}
+
+	return errors.New("redirect_uri no coincide con la URL ni con el origen registrado de la aplicación")
 }
 
 // disallowedRedirectSchemes define esquemas de URI peligrosos no permitidos para redirecciones OAuth.

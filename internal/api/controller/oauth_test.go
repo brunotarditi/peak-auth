@@ -794,7 +794,7 @@ func TestOAuth_DeactivatedApp(t *testing.T) {
 }
 
 func TestOAuth_Logout_OpenRedirectPrevention(t *testing.T) {
-	r, _, _, _ := setupOAuthControllerTest(t)
+	r, tm, _, _ := setupOAuthControllerTest(t)
 
 	t.Run("Logout sin parámetros retorna 200 OK y limpia sesión", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -831,7 +831,7 @@ func TestOAuth_Logout_OpenRedirectPrevention(t *testing.T) {
 		}
 	})
 
-	t.Run("Logout con client_id pero URL no registrada es bloqueado (400)", func(t *testing.T) {
+	t.Run("Logout con client_id pero URL externa no registrada es bloqueado (400)", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?client_id=client-portal&post_logout_redirect_uri=https://evil.com/phishing", nil)
 		r.ServeHTTP(w, req)
@@ -854,6 +854,37 @@ func TestOAuth_Logout_OpenRedirectPrevention(t *testing.T) {
 		}
 		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/oauth/callback" {
 			t.Fatalf("se esperaba redirección a https://portal.client.com/oauth/callback, obtenido: %s", loc)
+		}
+	})
+
+	t.Run("Logout con client_id y redirect_uri en el MISMO ORIGEN (misma app, ruta diferente como login) redirige exitosamente (303)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?client_id=client-portal&post_logout_redirect_uri=https://portal.client.com/auth/login", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Fatalf("se esperaba 303 See Other, obtenido: %d", w.Code)
+		}
+		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/auth/login" {
+			t.Fatalf("se esperaba redirección a https://portal.client.com/auth/login, obtenido: %s", loc)
+		}
+	})
+
+	t.Run("Logout con id_token_hint y sin client_id explícito resuelve cliente y redirige (303)", func(t *testing.T) {
+		idToken, err := tm.GenerateToken(1, "user@client.com", "client-portal", []string{"USER"}, time.Hour, false, 0)
+		if err != nil {
+			t.Fatalf("error generando idToken: %v", err)
+		}
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/logout?id_token_hint="+idToken+"&post_logout_redirect_uri=https://portal.client.com/auth/login", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Fatalf("se esperaba 303 See Other, obtenido: %d", w.Code)
+		}
+		if loc := w.Header().Get("Location"); loc != "https://portal.client.com/auth/login" {
+			t.Fatalf("se esperaba redirección a https://portal.client.com/auth/login, obtenido: %s", loc)
 		}
 	})
 }

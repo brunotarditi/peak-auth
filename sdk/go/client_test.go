@@ -53,6 +53,41 @@ func TestGetAuthorizationURL(t *testing.T) {
 	}
 }
 
+func TestGetLogoutURL(t *testing.T) {
+	client, err := New(Config{
+		IssuerURL:   "https://auth.example.com",
+		ClientID:    "test-app",
+		RedirectURI: "https://my-app.com/callback",
+	})
+	if err != nil {
+		t.Fatalf("New falló: %v", err)
+	}
+
+	t.Run("con postLogoutRedirectURI por defecto", func(t *testing.T) {
+		u, err := client.GetLogoutURL("")
+		if err != nil {
+			t.Fatalf("GetLogoutURL falló: %v", err)
+		}
+		expected := "https://auth.example.com/oauth/logout?client_id=test-app&post_logout_redirect_uri=https%3A%2F%2Fmy-app.com%2Fcallback"
+		if u != expected {
+			t.Fatalf("URL esperada: %s\nObtenida: %s", expected, u)
+		}
+	})
+
+	t.Run("con postLogoutRedirectURI personalizada y extraParams", func(t *testing.T) {
+		u, err := client.GetLogoutURL("https://my-app.com/auth/login", map[string]string{
+			"state": "logout-state-456",
+		})
+		if err != nil {
+			t.Fatalf("GetLogoutURL falló: %v", err)
+		}
+		expected := "https://auth.example.com/oauth/logout?client_id=test-app&post_logout_redirect_uri=https%3A%2F%2Fmy-app.com%2Fauth%2Flogin&state=logout-state-456"
+		if u != expected {
+			t.Fatalf("URL esperada: %s\nObtenida: %s", expected, u)
+		}
+	})
+}
+
 func TestVerifyTokenWithJWKS(t *testing.T) {
 	// 1. Generar par de claves RSA para el test
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)

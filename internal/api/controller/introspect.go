@@ -2,6 +2,8 @@ package controller
 
 import (
 	"net/http"
+	"peak-auth/internal/api/request"
+	"peak-auth/internal/api/response"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/store/repo"
 	"strconv"
@@ -16,27 +18,6 @@ type IntrospectController struct {
 	UarRepo      repo.UserApplicationRoleRepository
 }
 
-// IntrospectRequest representa la solicitud de introspección de token
-type IntrospectRequest struct {
-	Token string `json:"token" binding:"required"`
-}
-
-// IntrospectResponse representa la respuesta de introspección según RFC 7662
-type IntrospectResponse struct {
-	Active     bool     `json:"active"`
-	Sub        string   `json:"sub,omitempty"`
-	Username   string   `json:"username,omitempty"`
-	Aud        string   `json:"aud,omitempty"`
-	Iss        string   `json:"iss,omitempty"`
-	Exp        int64    `json:"exp,omitempty"`
-	Iat        int64    `json:"iat,omitempty"`
-	Scope      string   `json:"scope,omitempty"`
-	ClientID   string   `json:"client_id,omitempty"`
-	TokenType  string   `json:"token_type,omitempty"`
-	MfaVerified bool    `json:"mfa_verified,omitempty"`
-	Roles      []string `json:"roles,omitempty"`
-}
-
 // Introspect valida un token y devuelve su estado actual, incluyendo verificación
 // de revocación mediante authz_version. Este endpoint permite a las aplicaciones
 // relying party verificar tokens en tiempo real en lugar de confiar únicamente
@@ -45,7 +26,7 @@ type IntrospectResponse struct {
 // POST /api/v1/introspect
 // Requiere autenticación de aplicación mediante X-App-Id y X-App-Secret
 func (ctrl *IntrospectController) Introspect(c *gin.Context) {
-	var req IntrospectRequest
+	var req request.IntrospectRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token es requerido"})
 		return
@@ -55,35 +36,35 @@ func (ctrl *IntrospectController) Introspect(c *gin.Context) {
 	claims, err := ctrl.TokenManager.VerifyToken(req.Token)
 	if err != nil {
 		// Token inválido, expirado o con firma incorrecta
-		c.JSON(http.StatusOK, IntrospectResponse{Active: false})
+		c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
 		return
 	}
 
 	// Extraer userID del subject
 	userID, err := strconv.ParseUint(claims.Subject, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusOK, IntrospectResponse{Active: false})
+		c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
 		return
 	}
 
 	// Verificar estado del usuario y authz_version para detectar revocación
 	user, err := ctrl.UserRepo.FindById(uint(userID))
 	if err != nil || !user.IsActive || !user.IsVerified {
-		c.JSON(http.StatusOK, IntrospectResponse{Active: false})
+		c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
 		return
 	}
 
 	// Si la contraseña fue restablecida con posterioridad a la emisión del token, invalidarlo
 	if user.PasswordChangedAt != nil && claims.IssuedAt != nil {
 		if claims.IssuedAt.Time.Before(*user.PasswordChangedAt) {
-			c.JSON(http.StatusOK, IntrospectResponse{Active: false})
+			c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
 			return
 		}
 	}
 
 	// Verificar que el token no haya sido revocado (authz_version mismatch)
 	if claims.AuthzVersion != user.AuthzVersion {
-		c.JSON(http.StatusOK, IntrospectResponse{Active: false})
+		c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
 		return
 	}
 
@@ -97,7 +78,7 @@ func (ctrl *IntrospectController) Introspect(c *gin.Context) {
 			if ok {
 				belongs, err := ctrl.UarRepo.BelongsToApp(uint(userID), appIDUint)
 				if err != nil || !belongs {
-					c.JSON(http.StatusOK, IntrospectResponse{Active: false})
+					c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
 					return
 				}
 			}
@@ -105,7 +86,7 @@ func (ctrl *IntrospectController) Introspect(c *gin.Context) {
 	}
 
 	// Token válido y activo
-	response := IntrospectResponse{
+	response := response.IntrospectResponse{
 		Active:      true,
 		Sub:         claims.Subject,
 		Username:    claims.Username,

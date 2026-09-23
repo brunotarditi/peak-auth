@@ -45,3 +45,19 @@ type MfaStatusResponse struct {
 	TOTPName           string `json:"totp_name,omitempty"`
 	RecoveryCodesLeft  int    `json:"recovery_codes_left"`
 }
+
+// IntrospectResponse representa la respuesta de introspección según RFC 7662
+type IntrospectResponse struct {
+	Active      bool     `json:"active"`
+	Sub         string   `json:"sub,omitempty"`
+	Username    string   `json:"username,omitempty"`
+	Aud         string   `json:"aud,omitempty"`
+	Iss         string   `json:"iss,omitempty"`
+	Exp         int64    `json:"exp,omitempty"`
+	Iat         int64    `json:"iat,omitempty"`
+	Scope       string   `json:"scope,omitempty"`
+	ClientID    string   `json:"client_id,omitempty"`
+	TokenType   string   `json:"token_type,omitempty"`
+	MfaVerified bool     `json:"mfa_verified,omitempty"`
+	Roles       []string `json:"roles,omitempty"`
+}

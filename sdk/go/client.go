@@ -87,6 +87,36 @@ func (c *Client) GetAuthorizationURL(state string, codeChallenge string, extraPa
 	return u.String(), nil
 }
 
+// GetLogoutURL genera la URL para redirigir al usuario al endpoint de Federated Logout (/oauth/logout).
+// Inyecta automáticamente el ClientID configurado y opcionalmente la post_logout_redirect_uri.
+// Si postLogoutRedirectURI es vacía, intentará usar la RedirectURI del cliente si está configurada.
+func (c *Client) GetLogoutURL(postLogoutRedirectURI string, extraParams ...map[string]string) (string, error) {
+	u, err := url.Parse(c.config.IssuerURL + "/oauth/logout")
+	if err != nil {
+		return "", fmt.Errorf("error parseando IssuerURL: %w", err)
+	}
+
+	targetRedirect := postLogoutRedirectURI
+	if targetRedirect == "" {
+		targetRedirect = c.config.RedirectURI
+	}
+
+	q := u.Query()
+	q.Set("client_id", c.config.ClientID)
+	if targetRedirect != "" {
+		q.Set("post_logout_redirect_uri", targetRedirect)
+	}
+
+	for _, m := range extraParams {
+		for k, v := range m {
+			q.Set(k, v)
+		}
+	}
+
+	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
+
 // ExchangeCode intercambia un código de autorización por tokens en /oauth/token.
 func (c *Client) ExchangeCode(ctx context.Context, code string, codeVerifier string, redirectURI ...string) (*TokenResponse, error) {
 	targetRedirect := c.config.RedirectURI

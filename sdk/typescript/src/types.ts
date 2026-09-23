@@ -37,6 +37,29 @@ export interface PKCEPair {
   codeChallenge: string;
 }
 
+export interface LogoutUrlParams {
+  /**
+   * URL a la que se redirigirá tras cerrar la sesión.
+   * Alias conveniente de postLogoutRedirectUri.
+   */
+  redirectUri?: string;
+
+  /**
+   * URL de redirección post-logout según el estándar OIDC RP-Initiated Logout.
+   */
+  postLogoutRedirectUri?: string;
+
+  /**
+   * Token de identidad previo emitido por Peak Auth (OIDC id_token_hint).
+   */
+  idTokenHint?: string;
+
+  /**
+   * Estado opcional para mantener contexto tras la redirección.
+   */
+  state?: string;
+}
+
 export interface TokenResponse {
   access_token: string;
   token_type: string;
