@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"peak-auth/internal/app"
 	"peak-auth/internal/auth"
+	"peak-auth/internal/service"
 	"strings"
 	"testing"
 
@@ -41,7 +42,8 @@ func setupTestApp(t *testing.T) (*gin.Engine, *app.App) {
 	}
 
 	testApp := &app.App{
-		TokenManager: tm,
+		TokenManager:  tm,
+		HealthService: service.NewHealthService(nil, tm),
 	}
 
 	r := gin.New()
@@ -161,3 +163,48 @@ func TestVerifyRoute_RequiresHTTPS(t *testing.T) {
 		t.Fatalf("se esperaba 403 Forbidden para /verify sin HTTPS en producción, obtenido: %d", w.Code)
 	}
 }
+
+func TestHealthRoutes(t *testing.T) {
+	r, _ := setupTestApp(t)
+
+	t.Run("/health retorna 200 OK", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/health", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK en /health, obtenido: %d", w.Code)
+		}
+	})
+
+	t.Run("/ready responde con estructura de checks", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/ready", nil)
+		r.ServeHTTP(w, req)
+
+		// Sin DB en setupTestApp, responde 503 pero el payload debe ser json válido
+		var resp map[string]interface{}
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("error parseando JSON de /ready: %v", err)
+		}
+		if resp["status"] == nil || resp["checks"] == nil {
+			t.Fatalf("respuesta /ready incompleta: %v", resp)
+		}
+	})
+}
+
+func TestRootRoute_RedirectsToAdmin(t *testing.T) {
+	r, _ := setupTestApp(t)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("se esperaba 303 See Other para GET /, obtenido: %d", w.Code)
+	}
+	if loc := w.Header().Get("Location"); loc != "/admin" {
+		t.Fatalf("se esperaba redirección a /admin, obtenido: %s", loc)
+	}
+}
+

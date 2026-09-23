@@ -1,102 +1,85 @@
 package middleware
 
 import (
-	"fmt"
+	"log/slog"
+	"os"
+	"peak-auth/internal/util"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// SafeLoggerMiddleware logs requests but redacts sensitive query parameters
-// to prevent bearer tokens and other credentials from appearing in logs
+var (
+	appLogger     *slog.Logger
+	initLoggerOnce sync.Once
+)
+
+func getLogger() *slog.Logger {
+	initLoggerOnce.Do(func() {
+		if util.IsProduction() {
+			appLogger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+				Level: slog.LevelInfo,
+			}))
+		} else {
+			appLogger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+				Level: slog.LevelDebug,
+			}))
+		}
+	})
+	return appLogger
+}
+
+// SafeLoggerMiddleware registra las solicitudes HTTP mediante log/slog estructurado,
+// censurando automáticamente parámetros sensibles de query string para evitar fugas de credenciales.
 func SafeLoggerMiddleware() gin.HandlerFunc {
+	logger := getLogger()
+
 	return func(c *gin.Context) {
-		// Start timer
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
 
-		// Redact sensitive query parameters
 		if raw != "" {
 			raw = redactSensitiveParams(raw)
+			path = path + "?" + raw
 		}
 
-		// Process request
 		c.Next()
 
-		// Calculate latency
 		latency := time.Since(start)
+		status := c.Writer.Status()
+		reqID := GetRequestID(c)
 
-		// Get status code
-		statusCode := c.Writer.Status()
-		statusColor := statusCodeColor(statusCode)
-		mColor := methodColor(c.Request.Method)
-
-		targetPath := path
-		if raw != "" {
-			targetPath = path + "?" + raw
+		attrs := []slog.Attr{
+			slog.Int("status", status),
+			slog.String("method", c.Request.Method),
+			slog.String("path", path),
+			slog.Int64("latency_ms", latency.Milliseconds()),
+			slog.String("ip", c.ClientIP()),
 		}
 
-		fmt.Printf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n",
-			start.Format("2006/01/02 - 15:04:05"),
-			statusColor, statusCode, reset,
-			latency,
-			c.ClientIP(),
-			mColor, c.Request.Method, reset,
-			targetPath,
-		)
-	}
-}
+		if reqID != "" {
+			attrs = append(attrs, slog.String("request_id", reqID))
+		}
 
-const (
-	green   = "\033[97;42m"
-	white   = "\033[90;47m"
-	yellow  = "\033[90;43m"
-	red     = "\033[97;41m"
-	blue    = "\033[97;44m"
-	magenta = "\033[97;45m"
-	cyan    = "\033[97;46m"
-	reset   = "\033[0m"
-)
+		msg := "http_request"
+		ctx := c.Request.Context()
 
-func statusCodeColor(code int) string {
-	switch {
-	case code >= 200 && code < 300:
-		return green
-	case code >= 300 && code < 400:
-		return white
-	case code >= 400 && code < 500:
-		return yellow
-	default:
-		return red
-	}
-}
-
-func methodColor(method string) string {
-	switch method {
-	case "GET":
-		return blue
-	case "POST":
-		return cyan
-	case "PUT":
-		return yellow
-	case "DELETE":
-		return red
-	case "PATCH":
-		return green
-	case "HEAD":
-		return magenta
-	case "OPTIONS":
-		return white
-	default:
-		return reset
+		switch {
+		case status >= 500:
+			logger.LogAttrs(ctx, slog.LevelError, msg, attrs...)
+		case status >= 400:
+			logger.LogAttrs(ctx, slog.LevelWarn, msg, attrs...)
+		default:
+			logger.LogAttrs(ctx, slog.LevelInfo, msg, attrs...)
+		}
 	}
 }
 
 // redactSensitiveParams replaces values of sensitive query parameters with [REDACTED]
 func redactSensitiveParams(rawQuery string) string {
-	// List of sensitive parameter names that should be redacted
 	sensitiveParams := []string{
 		"token",
 		"setup_token",

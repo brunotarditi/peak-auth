@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	"peak-auth/internal/api/controller"
@@ -14,6 +15,11 @@ import (
 func SetRoutes(r *gin.Engine, app *app.App) {
 
 	r.Static("/static", "./web/static")
+
+	// Redirección amigable desde la raíz del servidor hacia el panel
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusSeeOther, "/admin")
+	})
 
 	//Inicializamos los controladores con las dependencias necesarias
 	userCtrl := &controller.UserController{
@@ -83,6 +89,10 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		UarRepo:      app.UarRepo,
 	}
 
+	healthCtrl := &controller.HealthController{
+		HealthService: app.HealthService,
+	}
+
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
 	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
@@ -91,6 +101,13 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	setupLimiter := middleware.RateLimitMiddleware(5, time.Minute)
 	verifyLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	ruleMutationLimiter := middleware.RateLimitMiddleware(20, time.Minute)
+	healthLimiter := middleware.RateLimitMiddleware(60, time.Minute) // 1 req/seg por IP para monitores y balanceadores
+
+	// ============================================================================
+	// HEALTH & READINESS PROBES (Público, para Docker, Kubernetes y balanceadores)
+	// ============================================================================
+	r.GET("/health", healthLimiter, healthCtrl.Health)
+	r.GET("/ready", healthLimiter, healthCtrl.Ready)
 
 	// ============================================================================
 	// OIDC & JWKS DISCOVERY (Público, CORS abierto para SDKs y librerías cliente)

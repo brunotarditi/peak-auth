@@ -26,6 +26,7 @@ type App struct {
 	EmailService *service.EmailService
 	MfaService   service.MfaService
 	OAuthService service.OAuthService
+	HealthService service.HealthService
 }
 
 func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
@@ -50,6 +51,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	oauthRepo := repo.NewOAuthRepository(db)
 	txManager := repo.NewTransactionManager(db)
 	mfaAttemptRepo := repo.NewMfaAttemptRepository(db)
+	healthRepo := repo.NewHealthRepository(db)
 
 	// Initialize MFA attempt tracking with database backend
 	service.InitMfaAttemptTracking(mfaAttemptRepo)
@@ -64,6 +66,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	setupService := service.NewSetupService(setupRepo, setupToken, txManager)
 	roleService := service.NewRoleService(roleRepo, ruleRepo)
 	oauthService := service.NewOAuthService(oauthRepo, appRepo)
+	healthService := service.NewHealthService(healthRepo, jwtManager)
 
 	// 3. Iniciar Tareas en Segundo Plano
 	oauthService.StartCleanupTask(10 * time.Minute)
@@ -82,5 +85,6 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 		EmailService: emailService,
 		MfaService:   mfaService,
 		OAuthService: oauthService,
+		HealthService: healthService,
 	}
 }

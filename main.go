@@ -53,6 +53,7 @@ func main() {
 
 	// 5) Gin router con recuperación de panics, logging y cabeceras de seguridad.
 	router := gin.New()
+	router.Use(middleware.RequestIDMiddleware())
 	router.Use(middleware.SafeLoggerMiddleware())
 	router.Use(gin.Recovery())
 	router.Use(middleware.BaseSecurityHeaders())

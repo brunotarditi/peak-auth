@@ -7,6 +7,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func reqIDStr(c *gin.Context) string {
+	if c == nil {
+		return ""
+	}
+	if v, ok := c.Get("request_id"); ok {
+		if id, ok := v.(string); ok && id != "" {
+			return " req_id=" + id
+		}
+	}
+	return ""
+}
+
 // Event registra una acción administrativa sensible en un formato estructurado
 // y consistente, para trazabilidad y respuesta ante incidentes.
 //
@@ -15,7 +27,7 @@ import (
 //	action: verbo de la acción (ej. "app.create", "secret.regenerate")
 //	target: recurso afectado (ej. "app=mi-app", "user=42")
 func Event(c *gin.Context, action, target string) {
-	log.Printf("[audit] action=%s actor=%q ip=%s target=%q", action, actorEmail(c), c.ClientIP(), target)
+	log.Printf("[audit] action=%s actor=%q ip=%s target=%q%s", action, actorEmail(c), c.ClientIP(), target, reqIDStr(c))
 }
 
 // EventResult registra una acción incluyendo su resultado (ok/falla) y un detalle.
@@ -24,11 +36,14 @@ func EventResult(c *gin.Context, action, target string, success bool, detail str
 	if !success {
 		status = "fail"
 	}
-	log.Printf("[audit] action=%s actor=%q ip=%s target=%q status=%s detail=%q",
-		action, actorEmail(c), c.ClientIP(), target, status, detail)
+	log.Printf("[audit] action=%s actor=%q ip=%s target=%q status=%s detail=%q%s",
+		action, actorEmail(c), c.ClientIP(), target, status, detail, reqIDStr(c))
 }
 
 func actorEmail(c *gin.Context) string {
+	if c == nil {
+		return "anónimo"
+	}
 	if v, ok := c.Get("user_email"); ok {
 		if email, ok := v.(string); ok && email != "" {
 			return email

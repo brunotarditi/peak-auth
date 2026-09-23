@@ -39,7 +39,9 @@
 - 🛡️ **Seguridad Defensiva y Protección Activa**:
   - **Mitigación de Timing Attacks**: Hashes de relleno (dummy bcrypt) para mantener tiempo de respuesta constante ante usuarios inexistentes.
   - **Protección CSRF**: Tokens de doble submit cookie en formularios administrativos y flujos interactivos.
-  - **Rate Limiting por IP**: Limitadores de tasa en memoria para endpoints sensibles (login, MFA, reset de contraseña, mutación de reglas).
+  - **Rate Limiting por IP (In-Memory)**: Limitadores de tasa en memoria (`sync.Mutex`) para endpoints sensibles (login, MFA, reset de contraseña, mutación de reglas) en entornos mono-instancia. Para despliegues horizontales (Kubernetes/Cloud), se recomienda delegar el rate-limiting en el Ingress Controller (NGINX/Traefik) o CDN/WAF perimetral (Cloudflare, AWS WAF).
+  - **Observabilidad y Health Probes**: Endpoints estándar `/health` (Liveness) y `/ready` (Readiness con ping activo a PostgreSQL y validación de claves JWT) listos para orquestadores y balanceadores.
+  - **Trazabilidad y Correlation ID**: Propagación automática de cabeceras `X-Request-ID` y logging estructurado mediante `log/slog` nativo de Go.
   - **Sanitización de Errores**: Handlers con captura controlada (`internalErrorJSON`) que registran fallos en el servidor y responden mensajes genéricos, previniendo fuga de esquemas SQL o infraestructura.
   - **Prevención de Replay**: Consumo atómico de tokens temporales de MFA (`ConsumeApiMfaToken`).
   - **Límites de Memoria**: Decodificación acotada de payloads JSON respetando `MaxBytesReader`.
