@@ -7,6 +7,7 @@ import (
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -409,7 +410,12 @@ func (ctrl *UserController) FinishWebAuthnRegistration(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.MfaService.FinishWebAuthnRegistration(userID, sessionData, c.Request); err != nil {
+	keyName := c.Query("name")
+	if keyName == "" {
+		keyName = c.GetHeader("X-Key-Name")
+	}
+
+	if err := ctrl.MfaService.FinishWebAuthnRegistration(userID, sessionData, c.Request, keyName); err != nil {
 		// Distinguish between client validation errors and internal errors
 		if errors.Is(err, service.ErrWebAuthnValidation) {
 			// Client validation error - return fixed message without internal details
@@ -446,4 +452,48 @@ func (ctrl *UserController) GetMfaStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, status)
+}
+
+// ListWebAuthnKeys devuelve el listado de llaves físicas o passkeys registradas por el usuario.
+func (ctrl *UserController) ListWebAuthnKeys(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	keys, err := ctrl.MfaService.ListWebAuthnCredentials(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"keys": keys})
+}
+
+// DeleteWebAuthnKey elimina una llave WebAuthn por su ID.
+func (ctrl *UserController) DeleteWebAuthnKey(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	keyIDStr := c.Param("id")
+	keyID, err := strconv.ParseUint(keyIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de llave inválido"})
+		return
+	}
+
+	if err := ctrl.MfaService.DeleteWebAuthnCredential(userID, uint(keyID)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	audit.Event(c, "mfa.webauthn.delete", fmt.Sprintf("user=%d key_id=%d", userID, keyID))
+
+	c.JSON(http.StatusOK, gin.H{"message": "Llave de seguridad eliminada exitosamente"})
 }

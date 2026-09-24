@@ -198,6 +198,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		apiPrivate.POST("/mfa/totp/verify", mfaSetupLimiter, userCtrl.VerifyTOTP)
 		apiPrivate.POST("/mfa/webauthn/setup", mfaSetupLimiter, userCtrl.BeginWebAuthnRegistration)
 		apiPrivate.POST("/mfa/webauthn/verify", mfaSetupLimiter, userCtrl.FinishWebAuthnRegistration)
+		apiPrivate.GET("/mfa/webauthn/credentials", userCtrl.ListWebAuthnKeys)
+		apiPrivate.DELETE("/mfa/webauthn/credentials/:id", mfaSetupLimiter, userCtrl.DeleteWebAuthnKey)
 		apiPrivate.POST("/mfa/totp/disable", mfaSetupLimiter, userCtrl.DisableMFA)
 		apiPrivate.GET("/mfa/status", userCtrl.GetMfaStatus)
 	}

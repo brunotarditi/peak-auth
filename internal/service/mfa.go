@@ -64,9 +64,11 @@ type MfaService interface {
 
 	// WebAuthn
 	BeginWebAuthnRegistration(userID uint, userEmail string) (*protocol.CredentialCreation, *webauthn.SessionData, error)
-	FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request) error
+	FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request, keyName ...string) error
 	BeginWebAuthnLogin(userID uint) (*protocol.CredentialAssertion, *webauthn.SessionData, error)
 	FinishWebAuthnLogin(userID uint, session *webauthn.SessionData, r *http.Request) error
+	ListWebAuthnCredentials(userID uint) ([]response.WebAuthnKeyItem, error)
+	DeleteWebAuthnCredential(userID uint, credID uint) error
 
 	// Gestión general
 	DisableMFA(userID uint) error
@@ -275,14 +277,54 @@ func (s *mfaService) GetMfaStatus(userID uint) (*response.MfaStatusResponse, err
 	}
 
 	creds, _ := s.mfaRepo.FindAllCredentialsByUser(userID)
+	var webAuthnKeys []response.WebAuthnKeyItem
 	for _, c := range creds {
 		if c.Type == "WEBAUTHN" && c.IsActive {
 			status.WebAuthnConfigured = true
-			break
+			webAuthnKeys = append(webAuthnKeys, response.WebAuthnKeyItem{
+				ID:        c.ID,
+				Name:      c.Name,
+				CreatedAt: c.CreatedAt,
+			})
 		}
 	}
+	status.WebAuthnKeys = webAuthnKeys
 
 	return status, nil
+}
+
+// ListWebAuthnCredentials lista todas las llaves físicas y passkeys activas del usuario.
+func (s *mfaService) ListWebAuthnCredentials(userID uint) ([]response.WebAuthnKeyItem, error) {
+	creds, err := s.mfaRepo.FindActiveWebAuthnCredentialsByUser(userID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener llaves de seguridad: %w", err)
+	}
+
+	items := make([]response.WebAuthnKeyItem, len(creds))
+	for i, c := range creds {
+		items[i] = response.WebAuthnKeyItem{
+			ID:        c.ID,
+			Name:      c.Name,
+			CreatedAt: c.CreatedAt,
+		}
+	}
+	return items, nil
+}
+
+// DeleteWebAuthnCredential elimina una llave de seguridad puntual del usuario.
+// Si era la última credencial activa y no tiene TOTP, desactiva MFA en el usuario.
+func (s *mfaService) DeleteWebAuthnCredential(userID uint, credID uint) error {
+	if err := s.mfaRepo.DeleteCredentialByIDAndUser(credID, userID); err != nil {
+		return fmt.Errorf("error eliminando llave de seguridad: %w", err)
+	}
+
+	remaining, err := s.mfaRepo.CountActiveCredentials(userID)
+	if err == nil && remaining == 0 {
+		_ = s.userRepo.UpdateColumn("mfa_enabled", false, userID)
+		_ = s.mfaRepo.DeleteRecoveryCodesByUser(userID)
+	}
+
+	return nil
 }
 
 // --- Helpers privados ---

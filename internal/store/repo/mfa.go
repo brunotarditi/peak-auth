@@ -18,6 +18,8 @@ type MfaRepository interface {
 	UpdateCredentialSecretAtomic(credID uint, oldSecret string, newSecret string) error
 	DeleteCredentialsByUser(userID uint) error
 	DeleteCredential(credID uint) error
+	DeleteCredentialByIDAndUser(credID uint, userID uint) error
+	FindActiveWebAuthnCredentialsByUser(userID uint) ([]model.UserMfaCredential, error)
 
 	// Códigos de recuperación
 	CreateRecoveryCodes(codes []model.UserRecoveryCode) error
@@ -135,3 +137,21 @@ func (r *mfaRepository) CountActiveCredentials(userID uint) (int64, error) {
 	err := r.db.Model(&model.UserMfaCredential{}).Where("user_id = ? AND is_active = ?", userID, true).Count(&count).Error
 	return count, err
 }
+
+func (r *mfaRepository) DeleteCredentialByIDAndUser(credID uint, userID uint) error {
+	result := r.db.Where("id = ? AND user_id = ?", credID, userID).Delete(&model.UserMfaCredential{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (r *mfaRepository) FindActiveWebAuthnCredentialsByUser(userID uint) ([]model.UserMfaCredential, error) {
+	var creds []model.UserMfaCredential
+	err := r.db.Where("user_id = ? AND type = ? AND is_active = ?", userID, "WEBAUTHN", true).Order("created_at asc").Find(&creds).Error
+	return creds, err
+}
+

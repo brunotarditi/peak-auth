@@ -296,10 +296,18 @@ func (m *mockMfaServiceForStepUp) DisableMFA(userID uint) error {
 	return nil
 }
 
-func (m *mockMfaServiceForStepUp) FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request) error {
+func (m *mockMfaServiceForStepUp) FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request, keyName ...string) error {
 	if m.finishWebAuthnRegErr != nil {
 		return m.finishWebAuthnRegErr
 	}
+	return nil
+}
+
+func (m *mockMfaServiceForStepUp) ListWebAuthnCredentials(userID uint) ([]response.WebAuthnKeyItem, error) {
+	return nil, nil
+}
+
+func (m *mockMfaServiceForStepUp) DeleteWebAuthnCredential(userID uint, credID uint) error {
 	return nil
 }
 
@@ -1257,6 +1265,53 @@ func TestFinishWebAuthnRegistration_ErrorHandling(t *testing.T) {
 		}
 		if !strings.Contains(w.Body.String(), "ocurrió un error procesando la solicitud") {
 			t.Errorf("se esperaba mensaje genérico, obtenido: %s", w.Body.String())
+		}
+	})
+}
+
+func TestUserController_ListAndDeleteWebAuthnKeys(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mfaSvc := &mockMfaServiceForStepUp{}
+	ctrl := &UserController{MfaService: mfaSvc}
+
+	r := gin.New()
+	r.GET("/api/v1/mfa/webauthn/credentials", func(c *gin.Context) {
+		c.Set("user_id", uint(42))
+		ctrl.ListWebAuthnKeys(c)
+	})
+	r.DELETE("/api/v1/mfa/webauthn/credentials/:id", func(c *gin.Context) {
+		c.Set("user_id", uint(42))
+		ctrl.DeleteWebAuthnKey(c)
+	})
+
+	t.Run("GET /api/v1/mfa/webauthn/credentials retorna 200", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/mfa/webauthn/credentials", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK, obtenido: %d", w.Code)
+		}
+	})
+
+	t.Run("DELETE /api/v1/mfa/webauthn/credentials/:id retorna 200 para ID válido", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodDelete, "/api/v1/mfa/webauthn/credentials/5", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200 OK, obtenido: %d", w.Code)
+		}
+	})
+
+	t.Run("DELETE /api/v1/mfa/webauthn/credentials/:id retorna 400 para ID no numérico", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodDelete, "/api/v1/mfa/webauthn/credentials/invalido", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400 Bad Request, obtenido: %d", w.Code)
 		}
 	})
 }

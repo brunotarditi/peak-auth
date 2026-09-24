@@ -13,6 +13,7 @@ import (
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
+	"strings"
 	"sync"
 	"time"
 
@@ -518,7 +519,7 @@ func (s *mfaService) BeginWebAuthnRegistration(userID uint, userEmail string) (*
 }
 
 // FinishWebAuthnRegistration finaliza el registro, guarda la credencial y activa MFA
-func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request) error {
+func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request, keyName ...string) error {
 	if session == nil {
 		// Client validation error - session expired or invalid
 		return ErrWebAuthnValidation
@@ -548,10 +549,12 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 		return ErrWebAuthnValidation
 	}
 
-	// Verificar si la credencial ya existe para este usuario
+	// Verificar si la credencial ya existe para este usuario y límite de 5
 	existingCreds, _ := s.mfaRepo.FindAllCredentialsByUser(userID)
+	webauthnCount := 0
 	for _, c := range existingCreds {
-		if c.Type == "WEBAUTHN" {
+		if c.Type == "WEBAUTHN" && c.IsActive {
+			webauthnCount++
 			var existingCred webauthn.Credential
 			if err := json.Unmarshal([]byte(c.Secret), &existingCred); err == nil {
 				if bytes.Equal(existingCred.ID, credential.ID) {
@@ -560,6 +563,20 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 				}
 			}
 		}
+	}
+
+	if webauthnCount >= 5 {
+		return errors.New("límite máximo alcanzado (máximo 5 llaves de seguridad por cuenta)")
+	}
+
+	finalName := "Llave de Seguridad Passkey"
+	if len(keyName) > 0 && strings.TrimSpace(keyName[0]) != "" {
+		finalName = strings.TrimSpace(keyName[0])
+		if len(finalName) > 100 {
+			finalName = finalName[:100]
+		}
+	} else if webauthnCount > 0 {
+		finalName = fmt.Sprintf("Llave de Seguridad #%d", webauthnCount+1)
 	}
 
 	// Encode credential ID as base64 for storage and uniqueness checking
@@ -577,7 +594,7 @@ func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.S
 	newCred := &model.UserMfaCredential{
 		UserID:       userID,
 		Type:         "WEBAUTHN",
-		Name:         "Llave de Seguridad Passkey",
+		Name:         finalName,
 		Secret:       string(credJSON),
 		CredentialID: &credentialIDBase64,
 		IsActive:     true,

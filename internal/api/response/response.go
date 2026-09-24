@@ -1,5 +1,7 @@
 package response
 
+import "time"
+
 type AppStatsResponse struct {
 	ID          uint   `json:"id"`
 	Name        string `json:"name"`
@@ -37,13 +39,21 @@ type TOTPSetupResponse struct {
 	OTPAuth string `json:"otpauth"` // URI otpauth:// para copiar manualmente
 }
 
+// WebAuthnKeyItem representa una llave física o passkey registrada por el usuario.
+type WebAuthnKeyItem struct {
+	ID        uint      `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // MfaStatusResponse indica el estado actual del MFA de un usuario.
 type MfaStatusResponse struct {
-	Enabled            bool   `json:"enabled"`
-	TOTPConfigured     bool   `json:"totp_configured"`
-	WebAuthnConfigured bool   `json:"webauthn_configured"`
-	TOTPName           string `json:"totp_name,omitempty"`
-	RecoveryCodesLeft  int    `json:"recovery_codes_left"`
+	Enabled            bool              `json:"enabled"`
+	TOTPConfigured     bool              `json:"totp_configured"`
+	WebAuthnConfigured bool              `json:"webauthn_configured"`
+	TOTPName           string            `json:"totp_name,omitempty"`
+	RecoveryCodesLeft  int               `json:"recovery_codes_left"`
+	WebAuthnKeys       []WebAuthnKeyItem `json:"webauthn_keys,omitempty"`
 }
 
 // IntrospectResponse representa la respuesta de introspección según RFC 7662
