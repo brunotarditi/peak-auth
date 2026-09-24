@@ -31,10 +31,10 @@ type UserService interface {
 	AdminLogin(email, password string) (string, int, bool, bool, string, error)
 	FindUserByAppID(appID string) ([]response.UserAppRow, error)
 	FindUserByAppIDPaginated(appID model.Application, page, limit int) ([]response.UserAppRow, int64, error)
-	Refresh(token string) (response.TokenResponse, error)
+	Refresh(token string, clientInfo ...string) (response.TokenResponse, error)
 	UnlockUser(userID uint) error
 	ResendVerification(userID uint, appID string) error
-	CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error)
+	CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool, clientInfo ...string) (response.TokenResponse, error)
 	CompleteAdminLoginWithMfa(userID uint) (string, int, error)
 }
 
@@ -223,13 +223,23 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 		// Sanitize token generation errors - do not expose internal details
 		return response.TokenResponse{}, fmt.Errorf("error al generar el token de acceso")
 	}
+	now := time.Now()
 	rt := model.RefreshToken{
 		UserID:        user.ID,
 		ApplicationID: app.ID,
 		Token:         hex.EncodeToString(rtHash),
-		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+		ExpiresAt:     now.Add(7 * 24 * time.Hour),
 		MfaCompleted:  false,
+		IPAddress:     req.IPAddress,
+		UserAgent:     req.UserAgent,
+		DeviceType:    util.DetectDeviceType(req.UserAgent),
+		LastUsedAt:    now,
 	}
+	// Deduplicar: si ya existe una sesión activa para este mismo usuario, app, IP y navegador, revocarla
+	if req.IPAddress != "" && req.UserAgent != "" {
+		_ = s.refreshTokenRepo.DeleteByUserAppAndDevice(user.ID, app.ID, req.IPAddress, req.UserAgent)
+	}
+
 	createErr := s.refreshTokenRepo.Create(&rt)
 	if createErr != nil {
 		// Sanitize persistence errors - do not expose database/driver details
@@ -774,7 +784,7 @@ func (s *userService) FindUserByAppIDPaginated(app model.Application, page, limi
 }
 
 // Refresh valida un refresh token y genera un nuevo access token.
-func (s *userService) Refresh(refreshToken string) (response.TokenResponse, error) {
+func (s *userService) Refresh(refreshToken string, clientInfo ...string) (response.TokenResponse, error) {
 	hash := sha256.Sum256([]byte(refreshToken))
 	tokenHashStr := hex.EncodeToString(hash[:])
 
@@ -846,12 +856,28 @@ func (s *userService) Refresh(refreshToken string) (response.TokenResponse, erro
 		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token")
 	}
 
+	newIP := rt.IPAddress
+	newUA := rt.UserAgent
+	newDevice := rt.DeviceType
+	if len(clientInfo) > 0 && clientInfo[0] != "" {
+		newIP = clientInfo[0]
+	}
+	if len(clientInfo) > 1 && clientInfo[1] != "" {
+		newUA = clientInfo[1]
+		newDevice = util.DetectDeviceType(newUA)
+	}
+	now := time.Now()
+
 	newRtModel := model.RefreshToken{
 		UserID:        user.ID,
 		ApplicationID: app.ID,
 		Token:         hex.EncodeToString(rtHash),
-		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+		ExpiresAt:     now.Add(7 * 24 * time.Hour),
 		MfaCompleted:  rt.MfaCompleted,
+		IPAddress:     newIP,
+		UserAgent:     newUA,
+		DeviceType:    newDevice,
+		LastUsedAt:    now,
 	}
 
 	// 4. Rotación atómica: consumir el token viejo (verificando que se elimine exactamente 1 fila)
@@ -928,7 +954,7 @@ func (s *userService) ResendVerification(userID uint, appID string) error {
 	return s.emailService.SendVerificationEmail(user.Email, plainToken, app.Name)
 }
 
-func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
+func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool, clientInfo ...string) (response.TokenResponse, error) {
 	user, err := s.userRepo.FindById(userID)
 	if err != nil {
 		return response.TokenResponse{}, fmt.Errorf("usuario no encontrado")
@@ -1009,13 +1035,34 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 		// Sanitize token generation errors - do not expose internal details
 		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token")
 	}
+
+	var ip, ua string
+	if len(clientInfo) > 0 {
+		ip = clientInfo[0]
+	}
+	if len(clientInfo) > 1 {
+		ua = clientInfo[1]
+	}
+	deviceType := util.DetectDeviceType(ua)
+	now := time.Now()
+
 	rt := model.RefreshToken{
 		UserID:        user.ID,
 		ApplicationID: app.ID,
 		Token:         hex.EncodeToString(rtHash),
-		ExpiresAt:     time.Now().Add(7 * 24 * time.Hour),
+		ExpiresAt:     now.Add(7 * 24 * time.Hour),
 		MfaCompleted:  mfaCompleted,
+		IPAddress:     ip,
+		UserAgent:     ua,
+		DeviceType:    deviceType,
+		LastUsedAt:    now,
 	}
+
+	// Deduplicar: si ya existe una sesión activa para este mismo usuario, app, IP y navegador, revocarla
+	if ip != "" && ua != "" {
+		_ = s.refreshTokenRepo.DeleteByUserAppAndDevice(user.ID, app.ID, ip, ua)
+	}
+
 	if err := s.refreshTokenRepo.Create(&rt); err != nil {
 		// Sanitize persistence errors - do not expose database/driver details
 		return response.TokenResponse{}, fmt.Errorf("error al generar el refresh token")

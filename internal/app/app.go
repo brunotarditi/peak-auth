@@ -27,6 +27,7 @@ type App struct {
 	MfaService   service.MfaService
 	OAuthService service.OAuthService
 	HealthService service.HealthService
+	SessionService service.SessionService
 }
 
 func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
@@ -67,24 +68,26 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	roleService := service.NewRoleService(roleRepo, ruleRepo)
 	oauthService := service.NewOAuthService(oauthRepo, appRepo)
 	healthService := service.NewHealthService(healthRepo, jwtManager)
+	sessionService := service.NewSessionService(refreshRepo, oauthRepo, appRepo)
 
 	// 3. Iniciar Tareas en Segundo Plano
 	oauthService.StartCleanupTask(10 * time.Minute)
 
 	return &App{
-		DB:           db,
-		UserService:  userService,
-		AppService:   appService,
-		SetupService: setupService,
-		RuleService:  ruleService,
-		TokenManager: jwtManager,
-		UserRepo:     userRepo,
-		UarRepo:      uarRepo,
-		AppRepo:      appRepo,
-		RoleService:  roleService,
-		EmailService: emailService,
-		MfaService:   mfaService,
-		OAuthService: oauthService,
-		HealthService: healthService,
+		DB:             db,
+		UserService:    userService,
+		AppService:     appService,
+		SetupService:   setupService,
+		RuleService:    ruleService,
+		TokenManager:   jwtManager,
+		UserRepo:       userRepo,
+		UarRepo:        uarRepo,
+		AppRepo:        appRepo,
+		RoleService:    roleService,
+		EmailService:   emailService,
+		MfaService:     mfaService,
+		OAuthService:   oauthService,
+		HealthService:  healthService,
+		SessionService: sessionService,
 	}
 }

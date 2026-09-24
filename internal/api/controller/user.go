@@ -101,7 +101,7 @@ func (c *UserController) Refresh(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := c.UserService.Refresh(req.RefreshToken)
+	resp, err := c.UserService.Refresh(req.RefreshToken, ctx.ClientIP(), ctx.GetHeader("User-Agent"))
 	if err != nil {
 		ctx.JSON(401, gin.H{"error": "No se pudo renovar la sesión"})
 		return

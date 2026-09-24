@@ -119,28 +119,17 @@ func SafeLoggerMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// En desarrollo: salida formateada con colores ANSI y badge de RequestID
+		// En desarrollo: salida formateada limpia con colores ANSI estándar
 		statusColor := statusCodeColor(status)
 		mColor := methodColor(c.Request.Method)
 
-		reqBadge := ""
-		if reqID != "" {
-			// Mostrar los primeros 8 caracteres del RequestID
-			shortID := reqID
-			if len(shortID) > 8 {
-				shortID = shortID[:8]
-			}
-			reqBadge = fmt.Sprintf(" | %s#%s%s", cyan, shortID, reset)
-		}
-
-		fmt.Printf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s%s\n",
+		fmt.Printf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n",
 			start.Format("2006/01/02 - 15:04:05"),
 			statusColor, status, reset,
 			latency,
 			c.ClientIP(),
 			mColor, c.Request.Method, reset,
 			path,
-			reqBadge,
 		)
 	}
 }

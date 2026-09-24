@@ -6,8 +6,10 @@ import (
 )
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required"`
+	IPAddress string `json:"-"`
+	UserAgent string `json:"-"`
 }
 
 type RegisterRequest struct {

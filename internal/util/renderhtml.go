@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +27,7 @@ func RenderVerificationEmail(path string, data any) (string, error) {
 // GetTemplateFuncMap retorna el mapa global de funciones para templates
 func GetTemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
+		"contains": strings.Contains,
 		"sub": func(a interface{}, b interface{}) int {
 			var valA int
 			var valB int

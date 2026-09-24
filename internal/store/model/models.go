@@ -60,9 +60,14 @@ type RefreshToken struct {
 	gorm.Model
 	UserID        uint
 	ApplicationID uint
-	Token         string `gorm:"uniqueIndex;not null"`
+	Application   Application `gorm:"foreignKey:ApplicationID"`
+	Token         string      `gorm:"uniqueIndex;not null"`
 	ExpiresAt     time.Time
-	MfaCompleted  bool   `gorm:"default:false"`
+	MfaCompleted  bool        `gorm:"default:false"`
+	IPAddress     string      `gorm:"type:varchar(45)"`
+	UserAgent     string      `gorm:"type:varchar(512)"`
+	DeviceType    string      `gorm:"type:varchar(50)"`
+	LastUsedAt    time.Time
 }
 
 type Role struct {

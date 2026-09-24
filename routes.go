@@ -93,6 +93,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		HealthService: app.HealthService,
 	}
 
+	sessionCtrl := controller.NewSessionController(app.SessionService)
+
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
 	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
 	resetLimiter := middleware.RateLimitMiddleware(5, time.Minute)
@@ -202,6 +204,13 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		apiPrivate.DELETE("/mfa/webauthn/credentials/:id", mfaSetupLimiter, userCtrl.DeleteWebAuthnKey)
 		apiPrivate.POST("/mfa/totp/disable", mfaSetupLimiter, userCtrl.DisableMFA)
 		apiPrivate.GET("/mfa/status", userCtrl.GetMfaStatus)
+
+		// Gestión de Sesiones y Aplicaciones Autorizadas (Fase 3)
+		apiPrivate.GET("/user/sessions", sessionCtrl.ListSessions)
+		apiPrivate.DELETE("/user/sessions/:id", sessionCtrl.RevokeSession)
+		apiPrivate.POST("/user/sessions/revoke-others", sessionCtrl.RevokeOtherSessions)
+		apiPrivate.GET("/user/applications", sessionCtrl.ListAuthorizedApps)
+		apiPrivate.DELETE("/user/applications/:client_id", sessionCtrl.RevokeAuthorizedApp)
 	}
 
 	// ============================================================================
@@ -239,6 +248,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	adminPrivate.Use(middleware.AuthMiddleware(app.TokenManager, app.UserRepo))
 	{
 		adminPrivate.GET("/", middleware.PlatformScopeMiddleware(app.UarRepo, app.AppRepo), dashboardCtrl.Dashboard)
+		adminPrivate.GET("/settings", sessionCtrl.GetSettingsPage)
 		adminPrivate.POST("/logout", loginCtrl.PostLogout)
 
 		// Gestión de Apps (crear/listar = solo plataforma)

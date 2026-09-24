@@ -17,6 +17,7 @@ type OAuthRepository interface {
 	HasValidConsent(userID uint, clientID string) (bool, error)
 	CreateConsent(consent *model.UserConsent) error
 	RevokeConsent(userID uint, clientID string) error
+	FindConsentsByUser(userID uint) ([]model.UserConsent, error)
 }
 
 type oauthRepository struct {
@@ -136,4 +137,13 @@ func (r *oauthRepository) CreateConsent(consent *model.UserConsent) error {
 
 func (r *oauthRepository) RevokeConsent(userID uint, clientID string) error {
 	return r.db.Where("user_id = ? AND client_id = ?", userID, clientID).Delete(&model.UserConsent{}).Error
+}
+
+func (r *oauthRepository) FindConsentsByUser(userID uint) ([]model.UserConsent, error) {
+	var consents []model.UserConsent
+	err := r.db.Preload("Application").
+		Where("user_id = ? AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)", userID).
+		Order("granted_at DESC").
+		Find(&consents).Error
+	return consents, err
 }

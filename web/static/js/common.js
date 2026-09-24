@@ -210,19 +210,87 @@ async function openMfaSettings() {
         const status = await statusRes.json();
 
         if (status.enabled) {
-            let activeMethodsHtml = '';
-            if (status.totp_configured) activeMethodsHtml += `<div style="padding: 0.75rem; background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-600); border-radius: var(--radius-xl); font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem;">Autenticador TOTP Activo</div>`;
-            if (status.webauthn_configured) activeMethodsHtml += `<div style="padding: 0.75rem; background-color: rgba(8, 61, 105, 0.1); color: var(--brand-600); border-radius: var(--radius-xl); font-size: 0.75rem; font-weight: 700; margin-bottom: 0.5rem;">Llave de Seguridad (Passkey) Activa</div>`;
-            
-            const confirmDisable = await PeakModal.fire({
-                title: 'Seguridad 2FA Activa',
+            let totpHtml = '';
+            if (status.totp_configured) {
+                totpHtml = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background-color: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-xl); margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; text-align: left;">
+                            <span style="font-size: 1.25rem;">📱</span>
+                            <div>
+                                <div style="font-weight: 700; font-size: 0.875rem; color: var(--text-main);">App Authenticator (TOTP)</div>
+                                <div style="font-size: 0.75rem; color: var(--emerald-600); font-weight: 600;">● Activo</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                totpHtml = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background-color: var(--bg-surface-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-xl); margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; text-align: left;">
+                            <span style="font-size: 1.25rem;">📱</span>
+                            <div>
+                                <div style="font-weight: 700; font-size: 0.875rem; color: var(--text-main);">App Authenticator (TOTP)</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">No configurada</div>
+                            </div>
+                        </div>
+                        <button type="button" id="btn-modal-add-totp" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+                            + Configurar
+                        </button>
+                    </div>
+                `;
+            }
+
+            const keys = status.webauthn_keys || [];
+            let keysListHtml = '';
+            if (keys.length > 0) {
+                keysListHtml = keys.map(k => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background-color: var(--bg-surface-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-lg); margin-bottom: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; text-align: left;">
+                            <span style="font-size: 1rem;">🔑</span>
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.8125rem; color: var(--text-main);">${escapeHtml(k.name || 'Llave de Seguridad')}</div>
+                                <div style="font-size: 0.6875rem; color: var(--text-muted);">${new Date(k.created_at).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-modal-del-key icon-btn icon-btn-danger" data-id="${k.id}" data-name="${escapeHtml(k.name || 'Llave')}" title="Eliminar llave" style="padding: 0.25rem; width: 1.75rem; height: 1.75rem;">
+                            <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
+                `).join('');
+            } else {
+                keysListHtml = `<div style="font-size: 0.75rem; color: var(--text-muted); padding: 0.5rem 0; text-align: left;">No tienes llaves físicas o Passkeys registradas.</div>`;
+            }
+
+            let addKeyBtnHtml = '';
+            if (keys.length < 5) {
+                addKeyBtnHtml = `
+                    <button type="button" id="btn-modal-add-webauthn" class="peak-btn peak-btn-secondary" style="width: 100%; font-size: 0.75rem; padding: 0.5rem; margin-top: 0.25rem;">
+                        + Agregar Llave / Passkey (${keys.length}/5)
+                    </button>
+                `;
+            } else {
+                addKeyBtnHtml = `<div style="font-size: 0.6875rem; color: var(--text-muted); margin-top: 0.5rem;">Límite alcanzado (máximo 5 llaves).</div>`;
+            }
+
+            await PeakModal.fire({
+                title: 'Seguridad Multi-Factor (2FA)',
                 html: `
-                    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Su cuenta está protegida con verificación de doble factor.</p>
-                    ${activeMethodsHtml}
+                    <div style="text-align: left; margin-bottom: 1rem;">
+                        <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1rem;">Gestiona tus métodos de autenticación multi-factor activos.</p>
+                        
+                        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem;">Aplicación Móvil</div>
+                        ${totpHtml}
+
+                        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem;">Llaves de Seguridad / Passkeys</div>
+                        <div style="margin-bottom: 0.5rem;">
+                            ${keysListHtml}
+                        </div>
+                        ${addKeyBtnHtml}
+                    </div>
                 `,
-                icon: 'success',
                 showCancelButton: true,
-                confirmButtonText: 'Desactivar 2FA',
+                showConfirmButton: true,
+                confirmButtonText: 'Desactivar todo el 2FA',
                 cancelButtonText: 'Cerrar',
                 background: themeConfig.background,
                 color: themeConfig.color,
@@ -232,53 +300,148 @@ async function openMfaSettings() {
                     confirmButton: 'peak-btn peak-btn-danger',
                     cancelButton: 'peak-btn peak-btn-secondary',
                     actions: 'swal2-actions-custom'
+                },
+                didOpen: () => {
+                    const addTotpBtn = document.getElementById('btn-modal-add-totp');
+                    if (addTotpBtn) {
+                        addTotpBtn.addEventListener('click', async () => {
+                            PeakModal.close();
+                            await setupTotp(palette, themeConfig);
+                            await openMfaSettings();
+                        });
+                    }
+
+                    const addWebAuthnBtn = document.getElementById('btn-modal-add-webauthn');
+                    if (addWebAuthnBtn) {
+                        addWebAuthnBtn.addEventListener('click', async () => {
+                            PeakModal.close();
+                            const namePrompt = await PeakModal.fire({
+                                title: 'Nueva Llave / Passkey',
+                                html: `
+                                    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Ingresa un nombre para identificar tu llave (ej: "YubiKey Principal", "MacBook TouchID"):</p>
+                                    <input id="key-custom-name" type="text" class="peak-input" placeholder="Nombre de la llave" value="Mi Llave de Seguridad" />
+                                `,
+                                showCancelButton: true,
+                                confirmButtonText: 'Registrar Llave',
+                                cancelButtonText: 'Cancelar',
+                                background: themeConfig.background,
+                                color: themeConfig.color,
+                                buttonsStyling: false,
+                                customClass: {
+                                    popup: 'peak-card',
+                                    confirmButton: 'peak-btn peak-btn-primary',
+                                    cancelButton: 'peak-btn peak-btn-secondary',
+                                    actions: 'swal2-actions-custom'
+                                },
+                                preConfirm: () => {
+                                    const val = document.getElementById('key-custom-name').value.trim();
+                                    return val || 'Mi Llave de Seguridad';
+                                }
+                            });
+
+                            if (namePrompt.isConfirmed) {
+                                try {
+                                    await setupWebAuthn(palette, themeConfig, namePrompt.value);
+                                } catch (err) {
+                                    showToast(err.message, 'error');
+                                }
+                                await openMfaSettings();
+                            } else {
+                                await openMfaSettings();
+                            }
+                        });
+                    }
+
+                    document.querySelectorAll('.btn-modal-del-key').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const keyId = btn.getAttribute('data-id');
+                            const keyName = btn.getAttribute('data-name');
+                            PeakModal.close();
+
+                            const confirmDel = await PeakModal.fire({
+                                title: '¿Eliminar llave?',
+                                html: `<p style="font-size: 0.875rem; color: var(--text-muted);">¿Estás seguro de que deseas eliminar la llave <strong>${escapeHtml(keyName)}</strong>?</p>`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Sí, eliminar',
+                                cancelButtonText: 'Cancelar',
+                                background: themeConfig.background,
+                                color: themeConfig.color,
+                                buttonsStyling: false,
+                                customClass: {
+                                    popup: 'peak-card',
+                                    confirmButton: 'peak-btn peak-btn-danger',
+                                    cancelButton: 'peak-btn peak-btn-secondary',
+                                    actions: 'swal2-actions-custom'
+                                }
+                            });
+
+                            if (confirmDel.isConfirmed) {
+                                try {
+                                    const delRes = await fetch('/api/v1/mfa/webauthn/credentials/' + keyId, {
+                                        method: 'DELETE'
+                                    });
+                                    if (delRes.ok) {
+                                        showToast('Llave eliminada correctamente', 'success');
+                                    } else {
+                                        const err = await delRes.json();
+                                        showToast(err.error || 'Error al eliminar la llave', 'error');
+                                    }
+                                } catch (err) {
+                                    showToast('Error al conectar con el servidor', 'error');
+                                }
+                            }
+                            await openMfaSettings();
+                        });
+                    });
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const stepUpConfirm = await PeakModal.fire({
+                        title: 'Confirmar Desactivación',
+                        html: `
+                            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Para confirmar la desactivación de 2FA, ingrese su contraseña actual o un código de verificación:</p>
+                            <input id="stepup-credential" type="password" class="peak-input" placeholder="Contraseña o código 2FA" autocomplete="current-password" />
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, Desactivar',
+                        cancelButtonText: 'Cancelar',
+                        background: themeConfig.background,
+                        color: themeConfig.color,
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'peak-card',
+                            confirmButton: 'peak-btn peak-btn-danger',
+                            cancelButton: 'peak-btn peak-btn-secondary',
+                            actions: 'swal2-actions-custom'
+                        },
+                        preConfirm: () => {
+                            const val = document.getElementById('stepup-credential').value.trim();
+                            if (!val) {
+                                PeakModal.showValidationMessage('Debe ingresar su contraseña o código');
+                                return false;
+                            }
+                            return val;
+                        }
+                    });
+
+                    if (stepUpConfirm.isConfirmed) {
+                        const cred = stepUpConfirm.value;
+                        const disableRes = await fetch('/api/v1/mfa/totp/disable', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ password: cred, code: cred })
+                        });
+                        if (disableRes.ok) {
+                            showToast('MFA desactivado correctamente', 'success');
+                        } else {
+                            const errData = await disableRes.json();
+                            showToast(errData.error || 'Error al desactivar MFA', 'error');
+                        }
+                    }
                 }
             });
-
-            if (confirmDisable.isConfirmed) {
-                const stepUpConfirm = await PeakModal.fire({
-                    title: 'Confirmar Desactivación',
-                    html: `
-                        <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Para confirmar la desactivación de 2FA, ingrese su contraseña actual o un código de verificación:</p>
-                        <input id="stepup-credential" type="password" class="peak-input" placeholder="Contraseña o código 2FA" autocomplete="current-password" />
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, Desactivar',
-                    cancelButtonText: 'Cancelar',
-                    background: themeConfig.background,
-                    color: themeConfig.color,
-                    buttonsStyling: false,
-                    customClass: {
-                        popup: 'peak-card',
-                        confirmButton: 'peak-btn peak-btn-danger',
-                        cancelButton: 'peak-btn peak-btn-secondary',
-                        actions: 'swal2-actions-custom'
-                    },
-                    preConfirm: () => {
-                        const val = document.getElementById('stepup-credential').value.trim();
-                        if (!val) {
-                            PeakModal.showValidationMessage('Debe ingresar su contraseña o código');
-                            return false;
-                        }
-                        return val;
-                    }
-                });
-
-                if (stepUpConfirm.isConfirmed) {
-                    const cred = stepUpConfirm.value;
-                    const disableRes = await fetch('/api/v1/mfa/totp/disable', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ password: cred, code: cred })
-                    });
-                    if (disableRes.ok) {
-                        showToast('MFA desactivado correctamente', 'success');
-                    } else {
-                        const errData = await disableRes.json();
-                        showToast(errData.error || 'Error al desactivar MFA', 'error');
-                    }
-                }
-            }
         } else {
             // Seleccionar método de MFA
             const startSetup = await PeakModal.fire({
@@ -374,7 +537,7 @@ async function setupTotp(palette, themeConfig) {
     }
 }
 
-async function setupWebAuthn(palette, themeConfig) {
+async function setupWebAuthn(palette, themeConfig, keyName) {
     if (!window.PublicKeyCredential) {
         throw new Error('Su navegador no soporta Passkeys (WebAuthn).');
     }
@@ -406,9 +569,13 @@ async function setupWebAuthn(palette, themeConfig) {
             }
         };
 
-        const finishRes = await fetch('/api/v1/mfa/webauthn/verify', {
+        const verifyUrl = '/api/v1/mfa/webauthn/verify' + (keyName ? '?name=' + encodeURIComponent(keyName) : '');
+        const finishRes = await fetch(verifyUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Key-Name': keyName || 'Llave de Seguridad'
+            },
             body: JSON.stringify(credentialPayload)
         });
 
@@ -416,8 +583,14 @@ async function setupWebAuthn(palette, themeConfig) {
         
         const finishData = await finishRes.json();
         showToast('Llave configurada con éxito', 'success');
+        if (finishData.recovery_codes) {
+            await showRecoveryCodes(finishData.recovery_codes, palette, themeConfig);
+        }
     } catch (e) {
-        throw new Error('Operación de llave de seguridad cancelada o fallida');
+        if (e.name === 'NotAllowedError') {
+            throw new Error('Operación cancelada por el usuario');
+        }
+        throw new Error(e.message || 'Operación de llave de seguridad cancelada o fallida');
     }
 }
 

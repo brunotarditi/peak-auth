@@ -41,6 +41,8 @@ func (c *LoginController) Login(ctx *gin.Context) {
 		return
 	}
 
+	req.IPAddress = ctx.ClientIP()
+	req.UserAgent = ctx.GetHeader("User-Agent")
 	response, err := c.UserService.Login(req, appID)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})

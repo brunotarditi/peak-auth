@@ -98,6 +98,20 @@ func (m *mockOAuthRepo) RevokeConsent(userID uint, clientID string) error {
 	return nil
 }
 
+func (m *mockOAuthRepo) FindConsentsByUser(userID uint) ([]model.UserConsent, error) {
+	var list []model.UserConsent
+	for key, ok := range m.consents {
+		if ok && strings.HasPrefix(key, fmt.Sprintf("%d:", userID)) {
+			parts := strings.Split(key, ":")
+			list = append(list, model.UserConsent{
+				UserID:   userID,
+				ClientID: parts[1],
+			})
+		}
+	}
+	return list, nil
+}
+
 type mockAppRepo struct {
 	apps map[string]*model.Application
 }
@@ -290,6 +304,63 @@ func (m *mockRefreshTokenRepo) DeleteByUserAndApp(userID, appID uint) error {
 	return nil
 }
 func (m *mockRefreshTokenRepo) DeleteByApp(appID uint) error { return nil }
+
+func (m *mockRefreshTokenRepo) FindActiveByUser(userID uint) ([]model.RefreshToken, error) {
+	var list []model.RefreshToken
+	for _, t := range m.tokens {
+		if t.UserID == userID {
+			list = append(list, *t)
+		}
+	}
+	return list, nil
+}
+
+func (m *mockRefreshTokenRepo) DeleteByIDAndUser(id uint, userID uint) error {
+	for k, t := range m.tokens {
+		if t.ID == id && t.UserID == userID {
+			delete(m.tokens, k)
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
+func (m *mockRefreshTokenRepo) DeleteOthersByUser(userID uint, currentTokenHash string) error {
+	for k, t := range m.tokens {
+		if t.UserID == userID && t.Token != currentTokenHash {
+			delete(m.tokens, k)
+		}
+	}
+	return nil
+}
+
+func (m *mockRefreshTokenRepo) DeleteOthersByID(userID uint, sessionID uint) error {
+	for k, t := range m.tokens {
+		if t.UserID == userID && t.ID != sessionID {
+			delete(m.tokens, k)
+		}
+	}
+	return nil
+}
+
+func (m *mockRefreshTokenRepo) UpdateLastUsed(tokenHash string, ip string) error {
+	if t, ok := m.tokens[tokenHash]; ok {
+		t.LastUsedAt = time.Now()
+		if ip != "" {
+			t.IPAddress = ip
+		}
+	}
+	return nil
+}
+
+func (m *mockRefreshTokenRepo) DeleteByUserAppAndDevice(userID, appID uint, ip, userAgent string) error {
+	for k, t := range m.tokens {
+		if t.UserID == userID && t.ApplicationID == appID && (ip == "" || t.IPAddress == ip) && (userAgent == "" || t.UserAgent == userAgent) {
+			delete(m.tokens, k)
+		}
+	}
+	return nil
+}
 
 type mockPasswordResetRepo struct {
 	tokens           map[string]*model.PasswordReset

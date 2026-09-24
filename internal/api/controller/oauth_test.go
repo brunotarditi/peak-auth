@@ -93,6 +93,20 @@ func (r *testOAuthRepo) RevokeConsent(userID uint, clientID string) error {
 	return nil
 }
 
+func (r *testOAuthRepo) FindConsentsByUser(userID uint) ([]model.UserConsent, error) {
+	var list []model.UserConsent
+	for key, ok := range r.consents {
+		if ok && strings.HasPrefix(key, fmt.Sprintf("%d:", userID)) {
+			parts := strings.Split(key, ":")
+			list = append(list, model.UserConsent{
+				UserID:   userID,
+				ClientID: parts[1],
+			})
+		}
+	}
+	return list, nil
+}
+
 type testAppRepo struct {
 	apps map[string]*model.Application
 }
@@ -142,7 +156,7 @@ type testUserService struct {
 	findUserFn      func(userID uint) (*model.User, error)
 }
 
-func (u *testUserService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error) {
+func (u *testUserService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool, clientInfo ...string) (response.TokenResponse, error) {
 	if u.completeLoginFn != nil {
 		return u.completeLoginFn(userID, publicAppID, mfaCompleted)
 	}

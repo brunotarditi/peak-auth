@@ -219,7 +219,7 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 
 	// El token final se genera emulando un login completo (incluyendo roles para ese client_id)
 	// Para ello utilizamos CompleteLoginWithMfa (que simplemente expide un token JWT para el usuario en la app)
-	response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID, mfaCompleted)
+	response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID, mfaCompleted, ctx.ClientIP(), ctx.GetHeader("User-Agent"))
 	if err != nil {
 		// Sanitize internal errors - do not expose database/service details
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": "Error al completar la autenticación"})
@@ -281,8 +281,10 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 
 	// Usamos Login (para usuarios finales) en lugar de AdminLogin
 	response, err := c.UserService.Login(request.LoginRequest{
-		Email:    email,
-		Password: password,
+		Email:     email,
+		Password:  password,
+		IPAddress: ctx.ClientIP(),
+		UserAgent: ctx.GetHeader("User-Agent"),
 	}, clientID)
 
 	if err != nil {

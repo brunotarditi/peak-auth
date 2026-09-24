@@ -71,3 +71,27 @@ type IntrospectResponse struct {
 	MfaVerified bool     `json:"mfa_verified,omitempty"`
 	Roles       []string `json:"roles,omitempty"`
 }
+
+// SessionItem representa una sesión activa (refresh token) del usuario.
+type SessionItem struct {
+	ID         uint      `json:"id"`
+	AppName    string    `json:"app_name"`
+	ClientID   string    `json:"client_id"`
+	IPAddress  string    `json:"ip_address"`
+	UserAgent  string    `json:"user_agent"`
+	DeviceType string    `json:"device_type"`
+	LastUsedAt time.Time `json:"last_used_at"`
+	CreatedAt  time.Time `json:"created_at"`
+	ExpiresAt  time.Time `json:"expires_at"`
+	IsCurrent  bool      `json:"is_current"`
+}
+
+// AuthorizedAppItem representa una aplicación OAuth consentida/autorizada por el usuario.
+type AuthorizedAppItem struct {
+	ClientID    string     `json:"client_id"`
+	AppName     string     `json:"app_name"`
+	Description string     `json:"description"`
+	GrantedAt   time.Time  `json:"granted_at"`
+	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+}
+
