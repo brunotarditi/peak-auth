@@ -1,0 +1,348 @@
+{{ define "content" }}
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+    <!-- Top Bar -->
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <a href="/admin/apps/{{ .App.AppID }}" class="peak-btn peak-btn-brand-soft" style="font-size: 0.75rem;">
+            {{ template "icon-arrow-back" }}
+            Volver a {{ .App.Name }}
+        </a>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="peak-badge peak-badge-brand">{{ .App.Name }}</span>
+            <code style="font-size: 0.75rem; background-color: var(--bg-surface-secondary); padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; color: var(--text-muted);">{{ .App.AppID }}</code>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div>
+        <h2 style="font-size: 2rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Registro de Auditoría</h2>
+        <p style="color: var(--text-muted); margin-top: 0.5rem; font-weight: 500;">Historial cronológico de cambios, modificaciones de reglas y asignaciones en <strong>{{ .App.Name }}</strong>.</p>
+    </div>
+
+    <!-- Filtros de Búsqueda -->
+    <div class="peak-card" style="padding: 1.25rem 1.5rem;">
+        <form method="GET" action="/admin/apps/{{ .App.AppID }}/audit" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Recurso / Tabla</label>
+                <select name="table" class="peak-input" style="width: 100%;">
+                    <option value="">Todos los recursos</option>
+                    <option value="applications" {{ if eq .Filter.TableName "applications" }}selected{{ end }}>Configuración de App</option>
+                    <option value="application_rules" {{ if eq .Filter.TableName "application_rules" }}selected{{ end }}>Reglas de Acceso</option>
+                    <option value="roles" {{ if eq .Filter.TableName "roles" }}selected{{ end }}>Roles de Aplicación</option>
+                    <option value="user_application_roles" {{ if eq .Filter.TableName "user_application_roles" }}selected{{ end }}>Usuarios y Roles</option>
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 180px;">
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Acción</label>
+                <select name="action" class="peak-input" style="width: 100%;">
+                    <option value="">Todas las acciones</option>
+                    <option value="INSERT" {{ if eq .Filter.Action "INSERT" }}selected{{ end }}>Creación (INSERT)</option>
+                    <option value="UPDATE" {{ if eq .Filter.Action "UPDATE" }}selected{{ end }}>Modificación (UPDATE)</option>
+                    <option value="DELETE" {{ if eq .Filter.Action "DELETE" }}selected{{ end }}>Eliminación (DELETE)</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="peak-btn peak-btn-primary" style="height: 2.625rem; font-size: 0.8125rem;">
+                    Filtrar
+                </button>
+                <a href="/admin/apps/{{ .App.AppID }}/audit" class="peak-btn peak-btn-secondary" style="height: 2.625rem; font-size: 0.8125rem; text-decoration: none; display: flex; align-items: center;">
+                    Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de Logs -->
+    <div class="peak-card" style="padding: 0; overflow: hidden;">
+        <div style="overflow-x: auto;">
+            <table class="peak-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color); background-color: var(--bg-surface-secondary);">
+                        <th style="padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; width: 170px;">Fecha y Hora</th>
+                        <th style="padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; width: 90px;">Acción</th>
+                        <th style="padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; width: 200px;">Recurso</th>
+                        <th style="padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Resumen del Cambio</th>
+                        <th style="padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; text-align: right; width: 120px;">Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .Audit.Items }}
+                    <tr style="border-bottom: 1px solid var(--border-light); transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='var(--bg-surface-secondary)'" onmouseout="this.style.backgroundColor='transparent'">
+                        <td style="padding: 1rem 1.25rem; font-size: 0.8125rem; color: var(--text-main); font-weight: 600; white-space: nowrap;">
+                            {{ .CreatedAt.Format "02/01/2006 15:04:05" }}
+                        </td>
+                        <td style="padding: 1rem 1.25rem; white-space: nowrap;">
+                            {{ if eq .Action "INSERT" }}
+                            <span style="font-size: 0.6875rem; font-weight: 800; background-color: rgba(16, 185, 129, 0.15); color: var(--emerald-600); padding: 0.25rem 0.625rem; border-radius: 9999px;">INSERT</span>
+                            {{ else if eq .Action "UPDATE" }}
+                            <span style="font-size: 0.6875rem; font-weight: 800; background-color: rgba(59, 130, 246, 0.15); color: var(--brand-600); padding: 0.25rem 0.625rem; border-radius: 9999px;">UPDATE</span>
+                            {{ else if eq .Action "DELETE" }}
+                            <span style="font-size: 0.6875rem; font-weight: 800; background-color: rgba(239, 68, 68, 0.15); color: var(--rose-600); padding: 0.25rem 0.625rem; border-radius: 9999px;">DELETE</span>
+                            {{ else }}
+                            <span style="font-size: 0.6875rem; font-weight: 800; background-color: var(--bg-surface); color: var(--text-muted); padding: 0.25rem 0.625rem; border-radius: 9999px;">{{ .Action }}</span>
+                            {{ end }}
+                        </td>
+                        <td style="padding: 1rem 1.25rem; white-space: nowrap;">
+                            <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                                <span style="font-size: 0.8125rem; font-weight: 700; color: var(--text-main);">{{ .TableLabel }}</span>
+                                <span style="font-size: 0.6875rem; font-family: monospace; color: var(--text-muted);">Registro #{{ .RecordID }}</span>
+                            </div>
+                        </td>
+                        <td style="padding: 1rem 1.25rem; font-size: 0.8125rem; color: var(--text-main); font-weight: 500;">
+                            {{ if .Description }}
+                            <span>{{ .Description }}</span>
+                            {{ else }}
+                            <span style="color: var(--text-muted); font-style: italic;">—</span>
+                            {{ end }}
+                        </td>
+                        <td style="padding: 1rem 1.25rem; text-align: right; white-space: nowrap;">
+                            <button type="button" class="peak-btn peak-btn-secondary btn-inspect-diff" data-id="{{ .ID }}" style="font-size: 0.75rem; padding: 0.25rem 0.625rem;">
+                                Ver Cambios
+                            </button>
+                        </td>
+                    </tr>
+                    {{ else }}
+                    <tr>
+                        <td colspan="5" style="padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+                            No se encontraron registros de auditoría que coincidan con los filtros seleccionados.
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {{ if gt .Audit.TotalPages 1 }}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); background-color: var(--bg-surface-secondary);">
+            <div style="font-size: 0.8125rem; color: var(--text-muted);">
+                Mostrando página <strong>{{ .Audit.CurrentPage }}</strong> de <strong>{{ .Audit.TotalPages }}</strong> ({{ .Audit.Total }} eventos registrados)
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                {{ if .Audit.HasPrev }}
+                <a href="/admin/apps/{{ .App.AppID }}/audit?page={{ .Audit.PrevPage }}&table={{ .Filter.TableName }}&action={{ .Filter.Action }}" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; text-decoration: none;">
+                    Anterior
+                </a>
+                {{ end }}
+                {{ if .Audit.HasNext }}
+                <a href="/admin/apps/{{ .App.AppID }}/audit?page={{ .Audit.NextPage }}&table={{ .Filter.TableName }}&action={{ .Filter.Action }}" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; text-decoration: none;">
+                    Siguiente
+                </a>
+                {{ end }}
+            </div>
+        </div>
+        {{ end }}
+    </div>
+</div>
+{{ end }}
+
+{{ block "scripts" . }}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const appId = "{{ .App.AppID }}";
+
+    const FIELD_LABELS = {
+        'id': 'ID de Registro',
+        'application_id': 'Aplicación',
+        'user_id': 'Usuario',
+        'role_id': 'Rol Asignado',
+        'code': 'Código de Regla',
+        'rule_type': 'Tipo de Regla',
+        'value': 'Valor de la Regla',
+        'rule_value': 'Valor de la Regla',
+        'name': 'Nombre',
+        'description': 'Descripción',
+        'app_id': 'Client ID',
+        'client_id': 'Client ID',
+        'client_secret': 'Client Secret',
+        'redirect_url': 'URL de Redirección',
+        'redirect_uri': 'URI de Redirección',
+        'is_active': 'Estado',
+        'is_default': 'Por Defecto',
+        'created_at': 'Fecha de Creación',
+        'updated_at': 'Última Actualización',
+        'deleted_at': 'Fecha de Eliminación',
+        'email': 'Correo Electrónico',
+        'is_verified': 'Email Verificado',
+        'mfa_enabled': 'MFA Habilitado'
+    };
+
+    function formatLabel(k) {
+        return FIELD_LABELS[k] || k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function formatVal(k, v, entities) {
+        if (v === undefined || v === null) return '<span style="color: var(--text-muted); font-style: italic;">—</span>';
+        
+        // Resolver nombres de entidades (Usuario, Rol, App)
+        if (entities) {
+            if (k === 'user_id' && entities[`user_${v}`]) {
+                return `<strong>${escapeHtml(entities[`user_${v}`])}</strong> <span style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">(#${escapeHtml(v)})</span>`;
+            }
+            if (k === 'role_id' && entities[`role_${v}`]) {
+                return `<span class="peak-badge peak-badge-brand" style="font-size: 0.75rem; font-weight: 700;">${escapeHtml(entities[`role_${v}`])}</span> <span style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">(#${escapeHtml(v)})</span>`;
+            }
+            if (k === 'application_id' && entities[`app_${v}`]) {
+                return `<strong>${escapeHtml(entities[`app_${v}`])}</strong> <span style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">(#${escapeHtml(v)})</span>`;
+            }
+        }
+
+        // Booleanos con badge semántico
+        if (typeof v === 'boolean') {
+            if (k === 'is_active') {
+                return v 
+                    ? '<span style="color: var(--emerald-600); font-weight: 700;">Activo</span>' 
+                    : '<span style="color: var(--rose-600); font-weight: 700;">Inactivo</span>';
+            }
+            return v ? 'Sí' : 'No';
+        }
+
+        // Fechas legibles (ISO 8601 o claves que terminan en _at)
+        if (typeof v === 'string' && (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v) || k.endsWith('_at'))) {
+            try {
+                const d = new Date(v);
+                if (!isNaN(d.getTime())) {
+                    const pad = n => String(n).padStart(2, '0');
+                    const day = pad(d.getDate());
+                    const month = pad(d.getMonth() + 1);
+                    const year = d.getFullYear();
+                    const hours = pad(d.getHours());
+                    const mins = pad(d.getMinutes());
+                    const secs = pad(d.getSeconds());
+                    return `<span style="font-family: monospace; color: var(--text-main); font-weight: 600;">${day}/${month}/${year} ${hours}:${mins}:${secs}</span>`;
+                }
+            } catch (_) {}
+        }
+
+        // Objetos JSON anidados
+        if (typeof v === 'object') {
+            return `<pre style="margin: 0; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; background: var(--bg-surface-secondary); padding: 0.25rem 0.5rem; border-radius: 0.25rem;">${escapeHtml(JSON.stringify(v, null, 2))}</pre>`;
+        }
+
+        return `<span style="font-family: monospace; color: var(--text-main); font-weight: 600;">${escapeHtml(String(v))}</span>`;
+    }
+
+    document.querySelectorAll('.btn-inspect-diff').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const logId = btn.getAttribute('data-id');
+            try {
+                btn.disabled = true;
+                const res = await fetch(`/admin/apps/${encodeURIComponent(appId)}/audit/${encodeURIComponent(logId)}`);
+                if (!res.ok) {
+                    showToast('No se pudo cargar el detalle del evento', 'error');
+                    return;
+                }
+                const data = await res.json();
+                showDiffModal(data);
+            } catch (err) {
+                console.error(err);
+                showToast('Error al consultar el detalle de auditoría', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    });
+
+    function showDiffModal(log) {
+        const oldData = log.old_data || {};
+        const newData = log.new_data || {};
+        const entities = log.entities || {};
+
+        // Filtrar atributos irrelevantes (ej. deleted_at nulo) y ordenar campos clave primero
+        const allKeys = Array.from(new Set([...Object.keys(oldData), ...Object.keys(newData)]));
+        const filteredKeys = allKeys.filter(k => {
+            if (k === 'deleted_at' && (newData[k] === null || newData[k] === undefined) && (oldData[k] === null || oldData[k] === undefined)) {
+                return false;
+            }
+            return true;
+        }).sort((a, b) => {
+            const priority = { 'user_id': 1, 'role_id': 2, 'application_id': 3, 'code': 4, 'rule_type': 5, 'value': 6, 'rule_value': 7, 'name': 8, 'app_id': 9, 'is_active': 10, 'created_at': 20, 'updated_at': 21, 'id': 30 };
+            const pA = priority[a] || 50;
+            const pB = priority[b] || 50;
+            if (pA !== pB) return pA - pB;
+            return a.localeCompare(b);
+        });
+
+        let diffHtml = '';
+
+        if (log.action === 'INSERT') {
+            diffHtml = `
+                <div style="text-align: left; max-height: 420px; overflow-y: auto;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--emerald-600); margin-bottom: 0.75rem; text-transform: uppercase;">Valores Iniciales Creados:</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                        ${filteredKeys.map(k => `
+                            <tr style="border-bottom: 1px solid var(--border-light);">
+                                <td style="padding: 0.625rem 0.5rem; font-weight: 700; color: var(--text-main); width: 38%;">${escapeHtml(formatLabel(k))}</td>
+                                <td style="padding: 0.625rem 0.5rem;">${formatVal(k, newData[k], entities)}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+            `;
+        } else if (log.action === 'DELETE') {
+            diffHtml = `
+                <div style="text-align: left; max-height: 420px; overflow-y: auto;">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--rose-600); margin-bottom: 0.75rem; text-transform: uppercase;">Valores Previos al Borrado:</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                        ${filteredKeys.map(k => `
+                            <tr style="border-bottom: 1px solid var(--border-light);">
+                                <td style="padding: 0.625rem 0.5rem; font-weight: 700; color: var(--text-main); width: 38%;">${escapeHtml(formatLabel(k))}</td>
+                                <td style="padding: 0.625rem 0.5rem;">${formatVal(k, oldData[k], entities)}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                </div>
+            `;
+        } else {
+            // UPDATE: mostrar comparativa de campos modificados
+            const changedKeys = filteredKeys.filter(k => JSON.stringify(oldData[k]) !== JSON.stringify(newData[k]));
+            if (changedKeys.length === 0) {
+                diffHtml = '<p style="color: var(--text-muted); font-size: 0.875rem;">No se detectaron cambios en los atributos del registro.</p>';
+            } else {
+                diffHtml = `
+                    <div style="text-align: left; max-height: 420px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.8125rem;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color); background: var(--bg-surface-secondary);">
+                                    <th style="padding: 0.625rem 0.5rem; text-transform: uppercase; font-size: 0.6875rem; color: var(--text-muted);">Campo</th>
+                                    <th style="padding: 0.625rem 0.5rem; text-transform: uppercase; font-size: 0.6875rem; color: var(--rose-600);">Valor Anterior</th>
+                                    <th style="padding: 0.625rem 0.5rem; text-transform: uppercase; font-size: 0.6875rem; color: var(--emerald-600);">Valor Nuevo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${changedKeys.map(k => `
+                                    <tr style="border-bottom: 1px solid var(--border-light);">
+                                        <td style="padding: 0.625rem 0.5rem; font-weight: 700; color: var(--text-main);">${escapeHtml(formatLabel(k))}</td>
+                                        <td style="padding: 0.625rem 0.5rem; background-color: rgba(239, 68, 68, 0.05);">${formatVal(k, oldData[k], entities)}</td>
+                                        <td style="padding: 0.625rem 0.5rem; background-color: rgba(16, 185, 129, 0.05);">${formatVal(k, newData[k], entities)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+
+        let headerSubtitle = `<strong>Recurso:</strong> ${escapeHtml(log.table_label || log.table_name)} • <strong>Acción:</strong> ${escapeHtml(log.action)} • <strong>Registro:</strong> #${escapeHtml(log.record_id)}`;
+        if (log.changed_by && log.changed_by !== 'postgres' && log.changed_by !== 'Sistema') {
+            headerSubtitle += ` • <strong>Actor:</strong> ${escapeHtml(log.changed_by)}`;
+        }
+
+        PeakModal.fire({
+            title: `Detalle del Evento #${log.id}`,
+            html: `
+                <div style="margin-bottom: 1.25rem; font-size: 0.8125rem; color: var(--text-muted); text-align: left; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-light);">
+                    ${headerSubtitle}
+                </div>
+                ${diffHtml}
+            `,
+            confirmButtonText: 'Cerrar'
+        });
+    }
+});
+</script>
+{{ end }}
+
+{{ template "base_admin" . }}

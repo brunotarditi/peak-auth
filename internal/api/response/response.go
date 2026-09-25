@@ -95,3 +95,40 @@ type AuthorizedAppItem struct {
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 }
 
+type AuditLogItem struct {
+	ID         int64     `json:"id"`
+	TableName  string    `json:"table_name"`
+	TableLabel string    `json:"table_label"`
+	RecordID   string    `json:"record_id"`
+	Action     string    `json:"action"`
+	ChangedBy  string    `json:"changed_by"`
+	OldData     string    `json:"old_data"`
+	NewData     string    `json:"new_data"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type AuditDetailResponse struct {
+	ID         int64                  `json:"id"`
+	TableName  string                 `json:"table_name"`
+	TableLabel string                 `json:"table_label"`
+	RecordID   string                 `json:"record_id"`
+	Action     string                 `json:"action"`
+	ChangedBy  string                 `json:"changed_by"`
+	CreatedAt  time.Time              `json:"created_at"`
+	OldData    map[string]interface{} `json:"old_data"`
+	NewData    map[string]interface{} `json:"new_data"`
+	Entities   map[string]string      `json:"entities"`
+}
+
+type AuditLogPageResponse struct {
+	Items       []AuditLogItem `json:"items"`
+	Total       int64          `json:"total"`
+	CurrentPage int            `json:"current_page"`
+	TotalPages  int            `json:"total_pages"`
+	HasPrev     bool           `json:"has_prev"`
+	HasNext     bool           `json:"has_next"`
+	PrevPage    int            `json:"prev_page"`
+	NextPage    int            `json:"next_page"`
+}
+

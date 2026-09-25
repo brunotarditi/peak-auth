@@ -12,6 +12,7 @@ type RoleRepository interface {
 	FindByRoleName(roleName string) (model.Role, error)
 	FindGlobalByName(roleName string) (model.Role, error)
 	FindByNameForApp(roleName string, appID uint) (model.Role, error)
+	FindByID(roleID uint) (model.Role, error)
 	Create(role *model.Role) error
 	FindAll() ([]model.Role, error)
 	FindVisibleForApp(appID uint) ([]model.Role, error)
@@ -69,6 +70,12 @@ func (r *roleRepository) FindByNameForApp(roleName string, appID uint) (model.Ro
 	}
 	// 2) Rol global del sistema
 	err = r.db.Where("name = ? AND application_id IS NULL", name).First(&role).Error
+	return role, err
+}
+
+func (r *roleRepository) FindByID(roleID uint) (model.Role, error) {
+	var role model.Role
+	err := r.db.First(&role, roleID).Error
 	return role, err
 }
 

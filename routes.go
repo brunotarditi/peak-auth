@@ -94,6 +94,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	}
 
 	sessionCtrl := controller.NewSessionController(app.SessionService)
+	auditCtrl := controller.NewAuditController(app.AuditService, app.AppService)
 
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
 	loginLimiter := middleware.RateLimitMiddleware(10, time.Minute)
@@ -289,6 +290,10 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			// Roles propios de la app (solo si la app tiene el sistema de roles activo)
 			apps.POST("/roles", middleware.RequestBodyLimitMiddleware(256*1024), roleCtrl.PostAppRole)
 			apps.DELETE("/roles/:code", roleCtrl.DeleteAppRole)
+
+			// Auditoría contextual de la aplicación
+			apps.GET("/audit", auditCtrl.GetAppAuditPage)
+			apps.GET("/audit/:log_id", auditCtrl.GetAppAuditDetail)
 		}
 	}
 

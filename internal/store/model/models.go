@@ -171,3 +171,16 @@ type UserConsent struct {
 	GrantedAt     time.Time   `gorm:"not null"`
 	ExpiresAt     *time.Time  `gorm:"index"` // Optional: consent can expire after a period
 }
+
+// AuditLog mapea la tabla central audit_logs generada por triggers en PostgreSQL
+type AuditLog struct {
+	ID         int64     `gorm:"primaryKey;column:id" json:"id"`
+	SchemaName string    `gorm:"column:schema_name;type:varchar(100);not null" json:"schema_name"`
+	TableName  string    `gorm:"column:table_name;type:varchar(100);not null;index:idx_audit_logs_record,priority:1" json:"table_name"`
+	RecordID   string    `gorm:"column:record_id;type:text;index:idx_audit_logs_record,priority:2" json:"record_id"`
+	Action     string    `gorm:"column:action;type:varchar(10);not null" json:"action"`
+	ChangedBy  string    `gorm:"column:changed_by;type:text" json:"changed_by"`
+	OldData    string    `gorm:"column:old_data;type:jsonb" json:"old_data"`
+	NewData    string    `gorm:"column:new_data;type:jsonb" json:"new_data"`
+	CreatedAt  time.Time `gorm:"column:created_at;index:idx_audit_logs_created_at,sort:desc" json:"created_at"`
+}
