@@ -31,16 +31,6 @@ func NewApplicationRuleService(ruleRepo repo.ApplicationRuleRepository, uarRepo 
 	return &applicationRuleService{ruleRepo: ruleRepo, uarRepo: uarRepo, roleRepo: roleRepo, appRepo: appRepo}
 }
 
-// isRootApp indica si el appID numérico corresponde a la aplicación raíz (peak-auth),
-// resolviéndola por su AppID público en lugar de asumir un ID fijo.
-func (s *applicationRuleService) isRootApp(appID uint) bool {
-	rootApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
-	if err != nil {
-		return false
-	}
-	return rootApp.ID == appID
-}
-
 // ValidateRegistration valida las reglas de registro de la app y devuelve
 // la política completa (incluyendo DefaultRole y RequireEmailVerification) si alguna regla lo especifica.
 func (s *applicationRuleService) ValidateRegistration(appID uint, req request.RegisterRequest) (*util.RegistrationPolicy, error) {
@@ -186,4 +176,15 @@ func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value 
 
 func (s *applicationRuleService) DeleteRule(appID uint, code string) error {
 	return s.ruleRepo.DeleteRule(appID, code)
+}
+
+// --- Helpers privados ---
+// isRootApp indica si el appID numérico corresponde a la aplicación raíz (peak-auth),
+// resolviéndola por su AppID público en lugar de asumir un ID fijo.
+func (s *applicationRuleService) isRootApp(appID uint) bool {
+	rootApp, err := s.appRepo.FindByAppID(util.AppIdPeakAuth)
+	if err != nil {
+		return false
+	}
+	return rootApp.ID == appID
 }

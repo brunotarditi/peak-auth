@@ -9,11 +9,6 @@ import (
 	"peak-auth/internal/store/repo"
 )
 
-type SessionDeviceContext struct {
-	IPAddress string
-	UserAgent string
-}
-
 type SessionService interface {
 	ListSessions(userID uint, currentToken string, devCtx ...SessionDeviceContext) ([]response.SessionItem, error)
 	RevokeSession(userID uint, sessionID uint) error
@@ -22,17 +17,18 @@ type SessionService interface {
 	RevokeAuthorizedApp(userID uint, clientID string) error
 }
 
+type SessionDeviceContext struct {
+	IPAddress string
+	UserAgent string
+}
+
 type sessionService struct {
 	refreshTokenRepo repo.RefreshTokenRepository
 	oauthRepo        repo.OAuthRepository
 	appRepo          repo.ApplicationRepository
 }
 
-func NewSessionService(
-	refreshTokenRepo repo.RefreshTokenRepository,
-	oauthRepo repo.OAuthRepository,
-	appRepo repo.ApplicationRepository,
-) SessionService {
+func NewSessionService(refreshTokenRepo repo.RefreshTokenRepository, oauthRepo repo.OAuthRepository, appRepo repo.ApplicationRepository) SessionService {
 	return &sessionService{
 		refreshTokenRepo: refreshTokenRepo,
 		oauthRepo:        oauthRepo,

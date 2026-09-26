@@ -177,6 +177,36 @@ func (m *JWTManager) GenerateToken(userID uint, username string, appID string, r
 	return token.SignedString(privKey)
 }
 
+// GenerateClientCredentialsToken crea un nuevo access token JWT asimétrico (RS256)
+// para autenticación Machine-to-Machine (RFC 6749 §4.4).
+// El Subject es el client_id, el Issuer es peak-auth, y la Audiencia es client_id.
+func (m *JWTManager) GenerateClientCredentialsToken(clientID string, scopes []string, duration time.Duration) (string, error) {
+	claims := CustomClaims{
+		Username:    clientID,
+		AppID:       clientID,
+		Roles:       scopes,
+		MfaVerified: true,
+		TokenType:   "access",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   clientID,
+			Issuer:    tokenIssuer(),
+			Audience:  jwt.ClaimStrings{clientID},
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-45 * time.Second)),
+		},
+	}
+
+	m.mu.RLock()
+	activeKid := m.activeKid
+	privKey := m.privateKey
+	m.mu.RUnlock()
+
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = activeKid
+	return token.SignedString(privKey)
+}
+
 // VerifyToken comprueba la validez de un token (firma, expiración e issuer) y
 // devuelve sus claims si es correcto.
 func (m *JWTManager) VerifyToken(tokenString string) (*CustomClaims, error) {

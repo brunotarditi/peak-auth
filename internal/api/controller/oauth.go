@@ -176,6 +176,7 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 		GrantType    string `json:"grant_type" form:"grant_type"`
 		RedirectURI  string `json:"redirect_uri" form:"redirect_uri"`
 		CodeVerifier string `json:"code_verifier" form:"code_verifier"`
+		Scope        string `json:"scope" form:"scope"`
 	}
 
 	if err := ctx.ShouldBind(&req); err != nil {
@@ -200,38 +201,80 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 		}
 	}
 
-	if req.GrantType != "authorization_code" {
+	switch req.GrantType {
+	case "authorization_code":
+		if req.ClientID == "" || req.Code == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request"})
+			return
+		}
+
+		// Intercambiar código por Token validando client, secret, redirect_uri y PKCE code_verifier
+		userID, mfaCompleted, err := c.OAuthService.ExchangeCodeForToken(req.ClientID, req.ClientSecret, req.Code, req.RedirectURI, req.CodeVerifier)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": err.Error()})
+			return
+		}
+
+		// El token final se genera emulando un login completo (incluyendo roles para ese client_id)
+		// Para ello utilizamos CompleteLoginWithMfa (que simplemente expide un token JWT para el usuario en la app)
+		response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID, mfaCompleted, ctx.ClientIP(), ctx.GetHeader("User-Agent"))
+		if err != nil {
+			// Sanitize internal errors - do not expose database/service details
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": "Error al completar la autenticación"})
+			return
+		}
+
+		// OAuth2 response standard
+		ctx.JSON(http.StatusOK, gin.H{
+			"access_token": response.AccessToken,
+			"token_type":   "Bearer",
+			"expires_in":   response.ExpiresIn,
+		})
+
+	case "client_credentials":
+		if req.ClientID == "" || req.ClientSecret == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_client", "error_description": "client_id y client_secret son requeridos"})
+			return
+		}
+
+		app, err := c.OAuthService.AuthenticateClientCredentials(req.ClientID, req.ClientSecret)
+		if err != nil {
+			ctx.Header("WWW-Authenticate", `Basic realm="peak-auth"`)
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_client", "error_description": err.Error()})
+			return
+		}
+
+		// Scopes solicitados o rol de servicio predeterminado
+		var scopes []string
+		if strings.TrimSpace(req.Scope) != "" {
+			scopes = strings.Fields(req.Scope)
+		} else {
+			scopes = []string{"service"}
+		}
+
+		// Duración estándar para token M2M (1 hora)
+		duration := 1 * time.Hour
+		token, err := c.TokenManager.GenerateClientCredentialsToken(app.AppID, scopes, duration)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": "Error al generar access token M2M"})
+			return
+		}
+
+		resp := gin.H{
+			"access_token": token,
+			"token_type":   "Bearer",
+			"expires_in":   int(duration.Seconds()),
+		}
+		if req.Scope != "" {
+			resp["scope"] = strings.Join(scopes, " ")
+		}
+
+		ctx.JSON(http.StatusOK, resp)
+
+	default:
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "unsupported_grant_type"})
 		return
 	}
-
-	if req.ClientID == "" || req.Code == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_request"})
-		return
-	}
-
-	// Intercambiar código por Token validando client, secret, redirect_uri y PKCE code_verifier
-	userID, mfaCompleted, err := c.OAuthService.ExchangeCodeForToken(req.ClientID, req.ClientSecret, req.Code, req.RedirectURI, req.CodeVerifier)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": err.Error()})
-		return
-	}
-
-	// El token final se genera emulando un login completo (incluyendo roles para ese client_id)
-	// Para ello utilizamos CompleteLoginWithMfa (que simplemente expide un token JWT para el usuario en la app)
-	response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID, mfaCompleted, ctx.ClientIP(), ctx.GetHeader("User-Agent"))
-	if err != nil {
-		// Sanitize internal errors - do not expose database/service details
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": "Error al completar la autenticación"})
-		return
-	}
-
-	// OAuth2 response standard
-	ctx.JSON(http.StatusOK, gin.H{
-		"access_token": response.AccessToken,
-		"token_type":   "Bearer",
-		"expires_in":   response.ExpiresIn,
-	})
 }
 
 // GetPublicLogin renderiza la vista pública de login para el flujo OAuth2

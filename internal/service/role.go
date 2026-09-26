@@ -32,7 +32,10 @@ type roleService struct {
 }
 
 func NewRoleService(repo repo.RoleRepository, ruleRepo repo.ApplicationRuleRepository) RoleService {
-	return &roleService{repo: repo, ruleRepo: ruleRepo}
+	return &roleService{
+		repo:     repo,
+		ruleRepo: ruleRepo,
+	}
 }
 
 func (s *roleService) FindAll() ([]model.Role, error) {
@@ -135,6 +138,7 @@ func (s *roleService) DeleteAppRole(name string, appID uint) error {
 	return s.repo.Delete(role.ID)
 }
 
+// --- Helpers privados ---
 func (s *roleService) appHasRolesEnabled(appID uint) bool {
 	rules, err := s.ruleRepo.GetRulesByAppID(appID)
 	if err != nil {

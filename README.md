@@ -14,6 +14,7 @@
 
 - 🔐 **Autenticación Centralizada (SSO)**: Inicio de sesión único con cookie de sesión segura (`peak_session`) compartida entre tus aplicaciones cliente.
 - ⚡ **OAuth 2.0 + PKCE (RFC 7636)**: Flujo de autorización estándar (`authorization_code`) con soporte estricto para Proof Key for Code Exchange (S256), protegiendo SPAs, apps móviles y clientes web contra intercepción de códigos.
+- 🤖 **OAuth 2.0 Client Credentials Grant (RFC 6749 §4.4)**: Autenticación Machine-to-Machine (M2M) segura para microservicios, daemons, workers y APIs backend sin interacción de usuario.
 - 🔑 **JWT Asimétricos (RSA-256) & OIDC Discovery**: 
   - Firma con clave privada RSA en el servidor y verificación offline con clave pública en clientes.
   - Endpoint de descubrimiento estándar `GET /.well-known/openid-configuration`.
@@ -261,7 +262,48 @@ grant_type=authorization_code
 
 ---
 
-### 2. Endpoints Estándar OIDC Discovery & JWKS
+### 2. Flujo OAuth 2.0 Client Credentials Grant (M2M / Microservicios - RFC 6749 §4.4)
+
+Diseñado para comunicación directa entre servicios backend, daemons, tareas programadas (cron jobs) y microservicios que necesitan autenticarse ante Peak Auth sin requerir intervención de un usuario:
+
+```bash
+POST /oauth/token
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic <base64(client_id:client_secret)>
+
+grant_type=client_credentials&scope=service:read service:write
+```
+
+O enviando las credenciales en el cuerpo de la solicitud (soporta `application/x-www-form-urlencoded` y `application/json`):
+
+```json
+POST /oauth/token
+Content-Type: application/json
+
+{
+  "grant_type": "client_credentials",
+  "client_id": "TU_CLIENT_ID",
+  "client_secret": "TU_CLIENT_SECRET",
+  "scope": "service:read service:write"
+}
+```
+
+**Respuesta Exitosa (RFC 6749 §4.4.3):**
+```json
+{
+  "access_token": "<token_jwt_firmado_rs256>",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "service:read service:write"
+}
+```
+
+> [!NOTE]
+> Conforme al estándar RFC 6749 §4.4.3, este flujo no emite refresh token. El token JWT asimétrico emitido contiene `sub: client_id`, `aud: [client_id]`, `iss: peak-auth` y los scopes solicitados en el claim `roles`.
+
+---
+
+### 3. Endpoints Estándar OIDC Discovery & JWKS
 
 Cualquier librería OAuth/OIDC estándar (o los SDKs oficiales) puede autoconfigurarse mediante:
 

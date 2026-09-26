@@ -11,18 +11,18 @@ import (
 )
 
 type ApplicationService interface {
+	GetAppDetails(appID string) (model.Application, error)
+	GetDashboardStats() ([]response.AppStatsResponse, error)
+	GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error)
 	CreateApp(name, description, redirectURL string, isActive bool) (model.Application, string, error)
 	UpdateApp(appID string, description, redirectURL string, isActive bool) error
+	DeleteApp(appID string) error
 	ValidateAppNameUnique(name string) error
+	IsRootUser(userID, appID uint) bool
+	UserBelongsToApp(userID, appID uint) (bool, error)
 	RegenerateSecret(appID string) (string, error)
 	RegisterUserInApp(userEmail, roleName string, app *model.Application) error
 	RevokeUserFromApp(userID, appID uint) error
-	IsRootUser(userID, appID uint) bool
-	UserBelongsToApp(userID, appID uint) (bool, error)
-	GetAppDetails(appID string) (model.Application, error)
-	DeleteApp(appID string) error
-	GetDashboardStats() ([]response.AppStatsResponse, error)
-	GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error)
 }
 
 type applicationService struct {
@@ -38,6 +38,18 @@ type applicationService struct {
 
 func NewApplicationService(repo repo.ApplicationRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, txManager repo.TransactionManager, emailService *EmailService, passRepo repo.PasswordResetRepository, refreshTokenRepo repo.RefreshTokenRepository) ApplicationService {
 	return &applicationService{repo: repo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo, refreshTokenRepo: refreshTokenRepo}
+}
+
+func (s *applicationService) GetAppDetails(publicAppID string) (model.Application, error) {
+	return s.repo.FindByAppID(publicAppID)
+}
+
+func (s *applicationService) GetDashboardStats() ([]response.AppStatsResponse, error) {
+	return s.repo.GetAppsWithUserCount()
+}
+
+func (s *applicationService) GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error) {
+	return s.repo.GetAppsForUser(userID)
 }
 
 func (s *applicationService) CreateApp(name, description, redirectURL string, isActive bool) (model.Application, string, error) {
@@ -86,6 +98,57 @@ func (s *applicationService) CreateApp(name, description, redirectURL string, is
 	return app, plainSecret, nil
 }
 
+func (s *applicationService) UpdateApp(appID string, description, redirectURL string, isActive bool) error {
+	if err := ValidateRedirectURISecurity(redirectURL); err != nil {
+		return err
+	}
+
+	if appID == util.AppIdPeakAuth {
+		isActive = true
+	}
+
+	app, err := s.repo.FindByAppID(appID)
+	if err != nil {
+		return err
+	}
+
+	wasActive := app.IsActive
+
+	// Usar actualización específica por columnas para evitar condiciones de carrera (Lost Update)
+	columns := map[string]interface{}{
+		"description":  description,
+		"redirect_url": redirectURL,
+		"is_active":    isActive,
+	}
+	if err := s.repo.UpdateColumns(app.ID, columns); err != nil {
+		return err
+	}
+
+	// Si la aplicación fue desactivada, revocar todos los refresh tokens pendientes
+	if wasActive && !isActive && s.refreshTokenRepo != nil {
+		_ = s.refreshTokenRepo.DeleteByApp(app.ID)
+	}
+
+	return nil
+}
+
+func (s *applicationService) DeleteApp(appID string) error {
+	if appID == util.AppIdPeakAuth {
+		return fmt.Errorf("la aplicación raíz es vital para el sistema y no puede ser eliminada")
+	}
+	app, err := s.repo.FindByAppID(appID)
+	if err != nil {
+		return err
+	}
+
+	users, err := s.uarRepo.GetUsersWithRolesByApp(app.ID)
+	if err == nil && len(users) > 0 {
+		return fmt.Errorf("no se puede eliminar la aplicación porque tiene usuarios vinculados. Revoca el acceso a todos los usuarios primero.")
+	}
+
+	return s.repo.Delete(app.ID)
+}
+
 // ValidateAppNameUnique verifica que no exista otra app activa con ese nombre.
 func (s *applicationService) ValidateAppNameUnique(name string) error {
 	_, err := s.repo.FindByName(name)
@@ -94,6 +157,54 @@ func (s *applicationService) ValidateAppNameUnique(name string) error {
 		return fmt.Errorf("ya existe una aplicación con el nombre \"%s\"", name)
 	}
 	return nil // No existe, podemos continuar
+}
+
+func (s *applicationService) IsRootUser(userID, appID uint) bool {
+	roles, err := s.uarRepo.GetUserRolesInApp(userID, appID)
+	if err != nil {
+		return false
+	}
+	for _, r := range roles {
+		if strings.EqualFold(r, "ROOT") {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *applicationService) UserBelongsToApp(userID, appID uint) (bool, error) {
+	return s.uarRepo.BelongsToApp(userID, appID)
+}
+
+func (s *applicationService) RegenerateSecret(appID string) (string, error) {
+	if appID == util.AppIdPeakAuth {
+		return "", fmt.Errorf("la aplicación raíz no requiere ni permite la regeneración de Client Secret")
+	}
+	app, err := s.repo.FindByAppID(appID)
+	if err != nil {
+		return "", err
+	}
+
+	plainSecret, _, err := util.GenerateToken(32)
+	if err != nil {
+		return "", err
+	}
+
+	hashedSecret, err := util.HashPassword(plainSecret)
+	if err != nil {
+		return "", err
+	}
+
+	// Usar actualización específica por columnas para no sobrescribir metadata concurrente
+	columns := map[string]interface{}{
+		"secret_key": hashedSecret,
+	}
+	err = s.repo.UpdateColumns(app.ID, columns)
+	if err != nil {
+		return "", err
+	}
+
+	return plainSecret, nil
 }
 
 func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *model.Application) error {
@@ -166,23 +277,6 @@ func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *
 	})
 }
 
-func (s *applicationService) IsRootUser(userID, appID uint) bool {
-	roles, err := s.uarRepo.GetUserRolesInApp(userID, appID)
-	if err != nil {
-		return false
-	}
-	for _, r := range roles {
-		if strings.EqualFold(r, "ROOT") {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *applicationService) UserBelongsToApp(userID, appID uint) (bool, error) {
-	return s.uarRepo.BelongsToApp(userID, appID)
-}
-
 func (s *applicationService) RevokeUserFromApp(userID, appID uint) error {
 	app, err := s.repo.FindByID(appID)
 	if err == nil && app.AppID == util.AppIdPeakAuth {
@@ -197,7 +291,7 @@ func (s *applicationService) RevokeUserFromApp(userID, appID uint) error {
 	if s.refreshTokenRepo != nil {
 		_ = s.refreshTokenRepo.DeleteByUserAndApp(userID, appID)
 	}
-	
+
 	// Increment authz_version to immediately invalidate all existing access tokens
 	if s.userRepo != nil {
 		user, err := s.userRepo.FindById(userID)
@@ -205,100 +299,6 @@ func (s *applicationService) RevokeUserFromApp(userID, appID uint) error {
 			_ = s.userRepo.UpdateColumn("authz_version", user.AuthzVersion+1, userID)
 		}
 	}
-	
-	return nil
-}
-
-func (s *applicationService) GetAppDetails(publicAppID string) (model.Application, error) {
-	return s.repo.FindByAppID(publicAppID)
-}
-
-func (s *applicationService) UpdateApp(appID string, description, redirectURL string, isActive bool) error {
-	if err := ValidateRedirectURISecurity(redirectURL); err != nil {
-		return err
-	}
-
-	if appID == util.AppIdPeakAuth {
-		isActive = true
-	}
-
-	app, err := s.repo.FindByAppID(appID)
-	if err != nil {
-		return err
-	}
-
-	wasActive := app.IsActive
-
-	// Usar actualización específica por columnas para evitar condiciones de carrera (Lost Update)
-	columns := map[string]interface{}{
-		"description":  description,
-		"redirect_url": redirectURL,
-		"is_active":    isActive,
-	}
-	if err := s.repo.UpdateColumns(app.ID, columns); err != nil {
-		return err
-	}
-
-	// Si la aplicación fue desactivada, revocar todos los refresh tokens pendientes
-	if wasActive && !isActive && s.refreshTokenRepo != nil {
-		_ = s.refreshTokenRepo.DeleteByApp(app.ID)
-	}
 
 	return nil
-}
-
-func (s *applicationService) RegenerateSecret(appID string) (string, error) {
-	if appID == util.AppIdPeakAuth {
-		return "", fmt.Errorf("la aplicación raíz no requiere ni permite la regeneración de Client Secret")
-	}
-	app, err := s.repo.FindByAppID(appID)
-	if err != nil {
-		return "", err
-	}
-
-	plainSecret, _, err := util.GenerateToken(32)
-	if err != nil {
-		return "", err
-	}
-
-	hashedSecret, err := util.HashPassword(plainSecret)
-	if err != nil {
-		return "", err
-	}
-
-	// Usar actualización específica por columnas para no sobrescribir metadata concurrente
-	columns := map[string]interface{}{
-		"secret_key": hashedSecret,
-	}
-	err = s.repo.UpdateColumns(app.ID, columns)
-	if err != nil {
-		return "", err
-	}
-
-	return plainSecret, nil
-}
-
-func (s *applicationService) DeleteApp(appID string) error {
-	if appID == util.AppIdPeakAuth {
-		return fmt.Errorf("la aplicación raíz es vital para el sistema y no puede ser eliminada")
-	}
-	app, err := s.repo.FindByAppID(appID)
-	if err != nil {
-		return err
-	}
-
-	users, err := s.uarRepo.GetUsersWithRolesByApp(app.ID)
-	if err == nil && len(users) > 0 {
-		return fmt.Errorf("no se puede eliminar la aplicación porque tiene usuarios vinculados. Revoca el acceso a todos los usuarios primero.")
-	}
-
-	return s.repo.Delete(app.ID)
-}
-
-func (s *applicationService) GetDashboardStats() ([]response.AppStatsResponse, error) {
-	return s.repo.GetAppsWithUserCount()
-}
-
-func (s *applicationService) GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error) {
-	return s.repo.GetAppsForUser(userID)
 }

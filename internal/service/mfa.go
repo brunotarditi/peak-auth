@@ -6,8 +6,11 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"image/png"
+	"log"
 	"net/http"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/store/model"
@@ -19,37 +22,6 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/pquerna/otp/totp"
 )
-
-func hashRecoveryCode(code string) string {
-	normalized := strings.ToUpper(strings.ReplaceAll(code, "-", ""))
-	normalized = strings.TrimSpace(normalized)
-	if len(normalized) == 8 {
-		normalized = normalized[:4] + "-" + normalized[4:]
-	}
-	h := sha256.Sum256([]byte(normalized))
-	return "sha256:" + hex.EncodeToString(h[:])
-}
-
-func verifyRecoveryCodeHash(inputCode, storedHash string) bool {
-	if strings.TrimSpace(inputCode) == "" || strings.TrimSpace(storedHash) == "" {
-		return false
-	}
-
-	normalized := strings.ToUpper(strings.ReplaceAll(inputCode, "-", ""))
-	normalized = strings.TrimSpace(normalized)
-	if len(normalized) == 8 {
-		normalized = normalized[:4] + "-" + normalized[4:]
-	}
-
-	if strings.HasPrefix(storedHash, "sha256:") {
-		h := sha256.Sum256([]byte(normalized))
-		expectedHash := "sha256:" + hex.EncodeToString(h[:])
-		return subtle.ConstantTimeCompare([]byte(expectedHash), []byte(storedHash)) == 1
-	}
-
-	// Fallback para códigos legados hasheados previamente con bcrypt
-	return util.CheckPasswordHash(normalized, storedHash)
-}
 
 // MfaService gestiona la configuración y validación de MFA.
 type MfaService interface {
@@ -230,6 +202,307 @@ func (s *mfaService) RegenerateRecoveryCodes(userID uint) ([]string, error) {
 	return s.generateAndSaveRecoveryCodes(userID)
 }
 
+// BeginWebAuthnRegistration inicia el proceso de registro de una nueva llave
+func (s *mfaService) BeginWebAuthnRegistration(userID uint, userEmail string) (*protocol.CredentialCreation, *webauthn.SessionData, error) {
+	wa, err := getWebAuthn()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error inicializando WebAuthn: %w", err)
+	}
+
+	user, err := s.userRepo.FindById(userID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("usuario no encontrado")
+	}
+
+	// Obtener credenciales existentes para excluirlas (así no registra la misma llave dos veces)
+	var waCreds []webauthn.Credential
+	creds, _ := s.mfaRepo.FindAllCredentialsByUser(userID)
+	for _, c := range creds {
+		if c.Type == "WEBAUTHN" && c.IsActive {
+			var cred webauthn.Credential
+			if err := json.Unmarshal([]byte(c.Secret), &cred); err == nil {
+				waCreds = append(waCreds, cred)
+			}
+		}
+	}
+
+	wUser := &webAuthnUserWrapper{
+		user:        &user,
+		credentials: waCreds,
+	}
+
+	options, sessionData, err := wa.BeginRegistration(
+		wUser,
+		webauthn.WithAuthenticatorSelection(protocol.AuthenticatorSelection{
+			ResidentKey:      protocol.ResidentKeyRequirementDiscouraged,
+			UserVerification: protocol.VerificationPreferred,
+		}),
+	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error iniciando registro WebAuthn: %w", err)
+	}
+
+	return options, sessionData, nil
+}
+
+// FinishWebAuthnRegistration finaliza el registro, guarda la credencial y activa MFA
+func (s *mfaService) FinishWebAuthnRegistration(userID uint, session *webauthn.SessionData, r *http.Request, keyName ...string) error {
+	if session == nil {
+		// Client validation error - session expired or invalid
+		return ErrWebAuthnValidation
+	}
+
+	wa, err := getWebAuthn()
+	if err != nil {
+		// Log the detailed error server-side for diagnostics
+		log.Printf("[error] FinishWebAuthnRegistration: WebAuthn initialization failed: %v", err)
+		return ErrWebAuthnInternal
+	}
+
+	user, err := s.userRepo.FindById(userID)
+	if err != nil {
+		// Log the detailed error server-side for diagnostics
+		log.Printf("[error] FinishWebAuthnRegistration: user lookup failed for userID=%d: %v", userID, err)
+		return ErrWebAuthnInternal
+	}
+
+	wUser := &webAuthnUserWrapper{
+		user: &user,
+	}
+
+	credential, err := wa.FinishRegistration(wUser, *session, r)
+	if err != nil {
+		// Client validation error - malformed ceremony, invalid signature, etc.
+		return ErrWebAuthnValidation
+	}
+
+	// Verificar si la credencial ya existe para este usuario y límite de 5
+	existingCreds, _ := s.mfaRepo.FindAllCredentialsByUser(userID)
+	webauthnCount := 0
+	for _, c := range existingCreds {
+		if c.Type == "WEBAUTHN" && c.IsActive {
+			webauthnCount++
+			var existingCred webauthn.Credential
+			if err := json.Unmarshal([]byte(c.Secret), &existingCred); err == nil {
+				if bytes.Equal(existingCred.ID, credential.ID) {
+					// Client validation error - duplicate credential
+					return ErrWebAuthnValidation
+				}
+			}
+		}
+	}
+
+	if webauthnCount >= 5 {
+		return errors.New("límite máximo alcanzado (máximo 5 llaves de seguridad por cuenta)")
+	}
+
+	finalName := "Llave de Seguridad Passkey"
+	if len(keyName) > 0 && strings.TrimSpace(keyName[0]) != "" {
+		finalName = strings.TrimSpace(keyName[0])
+		if len(finalName) > 100 {
+			finalName = finalName[:100]
+		}
+	} else if webauthnCount > 0 {
+		finalName = fmt.Sprintf("Llave de Seguridad #%d", webauthnCount+1)
+	}
+
+	// Encode credential ID as base64 for storage and uniqueness checking
+	credentialIDBase64 := base64.StdEncoding.EncodeToString(credential.ID)
+
+	// Serializar credencial a JSON
+	credJSON, err := json.Marshal(credential)
+	if err != nil {
+		// Log the detailed error server-side for diagnostics
+		log.Printf("[error] FinishWebAuthnRegistration: credential marshaling failed for userID=%d: %v", userID, err)
+		return ErrWebAuthnInternal
+	}
+
+	// Guardar en base de datos con el credential ID para unicidad
+	newCred := &model.UserMfaCredential{
+		UserID:       userID,
+		Type:         "WEBAUTHN",
+		Name:         finalName,
+		Secret:       string(credJSON),
+		CredentialID: &credentialIDBase64,
+		IsActive:     true,
+	}
+
+	if err := s.mfaRepo.CreateCredential(newCred); err != nil {
+		// Check if this is a duplicate key error (credential already registered)
+		// GORM/SQLite/PostgreSQL/MySQL all include "UNIQUE constraint" or "duplicate" in the error message
+		errMsg := err.Error()
+		if bytes.Contains([]byte(errMsg), []byte("UNIQUE")) ||
+			bytes.Contains([]byte(errMsg), []byte("duplicate")) ||
+			bytes.Contains([]byte(errMsg), []byte("Duplicate")) {
+			// This is an idempotent replay - credential already exists (client validation error)
+			return ErrWebAuthnValidation
+		}
+		// Log the detailed error server-side for diagnostics
+		log.Printf("[error] FinishWebAuthnRegistration: credential persistence failed for userID=%d: %v", userID, err)
+		return ErrWebAuthnInternal
+	}
+
+	// Activar MFA en el usuario
+	s.userRepo.UpdateColumn("mfa_enabled", true, userID)
+
+	// Generar códigos de recuperación de respaldo si no tiene
+	codes, _ := s.mfaRepo.FindUnusedRecoveryCodesByUser(userID)
+	if len(codes) == 0 {
+		_, _ = s.generateAndSaveRecoveryCodes(userID)
+	}
+
+	return nil
+}
+
+// BeginWebAuthnLogin inicia el challenge para iniciar sesión
+func (s *mfaService) BeginWebAuthnLogin(userID uint) (*protocol.CredentialAssertion, *webauthn.SessionData, error) {
+	wa, err := getWebAuthn()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error inicializando WebAuthn: %w", err)
+	}
+
+	user, err := s.userRepo.FindById(userID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("usuario no encontrado")
+	}
+
+	var waCreds []webauthn.Credential
+	creds, _ := s.mfaRepo.FindAllCredentialsByUser(userID)
+	for _, c := range creds {
+		if c.Type == "WEBAUTHN" && c.IsActive {
+			var cred webauthn.Credential
+			if err := json.Unmarshal([]byte(c.Secret), &cred); err == nil {
+				waCreds = append(waCreds, cred)
+			}
+		}
+	}
+
+	if len(waCreds) == 0 {
+		return nil, nil, fmt.Errorf("no hay llaves de seguridad configuradas para este usuario")
+	}
+
+	wUser := &webAuthnUserWrapper{
+		user:        &user,
+		credentials: waCreds,
+	}
+
+	options, sessionData, err := wa.BeginLogin(wUser)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error iniciando login WebAuthn: %w", err)
+	}
+
+	return options, sessionData, nil
+}
+
+// FinishWebAuthnLogin verifica el challenge firmado
+func (s *mfaService) FinishWebAuthnLogin(userID uint, session *webauthn.SessionData, r *http.Request) error {
+	wa, err := getWebAuthn()
+	if err != nil {
+		return fmt.Errorf("error inicializando WebAuthn: %w", err)
+	}
+
+	user, err := s.userRepo.FindById(userID)
+	if err != nil {
+		return fmt.Errorf("usuario no encontrado")
+	}
+
+	var waCreds []webauthn.Credential
+	creds, _ := s.mfaRepo.FindAllCredentialsByUser(userID)
+	for _, c := range creds {
+		if c.Type == "WEBAUTHN" && c.IsActive {
+			var cred webauthn.Credential
+			if err := json.Unmarshal([]byte(c.Secret), &cred); err == nil {
+				waCreds = append(waCreds, cred)
+			}
+		}
+	}
+
+	wUser := &webAuthnUserWrapper{
+		user:        &user,
+		credentials: waCreds,
+	}
+
+	if session == nil {
+		return fmt.Errorf("sesión WebAuthn inválida o expirada")
+	}
+
+	updatedCredential, err := wa.FinishLogin(wUser, *session, r)
+	if err != nil {
+		return fmt.Errorf("validación WebAuthn fallida: %w", err)
+	}
+
+	// Persistir el contador actualizado del autenticador en la BD para detección de clonación (RFC WebAuthn).
+	// Este paso es OBLIGATORIO: si falla, rechazamos el login para garantizar que el contador
+	// siempre refleje el estado más reciente del autenticador.
+	var matchedCred *model.UserMfaCredential
+	var oldSecret string
+
+	for i := range creds {
+		if creds[i].Type == "WEBAUTHN" && creds[i].IsActive {
+			var storedCred webauthn.Credential
+			if err := json.Unmarshal([]byte(creds[i].Secret), &storedCred); err == nil {
+				if bytes.Equal(storedCred.ID, updatedCredential.ID) {
+					matchedCred = &creds[i]
+					oldSecret = creds[i].Secret
+					break
+				}
+			}
+		}
+	}
+
+	if matchedCred == nil {
+		return fmt.Errorf("no se encontró la credencial correspondiente en la base de datos")
+	}
+
+	updatedJSON, err := json.Marshal(updatedCredential)
+	if err != nil {
+		return fmt.Errorf("error serializando credencial actualizada: %w", err)
+	}
+
+	// Actualización atómica: solo actualiza si el secret no ha cambiado desde que lo leímos.
+	// Esto previene que autenticaciones paralelas sobrescriban un contador más nuevo con estado obsoleto.
+	err = s.mfaRepo.UpdateCredentialSecretAtomic(matchedCred.ID, oldSecret, string(updatedJSON))
+	if err != nil {
+		return fmt.Errorf("error persistiendo contador de autenticador actualizado: %w", err)
+	}
+
+	return nil
+}
+
+// ListWebAuthnCredentials lista todas las llaves físicas y passkeys activas del usuario.
+func (s *mfaService) ListWebAuthnCredentials(userID uint) ([]response.WebAuthnKeyItem, error) {
+	creds, err := s.mfaRepo.FindActiveWebAuthnCredentialsByUser(userID)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener llaves de seguridad: %w", err)
+	}
+
+	items := make([]response.WebAuthnKeyItem, len(creds))
+	for i, c := range creds {
+		items[i] = response.WebAuthnKeyItem{
+			ID:        c.ID,
+			Name:      c.Name,
+			CreatedAt: c.CreatedAt,
+		}
+	}
+	return items, nil
+}
+
+// DeleteWebAuthnCredential elimina una llave de seguridad puntual del usuario.
+// Si era la última credencial activa y no tiene TOTP, desactiva MFA en el usuario.
+func (s *mfaService) DeleteWebAuthnCredential(userID uint, credID uint) error {
+	if err := s.mfaRepo.DeleteCredentialByIDAndUser(credID, userID); err != nil {
+		return fmt.Errorf("error eliminando llave de seguridad: %w", err)
+	}
+
+	remaining, err := s.mfaRepo.CountActiveCredentials(userID)
+	if err == nil && remaining == 0 {
+		_ = s.userRepo.UpdateColumn("mfa_enabled", false, userID)
+		_ = s.mfaRepo.DeleteRecoveryCodesByUser(userID)
+	}
+
+	return nil
+}
+
 // DisableMFA desactiva MFA completamente: elimina credenciales y códigos de recuperación.
 func (s *mfaService) DisableMFA(userID uint) error {
 	if !s.IsMfaEnabled(userID) {
@@ -293,41 +566,37 @@ func (s *mfaService) GetMfaStatus(userID uint) (*response.MfaStatusResponse, err
 	return status, nil
 }
 
-// ListWebAuthnCredentials lista todas las llaves físicas y passkeys activas del usuario.
-func (s *mfaService) ListWebAuthnCredentials(userID uint) ([]response.WebAuthnKeyItem, error) {
-	creds, err := s.mfaRepo.FindActiveWebAuthnCredentialsByUser(userID)
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener llaves de seguridad: %w", err)
-	}
-
-	items := make([]response.WebAuthnKeyItem, len(creds))
-	for i, c := range creds {
-		items[i] = response.WebAuthnKeyItem{
-			ID:        c.ID,
-			Name:      c.Name,
-			CreatedAt: c.CreatedAt,
-		}
-	}
-	return items, nil
-}
-
-// DeleteWebAuthnCredential elimina una llave de seguridad puntual del usuario.
-// Si era la última credencial activa y no tiene TOTP, desactiva MFA en el usuario.
-func (s *mfaService) DeleteWebAuthnCredential(userID uint, credID uint) error {
-	if err := s.mfaRepo.DeleteCredentialByIDAndUser(credID, userID); err != nil {
-		return fmt.Errorf("error eliminando llave de seguridad: %w", err)
-	}
-
-	remaining, err := s.mfaRepo.CountActiveCredentials(userID)
-	if err == nil && remaining == 0 {
-		_ = s.userRepo.UpdateColumn("mfa_enabled", false, userID)
-		_ = s.mfaRepo.DeleteRecoveryCodesByUser(userID)
-	}
-
-	return nil
-}
-
 // --- Helpers privados ---
+func hashRecoveryCode(code string) string {
+	normalized := strings.ToUpper(strings.ReplaceAll(code, "-", ""))
+	normalized = strings.TrimSpace(normalized)
+	if len(normalized) == 8 {
+		normalized = normalized[:4] + "-" + normalized[4:]
+	}
+	h := sha256.Sum256([]byte(normalized))
+	return "sha256:" + hex.EncodeToString(h[:])
+}
+
+func verifyRecoveryCodeHash(inputCode, storedHash string) bool {
+	if strings.TrimSpace(inputCode) == "" || strings.TrimSpace(storedHash) == "" {
+		return false
+	}
+
+	normalized := strings.ToUpper(strings.ReplaceAll(inputCode, "-", ""))
+	normalized = strings.TrimSpace(normalized)
+	if len(normalized) == 8 {
+		normalized = normalized[:4] + "-" + normalized[4:]
+	}
+
+	if strings.HasPrefix(storedHash, "sha256:") {
+		h := sha256.Sum256([]byte(normalized))
+		expectedHash := "sha256:" + hex.EncodeToString(h[:])
+		return subtle.ConstantTimeCompare([]byte(expectedHash), []byte(storedHash)) == 1
+	}
+
+	// Fallback para códigos legados hasheados previamente con bcrypt
+	return util.CheckPasswordHash(normalized, storedHash)
+}
 
 func (s *mfaService) generateAndSaveRecoveryCodes(userID uint) ([]string, error) {
 	// Eliminar códigos anteriores

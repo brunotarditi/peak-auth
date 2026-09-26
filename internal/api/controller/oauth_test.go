@@ -1153,3 +1153,142 @@ func TestOAuth_SSOSessionCookieDuration_RespectsSessionPolicy(t *testing.T) {
 	}
 }
 
+func TestOAuth_TokenEndpoint_ClientCredentialsGrant(t *testing.T) {
+	r, tm, _, appRepo := setupOAuthControllerTest(t)
+
+	// Registrar app de prueba
+	appRepo.apps["service-app"] = &model.Application{
+		ID:        20,
+		AppID:     "service-app",
+		Name:      "Microservice App",
+		SecretKey: "correct-secret",
+		IsActive:  true,
+	}
+
+	appRepo.apps["inactive-service"] = &model.Application{
+		ID:        21,
+		AppID:     "inactive-service",
+		Name:      "Inactive Service",
+		SecretKey: "correct-secret",
+		IsActive:  false,
+	}
+
+	t.Run("Exitoso con body JSON y scopes", func(t *testing.T) {
+		body := `{"grant_type":"client_credentials","client_id":"service-app","client_secret":"correct-secret","scope":"service:read service:write"}`
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/oauth/token", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba HTTP 200, obtenido %d: %s", w.Code, w.Body.String())
+		}
+
+		var res map[string]interface{}
+		if err := json.Unmarshal(w.Body.Bytes(), &res); err != nil {
+			t.Fatalf("error parseando JSON: %v", err)
+		}
+
+		if res["token_type"] != "Bearer" {
+			t.Errorf("se esperaba token_type Bearer, obtenido %v", res["token_type"])
+		}
+		if res["expires_in"] != float64(3600) {
+			t.Errorf("se esperaba expires_in 3600, obtenido %v", res["expires_in"])
+		}
+		if res["scope"] != "service:read service:write" {
+			t.Errorf("se esperaba scope 'service:read service:write', obtenido %v", res["scope"])
+		}
+
+		tokenStr, ok := res["access_token"].(string)
+		if !ok || tokenStr == "" {
+			t.Fatalf("access_token no devuelto o vacío")
+		}
+
+		// Validar token asimétrico emitido
+		claims, err := tm.VerifyTokenForApp(tokenStr, "service-app")
+		if err != nil {
+			t.Fatalf("error verificando token para app: %v", err)
+		}
+		if claims.Subject != "service-app" {
+			t.Errorf("se esperaba sub 'service-app', obtenido %s", claims.Subject)
+		}
+		if len(claims.Roles) != 2 || claims.Roles[0] != "service:read" || claims.Roles[1] != "service:write" {
+			t.Errorf("claims.Roles inesperado: %v", claims.Roles)
+		}
+	})
+
+	t.Run("Exitoso con Basic Auth header", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/oauth/token?grant_type=client_credentials", nil)
+		req.SetBasicAuth("service-app", "correct-secret")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba HTTP 200, obtenido %d: %s", w.Code, w.Body.String())
+		}
+
+		var res map[string]interface{}
+		_ = json.Unmarshal(w.Body.Bytes(), &res)
+		if res["access_token"] == nil {
+			t.Fatalf("se esperaba access_token en respuesta")
+		}
+	})
+
+	t.Run("Fallo por client_secret incorrecto", func(t *testing.T) {
+		body := `{"grant_type":"client_credentials","client_id":"service-app","client_secret":"wrong-secret"}`
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/oauth/token", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("se esperaba HTTP 401, obtenido %d", w.Code)
+		}
+		if w.Header().Get("WWW-Authenticate") == "" {
+			t.Errorf("se esperaba encabezado WWW-Authenticate en 401")
+		}
+	})
+
+	t.Run("Fallo por aplicación inactiva", func(t *testing.T) {
+		body := `{"grant_type":"client_credentials","client_id":"inactive-service","client_secret":"correct-secret"}`
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/oauth/token", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("se esperaba HTTP 401 para app inactiva, obtenido %d", w.Code)
+		}
+	})
+
+	t.Run("Fallo por credenciales faltantes", func(t *testing.T) {
+		body := `{"grant_type":"client_credentials"}`
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/oauth/token", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba HTTP 400 por credenciales faltantes, obtenido %d", w.Code)
+		}
+	})
+
+	t.Run("Fallo por grant_type no soportado", func(t *testing.T) {
+		body := `{"grant_type":"password","username":"foo","password":"bar"}`
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", "/oauth/token", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba HTTP 400, obtenido %d", w.Code)
+		}
+		var res map[string]interface{}
+		_ = json.Unmarshal(w.Body.Bytes(), &res)
+		if res["error"] != "unsupported_grant_type" {
+			t.Errorf("se esperaba error 'unsupported_grant_type', obtenido %v", res["error"])
+		}
+	})
+}
+
+

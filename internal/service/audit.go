@@ -8,20 +8,20 @@ import (
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
-	"strconv"
+	"peak-auth/internal/util"
 	"strings"
 )
-
-type AuditDetailResult struct {
-	Log        *model.AuditLog
-	TableLabel string
-	Entities   map[string]string
-}
 
 type AuditService interface {
 	GetAppAuditLogs(appID uint, filter repo.AuditFilter) (*response.AuditLogPageResponse, error)
 	GetAuditLogDetail(id int64, appID uint) (*AuditDetailResult, error)
 	GetAuditFilterOptions(appID uint) (tables []string, actions []string, err error)
+}
+
+type AuditDetailResult struct {
+	Log        *model.AuditLog
+	TableLabel string
+	Entities   map[string]string
 }
 
 type auditService struct {
@@ -31,62 +31,12 @@ type auditService struct {
 	appRepo   repo.ApplicationRepository
 }
 
-func NewAuditService(
-	auditRepo repo.AuditRepository,
-	userRepo repo.UserRepository,
-	roleRepo repo.RoleRepository,
-	appRepo repo.ApplicationRepository,
-) AuditService {
+func NewAuditService(auditRepo repo.AuditRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, appRepo repo.ApplicationRepository) AuditService {
 	return &auditService{
 		auditRepo: auditRepo,
 		userRepo:  userRepo,
 		roleRepo:  roleRepo,
 		appRepo:   appRepo,
-	}
-}
-
-func formatTableLabel(tableName string) string {
-	switch tableName {
-	case "applications":
-		return "Configuración de App"
-	case "application_rules":
-		return "Regla de Acceso"
-	case "roles":
-		return "Rol de Aplicación"
-	case "user_application_roles":
-		return "Usuario y Rol"
-	case "users":
-		return "Usuario"
-	default:
-		return tableName
-	}
-}
-
-func parseJSONMap(str string) map[string]interface{} {
-	if strings.TrimSpace(str) == "" {
-		return nil
-	}
-	var res map[string]interface{}
-	_ = json.Unmarshal([]byte(str), &res)
-	return res
-}
-
-func parseUint(val interface{}) uint {
-	if val == nil {
-		return 0
-	}
-	switch v := val.(type) {
-	case float64:
-		return uint(v)
-	case int:
-		return uint(v)
-	case int64:
-		return uint(v)
-	case string:
-		u, _ := strconv.ParseUint(v, 10, 64)
-		return uint(u)
-	default:
-		return 0
 	}
 }
 
@@ -111,7 +61,6 @@ func (s *auditService) GetAppAuditLogs(appID uint, filter repo.AuditFilter) (*re
 	// Caches temporales para optimizar consultas de resolución en página
 	userCache := make(map[uint]string)
 	roleCache := make(map[uint]string)
-	appCache := make(map[uint]string)
 
 	getUserEmail := func(uID uint) string {
 		if uID == 0 {
@@ -149,41 +98,23 @@ func (s *auditService) GetAppAuditLogs(appID uint, filter repo.AuditFilter) (*re
 		return res
 	}
 
-	getAppName := func(aID uint) string {
-		if aID == 0 {
-			return ""
-		}
-		if name, ok := appCache[aID]; ok {
-			return name
-		}
-		if s.appRepo != nil {
-			if a, err := s.appRepo.FindByID(aID); err == nil && a.Name != "" {
-				appCache[aID] = a.Name
-				return a.Name
-			}
-		}
-		res := fmt.Sprintf("App #%d", aID)
-		appCache[aID] = res
-		return res
-	}
-
 	items := make([]response.AuditLogItem, 0, len(logs))
 	for _, l := range logs {
 		var dataMap map[string]interface{}
 		if l.Action == "DELETE" {
-			dataMap = parseJSONMap(l.OldData)
+			dataMap = util.ParseJSONMap(l.OldData)
 		} else {
-			dataMap = parseJSONMap(l.NewData)
+			dataMap = util.ParseJSONMap(l.NewData)
 		}
 		if dataMap == nil {
-			dataMap = parseJSONMap(l.OldData)
+			dataMap = util.ParseJSONMap(l.OldData)
 		}
 
 		var desc string
 		switch l.TableName {
 		case "user_application_roles":
-			uID := parseUint(dataMap["user_id"])
-			rID := parseUint(dataMap["role_id"])
+			uID := util.ParseUint(dataMap["user_id"])
+			rID := util.ParseUint(dataMap["role_id"])
 			userEmail := getUserEmail(uID)
 			roleName := getRoleName(rID)
 
@@ -260,9 +191,6 @@ func (s *auditService) GetAppAuditLogs(appID uint, filter repo.AuditFilter) (*re
 		})
 	}
 
-	// Suprimir advertencias de variables no usadas
-	_ = getAppName
-
 	hasPrev := filter.Page > 1
 	hasNext := filter.Page < totalPages
 	prevPage := filter.Page - 1
@@ -317,8 +245,8 @@ func (s *auditService) GetAuditLogDetail(id int64, appID uint) (*AuditDetailResu
 		return nil, errors.New("registro de auditoría no encontrado o no pertenece a esta aplicación")
 	}
 
-	oldMap := parseJSONMap(log.OldData)
-	newMap := parseJSONMap(log.NewData)
+	oldMap := util.ParseJSONMap(log.OldData)
+	newMap := util.ParseJSONMap(log.NewData)
 
 	entities := make(map[string]string)
 
@@ -335,7 +263,7 @@ func (s *auditService) GetAuditLogDetail(id int64, appID uint) (*AuditDetailResu
 			continue
 		}
 		if uVal, ok := m["user_id"]; ok {
-			uID := parseUint(uVal)
+			uID := util.ParseUint(uVal)
 			if uID > 0 {
 				key := fmt.Sprintf("user_%d", uID)
 				if _, exists := entities[key]; !exists && s.userRepo != nil {
@@ -346,7 +274,7 @@ func (s *auditService) GetAuditLogDetail(id int64, appID uint) (*AuditDetailResu
 			}
 		}
 		if rVal, ok := m["role_id"]; ok {
-			rID := parseUint(rVal)
+			rID := util.ParseUint(rVal)
 			if rID > 0 {
 				key := fmt.Sprintf("role_%d", rID)
 				if _, exists := entities[key]; !exists && s.roleRepo != nil {
@@ -357,7 +285,7 @@ func (s *auditService) GetAuditLogDetail(id int64, appID uint) (*AuditDetailResu
 			}
 		}
 		if aVal, ok := m["application_id"]; ok {
-			aID := parseUint(aVal)
+			aID := util.ParseUint(aVal)
 			if aID > 0 {
 				key := fmt.Sprintf("app_%d", aID)
 				if _, exists := entities[key]; !exists && s.appRepo != nil {
@@ -386,4 +314,22 @@ func (s *auditService) GetAuditFilterOptions(appID uint) ([]string, []string, er
 		return nil, nil, err
 	}
 	return tables, actions, nil
+}
+
+// --- Helpers privados ---
+func formatTableLabel(tableName string) string {
+	switch tableName {
+	case "applications":
+		return "Configuración de App"
+	case "application_rules":
+		return "Regla de Acceso"
+	case "roles":
+		return "Rol de Aplicación"
+	case "user_application_roles":
+		return "Usuario y Rol"
+	case "users":
+		return "Usuario"
+	default:
+		return tableName
+	}
 }

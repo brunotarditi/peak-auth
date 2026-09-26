@@ -66,7 +66,54 @@ https://tu-app.com/callback?code=<AUTHORIZATION_CODE>&state=<STATE>
 
 ---
 
-## Paso 3: Validación y Consumo de Tokens en el Backend
+## Paso 3: Flujo Machine-to-Machine (Client Credentials Grant - RFC 6749 §4.4)
+
+Cuando la interacción no involucra a un usuario final interactivo (por ejemplo: microservicios internos, workers en segundo plano, tareas programadas / cron jobs o APIs backend que consumen otros servicios), se utiliza el flujo **Client Credentials Grant**.
+
+### 1. Solicitar Token de Servicio (M2M)
+
+Puedes autenticarte mediante encabezado HTTP Basic Auth o enviando las credenciales en el cuerpo de la solicitud:
+
+#### Vía Basic Auth (Recomendada):
+```bash
+curl -X POST https://<TU_DOMINIO_PEAK_AUTH>/oauth/token \
+  -u "TU_CLIENT_ID:TU_CLIENT_SECRET" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials&scope=service:read service:write"
+```
+
+#### Vía Body (JSON o Form URL-Encoded):
+```bash
+curl -X POST https://<TU_DOMINIO_PEAK_AUTH>/oauth/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "grant_type": "client_credentials",
+    "client_id": "TU_CLIENT_ID",
+    "client_secret": "TU_CLIENT_SECRET",
+    "scope": "service:read service:write"
+  }'
+```
+
+### 2. Respuesta de Token (RFC 6749 §4.4.3)
+```json
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InBlYWstYXV0aC1rZXktMSIsInR5cCI6IkpXVCJ9...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "service:read service:write"
+}
+```
+
+> [!NOTE]
+> - El token emitido es un **JWT asimétrico (RS256)** firmado con la clave privada de Peak Auth.
+> - El `sub` (Subject) del token contiene el `client_id` del microservicio o daemon.
+> - El `aud` (Audience) contiene el `client_id` para garantizar el aislamiento entre aplicaciones.
+> - Los scopes solicitados se incluyen en el claim `roles` para control de permisos granular en los endpoints consumidores.
+> - Conforme al estándar RFC 6749 §4.4.3, este flujo no genera ni emite refresh tokens.
+
+---
+
+## Paso 4: Validación y Consumo de Tokens en el Backend
 
 El backend puede validar tokens de dos formas:
 

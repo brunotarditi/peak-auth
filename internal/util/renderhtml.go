@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,7 +14,18 @@ import (
 )
 
 func RenderVerificationEmail(path string, data any) (string, error) {
-	tmpl, err := template.ParseFiles(path)
+	targetPath := path
+	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
+		for _, prefix := range []string{"..", filepath.Join("..", ".."), filepath.Join("..", "..", "..")} {
+			candidate := filepath.Join(prefix, path)
+			if _, err := os.Stat(candidate); err == nil {
+				targetPath = candidate
+				break
+			}
+		}
+	}
+
+	tmpl, err := template.ParseFiles(targetPath)
 	if err != nil {
 		return "", err
 	}

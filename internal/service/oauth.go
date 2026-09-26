@@ -19,6 +19,7 @@ type OAuthService interface {
 	ValidateLogoutRedirect(clientID, redirectURI string) error
 	GenerateAuthorizationCode(userID uint, clientID, redirectURI, codeChallenge, codeChallengeMethod string, mfaCompleted bool) (string, error)
 	ExchangeCodeForToken(clientID, clientSecret, codeStr, redirectURI, codeVerifier string) (uint, bool, error)
+	AuthenticateClientCredentials(clientID, clientSecret string) (*model.Application, error)
 	StartCleanupTask(interval time.Duration)
 	HasValidConsent(userID uint, clientID string) (bool, error)
 	GrantConsent(userID uint, clientID string) error
@@ -296,3 +297,22 @@ func (s *oauthService) GrantConsent(userID uint, clientID string) error {
 
 	return s.oauthRepo.CreateConsent(consent)
 }
+
+// AuthenticateClientCredentials autentica una aplicación mediante su client_id y client_secret (RFC 6749 §4.4).
+func (s *oauthService) AuthenticateClientCredentials(clientID, clientSecret string) (*model.Application, error) {
+	if clientID == "" || clientSecret == "" {
+		return nil, errors.New("client_id y client_secret son requeridos")
+	}
+
+	app, err := s.appRepo.ValidateSecret(clientID, clientSecret)
+	if err != nil {
+		return nil, errors.New("credenciales de cliente inválidas")
+	}
+
+	if !app.IsActive {
+		return nil, errors.New("la aplicación está desactivada")
+	}
+
+	return &app, nil
+}
+

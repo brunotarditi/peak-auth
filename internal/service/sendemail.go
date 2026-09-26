@@ -21,27 +21,8 @@ type ResendProvider struct {
 	From   string
 }
 
-func (p *ResendProvider) Send(subject, toEmail, html string) error {
-	client := resend.NewClient(p.ApiKey)
-	params := &resend.SendEmailRequest{
-		From:    p.From,
-		To:      []string{toEmail},
-		Subject: subject,
-		Html:    html,
-	}
-	_, err := client.Emails.Send(params)
-	return err
-}
-
 // ConsoleProvider solo imprime en consola (Desarrollo local)
 type ConsoleProvider struct{}
-
-func (p *ConsoleProvider) Send(subject, toEmail, html string) error {
-	divider := "================================================================"
-	log.Printf("\n%s\n📧 MOCK EMAIL SENT (LOCAL DEV)\nTo: %s\nSubject: %s\n\n%s\n%s",
-		divider, toEmail, subject, html, divider)
-	return nil
-}
 
 // EmailService maneja la lógica de correos usando un proveedor inyectado
 type EmailService struct {
@@ -73,6 +54,25 @@ func NewEmailService() *EmailService {
 	}
 
 	return &EmailService{Provider: provider}
+}
+
+func (p *ResendProvider) Send(subject, toEmail, html string) error {
+	client := resend.NewClient(p.ApiKey)
+	params := &resend.SendEmailRequest{
+		From:    p.From,
+		To:      []string{toEmail},
+		Subject: subject,
+		Html:    html,
+	}
+	_, err := client.Emails.Send(params)
+	return err
+}
+
+func (p *ConsoleProvider) Send(subject, toEmail, html string) error {
+	divider := "================================================================"
+	log.Printf("\n%s\n📧 MOCK EMAIL SENT (LOCAL DEV)\nTo: %s\nSubject: %s\n\n%s\n%s",
+		divider, toEmail, subject, html, divider)
+	return nil
 }
 
 func (s *EmailService) SendVerificationEmail(toEmail string, token string, appName string) error {
