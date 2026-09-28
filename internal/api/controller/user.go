@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
+	"peak-auth/internal/storage"
 	"peak-auth/internal/util"
 	"strconv"
 	"time"
@@ -15,11 +16,12 @@ import (
 
 type UserController struct {
 	BaseController
-	UserService service.UserService
-	AppService  service.ApplicationService
-	RuleService service.ApplicationRuleService
-	RoleService service.RoleService
-	MfaService  service.MfaService
+	UserService    service.UserService
+	AppService     service.ApplicationService
+	RuleService    service.ApplicationRuleService
+	RoleService    service.RoleService
+	MfaService     service.MfaService
+	StorageService storage.StorageService
 }
 
 // GetResetPassword muestra el formulario de cambio de contraseña
@@ -544,3 +546,66 @@ func (ctrl *UserController) DeleteWebAuthnKey(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Llave de seguridad eliminada exitosamente"})
 }
+
+// PostUploadAvatar procesa la subida de un avatar de perfil para el usuario autenticado.
+func (ctrl *UserController) PostUploadAvatar(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	file, header, err := c.Request.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Debe proporcionar una imagen para el avatar (campo 'avatar')"})
+		return
+	}
+
+	if ctrl.StorageService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Servicio de almacenamiento no disponible"})
+		return
+	}
+
+	avatarURL, err := ctrl.StorageService.Upload(c.Request.Context(), file, header.Filename, storage.FolderAvatars)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := ctrl.UserService.UpdateAvatar(userID, avatarURL); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo actualizar el perfil"})
+		return
+	}
+
+	audit.Event(c, "user.avatar.update", fmt.Sprintf("user=%d", userID))
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"avatar_url": avatarURL,
+		"message":    "Avatar actualizado exitosamente",
+	})
+}
+
+// DeleteAvatar elimina el avatar del usuario autenticado.
+func (ctrl *UserController) DeleteAvatar(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	if err := ctrl.UserService.UpdateAvatar(userID, ""); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo eliminar el avatar"})
+		return
+	}
+
+	audit.Event(c, "user.avatar.delete", fmt.Sprintf("user=%d", userID))
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Avatar eliminado exitosamente",
+	})
+}
+

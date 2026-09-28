@@ -1,0 +1,368 @@
+{{ define "content" }}
+
+<div id="appBrandingContainer" data-app-id="{{ .App.AppID }}" style="display: flex; flex-direction: column; gap: 2rem;">
+    <!-- Top Bar -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <a href="/admin/apps/{{.App.AppID}}" class="peak-btn peak-btn-brand-soft" style="font-size: 0.75rem;">
+            {{ template "icon-arrow-back" }}
+            Volver a {{ .App.Name }}
+        </a>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <form id="resetThemeForm" action="/admin/apps/{{.App.AppID}}/branding/reset" method="POST" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                <button type="button" id="btnResetTheme" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--rose-600);" title="Restablecer tema a valores por defecto de Peak Auth">
+                    <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    Restablecer valores por defecto
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {{ if .Saved }}
+    <div class="alert-success" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; border-radius: var(--radius-xl); background: var(--emerald-50); border: 1px solid var(--emerald-200); color: var(--emerald-800);">
+        <svg style="width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: var(--emerald-600);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span style="font-weight: 600; font-size: 0.875rem;">Configuración de personalización y tema guardada exitosamente.</span>
+    </div>
+    {{ end }}
+
+    <!-- Header info -->
+    <div>
+        <h2 style="font-size: 1.875rem; font-weight: 900; color: var(--text-main); letter-spacing: -0.025em; margin-bottom: 0.5rem;">
+            Personalización de Marca y Tema
+        </h2>
+        <p style="font-weight: 500; color: var(--text-muted); font-size: 0.875rem;">
+            Configura la identidad visual de la pantalla de login OAuth y pantallas de consentimiento para tu app.
+        </p>
+    </div>
+
+    <!-- Split Grid: Form + Live Preview -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 2rem; align-items: start;">
+        
+        <!-- Columna Izquierda: Formulario de Branding -->
+        <div class="peak-card" style="padding: 2rem;">
+            <form id="brandingForm" action="/admin/apps/{{.App.AppID}}/branding" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+
+                <!-- Color Primario de la Marca -->
+                <div class="form-group">
+                    <label class="form-label" style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; display: block;">
+                        Color Primario de la Marca
+                    </label>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Se utiliza para generar los botones, halos de foco y acentos en el flujo OAuth.
+                    </p>
+                    
+                    <!-- Color Picker Controls: Swatch Button + Hex Input -->
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <!-- Hidden native color input, opened programmatically -->
+                        <input type="color" id="primaryColorPicker" value="{{ .PrimaryColor }}" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;">
+
+                        <!-- Modern interactive button with live swatch -->
+                        <button type="button" id="btnOpenColorPicker" class="peak-btn peak-btn-secondary" style="display: flex; align-items: center; gap: 0.625rem; font-size: 0.8125rem; font-weight: 600; padding: 0.5rem 0.875rem;">
+                            <span id="colorSwatchIndicator" style="width: 1.25rem; height: 1.25rem; border-radius: var(--radius-sm); background: {{ .PrimaryColor }}; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 0 2px rgba(0,0,0,0.2); display: inline-block;"></span>
+                            {{ template "icon-palette" }}
+                            <span>Elegir color</span>
+                        </button>
+
+                        <div style="display: flex; align-items: center; gap: 0.375rem;">
+                            <span style="font-size: 0.8125rem; color: var(--text-muted); font-weight: 700;">HEX</span>
+                            <input type="text" id="primaryColorInput" name="primary_color" value="{{ .PrimaryColor }}" maxlength="7" placeholder="#2563EB" class="peak-input" style="font-family: monospace; font-weight: 700; width: 105px; padding: 0.45rem 0.625rem; text-transform: uppercase;">
+                        </div>
+                    </div>
+
+                    <!-- Paleta de colores sugeridos -->
+                    <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color);">
+                        <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">
+                            Colores sugeridos:
+                        </span>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary" data-color="#2563eb" style="font-size: 0.75rem; padding: 0.25rem 0.625rem; display: flex; align-items: center; gap: 0.375rem; border-radius: var(--radius-full);">
+                                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #2563eb;"></span> Peak Blue
+                            </button>
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary" data-color="#059669" style="font-size: 0.75rem; padding: 0.25rem 0.625rem; display: flex; align-items: center; gap: 0.375rem; border-radius: var(--radius-full);">
+                                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #059669;"></span> Emerald
+                            </button>
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary" data-color="#7c3aed" style="font-size: 0.75rem; padding: 0.25rem 0.625rem; display: flex; align-items: center; gap: 0.375rem; border-radius: var(--radius-full);">
+                                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #7c3aed;"></span> Violet
+                            </button>
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary" data-color="#e11d48" style="font-size: 0.75rem; padding: 0.25rem 0.625rem; display: flex; align-items: center; gap: 0.375rem; border-radius: var(--radius-full);">
+                                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #e11d48;"></span> Rose
+                            </button>
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary" data-color="#d97706" style="font-size: 0.75rem; padding: 0.25rem 0.625rem; display: flex; align-items: center; gap: 0.375rem; border-radius: var(--radius-full);">
+                                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #d97706;"></span> Amber
+                            </button>
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary" data-color="#1e293b" style="font-size: 0.75rem; padding: 0.25rem 0.625rem; display: flex; align-items: center; gap: 0.375rem; border-radius: var(--radius-full);">
+                                <span style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #1e293b;"></span> Slate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logo de la Aplicación -->
+                <div class="form-group">
+                    <label class="form-label" style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; display: block;">
+                        Logo de la Aplicación
+                    </label>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Formatos permitidos: PNG, JPG, WebP o SVG (máx. 5 MB).
+                    </p>
+                    
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
+                        <div id="logoPreviewThumb" style="width: 4.5rem; height: 4.5rem; border-radius: var(--radius-xl); border: 1px solid var(--border-color); background: var(--bg-surface-secondary); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0.5rem; flex-shrink: 0; box-shadow: var(--shadow-sm);">
+                            <img src="{{ if .LogoURL }}{{ .LogoURL }}{{ else }}/static/img/logo.svg{{ end }}" id="logoThumbImg" alt="Logo preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                        </div>
+                        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <!-- Hidden native file input -->
+                            <input type="file" id="logoFileInput" name="logo_file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display: none;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                <button type="button" id="btnSelectLogo" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem; padding: 0.5rem 0.875rem;">
+                                    {{ template "icon-upload" }}
+                                    Subir imagen de logo...
+                                </button>
+                                <span id="logoFileName" style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Sin archivo nuevo</span>
+                            </div>
+                            <span id="logoUploadStatus" style="font-size: 0.75rem;"></span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">O ingresa una URL directa de imagen:</label>
+                        <input type="text" id="logoUrlInput" name="logo_url" value="{{ .LogoURL }}" placeholder="https://cdn.tu-dominio.com/logo.png o /static/uploads/..." class="peak-input" style="font-size: 0.875rem;">
+                    </div>
+                </div>
+
+                <!-- Favicon de la Aplicación -->
+                <div class="form-group">
+                    <label class="form-label" style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; display: block;">
+                        Favicon de la Aplicación (Opcional)
+                    </label>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Ícono para la pestaña del navegador (ICO, PNG o SVG, máx. 2 MB).
+                    </p>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
+                        <div id="faviconPreviewThumb" style="width: 3rem; height: 3rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); background: var(--bg-surface-secondary); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0.35rem; flex-shrink: 0; box-shadow: var(--shadow-sm);">
+                            <img src="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}/static/img/favicon.png{{ end }}" id="faviconThumbImg" alt="Favicon preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                        </div>
+                        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <!-- Hidden native file input -->
+                            <input type="file" id="faviconFileInput" name="favicon_file" accept="image/x-icon,image/png,image/svg+xml" style="display: none;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                <button type="button" id="btnSelectFavicon" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem; padding: 0.5rem 0.875rem;">
+                                    {{ template "icon-upload" }}
+                                    Subir favicon...
+                                </button>
+                                <span id="faviconFileName" style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Sin archivo nuevo</span>
+                            </div>
+                            <span id="faviconUploadStatus" style="font-size: 0.75rem;"></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">O ingresa una URL directa de favicon:</label>
+                        <input type="text" id="faviconUrlInput" name="favicon_url" value="{{ .FaviconURL }}" placeholder="https://cdn.tu-dominio.com/favicon.ico o /static/uploads/..." class="peak-input" style="font-size: 0.875rem;">
+                    </div>
+                </div>
+
+                <!-- Textos Personalizados -->
+                <div class="form-group">
+                    <label class="form-label" style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; display: block;">
+                        Título de la Pantalla de Login
+                    </label>
+                    <input type="text" id="customTitleInput" name="custom_title" value="{{ .CustomTitle }}" placeholder="Ej: Iniciar sesión en tu app" maxlength="100" class="peak-input">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Por defecto: "Iniciar sesión"</p>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; display: block;">
+                        Subtítulo descriptivo
+                    </label>
+                    <input type="text" id="customSubtitleInput" name="custom_subtitle" value="{{ .CustomSubtitle }}" placeholder="Ej: Ingresa con tus credenciales de tu app" maxlength="255" class="peak-input">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Por defecto: "Continuar hacia tu app"</p>
+                </div>
+
+                <!-- Enlaces Legales -->
+                <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin: 0;">Enlaces Legales (Opcional)</h3>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.75rem;">URL Términos de Servicio</label>
+                        <input type="text" id="termsUrlInput" name="terms_url" value="{{ .TermsURL }}" placeholder="https://tu-dominio.com/terminos o /terminos" class="peak-input" style="font-size: 0.875rem;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.75rem;">URL Política de Privacidad</label>
+                        <input type="text" id="privacyUrlInput" name="privacy_url" value="{{ .PrivacyURL }}" placeholder="https://tu-dominio.com/privacidad o /privacidad" class="peak-input" style="font-size: 0.875rem;">
+                    </div>
+                </div>
+
+                <!-- Botón Guardar -->
+                <div style="margin-top: 1rem;">
+                    <button type="submit" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 0.875rem; font-weight: 700;">
+                        Guardar cambios de diseño
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Columna Derecha: Live Interactive Preview -->
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);">
+                        Vista Previa en Tiempo Real
+                    </span>
+                    <span class="peak-badge peak-badge-info" style="font-size: 0.625rem;">Interactivo</span>
+                </div>
+                <!-- Preview Theme Mode Toggle Button -->
+                <button type="button" id="previewThemeToggle" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; display: flex; align-items: center; gap: 0.375rem;" title="Alternar tema claro / oscuro en la vista previa">
+                    <span id="previewThemeIcon">☀️</span>
+                    <span id="previewThemeLabel">Probar Modo Claro</span>
+                </button>
+            </div>
+
+            <!-- Preview Frame Container -->
+            <div id="previewContainer" class="preview-theme-dark" style="border-radius: var(--radius-2xl); border: 2px solid var(--border-color); padding: 3rem 1.5rem; transition: background-color 0.3s ease, border-color 0.3s ease; display: flex; justify-content: center; position: relative; overflow: hidden;">
+                
+                <!-- Dynamic Injected Theme CSS for Preview -->
+                <style id="previewDynamicStyles">
+                    {{ .ThemeCSS }}
+                </style>
+
+                <style>
+                    /* Modo Claro Forzado para la Vista Previa (independiente del tema del admin) */
+                    #previewContainer.preview-theme-light {
+                        background-color: #f1f5f9 !important;
+                        border-color: #cbd5e1 !important;
+                    }
+                    #previewContainer.preview-theme-light #previewCard {
+                        background-color: #ffffff !important;
+                        border-color: #e2e8f0 !important;
+                        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+                    }
+                    #previewContainer.preview-theme-light #previewLogoImgBox {
+                        background-color: #f8fafc !important;
+                        border-color: #e2e8f0 !important;
+                    }
+                    #previewContainer.preview-theme-light #previewTitleText {
+                        color: #0f172a !important;
+                    }
+                    #previewContainer.preview-theme-light #previewSubtitleText,
+                    #previewContainer.preview-theme-light #previewLegalLinks a,
+                    #previewContainer.preview-theme-light #previewLegalLinks span,
+                    #previewContainer.preview-theme-light #previewFooterText {
+                        color: #64748b !important;
+                    }
+                    #previewContainer.preview-theme-light .preview-field-label {
+                        color: #0f172a !important;
+                    }
+                    #previewContainer.preview-theme-light .preview-field-input {
+                        background-color: #ffffff !important;
+                        border-color: #cbd5e1 !important;
+                        color: #0f172a !important;
+                    }
+                    #previewContainer.preview-theme-light .auth-blob-1,
+                    #previewContainer.preview-theme-light .auth-blob-2 {
+                        mix-blend-mode: multiply !important;
+                        opacity: 0.65 !important;
+                    }
+
+                    /* Modo Oscuro Forzado para la Vista Previa */
+                    #previewContainer.preview-theme-dark {
+                        background-color: #020617 !important;
+                        border-color: #1e293b !important;
+                    }
+                    #previewContainer.preview-theme-dark #previewCard {
+                        background-color: #0f172a !important;
+                        border-color: #1e293b !important;
+                        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
+                    }
+                    #previewContainer.preview-theme-dark #previewLogoImgBox {
+                        background-color: #1e293b !important;
+                        border-color: #334155 !important;
+                    }
+                    #previewContainer.preview-theme-dark #previewTitleText {
+                        color: #f8fafc !important;
+                    }
+                    #previewContainer.preview-theme-dark #previewSubtitleText,
+                    #previewContainer.preview-theme-dark #previewLegalLinks a,
+                    #previewContainer.preview-theme-dark #previewLegalLinks span,
+                    #previewContainer.preview-theme-dark #previewFooterText {
+                        color: #94a3b8 !important;
+                    }
+                    #previewContainer.preview-theme-dark .preview-field-label {
+                        color: #f8fafc !important;
+                    }
+                    #previewContainer.preview-theme-dark .preview-field-input {
+                        background-color: #1e293b !important;
+                        border-color: #334155 !important;
+                        color: #f8fafc !important;
+                    }
+                    #previewContainer.preview-theme-dark .auth-blob-1,
+                    #previewContainer.preview-theme-dark .auth-blob-2 {
+                        mix-blend-mode: lighten !important;
+                        opacity: 0.35 !important;
+                    }
+                </style>
+
+                <!-- Auth Ambient Shapes Background -->
+                <div class="auth-bg-shapes">
+                    <div class="auth-blob-1"></div>
+                    <div class="auth-blob-2"></div>
+                </div>
+
+                <!-- Mock OAuth Card (Glass Panel) -->
+                <div class="glass-panel" id="previewCard" style="width: 100%; max-width: 400px; padding: 2rem; border-radius: var(--radius-2xl); z-index: 10; position: relative;">
+                    
+                    <!-- Header -->
+                    <div style="text-align: center; margin-bottom: 1.5rem;">
+                        <div id="previewLogoImgBox" style="display: inline-flex; padding: 0.75rem; border-radius: 1rem; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); margin-bottom: 0.75rem;">
+                            <img id="previewLogoImg" src="{{ if .LogoURL }}{{ .LogoURL }}{{ else }}/static/img/logo.svg{{ end }}" alt="Logo Preview" style="width: 2.5rem; height: 2.5rem; object-fit: contain;">
+                        </div>
+                        <h3 id="previewTitleText" style="font-size: 1.25rem; font-weight: 800; margin-bottom: 0.25rem;">
+                            {{ if .CustomTitle }}{{ .CustomTitle }}{{ else }}Iniciar sesión{{ end }}
+                        </h3>
+                        <p id="previewSubtitleText" style="font-size: 0.75rem; font-weight: 500;">
+                            {{ if .CustomSubtitle }}{{ .CustomSubtitle }}{{ else }}Continuar hacia tu app{{ end }}
+                        </p>
+                    </div>
+
+                    <!-- Mock Form -->
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label preview-field-label" style="font-size: 0.75rem;">Correo Electrónico</label>
+                            <input type="email" disabled placeholder="usuario@ejemplo.com" class="peak-input preview-field-input" style="font-size: 0.8125rem; padding: 0.625rem 0.875rem;">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label preview-field-label" style="font-size: 0.75rem;">Contraseña</label>
+                            <input type="password" disabled placeholder="••••••••" class="peak-input preview-field-input" style="font-size: 0.8125rem; padding: 0.625rem 0.875rem;">
+                        </div>
+
+                        <!-- Brand Styled Action Button -->
+                        <button type="button" id="previewActionBtn" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 0.75rem; font-size: 0.875rem; font-weight: 700; margin-top: 0.5rem; pointer-events: none;">
+                            Entrar de forma segura
+                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                        </button>
+                    </div>
+
+                    <!-- Mock Legal Footer -->
+                    <div id="previewLegalLinks" style="text-align: center; margin-top: 1.25rem; display: flex; justify-content: center; gap: 0.75rem; font-size: 0.6875rem;">
+                        <a href="#" id="previewTermsLink" style="text-decoration: underline; {{ if not .TermsURL }}display: none;{{ end }}">Términos</a>
+                        <span id="previewLegalDot" style="{{ if or (not .TermsURL) (not .PrivacyURL) }}display: none;{{ end }}">•</span>
+                        <a href="#" id="previewPrivacyLink" style="text-decoration: underline; {{ if not .PrivacyURL }}display: none;{{ end }}">Privacidad</a>
+                    </div>
+
+                    <p id="previewFooterText" style="text-align: center; font-size: 0.6875rem; font-weight: 600; margin-top: 1rem;">
+                        Secured by Peak <span style="color: var(--brand-600); font-weight: 700;">Auth</span> SSO
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{{ end }}
+
+{{ define "scripts" }}
+<script src="/static/js/app_branding.js"></script>
+{{ end }}
+
+{{ template "base_admin" . }}
+

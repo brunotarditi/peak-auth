@@ -65,6 +65,7 @@ func getTestDB(t *testing.T) *gorm.DB {
 		&model.User{},
 		&model.Profile{},
 		&model.UserApplicationRole{},
+		&model.ApplicationTheme{},
 	)
 
 	return db

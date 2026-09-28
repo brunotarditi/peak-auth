@@ -41,4 +41,10 @@ AGENTS.md
 node_modules
 /web/static/css/output.css
 /web/static/js/dist
+/web/static/uploads/*
+/web/static/uploads/*/*
+!/web/static/uploads/.gitkeep
+!/web/static/uploads/*/.gitkeep
+
+
 

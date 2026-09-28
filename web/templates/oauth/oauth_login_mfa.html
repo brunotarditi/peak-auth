@@ -5,10 +5,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificación de Seguridad - Peak Auth</title>
-    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+    <title>Verificación de Seguridad{{ if .AppName }} - {{ .AppName }}{{ else }} - Peak Auth{{ end }}</title>
+    <link rel="icon" type="image/png" href="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}{{ asset "/static/img/favicon.png" }}{{ end }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
+    {{ if .ThemeCSS }}
+    <style>{{ .ThemeCSS }}</style>
+    {{ end }}
     <script src="{{ js "config.js" }}"></script>
     <script src="/static/js/modal.js"></script>
     <script src="/static/js/common.js"></script>
@@ -23,10 +26,10 @@
     <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
         <div style="text-align: center; margin-bottom: 2rem;">
             <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; border-radius: 1rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 1rem; border: 1px solid var(--border-light);">
-                <img src="/static/img/logo.svg" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
+                <img src="{{ if .AppLogo }}{{ .AppLogo }}{{ else }}/static/img/logo.svg{{ end }}" alt="{{ if .AppName }}{{ .AppName }}{{ else }}Peak Auth{{ end }}" style="width: 2.5rem; height: 2.5rem; object-fit: contain;">
             </div>
             <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Verificación</h1>
-            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Confirma tu identidad para continuar</p>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Confirma tu identidad para continuar{{ if .AppName }} hacia {{ .AppName }}{{ end }}</p>
         </div>
 
         <div class="glass-panel" style="padding: 2.5rem 2rem;">

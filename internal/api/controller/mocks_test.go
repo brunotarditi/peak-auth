@@ -65,6 +65,17 @@ func (m *mockAppService) GetDashboardStats() ([]response.AppStatsResponse, error
 func (m *mockAppService) GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error) {
 	return nil, nil
 }
+func (m *mockAppService) GetAppTheme(appID string) (*model.ApplicationTheme, error) {
+	return m.app.Theme, nil
+}
+func (m *mockAppService) UpdateAppTheme(appID string, theme *model.ApplicationTheme) error {
+	m.app.Theme = theme
+	return nil
+}
+func (m *mockAppService) ResetAppTheme(appID string) error {
+	m.app.Theme = nil
+	return nil
+}
 
 type mockUserServiceForStepUp struct {
 	service.UserService

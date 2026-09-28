@@ -36,6 +36,7 @@ type UserService interface {
 	CanRequestPasswordReset(userID uint) (bool, error)
 	Refresh(token string, clientInfo ...string) (response.TokenResponse, error)
 	UnlockUser(userID uint) error
+	UpdateAvatar(userID uint, avatarURL string) error
 }
 
 type userService struct {
@@ -1206,4 +1207,12 @@ func tokenProfileFromUser(u *model.User) auth.TokenProfile {
 		Picture: u.Profile.AvatarURL,
 	}
 }
+
+func (s *userService) UpdateAvatar(userID uint, avatarURL string) error {
+	if userID == 0 {
+		return errors.New("ID de usuario inválido")
+	}
+	return s.userRepo.UpdateAvatar(userID, avatarURL)
+}
+
 

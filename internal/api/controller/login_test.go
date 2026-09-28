@@ -201,6 +201,9 @@ func (m *mockUserServiceForLogin) Refresh(token string, clientInfo ...string) (r
 func (m *mockUserServiceForLogin) UnlockUser(userID uint) error {
 	return nil
 }
+func (m *mockUserServiceForLogin) UpdateAvatar(userID uint, avatarURL string) error {
+	return nil
+}
 
 func TestPostLoginForm_PasswordExpiredRedirectsToReset(t *testing.T) {
 	gin.SetMode(gin.TestMode)

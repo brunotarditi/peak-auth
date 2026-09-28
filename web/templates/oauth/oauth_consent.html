@@ -5,9 +5,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autorizar Aplicación - Peak Auth</title>
-    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+    <title>Autorizar {{ if .ClientName }}{{ .ClientName }}{{ else }}Aplicación{{ end }} - Peak Auth</title>
+    <link rel="icon" type="image/png" href="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}{{ asset "/static/img/favicon.png" }}{{ end }}">
     <link rel="stylesheet" href="/static/css/main.css">
+    {{ if .ThemeCSS }}
+    <style>{{ .ThemeCSS }}</style>
+    {{ end }}
     <script src="{{ js "config.js" }}"></script>
     <script src="{{ js "common.js" }}"></script>
 </head>
@@ -21,10 +24,10 @@
     <div class="auth-container">
         <div style="text-align: center; margin-bottom: 2rem;">
             <div class="navbar-logo-wrapper" style="display: inline-flex; padding: 0.75rem; border-radius: 1rem; background: var(--bg-surface); box-shadow: var(--shadow-md); border: 1px solid var(--border-color); margin-bottom: 1rem;">
-                <img src="/static/img/logo.svg" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
+                <img src="{{ if .AppLogo }}{{ .AppLogo }}{{ else }}/static/img/logo.svg{{ end }}" alt="{{ if .ClientName }}{{ .ClientName }}{{ else }}Peak Auth{{ end }}" style="width: 2.5rem; height: 2.5rem; object-fit: contain;">
             </div>
             <h1 class="peak-card-title" style="font-size: 1.875rem;">Autorizar Aplicación</h1>
-            <p class="peak-card-subtitle" style="font-size: 0.875rem; font-weight: 500;">Revisa los permisos solicitados</p>
+            <p class="peak-card-subtitle" style="font-size: 0.875rem; font-weight: 500;">Revisa los permisos solicitados por {{ if .ClientName }}{{ .ClientName }}{{ else }}la aplicación{{ end }}</p>
         </div>
 
         <!-- Tarjeta de Consentimiento -->

@@ -25,6 +25,9 @@ type ApplicationService interface {
 	RevokeUserFromApp(userID, appID uint) error
 	TransferOwnership(appID string, currentUserID, newOwnerID uint) error
 	UpdateUserAccessTime(appID string, targetUserID uint, startsAt, expiresAt *time.Time) error
+	GetAppTheme(appID string) (*model.ApplicationTheme, error)
+	UpdateAppTheme(appID string, theme *model.ApplicationTheme) error
+	ResetAppTheme(appID string) error
 }
 
 type applicationService struct {
@@ -36,10 +39,15 @@ type applicationService struct {
 	emailService     *EmailService
 	passRepo         repo.PasswordResetRepository
 	refreshTokenRepo repo.RefreshTokenRepository
+	themeRepo        repo.ApplicationThemeRepository
 }
 
-func NewApplicationService(repo repo.ApplicationRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, txManager repo.TransactionManager, emailService *EmailService, passRepo repo.PasswordResetRepository, refreshTokenRepo repo.RefreshTokenRepository) ApplicationService {
-	return &applicationService{repo: repo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo, refreshTokenRepo: refreshTokenRepo}
+func NewApplicationService(appRepo repo.ApplicationRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, txManager repo.TransactionManager, emailService *EmailService, passRepo repo.PasswordResetRepository, refreshTokenRepo repo.RefreshTokenRepository, themeRepo ...repo.ApplicationThemeRepository) ApplicationService {
+	var tr repo.ApplicationThemeRepository
+	if len(themeRepo) > 0 {
+		tr = themeRepo[0]
+	}
+	return &applicationService{repo: appRepo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo, refreshTokenRepo: refreshTokenRepo, themeRepo: tr}
 }
 
 func (s *applicationService) GetAppDetails(publicAppID string) (model.Application, error) {
@@ -426,3 +434,44 @@ func (s *applicationService) UpdateUserAccessTime(appID string, targetUserID uin
 
 	return nil
 }
+
+func (s *applicationService) GetAppTheme(publicAppID string) (*model.ApplicationTheme, error) {
+	app, err := s.repo.FindByAppID(publicAppID)
+	if err != nil {
+		return nil, err
+	}
+	if s.themeRepo == nil {
+		return nil, nil
+	}
+	return s.themeRepo.FindByAppID(app.ID)
+}
+
+func (s *applicationService) UpdateAppTheme(publicAppID string, theme *model.ApplicationTheme) error {
+	app, err := s.repo.FindByAppID(publicAppID)
+	if err != nil {
+		return err
+	}
+	if theme == nil {
+		return fmt.Errorf("tema inválido")
+	}
+	theme.ApplicationID = app.ID
+	if theme.PrimaryColor != "" {
+		theme.PrimaryColor = util.SanitizeHexColor(theme.PrimaryColor)
+	}
+	if s.themeRepo == nil {
+		return fmt.Errorf("repositorio de temas no disponible")
+	}
+	return s.themeRepo.Upsert(theme)
+}
+
+func (s *applicationService) ResetAppTheme(publicAppID string) error {
+	app, err := s.repo.FindByAppID(publicAppID)
+	if err != nil {
+		return err
+	}
+	if s.themeRepo == nil {
+		return nil
+	}
+	return s.themeRepo.DeleteByAppID(app.ID)
+}
+

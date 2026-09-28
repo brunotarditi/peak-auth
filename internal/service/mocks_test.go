@@ -232,6 +232,12 @@ func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) e
 	return nil
 }
 func (m *mockUserRepo) LockUserForUpdate(userID uint) error { return nil }
+func (m *mockUserRepo) UpdateAvatar(userID uint, avatarURL string) error {
+	if m.user.ID == userID {
+		m.user.Profile.AvatarURL = avatarURL
+	}
+	return m.err
+}
 
 type mockUARRepo struct {
 	roles                map[uint][]string

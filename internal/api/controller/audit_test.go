@@ -55,6 +55,15 @@ func (m *mockAuditAppService) GetDashboardStats() ([]response.AppStatsResponse, 
 func (m *mockAuditAppService) GetDashboardStatsForUser(userID uint) ([]response.AppStatsResponse, error) {
 	return nil, nil
 }
+func (m *mockAuditAppService) GetAppTheme(appID string) (*model.ApplicationTheme, error) {
+	return nil, nil
+}
+func (m *mockAuditAppService) UpdateAppTheme(appID string, theme *model.ApplicationTheme) error {
+	return nil
+}
+func (m *mockAuditAppService) ResetAppTheme(appID string) error {
+	return nil
+}
 
 type mockAuditServiceForCtrl struct {
 	pageRes *response.AuditLogPageResponse

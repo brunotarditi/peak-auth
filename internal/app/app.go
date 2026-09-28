@@ -5,6 +5,7 @@ import (
 	"os"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
+	"peak-auth/internal/storage"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
 	"time"
@@ -13,19 +14,21 @@ import (
 )
 
 type App struct {
-	DB           *gorm.DB
-	UserService  service.UserService
-	AppService   service.ApplicationService
-	SetupService service.SetupService
-	RuleService  service.ApplicationRuleService
-	UserRepo     repo.UserRepository
-	UarRepo      repo.UserApplicationRoleRepository
-	AppRepo      repo.ApplicationRepository
-	TokenManager *auth.JWTManager
-	RoleService  service.RoleService
-	EmailService *service.EmailService
-	MfaService   service.MfaService
-	OAuthService service.OAuthService
+	DB             *gorm.DB
+	UserService    service.UserService
+	AppService     service.ApplicationService
+	SetupService   service.SetupService
+	RuleService    service.ApplicationRuleService
+	UserRepo       repo.UserRepository
+	UarRepo        repo.UserApplicationRoleRepository
+	AppRepo        repo.ApplicationRepository
+	ThemeRepo      repo.ApplicationThemeRepository
+	StorageService storage.StorageService
+	TokenManager   *auth.JWTManager
+	RoleService    service.RoleService
+	EmailService   *service.EmailService
+	MfaService     service.MfaService
+	OAuthService   service.OAuthService
 	HealthService  service.HealthService
 	SessionService service.SessionService
 	AuditRepo      repo.AuditRepository
@@ -45,6 +48,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	roleRepo := repo.NewRoleRepositoryRepository(db)
 	uarRepo := repo.NewUserApplicationRoleRepository(db)
 	appRepo := repo.NewApplicationRepository(db)
+	themeRepo := repo.NewApplicationThemeRepository(db)
 	ruleRepo := repo.NewApplicationRuleRepository(db)
 	emailRepo := repo.NewEmailVerificationRepositoryRepository(db)
 	passRepo := repo.NewPasswordResetRepository(db)
@@ -57,6 +61,12 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	healthRepo := repo.NewHealthRepository(db)
 	auditRepo := repo.NewAuditRepository(db)
 
+	// Inicializar Storage Service para uploads (logos, avatares, favicons)
+	storageService, err := storage.NewLocalStorageService("")
+	if err != nil {
+		log.Fatalf("Error crítico al inicializar servicio de almacenamiento: %v", err)
+	}
+
 	// Initialize MFA attempt tracking with database backend
 	service.InitMfaAttemptTracking(mfaAttemptRepo)
 
@@ -64,7 +74,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	ruleService := service.NewApplicationRuleService(ruleRepo, uarRepo, roleRepo, appRepo)
 
 	emailService := service.NewEmailService()
-	appService := service.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo, refreshRepo)
+	appService := service.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo, refreshRepo, themeRepo)
 	mfaService := service.NewMfaService(mfaRepo, userRepo)
 	userService := service.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo, emailService, refreshRepo, txManager)
 	setupService := service.NewSetupService(setupRepo, setupToken, txManager)
@@ -87,6 +97,8 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 		UserRepo:       userRepo,
 		UarRepo:        uarRepo,
 		AppRepo:        appRepo,
+		ThemeRepo:      themeRepo,
+		StorageService: storageService,
 		RoleService:    roleService,
 		EmailService:   emailService,
 		MfaService:     mfaService,

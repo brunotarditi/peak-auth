@@ -185,6 +185,7 @@ func (m *mockUserRepoForMfa) VerifyUserEmailByToken(tokenHash []byte) (uint, uin
 	return 0, 0, nil
 }
 func (m *mockUserRepoForMfa) LockUserForUpdate(userID uint) error { return nil }
+func (m *mockUserRepoForMfa) UpdateAvatar(userID uint, avatarURL string) error { return nil }
 
 // --- Tests WebAuthn / Multi-Key ---
 

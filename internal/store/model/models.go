@@ -13,9 +13,23 @@ type Application struct {
 	AppID       string `gorm:"type:varchar(255);uniqueIndex;not null" json:"app_id"`
 	SecretKey   string `gorm:"type:varchar(255);not null" json:"-"`
 	RedirectURL string `gorm:"type:varchar(255)" json:"redirect_url"`
-	IsActive    bool   `gorm:"default:true" json:"is_active"`
-	OwnerID     *uint  `gorm:"index" json:"owner_id"`
-	Owner       *User  `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
+	IsActive    bool              `gorm:"default:true" json:"is_active"`
+	OwnerID     *uint             `gorm:"index" json:"owner_id"`
+	Owner       *User             `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
+	Theme       *ApplicationTheme `gorm:"foreignKey:ApplicationID" json:"theme,omitempty"`
+}
+
+type ApplicationTheme struct {
+	gorm.Model
+	ApplicationID  uint        `gorm:"uniqueIndex;not null" json:"application_id"`
+	Application    Application `gorm:"foreignKey:ApplicationID" json:"-"`
+	LogoURL        string      `gorm:"type:varchar(512)" json:"logo_url"`
+	FaviconURL     string      `gorm:"type:varchar(512)" json:"favicon_url"`
+	PrimaryColor   string      `gorm:"type:varchar(20)" json:"primary_color"` // ej: "#2563eb"
+	CustomTitle    string      `gorm:"type:varchar(100)" json:"custom_title"`
+	CustomSubtitle string      `gorm:"type:varchar(255)" json:"custom_subtitle"`
+	TermsURL       string      `gorm:"type:varchar(512)" json:"terms_url"`
+	PrivacyURL     string      `gorm:"type:varchar(512)" json:"privacy_url"`
 }
 
 type ApplicationRules struct {

@@ -3,9 +3,12 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
+	"peak-auth/internal/storage"
+	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
 	"strconv"
 	"strings"
@@ -15,10 +18,11 @@ import (
 
 type ApplicationController struct {
 	BaseController
-	AppService  service.ApplicationService
-	UserService service.UserService
-	RuleService service.ApplicationRuleService
-	RoleService service.RoleService
+	AppService     service.ApplicationService
+	UserService    service.UserService
+	RuleService    service.ApplicationRuleService
+	RoleService    service.RoleService
+	StorageService storage.StorageService
 }
 
 // GetFormApp renderiza el formulario de creación de aplicación
@@ -399,3 +403,287 @@ func (ctrl *ApplicationController) GetAppRules(c *gin.Context) {
 	id := c.Param("id")
 	c.Redirect(http.StatusMovedPermanently, "/admin/apps/"+id)
 }
+
+// GetAppBranding renderiza la pantalla de personalización de marca y temas de una aplicación.
+func (ctrl *ApplicationController) GetAppBranding(c *gin.Context) {
+	id := c.Param("id")
+
+	if id == util.AppIdPeakAuth {
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "La aplicación raíz Peak Auth es el proveedor de identidad del sistema y no admite personalización de temas.")
+		return
+	}
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		ctrl.renderError(c, http.StatusNotFound, "No Encontrada", "La aplicación solicitada no existe.")
+		return
+	}
+
+	isRootVal, _ := c.Get("is_root")
+	isRoot, _ := isRootVal.(bool)
+
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+	isOwner := app.OwnerID != nil && *app.OwnerID == userID
+
+	if !isRoot && !isOwner {
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "Solo el propietario (OWNER) o un administrador ROOT pueden personalizar la apariencia de la aplicación.")
+		return
+	}
+
+	theme, _ := ctrl.AppService.GetAppTheme(id)
+
+	primaryColor := "#2563eb"
+	logoURL := ""
+	faviconURL := ""
+	customTitle := ""
+	customSubtitle := ""
+	termsURL := ""
+	privacyURL := ""
+
+	if theme != nil {
+		if theme.PrimaryColor != "" {
+			primaryColor = theme.PrimaryColor
+		}
+		logoURL = theme.LogoURL
+		faviconURL = theme.FaviconURL
+		customTitle = theme.CustomTitle
+		customSubtitle = theme.CustomSubtitle
+		termsURL = theme.TermsURL
+		privacyURL = theme.PrivacyURL
+	}
+
+	themeCSS := util.GenerateThemeCSS(primaryColor)
+
+	ctrl.renderAdmin(c, "app_branding.html", gin.H{
+		"App":            app,
+		"Theme":          theme,
+		"PrimaryColor":   primaryColor,
+		"LogoURL":        logoURL,
+		"FaviconURL":     faviconURL,
+		"CustomTitle":    customTitle,
+		"CustomSubtitle": customSubtitle,
+		"TermsURL":       termsURL,
+		"PrivacyURL":     privacyURL,
+		"ThemeCSS":       template.CSS(themeCSS),
+		"Saved":          c.Query("saved") == "true",
+		"Breadcrumbs": []gin.H{
+			{"Label": "Apps", "URL": "/admin"},
+			{"Label": app.Name, "URL": "/admin/apps/" + id},
+			{"Label": "Personalización y Branding"},
+		},
+		"Title": "Personalización - " + app.Name,
+	})
+}
+
+// PostAppBranding guarda las preferencias de marca y temas de una aplicación.
+func (ctrl *ApplicationController) PostAppBranding(c *gin.Context) {
+	id := c.Param("id")
+
+	if id == util.AppIdPeakAuth {
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "La aplicación raíz Peak Auth no admite personalización de temas.")
+		return
+	}
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		ctrl.renderError(c, http.StatusNotFound, "No Encontrada", "La aplicación solicitada no existe.")
+		return
+	}
+
+	isRootVal, _ := c.Get("is_root")
+	isRoot, _ := isRootVal.(bool)
+
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+	isOwner := app.OwnerID != nil && *app.OwnerID == userID
+
+	if !isRoot && !isOwner {
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "Solo el propietario (OWNER) o un administrador ROOT pueden personalizar la apariencia de la aplicación.")
+		return
+	}
+
+	primaryColor := util.SanitizeHexColor(c.PostForm("primary_color"))
+	if primaryColor == "" {
+		primaryColor = "#2563eb"
+	}
+
+	customTitle := strings.TrimSpace(c.PostForm("custom_title"))
+	customSubtitle := strings.TrimSpace(c.PostForm("custom_subtitle"))
+	termsURL := strings.TrimSpace(c.PostForm("terms_url"))
+	privacyURL := strings.TrimSpace(c.PostForm("privacy_url"))
+	logoURL := strings.TrimSpace(c.PostForm("logo_url"))
+	faviconURL := strings.TrimSpace(c.PostForm("favicon_url"))
+
+	// Manejo opcional de subida directa de archivos en el formulario
+	if file, header, err := c.Request.FormFile("logo_file"); err == nil && ctrl.StorageService != nil {
+		if uploadedURL, err := ctrl.StorageService.Upload(c.Request.Context(), file, header.Filename, storage.FolderLogos); err == nil {
+			logoURL = uploadedURL
+		}
+	}
+
+	if file, header, err := c.Request.FormFile("favicon_file"); err == nil && ctrl.StorageService != nil {
+		if uploadedURL, err := ctrl.StorageService.Upload(c.Request.Context(), file, header.Filename, storage.FolderFavicon); err == nil {
+			faviconURL = uploadedURL
+		}
+	}
+
+	theme := model.ApplicationTheme{
+		PrimaryColor:   primaryColor,
+		CustomTitle:    customTitle,
+		CustomSubtitle: customSubtitle,
+		TermsURL:       termsURL,
+		PrivacyURL:     privacyURL,
+		LogoURL:        logoURL,
+		FaviconURL:     faviconURL,
+	}
+
+	if err := ctrl.AppService.UpdateAppTheme(id, &theme); err != nil {
+		ctrl.internalErrorHTML(c, "PostAppBranding", err, "No se pudo guardar la configuración de diseño.")
+		return
+	}
+
+	audit.Event(c, "app.branding.update", fmt.Sprintf("app=%s color=%s", id, primaryColor))
+
+	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id+"/branding?saved=true")
+}
+
+// PostAppThemeReset restablece el tema a los valores por defecto del sistema.
+func (ctrl *ApplicationController) PostAppThemeReset(c *gin.Context) {
+	id := c.Param("id")
+
+	if id == util.AppIdPeakAuth {
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "La aplicación raíz Peak Auth no admite personalización de temas.")
+		return
+	}
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		ctrl.renderError(c, http.StatusNotFound, "No Encontrada", "La aplicación solicitada no existe.")
+		return
+	}
+
+	isRootVal, _ := c.Get("is_root")
+	isRoot, _ := isRootVal.(bool)
+
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+	isOwner := app.OwnerID != nil && *app.OwnerID == userID
+
+	if !isRoot && !isOwner {
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "Solo el propietario (OWNER) o un administrador ROOT pueden restablecer el tema.")
+		return
+	}
+
+	if err := ctrl.AppService.ResetAppTheme(id); err != nil {
+		ctrl.internalErrorHTML(c, "PostAppThemeReset", err, "No se pudo restablecer el tema.")
+		return
+	}
+
+	audit.Event(c, "app.branding.reset", "app="+id)
+
+	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id+"/branding")
+}
+
+// PostAppUploadLogo procesa la subida de un logo mediante AJAX.
+func (ctrl *ApplicationController) PostAppUploadLogo(c *gin.Context) {
+	id := c.Param("id")
+
+	if id == util.AppIdPeakAuth {
+		c.JSON(http.StatusForbidden, gin.H{"error": "La aplicación raíz Peak Auth no admite personalización de temas"})
+		return
+	}
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aplicación no encontrada"})
+		return
+	}
+
+	isRootVal, _ := c.Get("is_root")
+	isRoot, _ := isRootVal.(bool)
+
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+	isOwner := app.OwnerID != nil && *app.OwnerID == userID
+
+	if !isRoot && !isOwner {
+		c.JSON(http.StatusForbidden, gin.H{"error": "No autorizado"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("logo")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Debe seleccionar un archivo de imagen"})
+		return
+	}
+
+	if ctrl.StorageService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Servicio de almacenamiento no disponible"})
+		return
+	}
+
+	url, err := ctrl.StorageService.Upload(c.Request.Context(), file, header.Filename, storage.FolderLogos)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"url":     url,
+		"message": "Logo subido exitosamente",
+	})
+}
+
+// PostAppUploadFavicon procesa la subida de un favicon mediante AJAX.
+func (ctrl *ApplicationController) PostAppUploadFavicon(c *gin.Context) {
+	id := c.Param("id")
+
+	if id == util.AppIdPeakAuth {
+		c.JSON(http.StatusForbidden, gin.H{"error": "La aplicación raíz Peak Auth no admite personalización de temas"})
+		return
+	}
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aplicación no encontrada"})
+		return
+	}
+
+	isRootVal, _ := c.Get("is_root")
+	isRoot, _ := isRootVal.(bool)
+
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+	isOwner := app.OwnerID != nil && *app.OwnerID == userID
+
+	if !isRoot && !isOwner {
+		c.JSON(http.StatusForbidden, gin.H{"error": "No autorizado"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("favicon")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Debe seleccionar un archivo de icono"})
+		return
+	}
+
+	if ctrl.StorageService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Servicio de almacenamiento no disponible"})
+		return
+	}
+
+	url, err := ctrl.StorageService.Upload(c.Request.Context(), file, header.Filename, storage.FolderFavicon)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"url":     url,
+		"message": "Favicon subido exitosamente",
+	})
+}
+

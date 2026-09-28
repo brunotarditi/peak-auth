@@ -17,6 +17,7 @@ type UserRepository interface {
 	FindById(ID uint) (model.User, error)
 	UpdateColumn(column string, value interface{}, id uint) error
 	LockUserForUpdate(userID uint) error
+	UpdateAvatar(userID uint, avatarURL string) error
 }
 
 type userRepository struct {
@@ -148,3 +149,14 @@ func (r *userRepository) LockUserForUpdate(userID uint) error {
 	var user model.User
 	return r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, userID).Error
 }
+
+// UpdateAvatar actualiza la URL del avatar en el perfil del usuario.
+func (r *userRepository) UpdateAvatar(userID uint, avatarURL string) error {
+	var count int64
+	r.db.Model(&model.Profile{}).Where("user_id = ?", userID).Count(&count)
+	if count == 0 {
+		return r.db.Create(&model.Profile{UserID: userID, AvatarURL: avatarURL}).Error
+	}
+	return r.db.Model(&model.Profile{}).Where("user_id = ?", userID).Update("avatar_url", avatarURL).Error
+}
+

@@ -23,11 +23,12 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 
 	//Inicializamos los controladores con las dependencias necesarias
 	userCtrl := &controller.UserController{
-		AppService:  app.AppService,
-		UserService: app.UserService,
-		RuleService: app.RuleService,
-		RoleService: app.RoleService,
-		MfaService:  app.MfaService,
+		AppService:     app.AppService,
+		UserService:    app.UserService,
+		RuleService:    app.RuleService,
+		RoleService:    app.RoleService,
+		MfaService:     app.MfaService,
+		StorageService: app.StorageService,
 	}
 
 	setupCtrl := &controller.SetupController{
@@ -41,10 +42,11 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	}
 
 	appCtrl := &controller.ApplicationController{
-		AppService:  app.AppService,
-		UserService: app.UserService,
-		RuleService: app.RuleService,
-		RoleService: app.RoleService,
+		AppService:     app.AppService,
+		UserService:    app.UserService,
+		RuleService:    app.RuleService,
+		RoleService:    app.RoleService,
+		StorageService: app.StorageService,
 	}
 
 	loginCtrl := &controller.LoginController{
@@ -193,7 +195,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// API V1 Protegida (MFA configuration)
 	// ============================================================================
 	apiPrivate := r.Group("/api/v1")
-	apiPrivate.Use(middleware.RequestBodyLimitMiddleware(1024 * 1024))
+	apiPrivate.Use(middleware.RequestBodyLimitMiddleware(4 * 1024 * 1024))
 	apiPrivate.Use(middleware.CORSMiddleware())
 	apiPrivate.Use(middleware.AuthMiddleware(app.TokenManager, app.UserRepo))
 	{
@@ -205,6 +207,10 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		apiPrivate.DELETE("/mfa/webauthn/credentials/:id", mfaSetupLimiter, userCtrl.DeleteWebAuthnKey)
 		apiPrivate.POST("/mfa/totp/disable", mfaSetupLimiter, userCtrl.DisableMFA)
 		apiPrivate.GET("/mfa/status", userCtrl.GetMfaStatus)
+
+		// Perfil de Usuario y Avatar
+		apiPrivate.POST("/user/avatar", userCtrl.PostUploadAvatar)
+		apiPrivate.DELETE("/user/avatar", userCtrl.DeleteAvatar)
 
 		// Gestión de Sesiones y Aplicaciones Autorizadas (Fase 3)
 		apiPrivate.GET("/user/sessions", sessionCtrl.ListSessions)
@@ -296,6 +302,13 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			// Auditoría contextual de la aplicación
 			apps.GET("/audit", auditCtrl.GetAppAuditPage)
 			apps.GET("/audit/:log_id", auditCtrl.GetAppAuditDetail)
+
+			// Personalización y Temas (Branding)
+			apps.GET("/branding", appCtrl.GetAppBranding)
+			apps.POST("/branding", middleware.RequestBodyLimitMiddleware(8*1024*1024), appCtrl.PostAppBranding)
+			apps.POST("/branding/reset", appCtrl.PostAppThemeReset)
+			apps.POST("/branding/upload-logo", middleware.RequestBodyLimitMiddleware(6*1024*1024), appCtrl.PostAppUploadLogo)
+			apps.POST("/branding/upload-favicon", middleware.RequestBodyLimitMiddleware(3*1024*1024), appCtrl.PostAppUploadFavicon)
 		}
 	}
 

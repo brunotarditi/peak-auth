@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/url"
 	"peak-auth/internal/api/request"
@@ -277,6 +278,41 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 	}
 }
 
+func (c *OAuthController) getThemeData(clientID string) gin.H {
+	data := gin.H{
+		"ThemeCSS":       template.CSS(""),
+		"AppName":        clientID,
+		"AppDescription": "",
+		"AppLogo":        "",
+		"FaviconURL":     "",
+		"CustomTitle":    "",
+		"CustomSubtitle": "",
+		"TermsURL":       "",
+		"PrivacyURL":     "",
+	}
+	if c.AppService == nil || clientID == "" {
+		return data
+	}
+	app, err := c.AppService.GetAppDetails(clientID)
+	if err != nil {
+		return data
+	}
+	data["AppName"] = app.Name
+	data["AppDescription"] = app.Description
+	if app.Theme != nil {
+		if app.Theme.PrimaryColor != "" {
+			data["ThemeCSS"] = template.CSS(util.GenerateThemeCSS(app.Theme.PrimaryColor))
+		}
+		data["AppLogo"] = app.Theme.LogoURL
+		data["FaviconURL"] = app.Theme.FaviconURL
+		data["CustomTitle"] = app.Theme.CustomTitle
+		data["CustomSubtitle"] = app.Theme.CustomSubtitle
+		data["TermsURL"] = app.Theme.TermsURL
+		data["PrivacyURL"] = app.Theme.PrivacyURL
+	}
+	return data
+}
+
 // GetPublicLogin renderiza la vista pública de login para el flujo OAuth2
 func (c *OAuthController) GetPublicLogin(ctx *gin.Context) {
 	clientID := ctx.Query("client_id")
@@ -296,7 +332,8 @@ func (c *OAuthController) GetPublicLogin(ctx *gin.Context) {
 	}
 
 	csrf, _ := ctx.Get("csrf_token")
-	ctx.HTML(http.StatusOK, "oauth_login.html", gin.H{
+	themeData := c.getThemeData(clientID)
+	viewData := gin.H{
 		"ClientID":            clientID,
 		"RedirectURI":         redirectURI,
 		"State":               state,
@@ -304,7 +341,11 @@ func (c *OAuthController) GetPublicLogin(ctx *gin.Context) {
 		"CodeChallengeMethod": codeChallengeMethod,
 		"CSRFToken":           csrf,
 		"Error":               ctx.Query("error"),
-	})
+	}
+	for k, v := range themeData {
+		viewData[k] = v
+	}
+	ctx.HTML(http.StatusOK, "oauth_login.html", viewData)
 }
 
 // PostPublicLogin procesa las credenciales públicas de login
@@ -430,13 +471,19 @@ func (c *OAuthController) GetPublicLoginMfa(ctx *gin.Context) {
 	}
 
 	csrf, _ := ctx.Get("csrf_token")
-	ctx.HTML(http.StatusOK, "oauth_login_mfa.html", gin.H{
+	clientID := ctx.Query("client_id")
+	themeData := c.getThemeData(clientID)
+	viewData := gin.H{
 		"MfaToken":    mfaToken,
-		"ClientID":    ctx.Query("client_id"),
+		"ClientID":    clientID,
 		"RedirectURI": ctx.Query("redirect_uri"),
 		"State":       ctx.Query("state"),
 		"CSRFToken":   csrf,
-	})
+	}
+	for k, v := range themeData {
+		viewData[k] = v
+	}
+	ctx.HTML(http.StatusOK, "oauth_login_mfa.html", viewData)
 }
 
 // GetPublicLoginMfaSetup renderiza la vista de setup MFA forzoso pública
@@ -459,13 +506,19 @@ func (c *OAuthController) GetPublicLoginMfaSetup(ctx *gin.Context) {
 	}
 
 	csrf, _ := ctx.Get("csrf_token")
-	ctx.HTML(http.StatusOK, "oauth_login_mfa_setup.html", gin.H{
+	clientID := ctx.Query("client_id")
+	themeData := c.getThemeData(clientID)
+	viewData := gin.H{
 		"MfaToken":    mfaToken,
-		"ClientID":    ctx.Query("client_id"),
+		"ClientID":    clientID,
 		"RedirectURI": ctx.Query("redirect_uri"),
 		"State":       ctx.Query("state"),
 		"CSRFToken":   csrf,
-	})
+	}
+	for k, v := range themeData {
+		viewData[k] = v
+	}
+	ctx.HTML(http.StatusOK, "oauth_login_mfa_setup.html", viewData)
 }
 
 // PostPublicLoginMfaTotp valida TOTP y establece la cookie de sesión SSO HttpOnly
@@ -1029,31 +1082,23 @@ func (c *OAuthController) GetConsentPage(ctx *gin.Context) {
 		return
 	}
 
-	// Get application details to display to user
-	var appName, appDescription string
-	if c.AppService != nil {
-		app, err := c.AppService.GetAppDetails(clientID)
-		if err == nil {
-			appName = app.Name
-			appDescription = app.Description
-		}
-	}
-	if appName == "" {
-		appName = clientID
-	}
-
 	csrf, _ := ctx.Get("csrf_token")
-	ctx.HTML(http.StatusOK, "oauth_consent.html", gin.H{
+	themeData := c.getThemeData(clientID)
+	viewData := gin.H{
 		"ClientID":            clientID,
-		"ClientName":          appName,
-		"ClientDescription":   appDescription,
+		"ClientName":          themeData["AppName"],
+		"ClientDescription":   themeData["AppDescription"],
 		"RedirectURI":         redirectURI,
 		"State":               state,
 		"CodeChallenge":       codeChallenge,
 		"CodeChallengeMethod": codeChallengeMethod,
 		"CSRFToken":           csrf,
 		"UserEmail":           claims.Username,
-	})
+	}
+	for k, v := range themeData {
+		viewData[k] = v
+	}
+	ctx.HTML(http.StatusOK, "oauth_consent.html", viewData)
 }
 
 // PostConsentApprove handles user approval of authorization
