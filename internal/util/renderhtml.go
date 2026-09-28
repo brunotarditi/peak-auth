@@ -79,6 +79,12 @@ func GetTemplateFuncMap() template.FuncMap {
 		"now": func() time.Time {
 			return time.Now()
 		},
+		"format_time": func(t *time.Time, layout string) string {
+			if t == nil {
+				return ""
+			}
+			return t.Format(layout)
+		},
 		"dict": func(values ...interface{}) (map[string]interface{}, error) {
 			if len(values)%2 != 0 {
 				return nil, errors.New("invalid dict call")

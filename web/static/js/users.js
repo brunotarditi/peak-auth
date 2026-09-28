@@ -209,6 +209,17 @@ async function assignUser(event, appID) {
         body.append('email', email);
         body.append('role', role);
 
+        const isTemporary = form.is_temporary ? form.is_temporary.checked : false;
+        if (isTemporary) {
+            body.append('is_temporary', 'true');
+            if (form.duration_preset) {
+                body.append('duration_preset', form.duration_preset.value);
+            }
+            if (form.access_expires_at && form.access_expires_at.value) {
+                body.append('access_expires_at', form.access_expires_at.value);
+            }
+        }
+
         const response = await fetch(`/admin/apps/${appID}/users`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -306,6 +317,144 @@ async function sendResetPassword(appID, userID) {
     }
 }
 
+// Alternar visualización de opciones de acceso temporal en el formulario de vincular
+function toggleTemporaryAccess(checked) {
+    const opts = document.getElementById('temporaryOptions');
+    if (opts) {
+        if (checked) {
+            opts.classList.remove('hidden');
+        } else {
+            opts.classList.add('hidden');
+        }
+    }
+}
+
+// Alternar campo de fecha personalizada en el formulario de vincular
+function toggleCustomDuration(val) {
+    const box = document.getElementById('customDurationBox');
+    if (box) {
+        if (val === 'custom') {
+            box.classList.remove('hidden');
+        } else {
+            box.classList.add('hidden');
+        }
+    }
+}
+
+// Modal de Vigencia de Acceso
+function openAccessModal(appID, userID, email, currentExpiresAt, isTemporary) {
+    const modal = document.getElementById('accessModal');
+    if (!modal) return;
+
+    document.getElementById('accessModalUserID').value = userID;
+    const subtitle = document.getElementById('accessModalSubtitle');
+    if (subtitle) {
+        subtitle.textContent = `Gestionando vigencia para ${email}`;
+    }
+
+    if (isTemporary) {
+        const tempRadio = document.getElementById('modalAccessTemporary');
+        if (tempRadio) tempRadio.checked = true;
+        toggleModalAccessType('temporary');
+        if (currentExpiresAt) {
+            const presetSelect = document.getElementById('modalDurationPreset');
+            if (presetSelect) presetSelect.value = 'custom';
+            toggleModalCustomDuration('custom');
+            const expiresInput = document.getElementById('modalExpiresAt');
+            if (expiresInput) expiresInput.value = currentExpiresAt;
+        } else {
+            const presetSelect = document.getElementById('modalDurationPreset');
+            if (presetSelect) presetSelect.value = '7d';
+            toggleModalCustomDuration('7d');
+        }
+    } else {
+        const permRadio = document.getElementById('modalAccessPermanent');
+        if (permRadio) permRadio.checked = true;
+        toggleModalAccessType('permanent');
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeAccessModal() {
+    const modal = document.getElementById('accessModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function toggleModalAccessType(type) {
+    const section = document.getElementById('modalTemporarySection');
+    if (section) {
+        if (type === 'temporary') {
+            section.classList.remove('hidden');
+        } else {
+            section.classList.add('hidden');
+        }
+    }
+}
+
+function toggleModalCustomDuration(val) {
+    const box = document.getElementById('modalCustomDateBox');
+    if (box) {
+        if (val === 'custom') {
+            box.classList.remove('hidden');
+        } else {
+            box.classList.add('hidden');
+        }
+    }
+}
+
+async function saveAccessTime(event, appID) {
+    event.preventDefault();
+    const userID = document.getElementById('accessModalUserID').value;
+    const btn = document.getElementById('saveAccessBtn');
+    const isPermanent = document.getElementById('modalAccessPermanent').checked;
+
+    btn.disabled = true;
+    btn.innerText = 'Guardando...';
+
+    try {
+        const body = new URLSearchParams();
+        if (isPermanent) {
+            body.append('is_permanent', 'true');
+        } else {
+            const preset = document.getElementById('modalDurationPreset').value;
+            body.append('duration_preset', preset);
+            if (preset === 'custom') {
+                const expiresAt = document.getElementById('modalExpiresAt').value;
+                if (!expiresAt) {
+                    peakAlert('Fecha requerida', 'Por favor selecciona una fecha de expiración', 'warning');
+                    btn.disabled = false;
+                    btn.innerText = 'Guardar Cambios';
+                    return;
+                }
+                body.append('access_expires_at', expiresAt);
+            }
+        }
+
+        const response = await fetch(`/admin/apps/${appID}/users/${userID}/access-time`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body
+        });
+
+        if (response.ok) {
+            closeAccessModal();
+            showToast('Vigencia de acceso actualizada');
+            setTimeout(() => window.location.reload(), 500);
+        } else {
+            const data = await response.json();
+            peakAlert('Error', data.error || 'No se pudo actualizar el acceso', 'error');
+        }
+    } catch (err) {
+        peakAlert('Error de conexión', 'No se pudo conectar con el servidor', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Guardar Cambios';
+    }
+}
+
 // Event listeners para los botones del modal de roles
 document.addEventListener('DOMContentLoaded', () => {
     const openRoleBtn = document.getElementById('openRoleModalBtn');
@@ -335,4 +484,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.unlockUser = unlockUser;
     window.resendVerification = resendVerification;
     window.sendResetPassword = sendResetPassword;
+    window.toggleTemporaryAccess = toggleTemporaryAccess;
+    window.toggleCustomDuration = toggleCustomDuration;
+    window.openAccessModal = openAccessModal;
+    window.closeAccessModal = closeAccessModal;
+    window.toggleModalAccessType = toggleModalAccessType;
+    window.toggleModalCustomDuration = toggleModalCustomDuration;
+    window.saveAccessTime = saveAccessTime;
 })();
+

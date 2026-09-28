@@ -42,8 +42,43 @@ func TestGenerateAndVerifyToken(t *testing.T) {
 	if err != nil {
 		t.Fatalf("VerifyToken falló: %v", err)
 	}
-	if claims.AppID != "mi-app" || claims.Subject != "42" {
+	if claims.AppID != "mi-app" || claims.Subject != "42" || claims.Email != "user@example.com" {
 		t.Fatalf("claims inesperados: %+v", claims)
+	}
+}
+
+func TestGenerateAndVerifyToken_WithProfile(t *testing.T) {
+	m := newTestManager(t)
+	profile := TokenProfile{
+		Name:    "Mariela Gómez",
+		Email:   "mariela@libreriamariela.com",
+		Picture: "https://cdn.peak.com/avatars/42.jpg",
+	}
+
+	tok, err := m.GenerateTokenWithProfile(42, "mariela@libreriamariela.com", "libreria-mariela", []string{"READ", "WRITE", "ADMIN"}, time.Hour, true, 0, profile)
+	if err != nil {
+		t.Fatalf("GenerateTokenWithProfile falló: %v", err)
+	}
+
+	claims, err := m.VerifyToken(tok)
+	if err != nil {
+		t.Fatalf("VerifyToken falló: %v", err)
+	}
+
+	if claims.Subject != "42" {
+		t.Errorf("expected subject 42, got %s", claims.Subject)
+	}
+	if claims.Name != "Mariela Gómez" {
+		t.Errorf("expected name Mariela Gómez, got %s", claims.Name)
+	}
+	if claims.Email != "mariela@libreriamariela.com" {
+		t.Errorf("expected email mariela@libreriamariela.com, got %s", claims.Email)
+	}
+	if claims.Picture != "https://cdn.peak.com/avatars/42.jpg" {
+		t.Errorf("expected picture https://cdn.peak.com/avatars/42.jpg, got %s", claims.Picture)
+	}
+	if len(claims.Roles) != 3 || claims.Roles[0] != "READ" {
+		t.Errorf("roles inesperados: %+v", claims.Roles)
 	}
 }
 

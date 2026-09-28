@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"peak-auth/internal/service"
-	"peak-auth/internal/store/repo"
+	"peak-auth/internal/store/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,7 +48,7 @@ func (ctrl *AuditController) GetAppAuditPage(c *gin.Context) {
 		limit = 15
 	}
 
-	filter := repo.AuditFilter{
+	filter := model.AuditFilter{
 		TableName: strings.TrimSpace(c.Query("table")),
 		Action:    strings.TrimSpace(c.Query("action")),
 		ChangedBy: strings.TrimSpace(c.Query("changed_by")),

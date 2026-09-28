@@ -12,24 +12,29 @@ type AppStatsResponse struct {
 }
 
 type TokenResponse struct {
-	AccessToken      string `json:"access_token,omitempty"`
-	RefreshToken     string `json:"refresh_token,omitempty"`
-	MfaRequired      bool   `json:"mfa_required,omitempty"`
-	MfaSetupRequired bool   `json:"mfa_setup_required,omitempty"`
-	MfaToken         string `json:"mfa_token,omitempty"`
-	ExpiresIn        int    `json:"expires_in,omitempty"`
+	AccessToken            string `json:"access_token,omitempty"`
+	RefreshToken           string `json:"refresh_token,omitempty"`
+	MfaRequired            bool   `json:"mfa_required,omitempty"`
+	MfaSetupRequired       bool   `json:"mfa_setup_required,omitempty"`
+	MfaToken               string `json:"mfa_token,omitempty"`
+	PasswordChangeRequired bool   `json:"password_change_required,omitempty"`
+	PasswordResetToken     string `json:"password_reset_token,omitempty"`
+	ExpiresIn              int    `json:"expires_in,omitempty"`
 }
 
 type UserAppRow struct {
-	ID           uint
-	Email        string
-	FirstName    string
-	LastName     string
-	RoleName     string
-	IsVerified   bool
-	IsActive     bool
-	MfaEnabled   bool
-	FailedLogins uint
+	ID              uint
+	Email           string
+	FirstName       string
+	LastName        string
+	RoleName        string
+	IsVerified      bool
+	IsActive        bool
+	MfaEnabled      bool
+	FailedLogins    uint
+	AccessStartsAt  *time.Time
+	AccessExpiresAt *time.Time
+	AccessStatus    string // "active", "expired", "scheduled"
 }
 
 // TOTPSetupResponse contiene los datos necesarios para configurar TOTP en el authenticator.

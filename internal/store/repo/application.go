@@ -41,14 +41,14 @@ func (r *applicationRepository) Create(app *model.Application) error {
 // FindByID devuelve una aplicación por su ID numérico.
 func (r *applicationRepository) FindByID(id uint) (model.Application, error) {
 	var app model.Application
-	err := r.db.First(&app, id).Error
+	err := r.db.Preload("Owner").First(&app, id).Error
 	return app, err
 }
 
 // FindByAppID devuelve una aplicación por su ID público (app_id).
 func (r *applicationRepository) FindByAppID(appID string) (model.Application, error) {
 	var app model.Application
-	err := r.db.Where("app_id = ?", appID).First(&app).Error
+	err := r.db.Preload("Owner").Where("app_id = ?", appID).First(&app).Error
 	return app, err
 }
 

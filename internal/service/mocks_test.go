@@ -146,6 +146,9 @@ func (m *mockAppRepo) UpdateColumns(id uint, columns map[string]interface{}) err
 			if sec, ok := columns["secret_key"].(string); ok {
 				a.SecretKey = sec
 			}
+			if owner, ok := columns["owner_id"].(uint); ok {
+				a.OwnerID = &owner
+			}
 			return nil
 		}
 	}
@@ -170,8 +173,19 @@ func (m *mockAppRepo) GetAppsForUser(userID uint) ([]response.AppStatsResponse, 
 
 type mockUserRepo struct {
 	user                 model.User
+	users                map[string]*model.User
+	usersByID            map[uint]*model.User
 	err                  error
+	updatedColumns       map[string]interface{}
 	verifyEmailByTokenFn func(tokenHash []byte) (uint, uint, error)
+}
+
+func newMockUserRepo() *mockUserRepo {
+	return &mockUserRepo{
+		users:          make(map[string]*model.User),
+		usersByID:      make(map[uint]*model.User),
+		updatedColumns: make(map[string]interface{}),
+	}
 }
 
 func (m *mockUserRepo) FindAll() ([]model.User, error)                                   { return nil, nil }
@@ -187,24 +201,57 @@ func (m *mockUserRepo) FindByEmail(email string) (model.User, error) {
 	if m.err != nil {
 		return model.User{}, m.err
 	}
+	if m.users != nil {
+		if u, ok := m.users[email]; ok {
+			return *u, nil
+		}
+	}
 	return m.user, nil
 }
 func (m *mockUserRepo) FindById(ID uint) (model.User, error) {
 	if m.err != nil {
 		return model.User{}, m.err
 	}
+	if m.usersByID != nil {
+		if u, ok := m.usersByID[ID]; ok {
+			return *u, nil
+		}
+	}
+	for _, u := range m.users {
+		if u.ID == ID {
+			return *u, nil
+		}
+	}
 	return m.user, nil
 }
-func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error { return nil }
-func (m *mockUserRepo) LockUserForUpdate(userID uint) error                          { return nil }
+func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error {
+	if m.updatedColumns == nil {
+		m.updatedColumns = make(map[string]interface{})
+	}
+	m.updatedColumns[column] = value
+	return nil
+}
+func (m *mockUserRepo) LockUserForUpdate(userID uint) error { return nil }
 
 type mockUARRepo struct {
 	roles                map[uint][]string
 	hasAdminRoleInAnyApp *bool
+	updatedUserID        uint
+	updatedAppID         uint
+	updatedAccessStarts  *time.Time
+	updatedAccessExpires *time.Time
 }
 
-func (m *mockUARRepo) AssignRole(userID, appID, roleID uint) error { return nil }
-func (m *mockUARRepo) RevokeAccess(userID, appID uint) error       { return nil }
+func (m *mockUARRepo) AssignRole(userID, appID, roleID uint, accessTime ...*time.Time) error { return nil }
+func (m *mockUARRepo) RevokeRole(userID, appID, roleID uint) error                            { return nil }
+func (m *mockUARRepo) RevokeAccess(userID, appID uint) error                                  { return nil }
+func (m *mockUARRepo) UpdateAccessTime(userID, appID uint, startsAt, expiresAt *time.Time) error {
+	m.updatedUserID = userID
+	m.updatedAppID = appID
+	m.updatedAccessStarts = startsAt
+	m.updatedAccessExpires = expiresAt
+	return nil
+}
 func (m *mockUARRepo) FindRolesByUserAndApp(userID, appID uint) ([]model.Role, error) {
 	if roleNames, ok := m.roles[userID]; ok {
 		var result []model.Role
@@ -449,6 +496,9 @@ type mockTxRepo struct {
 	refreshRepo       repo.RefreshTokenRepository
 	passwordResetRepo repo.PasswordResetRepository
 	userRepo          repo.UserRepository
+	appRepo           repo.ApplicationRepository
+	roleRepo          repo.RoleRepository
+	uarRepo           repo.UserApplicationRoleRepository
 }
 
 func (m *mockTxRepo) RefreshTokens() repo.RefreshTokenRepository {
@@ -461,6 +511,18 @@ func (m *mockTxRepo) PasswordResets() repo.PasswordResetRepository {
 
 func (m *mockTxRepo) Users() repo.UserRepository {
 	return m.userRepo
+}
+
+func (m *mockTxRepo) Apps() repo.ApplicationRepository {
+	return m.appRepo
+}
+
+func (m *mockTxRepo) Roles() repo.RoleRepository {
+	return m.roleRepo
+}
+
+func (m *mockTxRepo) UAR() repo.UserApplicationRoleRepository {
+	return m.uarRepo
 }
 
 type mockTxManager struct {

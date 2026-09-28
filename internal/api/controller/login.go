@@ -71,6 +71,13 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 
 	token, expireMinutes, mfaRequired, mfaSetupRequired, mfaToken, err := ctrl.UserService.AdminLogin(email, password)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "PASSWORD_EXPIRED:") {
+			resetToken := strings.TrimPrefix(err.Error(), "PASSWORD_EXPIRED:")
+			c.SetSameSite(http.SameSiteStrictMode)
+			c.SetCookie("reset_token", resetToken, 1800, "/reset-password", "", util.IsProduction(), true)
+			c.Redirect(http.StatusSeeOther, "/reset-password?required=true")
+			return
+		}
 		audit.EventResult(c, "admin.login", "email="+sanitizedEmail, false, err.Error())
 		// Use the error message from the service, which is already generic to prevent enumeration
 		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape(err.Error()))

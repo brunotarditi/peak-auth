@@ -13,6 +13,7 @@ import (
 // pueden ser creados/duplicados como roles propios de una aplicación.
 var reservedRoleNames = map[string]bool{
 	"ROOT":  true,
+	"OWNER": true,
 	"ADMIN": true,
 	"USER":  true,
 }

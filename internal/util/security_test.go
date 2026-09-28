@@ -4,6 +4,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestValidatePasswordLength(t *testing.T) {
@@ -227,3 +228,43 @@ func TestRenderer_ErrorHTML_RendersBaseAdmin(t *testing.T) {
 		t.Errorf("error.html no renderizó el layout base_admin: %s", body)
 	}
 }
+
+func TestIsPasswordExpired(t *testing.T) {
+	// Rule with 30 days expiration
+	rule30d := []byte(`{"expiration_days": 30}`)
+	// Rule with expiration disabled (0 days)
+	ruleDisabled := []byte(`{"expiration_days": 0}`)
+
+	now := time.Now()
+	expiredDate := now.Add(-31 * 24 * time.Hour)
+	validDate := now.Add(-10 * 24 * time.Hour)
+
+	// 1. Password changed 31 days ago with 30d policy -> expired
+	if !IsPasswordExpired(rule30d, &expiredDate, now) {
+		t.Errorf("expected password to be expired")
+	}
+
+	// 2. Password changed 10 days ago with 30d policy -> not expired
+	if IsPasswordExpired(rule30d, &validDate, now) {
+		t.Errorf("expected password to be valid")
+	}
+
+	// 3. Fallback to userCreatedAt if passwordChangedAt is nil
+	if !IsPasswordExpired(rule30d, nil, expiredDate) {
+		t.Errorf("expected fallback to userCreatedAt to detect expiration")
+	}
+	if IsPasswordExpired(rule30d, nil, validDate) {
+		t.Errorf("expected fallback to userCreatedAt to remain valid")
+	}
+
+	// 4. Expiration disabled (0 days)
+	if IsPasswordExpired(ruleDisabled, &expiredDate, expiredDate) {
+		t.Errorf("expected expiration_days=0 to never expire")
+	}
+
+	// 5. Empty or nil rule
+	if IsPasswordExpired(nil, &expiredDate, expiredDate) {
+		t.Errorf("expected nil rule to never expire")
+	}
+}
+

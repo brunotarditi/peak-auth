@@ -1,6 +1,8 @@
 package request
 
 import (
+	"time"
+
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
 )
@@ -27,9 +29,11 @@ func (r RegisterRequest) ToUser() (model.User, error) {
 		return model.User{}, err
 	}
 
+	now := time.Now()
 	return model.User{
-		Email:    r.Email,
-		Password: hashedPassword,
+		Email:             r.Email,
+		Password:          hashedPassword,
+		PasswordChangedAt: &now,
 	}, nil
 }
 

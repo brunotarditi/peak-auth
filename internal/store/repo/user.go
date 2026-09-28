@@ -37,7 +37,7 @@ func (r *userRepository) FindAll() ([]model.User, error) {
 // FindByEmail devuelve el usuario a través de email.
 func (r *userRepository) FindByEmail(email string) (model.User, error) {
 	var user model.User
-	err := r.db.Where("email = ?", email).First(&user).Error
+	err := r.db.Preload("Profile").Where("email = ?", email).First(&user).Error
 	return user, err
 }
 

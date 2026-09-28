@@ -72,3 +72,57 @@ func TestParseUint(t *testing.T) {
 		})
 	}
 }
+
+func TestParseAccessExpiration(t *testing.T) {
+	// Presets
+	exp24h, err := ParseAccessExpiration("24h", "")
+	if err != nil || exp24h == nil {
+		t.Fatalf("expected 24h expiration, got %v, err %v", exp24h, err)
+	}
+
+	exp7d, err := ParseAccessExpiration("7d", "")
+	if err != nil || exp7d == nil {
+		t.Fatalf("expected 7d expiration, got %v, err %v", exp7d, err)
+	}
+
+	exp30d, err := ParseAccessExpiration("30d", "")
+	if err != nil || exp30d == nil {
+		t.Fatalf("expected 30d expiration, got %v, err %v", exp30d, err)
+	}
+
+	exp90d, err := ParseAccessExpiration("90d", "")
+	if err != nil || exp90d == nil {
+		t.Fatalf("expected 90d expiration, got %v, err %v", exp90d, err)
+	}
+
+	// Custom date
+	expCustom, err := ParseAccessExpiration("", "2026-12-31T23:59")
+	if err != nil || expCustom == nil {
+		t.Fatalf("expected custom date expiration, got %v, err %v", expCustom, err)
+	}
+	if expCustom.Year() != 2026 || expCustom.Month() != 12 || expCustom.Day() != 31 {
+		t.Errorf("unexpected date parsed: %v", expCustom)
+	}
+
+	// Date only
+	expDateOnly, err := ParseAccessExpiration("", "2026-10-15")
+	if err != nil || expDateOnly == nil {
+		t.Fatalf("expected date-only expiration, got %v, err %v", expDateOnly, err)
+	}
+	if expDateOnly.Day() != 15 || expDateOnly.Hour() != 23 || expDateOnly.Minute() != 59 {
+		t.Errorf("unexpected date-only parsed: %v", expDateOnly)
+	}
+
+	// Empty (permanent)
+	expNil, err := ParseAccessExpiration("", "")
+	if err != nil || expNil != nil {
+		t.Fatalf("expected nil for empty inputs, got %v, err %v", expNil, err)
+	}
+
+	// Invalid date
+	_, err = ParseAccessExpiration("", "not-a-date")
+	if err == nil {
+		t.Fatal("expected error for invalid date, got nil")
+	}
+}
+

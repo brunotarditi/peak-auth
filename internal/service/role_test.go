@@ -132,6 +132,13 @@ func TestRoleService_CreateAppRole(t *testing.T) {
 			expectedErr: "el rol \"ROOT\" es un rol del sistema y no puede crearse como rol de aplicación",
 		},
 		{
+			name:        "reserved role OWNER",
+			roleName:    "OWNER",
+			appID:       appID,
+			rules:       nil,
+			expectedErr: "el rol \"OWNER\" es un rol del sistema y no puede crearse como rol de aplicación",
+		},
+		{
 			name:        "reserved role ADMIN",
 			roleName:    "admin",
 			appID:       appID,

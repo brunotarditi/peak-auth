@@ -30,11 +30,33 @@
                     <select name="role" required class="peak-input" style="appearance: none; cursor: pointer; text-transform: uppercase;">
                         <option value="" disabled selected>Selecciona un rol</option>
                         {{range .Roles}}
-                        {{ if ne .Name "ROOT" }}
+                        {{ if and (ne .Name "ROOT") (ne .Name "OWNER") }}
                         <option value="{{.Name}}">{{.Name}}</option>
                         {{ end }}
                         {{end}}
                     </select>
+                </div>
+
+                <!-- Control de Acceso Temporal -->
+                <div style="padding: 0.75rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.8125rem; font-weight: 600; color: var(--text-main); margin-bottom: 0;">
+                        <input type="checkbox" id="is_temporary" name="is_temporary" value="true" onchange="toggleTemporaryAccess(this.checked)" style="cursor: pointer;">
+                        Acceso temporal
+                    </label>
+
+                    <div id="temporaryOptions" class="hidden" style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label class="form-label" style="font-size: 0.75rem;">Duración del acceso</label>
+                        <select name="duration_preset" id="duration_preset" class="peak-input" style="font-size: 0.75rem; padding: 0.375rem 0.5rem;" onchange="toggleCustomDuration(this.value)">
+                            <option value="24h">24 Horas (1 día)</option>
+                            <option value="7d" selected>7 Días (1 semana)</option>
+                            <option value="30d">30 Días (1 mes)</option>
+                            <option value="90d">90 Días (3 meses)</option>
+                            <option value="custom">Fecha personalizada</option>
+                        </select>
+                        <div id="customDurationBox" class="hidden">
+                            <input type="datetime-local" name="access_expires_at" id="access_expires_at" class="peak-input" style="font-size: 0.75rem;">
+                        </div>
+                    </div>
                 </div>
 
                 <button type="submit" class="peak-btn peak-btn-primary peak-btn-block" style="margin-top: 0.5rem;">
@@ -100,6 +122,22 @@
                                     </span>
                                     {{end}}
 
+                                    {{if .AccessExpiresAt}}
+                                        {{if eq .AccessStatus "expired"}}
+                                        <span class="peak-badge peak-badge-error" title="Expiró el {{format_time .AccessExpiresAt "02/01/2006 15:04"}}">
+                                            Expirado ({{format_time .AccessExpiresAt "02/01/06"}})
+                                        </span>
+                                        {{else if eq .AccessStatus "scheduled"}}
+                                        <span class="peak-badge peak-badge-warning" title="Inicia el {{format_time .AccessStartsAt "02/01/2006 15:04"}}">
+                                            Programado
+                                        </span>
+                                        {{else}}
+                                        <span class="peak-badge peak-badge-brand" style="border: 1px dashed var(--brand-300);" title="Expira el {{format_time .AccessExpiresAt "02/01/2006 15:04"}}">
+                                            ⏳ Expira: {{format_time .AccessExpiresAt "02/01/06"}}
+                                        </span>
+                                        {{end}}
+                                    {{end}}
+
                                     {{ $max := $.MaxFailedLogins }}
                                     {{ if gt .FailedLogins 0 }}
                                         {{ if ge .FailedLogins $max }}
@@ -124,6 +162,14 @@
                                     </button>
                                     {{ end }}
 
+                                    {{ if and (ne .RoleName "ROOT") (ne .RoleName "OWNER") }}
+                                    <button onclick="openAccessModal('{{$.App.AppID}}', '{{.ID}}', '{{.Email}}', '{{if .AccessExpiresAt}}{{format_time .AccessExpiresAt "2006-01-02T15:04"}}{{end}}', {{if .AccessExpiresAt}}true{{else}}false{{end}})"
+                                        class="peak-badge peak-badge-secondary" style="cursor: pointer;"
+                                        title="Configurar vigencia o reactivar acceso">
+                                        {{if eq .AccessStatus "expired"}}Reactivar{{else}}Vigencia{{end}}
+                                    </button>
+                                    {{ end }}
+
                                     {{ if and (not .IsVerified) (ne .RoleName "ROOT") }}
                                     <button onclick="resendVerification('{{$.App.AppID}}', '{{.ID}}')"
                                         class="peak-badge peak-badge-brand" style="cursor: pointer;"
@@ -140,11 +186,13 @@
                                     </button>
                                     {{ end }}
 
-                                    {{if ne .RoleName "ROOT"}}
+                                    {{if and (ne .RoleName "ROOT") (ne .RoleName "OWNER")}}
                                     <button onclick="revokeAccess('{{$.App.AppID}}', '{{.ID}}')"
                                         style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); background: none; border: none; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--rose-600)'" onmouseout="this.style.color='var(--text-muted)'">
                                         Revocar
                                     </button>
+                                    {{else if eq .RoleName "OWNER"}}
+                                    <span style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--brand-500); font-style: italic;">Propietario</span>
                                     {{else}}
                                     <span style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate-300); font-style: italic;">Sistema</span>
                                     {{end}}
@@ -261,6 +309,65 @@
                     {{end}}
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gestión de Acceso Temporal -->
+<div id="accessModal" class="hidden" style="position: fixed; inset: 0; z-index: 50; overflow-y: auto;" aria-labelledby="access-modal-title" role="dialog" aria-modal="true">
+    <div style="display: flex; align-items: flex-end; justify-content: center; min-height: 100vh; padding: 1rem 1rem 5rem 1rem; text-align: center;">
+        <div style="position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);" id="accessModalBackdrop" onclick="closeAccessModal()"></div>
+        
+        <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 30rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="access-modal-title">Vigencia de Acceso</h3>
+                <p id="accessModalSubtitle" style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Configura el período de acceso del usuario a esta aplicación.</p>
+            </div>
+
+            <form id="accessTimeForm" onsubmit="event.preventDefault(); saveAccessTime(event, '{{.App.AppID}}');" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <input type="hidden" id="accessModalUserID" name="user_id">
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Tipo de Acceso</label>
+                    <div style="display: flex; gap: 1.5rem; margin-top: 0.25rem;">
+                        <label style="display: flex; align-items: center; gap: 0.375rem; cursor: pointer; font-size: 0.875rem; color: var(--text-main);">
+                            <input type="radio" name="modal_access_type" id="modalAccessPermanent" value="permanent" onchange="toggleModalAccessType('permanent')">
+                            Permanente
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.375rem; cursor: pointer; font-size: 0.875rem; color: var(--text-main);">
+                            <input type="radio" name="modal_access_type" id="modalAccessTemporary" value="temporary" onchange="toggleModalAccessType('temporary')">
+                            Temporal
+                        </label>
+                    </div>
+                </div>
+
+                <div id="modalTemporarySection" class="hidden" style="display: flex; flex-direction: column; gap: 0.875rem; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.75rem;">Extender o Definir Duración</label>
+                        <select id="modalDurationPreset" name="duration_preset" class="peak-input" onchange="toggleModalCustomDuration(this.value)">
+                            <option value="24h">24 Horas (+1 día)</option>
+                            <option value="7d" selected>7 Días (+1 semana)</option>
+                            <option value="30d">30 Días (+1 mes)</option>
+                            <option value="90d">90 Días (+3 meses)</option>
+                            <option value="custom">Fecha y hora específica</option>
+                        </select>
+                    </div>
+
+                    <div id="modalCustomDateBox" class="hidden form-group" style="margin-bottom: 0;">
+                        <label class="form-label" style="font-size: 0.75rem;">Fecha y hora de expiración</label>
+                        <input type="datetime-local" id="modalExpiresAt" name="access_expires_at" class="peak-input" style="font-size: 0.75rem;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeAccessModal()" class="peak-btn peak-btn-secondary peak-btn-block">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="saveAccessBtn" class="peak-btn peak-btn-primary peak-btn-block">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

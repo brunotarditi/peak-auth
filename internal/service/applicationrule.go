@@ -87,10 +87,14 @@ func (s *applicationRuleService) ValidateLogin(appID uint, userID uint) error {
 		return fmt.Errorf("no se pudo obtener las reglas de la aplicación")
 	}
 
-	// 1. Verificar que el usuario pertenezca a la aplicación.
+	// 1. Verificar que el usuario pertenezca a la aplicación o sea el propietario (OWNER)
 	roles, err := s.uarRepo.FindRolesByUserAndApp(userID, appID)
 	if err != nil || len(roles) == 0 {
-		return fmt.Errorf("el usuario no tiene acceso a esta aplicación")
+		if app, errApp := s.appRepo.FindByID(appID); errApp == nil && app.OwnerID != nil && *app.OwnerID == userID {
+			// El propietario registrado de la app siempre tiene acceso
+		} else {
+			return fmt.Errorf("el usuario no tiene acceso a esta aplicación")
+		}
 	}
 
 	for _, rule := range rules {

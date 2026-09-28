@@ -13,7 +13,7 @@ import (
 )
 
 type AuditService interface {
-	GetAppAuditLogs(appID uint, filter repo.AuditFilter) (*response.AuditLogPageResponse, error)
+	GetAppAuditLogs(appID uint, filter model.AuditFilter) (*response.AuditLogPageResponse, error)
 	GetAuditLogDetail(id int64, appID uint) (*AuditDetailResult, error)
 	GetAuditFilterOptions(appID uint) (tables []string, actions []string, err error)
 }
@@ -40,7 +40,7 @@ func NewAuditService(auditRepo repo.AuditRepository, userRepo repo.UserRepositor
 	}
 }
 
-func (s *auditService) GetAppAuditLogs(appID uint, filter repo.AuditFilter) (*response.AuditLogPageResponse, error) {
+func (s *auditService) GetAppAuditLogs(appID uint, filter model.AuditFilter) (*response.AuditLogPageResponse, error) {
 	if filter.Limit <= 0 {
 		filter.Limit = 15
 	}

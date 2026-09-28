@@ -7,6 +7,7 @@ import (
 	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -55,7 +56,24 @@ func (ctrl *RegisterController) PostUsersInApp(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "email y role requeridos"})
 		return
 	}
-	if err := ctrl.AppService.RegisterUserInApp(email, role, &app); err != nil {
+
+	var accessTimes []*time.Time
+	isTemporary := c.PostForm("is_temporary") == "true" || c.PostForm("is_temporary") == "on" || c.PostForm("is_temporary") == "1"
+	if isTemporary {
+		durationPreset := c.PostForm("duration_preset")
+		customExpiresAt := c.PostForm("access_expires_at")
+		expiresAt, err := util.ParseAccessExpiration(durationPreset, customExpiresAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if expiresAt != nil {
+			now := time.Now()
+			accessTimes = append(accessTimes, &now, expiresAt)
+		}
+	}
+
+	if err := ctrl.AppService.RegisterUserInApp(email, role, &app, accessTimes...); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -74,11 +92,11 @@ func (c *RegisterController) GetVerifyEmail(ctx *gin.Context) {
 		return
 	}
 
-	// Cabeceras defensivas para evitar almacenamiento en caché o fugas por Referer
+	// Cabeceras defensivas para evitar almacenamiento en caché o fugas externas por Referer
 	ctx.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 	ctx.Header("Pragma", "no-cache")
 	ctx.Header("Expires", "0")
-	ctx.Header("Referrer-Policy", "no-referrer")
+	ctx.Header("Referrer-Policy", "same-origin")
 
 	csrfToken, _ := ctx.Get("csrf_token")
 

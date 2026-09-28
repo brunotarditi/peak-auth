@@ -132,12 +132,14 @@
         const upperEl = document.getElementById('pwd_require_uppercase');
         const numEl = document.getElementById('pwd_require_numbers');
         const symEl = document.getElementById('pwd_require_symbols');
+        const expEl = document.getElementById('pwd_expiration_days');
 
         saveRule('PWD_POLICY', {
             min_length: lengthEl ? (parseInt(lengthEl.value, 10) || 8) : 8,
             require_uppercase: upperEl ? upperEl.checked : false,
             require_numbers: numEl ? numEl.checked : false,
-            require_symbols: symEl ? symEl.checked : false
+            require_symbols: symEl ? symEl.checked : false,
+            expiration_days: expEl ? (parseInt(expEl.value, 10) || 0) : 0
         });
     }
 

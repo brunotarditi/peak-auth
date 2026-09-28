@@ -14,6 +14,8 @@ type Application struct {
 	SecretKey   string `gorm:"type:varchar(255);not null" json:"-"`
 	RedirectURL string `gorm:"type:varchar(255)" json:"redirect_url"`
 	IsActive    bool   `gorm:"default:true" json:"is_active"`
+	OwnerID     *uint  `gorm:"index" json:"owner_id"`
+	Owner       *User  `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
 }
 
 type ApplicationRules struct {
@@ -63,10 +65,10 @@ type RefreshToken struct {
 	Application   Application `gorm:"foreignKey:ApplicationID"`
 	Token         string      `gorm:"uniqueIndex;not null"`
 	ExpiresAt     time.Time
-	MfaCompleted  bool        `gorm:"default:false"`
-	IPAddress     string      `gorm:"type:varchar(45)"`
-	UserAgent     string      `gorm:"type:varchar(512)"`
-	DeviceType    string      `gorm:"type:varchar(50)"`
+	MfaCompleted  bool   `gorm:"default:false"`
+	IPAddress     string `gorm:"type:varchar(45)"`
+	UserAgent     string `gorm:"type:varchar(512)"`
+	DeviceType    string `gorm:"type:varchar(50)"`
 	LastUsedAt    time.Time
 }
 
@@ -97,24 +99,26 @@ type User struct {
 
 type UserApplicationRole struct {
 	gorm.Model
-	UserID        uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
-	ApplicationID uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
-	RoleID        uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
-	User          User        `gorm:"foreignKey:UserID"`
-	Application   Application `gorm:"foreignKey:ApplicationID"`
-	Role          Role        `gorm:"foreignKey:RoleID"`
+	UserID          uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
+	ApplicationID   uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
+	RoleID          uint        `gorm:"uniqueIndex:idx_uar_unique,where:deleted_at IS NULL;not null"`
+	User            User        `gorm:"foreignKey:UserID"`
+	Application     Application `gorm:"foreignKey:ApplicationID"`
+	Role            Role        `gorm:"foreignKey:RoleID"`
+	AccessStartsAt  *time.Time  `gorm:"index" json:"access_starts_at,omitempty"`
+	AccessExpiresAt *time.Time  `gorm:"index" json:"access_expires_at,omitempty"`
 }
 
 // UserMfaCredential almacena las credenciales MFA del usuario (TOTP o WebAuthn).
 type UserMfaCredential struct {
 	gorm.Model
-	UserID       uint   `gorm:"not null;index" json:"user_id"`
-	Type         string `gorm:"type:varchar(20);not null" json:"type"`                                                  // "TOTP" o "WEBAUTHN"
-	Name         string `gorm:"type:varchar(100)" json:"name"`                                                          // Ej: "Google Authenticator", "Mi YubiKey"
-	Secret       string `gorm:"type:text;not null" json:"-"`                                                            // TOTP: AES-256-GCM encrypted secret; WebAuthn: credential JSON
+	UserID       uint    `gorm:"not null;index" json:"user_id"`
+	Type         string  `gorm:"type:varchar(20);not null" json:"type"`                                                                           // "TOTP" o "WEBAUTHN"
+	Name         string  `gorm:"type:varchar(100)" json:"name"`                                                                                   // Ej: "Google Authenticator", "Mi YubiKey"
+	Secret       string  `gorm:"type:text;not null" json:"-"`                                                                                     // TOTP: AES-256-GCM encrypted secret; WebAuthn: credential JSON
 	CredentialID *string `gorm:"type:varchar(512);uniqueIndex:idx_credential_id,where:credential_id IS NOT NULL AND deleted_at IS NULL" json:"-"` // WebAuthn credential ID (base64), unique to prevent replay registration
-	IsActive     bool   `gorm:"default:false" json:"is_active"`                                                         // Se activa tras la primera verificación exitosa
-	User         User   `gorm:"foreignKey:UserID" json:"-"`
+	IsActive     bool    `gorm:"default:false" json:"is_active"`                                                                                  // Se activa tras la primera verificación exitosa
+	User         User    `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // UserRecoveryCode almacena los códigos de recuperación hasheados del usuario.
@@ -142,8 +146,8 @@ type OAuthCode struct {
 
 // Migration registra los scripts de migraciones SQL ya ejecutados
 type Migration struct {
-	ID        uint      `gorm:"primaryKey"`
-	Name      string    `gorm:"type:varchar(255);uniqueIndex;not null"`
+	ID        uint   `gorm:"primaryKey"`
+	Name      string `gorm:"type:varchar(255);uniqueIndex;not null"`
 	CreatedAt time.Time
 }
 
@@ -152,10 +156,10 @@ type Migration struct {
 type MfaAttemptTracker struct {
 	gorm.Model
 	ChallengeKey   string    `gorm:"type:varchar(255);uniqueIndex;not null;index"` // Unique identifier for the MFA challenge/token
-	UserID         uint      `gorm:"not null;index"`                                // User attempting MFA
-	FailedAttempts int       `gorm:"default:0;not null"`                            // Number of failed attempts
-	Locked         bool      `gorm:"default:false;not null;index"`                  // Whether this challenge is locked
-	ExpiresAt      time.Time `gorm:"index;not null"`                                // When this tracker expires
+	UserID         uint      `gorm:"not null;index"`                               // User attempting MFA
+	FailedAttempts int       `gorm:"default:0;not null"`                           // Number of failed attempts
+	Locked         bool      `gorm:"default:false;not null;index"`                 // Whether this challenge is locked
+	ExpiresAt      time.Time `gorm:"index;not null"`                               // When this tracker expires
 	User           User      `gorm:"foreignKey:UserID"`
 }
 
@@ -183,4 +187,14 @@ type AuditLog struct {
 	OldData    string    `gorm:"column:old_data;type:jsonb" json:"old_data"`
 	NewData    string    `gorm:"column:new_data;type:jsonb" json:"new_data"`
 	CreatedAt  time.Time `gorm:"column:created_at;index:idx_audit_logs_created_at,sort:desc" json:"created_at"`
+}
+
+type AuditFilter struct {
+	TableName string
+	Action    string
+	ChangedBy string
+	StartDate *time.Time
+	EndDate   *time.Time
+	Page      int
+	Limit     int
 }

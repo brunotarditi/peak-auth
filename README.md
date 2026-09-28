@@ -25,8 +25,10 @@
   - **WebAuthn / Passkeys / FIDO2**: Autenticación biométrica nativa (TouchID, FaceID, Windows Hello) y llaves de seguridad físicas (YubiKey). Errores centinela tipados que aíslan la validación de ceremonias.
   - **Recovery Codes**: Códigos de recuperación de respaldo de un solo uso protegidos con hash criptográfico `bcrypt`.
   - **MFA Enforcement por Aplicación**: Políticas configurables (`MFA_POLICY`: `NONE`, `OPTIONAL`, `REQUIRED`) que fuerzan al usuario a enrolarse en MFA durante el login si la app lo exige.
-- 👥 **Control de Acceso Basado en Roles (RBAC) & Reglas por App**:
-  - Roles contextuales por aplicación (`ADMIN`, `USER` o roles personalizados).
+- 👥 **Control de Acceso Basado en Roles (RBAC) & Modelo de Propiedad**:
+  - Distinción jerárquica clara: Superusuario de plataforma (`ROOT`) vs. Propietario de aplicación (`OWNER`).
+  - Propietario único (`OWNER`) por aplicación cliente, auto-asignado al creador con capacidad de transferir la propiedad y control exclusivo de operaciones críticas (eliminación y regeneración de secretos).
+  - Roles contextuales por aplicación (`OWNER`, `ADMIN`, `USER` o roles personalizados).
   - Políticas de seguridad granulares por aplicación:
     - `MFA_POLICY`: Nivel de obligatoriedad de MFA.
     - `PWD_POLICY`: Longitud mínima, mayúsculas, números y caracteres especiales.

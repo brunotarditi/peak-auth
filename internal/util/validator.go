@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"time"
 )
 
 type RegistrationPolicy struct {
@@ -17,6 +18,7 @@ type PasswordPolicy struct {
 	RequireUppercase bool `json:"require_uppercase"`
 	RequireNumbers   bool `json:"require_numbers"`
 	RequireSymbols   bool `json:"require_symbols"`
+	ExpirationDays   int  `json:"expiration_days"`
 }
 
 type SessionPolicy struct {
@@ -95,6 +97,24 @@ func ValidatePasswordPolicy(raw []byte, password string) error {
 		}
 	}
 	return nil
+}
+
+// IsPasswordExpired determina si la contraseña de un usuario ha expirado según la política configurada.
+func IsPasswordExpired(raw []byte, passwordChangedAt *time.Time, userCreatedAt time.Time) bool {
+	if len(raw) == 0 {
+		return false
+	}
+	var r PasswordPolicy
+	if err := json.Unmarshal(raw, &r); err != nil || r.ExpirationDays <= 0 {
+		return false
+	}
+
+	refTime := userCreatedAt
+	if passwordChangedAt != nil && !passwordChangedAt.IsZero() {
+		refTime = *passwordChangedAt
+	}
+
+	return time.Since(refTime) > time.Duration(r.ExpirationDays)*24*time.Hour
 }
 
 // ParseSessionPolicy extracts session configuration rules such as token expiration

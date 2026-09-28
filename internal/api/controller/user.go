@@ -8,6 +8,7 @@ import (
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -44,9 +45,11 @@ func (c *UserController) GetResetPassword(ctx *gin.Context) {
 
 	// Renderizamos el template de reset-password
 	csrf, _ := ctx.Get("csrf_token")
+	isExpired := ctx.Query("required") == "true" || ctx.Query("expired") == "true"
 	ctx.HTML(200, "reset_password.html", gin.H{
 		"token":     token,
 		"CSRFToken": csrf,
+		"IsExpired": isExpired,
 	})
 }
 
@@ -262,6 +265,50 @@ func (ctrl *UserController) PostUnlockUser(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"message": "Usuario desbloqueado correctamente"})
+}
+
+// PostUpdateAccessTime actualiza o renueva la ventana de acceso temporal para un usuario en la aplicación
+func (ctrl *UserController) PostUpdateAccessTime(c *gin.Context) {
+	appIDParam := c.Param("id")
+	userIDStr := c.Param("user_id")
+	var userID uint
+	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil || userID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+
+	app, err := ctrl.AppService.GetAppDetails(appIDParam)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aplicación no encontrada"})
+		return
+	}
+
+	// Verificar si se solicitó acceso permanente
+	isPermanent := c.PostForm("is_permanent") == "true" || c.PostForm("is_permanent") == "1" || c.PostForm("is_permanent") == "on"
+	var startsAt, expiresAt *time.Time
+
+	if !isPermanent {
+		preset := c.PostForm("duration_preset")
+		customExpiresAt := c.PostForm("access_expires_at")
+		exp, err := util.ParseAccessExpiration(preset, customExpiresAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if exp != nil {
+			now := time.Now()
+			startsAt = &now
+			expiresAt = exp
+		}
+	}
+
+	if err := ctrl.AppService.UpdateUserAccessTime(app.AppID, userID, startsAt, expiresAt); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	audit.Event(c, "user.access_time.update", fmt.Sprintf("app=%s user_id=%d permanent=%t", app.AppID, userID, isPermanent))
+	c.JSON(http.StatusOK, gin.H{"message": "Acceso temporal actualizado con éxito"})
 }
 
 // SetupTOTP inicia el enrolamiento de TOTP para el usuario autenticado

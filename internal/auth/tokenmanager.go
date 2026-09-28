@@ -7,22 +7,13 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"peak-auth/internal/util"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"peak-auth/internal/util"
 )
-
-// TokenIssuer identifica al emisor (issuer) de los tokens. Puede sobreescribirse
-// con la variable de entorno JWT_ISSUER.
-func tokenIssuer() string {
-	if iss := strings.TrimSpace(os.Getenv("JWT_ISSUER")); iss != "" {
-		return iss
-	}
-	return "peak-auth"
-}
 
 // defaultKeyID identifica la clave activa utilizada para la firma de JWTs y en el JWKS.
 const defaultKeyID = "peak-auth-key-1"
@@ -36,9 +27,19 @@ type JWTManager struct {
 	previousKeys map[string]*rsa.PublicKey
 }
 
+// TokenProfile define los datos opcionales de perfil para claims OIDC estándar (RFC 7519 / OIDC Core)
+type TokenProfile struct {
+	Name    string
+	Email   string
+	Picture string
+}
+
 // CustomClaims define qué info viajará en el token
 type CustomClaims struct {
 	Username     string   `json:"username"`
+	Email        string   `json:"email,omitempty"`
+	Name         string   `json:"name,omitempty"`
+	Picture      string   `json:"picture,omitempty"`
 	AppID        string   `json:"app_id"`
 	Roles        []string `json:"roles"`
 	MfaVerified  bool     `json:"mfa_verified"`
@@ -150,8 +151,21 @@ func (m *JWTManager) SetActiveKey(newKid string, newPrivKey *rsa.PrivateKey, kee
 // aplicación pueda validar que el token fue emitido específicamente para ella.
 // También incluye authzVersion para permitir revocación inmediata de tokens.
 func (m *JWTManager) GenerateToken(userID uint, username string, appID string, roles []string, duration time.Duration, mfaVerified bool, authzVersion uint) (string, error) {
+	return m.GenerateTokenWithProfile(userID, username, appID, roles, duration, mfaVerified, authzVersion, TokenProfile{})
+}
+
+// GenerateTokenWithProfile crea un nuevo token JWT enriquecido con datos opcionales de perfil OIDC (name, email, picture).
+func (m *JWTManager) GenerateTokenWithProfile(userID uint, username string, appID string, roles []string, duration time.Duration, mfaVerified bool, authzVersion uint, profile TokenProfile) (string, error) {
+	email := strings.TrimSpace(profile.Email)
+	if email == "" && strings.Contains(username, "@") {
+		email = strings.TrimSpace(username)
+	}
+
 	claims := CustomClaims{
 		Username:     username,
+		Email:        email,
+		Name:         strings.TrimSpace(profile.Name),
+		Picture:      strings.TrimSpace(profile.Picture),
 		AppID:        appID,
 		Roles:        roles,
 		MfaVerified:  mfaVerified,
@@ -187,15 +201,18 @@ func (m *JWTManager) GenerateClientCredentialsToken(clientID string, scopes []st
 		Roles:       scopes,
 		MfaVerified: true,
 		TokenType:   "access",
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   clientID,
-			Issuer:    tokenIssuer(),
-			Audience:  jwt.ClaimStrings{clientID},
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now().Add(-45 * time.Second)),
-		},
 	}
+
+	registeredClaims := jwt.RegisteredClaims{
+		Subject:   clientID,
+		Issuer:    tokenIssuer(),
+		Audience:  jwt.ClaimStrings{clientID},
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		NotBefore: jwt.NewNumericDate(time.Now().Add(-45 * time.Second)),
+	}
+
+	claims.RegisteredClaims = registeredClaims
 
 	m.mu.RLock()
 	activeKid := m.activeKid
@@ -342,6 +359,15 @@ func (m *JWTManager) GetJWKS() map[string]interface{} {
 	return map[string]interface{}{
 		"keys": keys,
 	}
+}
+
+// TokenIssuer identifica al emisor (issuer) de los tokens. Puede sobreescribirse
+// con la variable de entorno JWT_ISSUER.
+func tokenIssuer() string {
+	if iss := strings.TrimSpace(os.Getenv("JWT_ISSUER")); iss != "" {
+		return iss
+	}
+	return "peak-auth"
 }
 
 func (m *JWTManager) formatJWK(kid string, pubKey *rsa.PublicKey) map[string]interface{} {

@@ -135,6 +135,22 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 		return response.TokenResponse{}, err
 	}
 
+	// 3.1 Validar expiración de contraseña (PWD_POLICY)
+	for _, r := range rules {
+		if r.Code == util.PWD_POLICY {
+			if util.IsPasswordExpired(r.Value, user.PasswordChangedAt, user.CreatedAt) {
+				plainReset, _, err := s.GenerateResetToken(user.ID, app.ID)
+				if err != nil {
+					return response.TokenResponse{}, fmt.Errorf("error al generar token de cambio de contraseña")
+				}
+				return response.TokenResponse{
+					PasswordChangeRequired: true,
+					PasswordResetToken:     plainReset,
+				}, nil
+			}
+		}
+	}
+
 	// 4. Aplicar duración de sesión (SESSION_POLICY)
 	duration, err := s.resolveTokenDuration(app.ID)
 	if err != nil {
@@ -179,13 +195,28 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 
 	// 3.5 Obtener roles para el JWT
 	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
-	roles := make([]string, len(roleModels))
-	for i, r := range roleModels {
-		roles[i] = r.Name
+	roles := make([]string, 0, len(roleModels)+2)
+	hasOwner := false
+	hasAdmin := false
+	for _, r := range roleModels {
+		roles = append(roles, r.Name)
+		if r.Name == "OWNER" {
+			hasOwner = true
+		}
+		if r.Name == "ADMIN" {
+			hasAdmin = true
+		}
+	}
+	if app.OwnerID != nil && *app.OwnerID == user.ID && !hasOwner {
+		roles = append(roles, "OWNER")
+		hasOwner = true
+	}
+	if hasOwner && !hasAdmin {
+		roles = append(roles, "ADMIN")
 	}
 
-	// 4. Generar Token JWT
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, false, user.AuthzVersion)
+	// 4. Generar Token JWT con claims OIDC de perfil
+	token, err := s.tokenManager.GenerateTokenWithProfile(user.ID, user.Email, publicAppID, roles, duration, false, user.AuthzVersion, tokenProfileFromUser(&user))
 	if err != nil {
 		return response.TokenResponse{}, err
 	}
@@ -344,6 +375,19 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 	// All checks passed - reset failed login counter
 	s.userRepo.UpdateColumn("failed_logins", 0, user.ID)
 
+	// Validar expiración de contraseña (PWD_POLICY) para peak-auth
+	for _, r := range rules {
+		if r.Code == util.PWD_POLICY {
+			if util.IsPasswordExpired(r.Value, user.PasswordChangedAt, user.CreatedAt) {
+				plainReset, _, err := s.GenerateResetToken(user.ID, peakApp.ID)
+				if err != nil {
+					return "", 0, false, false, "", fmt.Errorf("error al generar token de cambio de contraseña")
+				}
+				return "", 0, false, false, "", fmt.Errorf("PASSWORD_EXPIRED:%s", plainReset)
+			}
+		}
+	}
+
 	// Validar MFA_POLICY para la app de administración (peak-auth)
 	mfaRequiredByPolicy := false
 	mfaDisabledByPolicy := false
@@ -380,7 +424,7 @@ func (s *userService) AdminLogin(email, password string) (string, int, bool, boo
 		return "", expireMinutes, true, !user.MfaEnabled, mfaToken, nil
 	}
 
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
+	token, err := s.tokenManager.GenerateTokenWithProfile(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion, tokenProfileFromUser(&user))
 	if err != nil {
 		// Sanitize token generation errors - do not expose internal details
 		return "", 0, false, false, "", fmt.Errorf("error al generar el token de acceso")
@@ -450,16 +494,31 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 
 	// 3. Obtener roles para el JWT
 	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
-	if len(roleModels) == 0 {
+	if len(roleModels) == 0 && (app.OwnerID == nil || *app.OwnerID != user.ID) {
 		return response.TokenResponse{}, fmt.Errorf("el usuario no tiene acceso a esta aplicación")
 	}
-	roles := make([]string, len(roleModels))
-	for i, r := range roleModels {
-		roles[i] = r.Name
+	roles := make([]string, 0, len(roleModels)+2)
+	hasOwner := false
+	hasAdmin := false
+	for _, r := range roleModels {
+		roles = append(roles, r.Name)
+		if r.Name == "OWNER" {
+			hasOwner = true
+		}
+		if r.Name == "ADMIN" {
+			hasAdmin = true
+		}
+	}
+	if app.OwnerID != nil && *app.OwnerID == user.ID && !hasOwner {
+		roles = append(roles, "OWNER")
+		hasOwner = true
+	}
+	if hasOwner && !hasAdmin {
+		roles = append(roles, "ADMIN")
 	}
 
-	// 4. Generar Token JWT
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, publicAppID, roles, duration, mfaCompleted, user.AuthzVersion)
+	// 4. Generar Token JWT con claims OIDC de perfil
+	token, err := s.tokenManager.GenerateTokenWithProfile(user.ID, user.Email, publicAppID, roles, duration, mfaCompleted, user.AuthzVersion, tokenProfileFromUser(&user))
 	if err != nil {
 		// Sanitize token generation errors - do not expose internal details
 		return response.TokenResponse{}, fmt.Errorf("error al generar el token de acceso")
@@ -562,7 +621,7 @@ func (s *userService) CompleteAdminLoginWithMfa(userID uint) (string, int, error
 		return "", 0, fmt.Errorf("el usuario no tiene permisos administrativos")
 	}
 
-	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion)
+	token, err := s.tokenManager.GenerateTokenWithProfile(user.ID, user.Email, peakApp.AppID, roles, duration, true, user.AuthzVersion, tokenProfileFromUser(&user))
 	if err != nil {
 		// Sanitize token generation errors - do not expose internal details
 		return "", 0, fmt.Errorf("error al generar el token de acceso")
@@ -1042,8 +1101,8 @@ func (s *userService) Refresh(refreshToken string, clientInfo ...string) (respon
 		roles[i] = r.Name
 	}
 
-	// 2. Generar nuevo Access Token preservando el aseguramiento de MFA original
-	newAT, err := s.tokenManager.GenerateToken(user.ID, user.Email, app.AppID, roles, duration, rt.MfaCompleted, user.AuthzVersion)
+	// 2. Generar nuevo Access Token preservando el aseguramiento de MFA original y claims OIDC
+	newAT, err := s.tokenManager.GenerateTokenWithProfile(user.ID, user.Email, app.AppID, roles, duration, rt.MfaCompleted, user.AuthzVersion, tokenProfileFromUser(&user))
 	if err != nil {
 		// Sanitize token generation errors - do not expose internal details
 		return response.TokenResponse{}, fmt.Errorf("error al generar el token de acceso")
@@ -1136,3 +1195,15 @@ func (s *userService) resolveTokenDuration(appID uint) (time.Duration, error) {
 	// No SESSION_POLICY found, use conservative default
 	return time.Duration(util.DefaultTokenExpirationMinutes) * time.Minute, nil
 }
+
+func tokenProfileFromUser(u *model.User) auth.TokenProfile {
+	if u == nil {
+		return auth.TokenProfile{}
+	}
+	return auth.TokenProfile{
+		Name:    strings.TrimSpace(u.Profile.FirstName + " " + u.Profile.LastName),
+		Email:   u.Email,
+		Picture: u.Profile.AvatarURL,
+	}
+}
+

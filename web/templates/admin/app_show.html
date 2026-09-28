@@ -12,7 +12,7 @@
                 {{ template "icon-edit" }}
                 Editar
             </a>
-            {{ if and (ne .App.AppID "peak-auth") .IsRoot }}
+            {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
             <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" style="margin: 0; display: flex;">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                 <button type="button" data-action="delete-app" title="Eliminar aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--rose-600);">
@@ -61,7 +61,25 @@
                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                     <label style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem;">Redirect URL</label>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        {{ if eq .App.AppID "peak-auth" }}
+                        <span class="peak-badge" style="background-color: var(--bg-surface-secondary); color: var(--text-muted); font-size: 0.75rem; border: 1px solid var(--border-color);">No aplica (App Raíz / IdP del Sistema)</span>
+                        {{ else }}
                         <code style="flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ if .App.RedirectURL }}{{ .App.RedirectURL }}{{ else }}<span style="color:var(--text-muted);font-style:italic;">No configurada</span>{{ end }}</code>
+                        {{ end }}
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem;">Propietario (Owner)</label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            {{ if .App.Owner }}{{ .App.Owner.Email }}{{ else }}<span style="color:var(--text-muted);font-style:italic;">Sin propietario</span>{{ end }}
+                        </span>
+                        {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
+                        <button type="button" id="btnOpenTransferModal" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; white-space: nowrap;" title="Transferir propiedad de la aplicación">
+                            Transferir
+                        </button>
+                        {{ end }}
                     </div>
                 </div>
 
@@ -130,10 +148,74 @@
     <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 </form>
 
+{{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
+<!-- Modal de Transferencia de Propiedad -->
+<div id="transferModal" class="hidden" style="position: fixed; inset: 0; z-index: 50; overflow-y: auto;" aria-labelledby="transfer-modal-title" role="dialog" aria-modal="true">
+    <div style="display: flex; align-items: flex-end; justify-content: center; min-height: 100vh; padding: 1rem 1rem 5rem 1rem; text-align: center;">
+        <div style="position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);" id="transferModalBackdrop"></div>
+        
+        <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 32rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="transfer-modal-title">Transferir Propiedad</h3>
+                <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Transfiere la propiedad de <strong>{{ .App.Name }}</strong> a otro usuario del sistema. Tu rol pasará a ser ADMIN.</p>
+            </div>
+
+            <form id="transferForm" action="/admin/apps/{{.App.AppID}}/transfer-ownership" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                <div style="margin-bottom: 0;" class="form-group">
+                    <label class="form-label">Seleccionar nuevo propietario</label>
+                    <select name="new_owner_id" required class="peak-input" style="font-weight: 600;">
+                        <option value="" disabled selected>-- Selecciona un usuario --</option>
+                        {{ range .Users }}
+                            {{ if or (not $.App.Owner) (ne .ID $.App.Owner.ID) }}
+                            <option value="{{ .ID }}">{{ .Email }} ({{ .RoleName }})</option>
+                            {{ end }}
+                        {{ end }}
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                    <button type="button" id="closeTransferModalBtn" class="peak-btn peak-btn-secondary peak-btn-block">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="submitTransferBtn" class="peak-btn peak-btn-primary peak-btn-block" style="background-color: var(--amber-600); border-color: var(--amber-600);">
+                        Confirmar Transferencia
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{ end }}
+
 {{ end }}
 
 {{ define "scripts" }}
 <script src="{{ js "app.js" }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const openTransferBtn = document.getElementById('btnOpenTransferModal');
+    const transferModal = document.getElementById('transferModal');
+    const closeTransferBtn = document.getElementById('closeTransferModalBtn');
+    const transferBackdrop = document.getElementById('transferModalBackdrop');
+
+    if (openTransferBtn && transferModal) {
+        openTransferBtn.addEventListener('click', function() {
+            transferModal.classList.remove('hidden');
+        });
+        if (closeTransferBtn) {
+            closeTransferBtn.addEventListener('click', function() {
+                transferModal.classList.add('hidden');
+            });
+        }
+        if (transferBackdrop) {
+            transferBackdrop.addEventListener('click', function() {
+                transferModal.classList.add('hidden');
+            });
+        }
+    }
+});
+</script>
 {{ end }}
 
 {{ template "base_admin" . }}

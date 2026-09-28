@@ -264,7 +264,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		adminPrivate.GET("/apps/:id", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ADMIN"), appCtrl.GetAppDetails)
 		adminPrivate.GET("/apps/:id/edit", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ADMIN"), appCtrl.GetEditApp)
 		adminPrivate.POST("/apps/:id", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ADMIN"), appCtrl.UpdateFormApp)
-		adminPrivate.POST("/apps/:id/delete", middleware.RootOnlyMiddleware(app.UarRepo, app.AppRepo), appCtrl.PostDeleteApp)
+		adminPrivate.POST("/apps/:id/delete", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "OWNER"), appCtrl.PostDeleteApp)
+		adminPrivate.POST("/apps/:id/transfer-ownership", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "OWNER"), appCtrl.PostTransferOwnership)
 
 		// Gestión de Roles GLOBALES del sistema (solo plataforma)
 		adminPrivate.POST("/roles", middleware.PlatformAdminMiddleware(app.UarRepo, app.AppRepo), roleCtrl.PostRole)
@@ -278,6 +279,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			apps.POST("/users", middleware.RequestBodyLimitMiddleware(1024*1024), registerCtrl.PostUsersInApp)
 			apps.DELETE("/users/:user_id", userCtrl.RevokeUserAccess)
 			apps.POST("/users/:user_id/unlock", userCtrl.PostUnlockUser)
+			apps.POST("/users/:user_id/access-time", userCtrl.PostUpdateAccessTime)
 			apps.POST("/users/:user_id/resend-verification", dashboardCtrl.PostResendVerification)
 			apps.POST("/users/:user_id/send-reset", resetLimiter, dashboardCtrl.PostSendResetPassword)
 			apps.GET("/rules", appCtrl.GetAppRules)

@@ -78,6 +78,12 @@ func RoleMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo.App
 			roleSet[r] = struct{}{}
 		}
 
+		// Si el usuario tiene rol OWNER en esta app, satisface implícitamente ADMIN y USER
+		if _, isOwner := roleSet["OWNER"]; isOwner {
+			roleSet["ADMIN"] = struct{}{}
+			roleSet["USER"] = struct{}{}
+		}
+
 		for _, required := range requiredRoles {
 			if _, hasRole := roleSet[required]; hasRole {
 				c.Next()

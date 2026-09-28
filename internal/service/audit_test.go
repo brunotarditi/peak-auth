@@ -3,7 +3,6 @@ package service_test
 import (
 	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
-	"peak-auth/internal/store/repo"
 	"testing"
 	"time"
 
@@ -16,7 +15,7 @@ type mockAuditRepo struct {
 	tables  []string
 }
 
-func (m *mockAuditRepo) FindAppAuditLogs(appID uint, filter repo.AuditFilter) ([]model.AuditLog, int64, error) {
+func (m *mockAuditRepo) FindAppAuditLogs(appID uint, filter model.AuditFilter) ([]model.AuditLog, int64, error) {
 	var filtered []model.AuditLog
 	for _, l := range m.logs {
 		if filter.TableName != "" && l.TableName != filter.TableName {
@@ -92,7 +91,7 @@ func TestAuditService_GetAppAuditLogs(t *testing.T) {
 
 	svc := service.NewAuditService(mockRepo, nil, nil, nil)
 
-	res, err := svc.GetAppAuditLogs(5, repo.AuditFilter{Page: 1, Limit: 10})
+	res, err := svc.GetAppAuditLogs(5, model.AuditFilter{Page: 1, Limit: 10})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

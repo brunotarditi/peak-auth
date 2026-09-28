@@ -40,14 +40,23 @@
             const text = await response.text();
 
             if (response.ok) {
+                const params = new URLSearchParams(window.location.search);
+                const isRequired = params.get('required') === 'true' || params.get('expired') === 'true';
                 PeakModal.fire({
-                    title: '¡Cuenta activada!',
+                    title: isRequired ? '¡Contraseña actualizada!' : '¡Cuenta activada!',
                     text: text,
                     icon: 'success',
-                    timer: 3000,
+                    timer: 2500,
                     showConfirmButton: false
                 }).then(() => {
-                    window.location.href = "/admin/login";
+                    if (params.get('client_id')) {
+                        params.delete('required');
+                        params.delete('expired');
+                        params.delete('token');
+                        window.location.href = "/oauth/login?" + params.toString();
+                    } else {
+                        window.location.href = "/admin/login";
+                    }
                 });
             } else {
                 throw new Error(text || 'Ocurrió un error al procesar la solicitud');

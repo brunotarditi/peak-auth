@@ -998,3 +998,141 @@ func TestSendResetEmail_AtomicEligibilityAndQuota(t *testing.T) {
 	}
 }
 
+func TestValidateLogin_PasswordExpiration(t *testing.T) {
+	hashedPassword, _ := util.HashPassword("SecurePass123!")
+
+	appRepo := newMockAppRepo()
+	app := &model.Application{ID: 5, AppID: "shop-app", IsActive: true}
+	appRepo.apps["shop-app"] = app
+
+	now := time.Now()
+	expiredChangeDate := now.Add(-40 * 24 * time.Hour)
+	recentChangeDate := now.Add(-5 * 24 * time.Hour)
+
+	userRepo := newMockUserRepo()
+	userRepo.users["user@test.com"] = &model.User{
+		Model:             gorm.Model{ID: 10, CreatedAt: now.Add(-60 * 24 * time.Hour)},
+		Email:             "user@test.com",
+		Password:          hashedPassword,
+		IsActive:          true,
+		IsVerified:        true,
+		PasswordChangedAt: &expiredChangeDate,
+	}
+
+	uarRepo := &mockUARRepo{
+		roles: map[uint][]string{10: {"USER"}},
+	}
+
+	ruleRepo := &mockRuleRepo{
+		rules: []model.ApplicationRules{
+			{
+				ApplicationID: 5,
+				Code:          util.PWD_POLICY,
+				Value:         []byte(`{"min_length": 8, "expiration_days": 30}`),
+				IsActive:      true,
+			},
+		},
+	}
+	ruleSvc := NewApplicationRuleService(ruleRepo, uarRepo, nil, appRepo)
+	resetRepo := newMockPasswordResetRepo()
+
+	svc := &userService{
+		userRepo:          userRepo,
+		appRepo:           appRepo,
+		uarRepo:           uarRepo,
+		ruleService:       ruleSvc,
+		passwordResetRepo: resetRepo,
+		refreshTokenRepo:  &mockRefreshTokenRepo{},
+	}
+
+	// 1. Password expired (>30 days): Must return PasswordChangeRequired=true and a reset token
+	resp, err := svc.Login(request.LoginRequest{
+		Email:    "user@test.com",
+		Password: "SecurePass123!",
+	}, "shop-app")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !resp.PasswordChangeRequired {
+		t.Errorf("expected PasswordChangeRequired=true for expired password")
+	}
+	if resp.PasswordResetToken == "" {
+		t.Errorf("expected PasswordResetToken to be populated for expired password")
+	}
+	if resp.AccessToken != "" || resp.RefreshToken != "" {
+		t.Errorf("expected no access/refresh token to be issued when password expired")
+	}
+
+	// 2. Password changed recently (<30 days): Normal login allowed
+	userRepo.users["user@test.com"].PasswordChangedAt = &recentChangeDate
+	svc.tokenManager = newServiceTestJWTManager(t)
+
+	resp, err = svc.Login(request.LoginRequest{
+		Email:    "user@test.com",
+		Password: "SecurePass123!",
+	}, "shop-app")
+
+	if err != nil {
+		t.Fatalf("unexpected error for valid password: %v", err)
+	}
+	if resp.PasswordChangeRequired {
+		t.Errorf("expected PasswordChangeRequired=false for fresh password")
+	}
+	if resp.AccessToken == "" {
+		t.Errorf("expected AccessToken to be issued for fresh password")
+	}
+}
+
+func TestAdminLogin_PasswordExpiration(t *testing.T) {
+	hashedPassword, _ := util.HashPassword("AdminPass123!")
+
+	appRepo := newMockAppRepo()
+	peakApp := &model.Application{ID: 1, Name: "Peak Auth", AppID: util.AppIdPeakAuth}
+	appRepo.apps[util.AppIdPeakAuth] = peakApp
+
+	now := time.Now()
+	expiredChangeDate := now.Add(-40 * 24 * time.Hour)
+
+	userRepo := newMockUserRepo()
+	userRepo.users["admin@test.com"] = &model.User{
+		Model:             gorm.Model{ID: 1, CreatedAt: now.Add(-60 * 24 * time.Hour)},
+		Email:             "admin@test.com",
+		Password:          hashedPassword,
+		IsActive:          true,
+		IsVerified:        true,
+		PasswordChangedAt: &expiredChangeDate,
+	}
+
+	uarRepo := &mockUARRepo{
+		roles: map[uint][]string{1: {"ADMIN"}},
+	}
+
+	ruleRepo := &mockRuleRepo{
+		rules: []model.ApplicationRules{
+			{
+				ApplicationID: 1,
+				Code:          util.PWD_POLICY,
+				Value:         []byte(`{"min_length": 8, "expiration_days": 30}`),
+				IsActive:      true,
+			},
+		},
+	}
+	ruleSvc := NewApplicationRuleService(ruleRepo, uarRepo, nil, appRepo)
+	resetRepo := newMockPasswordResetRepo()
+
+	svc := &userService{
+		userRepo:          userRepo,
+		appRepo:           appRepo,
+		uarRepo:           uarRepo,
+		ruleService:       ruleSvc,
+		passwordResetRepo: resetRepo,
+	}
+
+	_, _, _, _, _, err := svc.AdminLogin("admin@test.com", "AdminPass123!")
+	if err == nil || !strings.HasPrefix(err.Error(), "PASSWORD_EXPIRED:") {
+		t.Fatalf("expected error starting with PASSWORD_EXPIRED:, got: %v", err)
+	}
+}
+
+

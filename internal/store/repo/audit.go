@@ -4,23 +4,12 @@ import (
 	"fmt"
 	"peak-auth/internal/store/model"
 	"strings"
-	"time"
 
 	"gorm.io/gorm"
 )
 
-type AuditFilter struct {
-	TableName string
-	Action    string
-	ChangedBy string
-	StartDate *time.Time
-	EndDate   *time.Time
-	Page      int
-	Limit     int
-}
-
 type AuditRepository interface {
-	FindAppAuditLogs(appID uint, filter AuditFilter) ([]model.AuditLog, int64, error)
+	FindAppAuditLogs(appID uint, filter model.AuditFilter) ([]model.AuditLog, int64, error)
 	FindByID(id int64) (*model.AuditLog, error)
 	GetDistinctActionsByApp(appID uint) ([]string, error)
 	GetDistinctTablesByApp(appID uint) ([]string, error)
@@ -47,7 +36,7 @@ func (r *auditRepository) appScopeQuery(appID uint) *gorm.DB {
 	)
 }
 
-func (r *auditRepository) FindAppAuditLogs(appID uint, filter AuditFilter) ([]model.AuditLog, int64, error) {
+func (r *auditRepository) FindAppAuditLogs(appID uint, filter model.AuditFilter) ([]model.AuditLog, int64, error) {
 	query := r.appScopeQuery(appID)
 
 	if filter.TableName != "" {

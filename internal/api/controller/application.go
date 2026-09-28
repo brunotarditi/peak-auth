@@ -2,10 +2,12 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -136,7 +138,10 @@ func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 		return
 	}
 
-	app, plainSecret, err := ctrl.AppService.CreateApp(name, description, redirectURL, isActive)
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+
+	app, plainSecret, err := ctrl.AppService.CreateApp(name, description, redirectURL, isActive, userID)
 	if err != nil {
 		ctrl.internalErrorHTML(c, "PostFormApp.CreateApp", err, "No se pudo crear la aplicación. Intente nuevamente.")
 		return
@@ -177,14 +182,18 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 		return
 	}
 
-	if redirectURL == "" {
-		ctrl.renderError(c, http.StatusBadRequest, "Datos Inválidos", "La URL de redirección es obligatoria.")
-		return
-	}
+	if id != util.AppIdPeakAuth {
+		if redirectURL == "" {
+			ctrl.renderError(c, http.StatusBadRequest, "Datos Inválidos", "La URL de redirección es obligatoria.")
+			return
+		}
 
-	if err := service.ValidateRedirectURISecurity(redirectURL); err != nil {
-		ctrl.renderError(c, http.StatusBadRequest, "URL de Redirección Inválida", err.Error())
-		return
+		if err := service.ValidateRedirectURISecurity(redirectURL); err != nil {
+			ctrl.renderError(c, http.StatusBadRequest, "URL de Redirección Inválida", err.Error())
+			return
+		}
+	} else {
+		redirectURL = ""
 	}
 
 	if err := ctrl.AppService.UpdateApp(id, description, redirectURL, isActive); err != nil {
@@ -204,11 +213,21 @@ func (ctrl *ApplicationController) PostDeleteApp(c *gin.Context) {
 		return
 	}
 
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		ctrl.renderError(c, http.StatusNotFound, "No Encontrada", "La aplicación solicitada no existe.")
+		return
+	}
+
 	isRootVal, _ := c.Get("is_root")
 	isRoot, _ := isRootVal.(bool)
 
-	if !isRoot {
-		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "Se requiere rol ROOT para eliminar aplicaciones.")
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+	isOwner := app.OwnerID != nil && *app.OwnerID == userID
+
+	if !isRoot && !isOwner {
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "Solo el propietario (OWNER) o un administrador ROOT pueden eliminar esta aplicación.")
 		return
 	}
 
@@ -265,6 +284,10 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 	isRootVal, _ := c.Get("is_root")
 	isRoot, _ := isRootVal.(bool)
 
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+	isOwner := app.OwnerID != nil && *app.OwnerID == userID
+
 	ctrl.renderAdmin(c, "app_show.html", gin.H{
 		"App":           app,
 		"Rules":         rules,
@@ -274,8 +297,11 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 		"AuthzPolicy":   authzPolicy,
 		"MfaPolicy":     mfaPolicy,
 		"UserCount":     len(users),
+		"Users":         users,
 		"Roles":         roles,
 		"IsRoot":        isRoot,
+		"IsOwner":       isOwner,
+		"CanManage":     isRoot || isOwner,
 		"Breadcrumbs": []gin.H{
 			{"Label": "Apps", "URL": "/admin"},
 			{"Label": app.Name},
@@ -287,6 +313,25 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 // PostRegenerateSecret regenera el secreto de una aplicación
 func (ctrl *ApplicationController) PostRegenerateSecret(c *gin.Context) {
 	id := c.Param("id")
+
+	app, err := ctrl.AppService.GetAppDetails(id)
+	if err != nil {
+		ctrl.internalErrorHTML(c, "PostRegenerateSecret", err, "No se pudo obtener la aplicación.")
+		return
+	}
+
+	isRootVal, _ := c.Get("is_root")
+	isRoot, _ := isRootVal.(bool)
+
+	userIDVal, _ := c.Get("user_id")
+	userID, _ := userIDVal.(uint)
+	isOwner := app.OwnerID != nil && *app.OwnerID == userID
+
+	if !isRoot && !isOwner {
+		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "Solo el propietario (OWNER) o un administrador ROOT pueden regenerar el secreto de la aplicación.")
+		return
+	}
+
 	plainSecret, err := ctrl.AppService.RegenerateSecret(id)
 	if err != nil {
 		ctrl.internalErrorHTML(c, "PostRegenerateSecret", err, "No se pudo regenerar el secreto de la aplicación.")
@@ -295,7 +340,7 @@ func (ctrl *ApplicationController) PostRegenerateSecret(c *gin.Context) {
 
 	audit.Event(c, "app.secret.regenerate", "app="+id)
 
-	app, _ := ctrl.AppService.GetAppDetails(id)
+	app, _ = ctrl.AppService.GetAppDetails(id)
 
 	ctrl.renderAdmin(c, "app_created.html", gin.H{
 		"App":         app,
@@ -307,6 +352,46 @@ func (ctrl *ApplicationController) PostRegenerateSecret(c *gin.Context) {
 		},
 		"Title": "Nuevo secreto - " + app.Name,
 	})
+}
+
+// PostTransferOwnership transfiere la propiedad de la aplicación a otro usuario.
+func (ctrl *ApplicationController) PostTransferOwnership(c *gin.Context) {
+	id := c.Param("id")
+
+	var targetUserID uint
+	rawID := strings.TrimSpace(c.PostForm("new_owner_id"))
+	if rawID != "" {
+		parsed, err := strconv.ParseUint(rawID, 10, 32)
+		if err != nil {
+			ctrl.renderError(c, http.StatusBadRequest, "Datos Inválidos", "ID de nuevo propietario inválido.")
+			return
+		}
+		targetUserID = uint(parsed)
+	} else {
+		targetEmail := strings.TrimSpace(c.PostForm("new_owner_email"))
+		if targetEmail == "" {
+			ctrl.renderError(c, http.StatusBadRequest, "Datos Inválidos", "Debe especificar el nuevo propietario.")
+			return
+		}
+		user, err := ctrl.UserService.FindVerifiedUser(targetEmail)
+		if err != nil {
+			ctrl.renderError(c, http.StatusNotFound, "Usuario No Encontrado", "El usuario indicado no existe o no está verificado.")
+			return
+		}
+		targetUserID = user.ID
+	}
+
+	userIDVal, _ := c.Get("user_id")
+	currentUserID, _ := userIDVal.(uint)
+
+	if err := ctrl.AppService.TransferOwnership(id, currentUserID, targetUserID); err != nil {
+		ctrl.renderError(c, http.StatusBadRequest, "Error al Transferir", err.Error())
+		return
+	}
+
+	audit.Event(c, "app.ownership.transfer", fmt.Sprintf("app=%s new_owner_id=%d", id, targetUserID))
+
+	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id)
 }
 
 // GetAppRules redirige a los detalles de la aplicación

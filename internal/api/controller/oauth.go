@@ -350,6 +350,32 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		return
 	}
 
+	if response.PasswordChangeRequired {
+		ctx.SetSameSite(http.SameSiteStrictMode)
+		ctx.SetCookie(
+			"reset_token",
+			response.PasswordResetToken,
+			1800,
+			"/reset-password",
+			"",
+			util.IsProduction(),
+			true,
+		)
+		redirectURL := url.URL{Path: "/reset-password"}
+		query := redirectURL.Query()
+		query.Set("required", "true")
+		query.Set("client_id", clientID)
+		query.Set("redirect_uri", redirectURI)
+		query.Set("state", state)
+		if codeChallenge != "" {
+			query.Set("code_challenge", codeChallenge)
+			query.Set("code_challenge_method", codeChallengeMethod)
+		}
+		redirectURL.RawQuery = query.Encode()
+		ctx.Redirect(http.StatusSeeOther, redirectURL.String())
+		return
+	}
+
 	if response.MfaRequired {
 		c.setMfaCookie(ctx, response.MfaToken)
 		targetURL := "/oauth/login/mfa"

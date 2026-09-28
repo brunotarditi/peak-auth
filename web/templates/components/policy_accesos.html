@@ -56,6 +56,21 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Expiración de Contraseña -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Vigencia de Contraseña</span>
+                    <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Días de validez antes de exigir actualización obligatoria. Usa 0 para desactivar la expiración.</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-lg);">
+                    <input type="number" autocomplete="off" min="0" max="365"
+                        id="pwd_expiration_days" data-policy="password" value="{{ .PwdPolicy.ExpirationDays }}"
+                        {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
+                        style="width: 3rem; text-align: right; background: transparent; font-weight: 900; color: var(--text-main); outline: none; border: none; font-size: 0.75rem;">
+                    <span style="font-size: 0.75rem; font-weight: 900; color: var(--text-muted);">Días</span>
+                </div>
+            </div>
         </div>
     </fieldset>
 </div>
