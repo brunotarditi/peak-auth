@@ -346,15 +346,9 @@ func (s *applicationService) TransferOwnership(appID string, currentUserID, newO
 		return fmt.Errorf("aplicación no encontrada")
 	}
 
-	masterApp, err := s.repo.FindByAppID(util.AppIdPeakAuth)
-	isRoot := false
-	if err == nil {
-		isRoot = s.IsRootUser(currentUserID, masterApp.ID)
-	}
-
 	isOwner := app.OwnerID != nil && *app.OwnerID == currentUserID
-	if !isOwner && !isRoot {
-		return fmt.Errorf("solo el propietario actual o un usuario ROOT pueden transferir la propiedad")
+	if !isOwner {
+		return fmt.Errorf("solo el propietario actual puede transferir la propiedad")
 	}
 
 	if app.OwnerID != nil && *app.OwnerID == newOwnerID {

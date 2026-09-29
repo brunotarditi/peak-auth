@@ -682,10 +682,10 @@ func (s *userService) Register(req request.RegisterRequest) (model.User, error) 
 		user = nu
 	}
 
-	// 4) Asignar rol por reglas (defensa: jamás asignar ADMIN o ROOT por auto-registro)
+	// 4) Asignar rol por reglas (defensa: jamás asignar ROOT u OWNER por auto-registro)
 	if registrationPolicy.DefaultRole != "" {
-		if strings.EqualFold(registrationPolicy.DefaultRole, "ADMIN") || strings.EqualFold(registrationPolicy.DefaultRole, "ROOT") {
-			return model.User{}, fmt.Errorf("el registro público no puede otorgar roles administrativos")
+		if strings.EqualFold(registrationPolicy.DefaultRole, "ROOT") || strings.EqualFold(registrationPolicy.DefaultRole, "OWNER") {
+			return model.User{}, fmt.Errorf("el auto-registro no puede otorgar roles de sistema o propiedad (ROOT u OWNER)")
 		}
 		if role, err := s.roleRepo.FindByNameForApp(registrationPolicy.DefaultRole, app.ID); err == nil {
 			if assignErr := s.uarRepo.AssignRole(user.ID, app.ID, role.ID); assignErr != nil {

@@ -14,7 +14,7 @@ import (
 
 // --- Tests Application Rule Service ---
 
-func TestValidateRegistration_ForbidsAdminRole(t *testing.T) {
+func TestValidateRegistration_AllowsAdminRole(t *testing.T) {
 	ruleRepo := &mockRuleRepo{
 		rules: []model.ApplicationRules{
 			{
@@ -26,9 +26,30 @@ func TestValidateRegistration_ForbidsAdminRole(t *testing.T) {
 	appRepo := newMockAppRepo()
 	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
 
+	policy, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{Password: "SecurePassword123!"})
+	if err != nil {
+		t.Fatalf("esperaba que ValidateRegistration permitiese default_role ADMIN: %v", err)
+	}
+	if policy.DefaultRole != "ADMIN" {
+		t.Fatalf("esperaba default_role ADMIN, obtuvo %s", policy.DefaultRole)
+	}
+}
+
+func TestValidateRegistration_ForbidsOwnerRole(t *testing.T) {
+	ruleRepo := &mockRuleRepo{
+		rules: []model.ApplicationRules{
+			{
+				Code:  util.REGISTRATION_POLICY,
+				Value: []byte("{\"mode\":\"public\",\"default_role\":\"OWNER\"}"),
+			},
+		},
+	}
+	appRepo := newMockAppRepo()
+	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
+
 	_, err := ruleSvc.ValidateRegistration(1, request.RegisterRequest{})
 	if err == nil {
-		t.Fatalf("Esperaba que ValidateRegistration rechazara default_role ADMIN en registro público")
+		t.Fatalf("Esperaba que ValidateRegistration rechazara default_role OWNER en registro público")
 	}
 }
 
@@ -50,14 +71,25 @@ func TestValidateRegistration_ForbidsRootRole(t *testing.T) {
 	}
 }
 
-func TestCreateRule_ForbidsAdminRoleInPublicMode(t *testing.T) {
+func TestCreateRule_ForbidsRootAndOwnerRole(t *testing.T) {
 	ruleRepo := &mockRuleRepo{}
 	appRepo := newMockAppRepo()
 	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
 
+	// ADMIN sí está permitido
 	err := ruleSvc.CreateRule(1, util.REGISTRATION_POLICY, []byte("{\"mode\":\"public\",\"default_role\":\"ADMIN\"}"))
+	if err != nil {
+		t.Fatalf("Esperaba que CreateRule aceptara default_role ADMIN: %v", err)
+	}
+
+	err = ruleSvc.CreateRule(1, util.REGISTRATION_POLICY, []byte("{\"mode\":\"public\",\"default_role\":\"OWNER\"}"))
 	if err == nil {
-		t.Fatalf("Esperaba que CreateRule rechazara default_role ADMIN en registro público")
+		t.Fatalf("Esperaba que CreateRule rechazara default_role OWNER en registro público")
+	}
+
+	err = ruleSvc.CreateRule(1, util.REGISTRATION_POLICY, []byte("{\"mode\":\"public\",\"default_role\":\"ROOT\"}"))
+	if err == nil {
+		t.Fatalf("Esperaba que CreateRule rechazara default_role ROOT en registro público")
 	}
 }
 

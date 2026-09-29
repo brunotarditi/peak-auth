@@ -110,12 +110,32 @@
     }
 
     /**
+     * Sincroniza visibilidad del rol por defecto según el modo de registro
+     */
+    function syncRegistrationModeUI() {
+        const modeEl = document.getElementById('reg_mode');
+        const roleRow = document.getElementById('row_reg_default_role');
+        const manualNotice = document.getElementById('notice_reg_manual');
+        if (!modeEl) return;
+
+        const isPublic = modeEl.value === 'public';
+        if (roleRow) {
+            roleRow.style.display = isPublic ? 'flex' : 'none';
+        }
+        if (manualNotice) {
+            manualNotice.style.display = isPublic ? 'none' : 'block';
+        }
+    }
+
+    /**
      * Actualiza la política de registro
      */
     function updateRegistration() {
         const modeEl = document.getElementById('reg_mode');
         const roleEl = document.getElementById('reg_default_role');
         const emailEl = document.getElementById('reg_require_email_verification');
+
+        syncRegistrationModeUI();
 
         saveRule('REGISTRATION_POLICY', {
             mode: modeEl ? modeEl.value : 'admin_only',
@@ -327,5 +347,7 @@
                 });
             }
         }
+
+        syncRegistrationModeUI();
     });
 })();

@@ -84,6 +84,11 @@ func (s *setupService) CreateRootUser(email, password, token string) (model.User
 			return err
 		}
 
+		// La app raíz del sistema (Peak Auth) no permite auto-registro público
+		if err := tx.Rules().UpdateRuleValue(rootApp.ID, "REGISTRATION_POLICY", []byte(`{"mode": "admin_only", "require_email_verification": true, "default_role": ""}`)); err != nil {
+			return err
+		}
+
 		if err = tx.Roles().Create(&rootRole); err != nil {
 			return err
 		}

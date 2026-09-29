@@ -209,29 +209,53 @@ func TestCompleteLoginWithMfa_RejectsWhenAppRequiresMfaAndMfaNotCompleted(t *tes
 	}
 }
 
-func TestRegister_ForbidsAdminAndRootRole(t *testing.T) {
+func TestRegister_ForbidsRootAndOwnerRole(t *testing.T) {
 	appRepo := newMockAppRepo()
 	appRepo.apps["my-app"] = &model.Application{AppID: "my-app", IsActive: true}
 
-	svc := &userService{
-		appRepo:  appRepo,
-		userRepo: &mockUserRepo{err: gorm.ErrRecordNotFound},
-		uarRepo:  &mockUARRepo{},
-		ruleService: &mockRuleServiceForRegister{
-			policy: &util.RegistrationPolicy{
-				Mode:        "public",
-				DefaultRole: "ADMIN",
+	t.Run("Forbids ROOT role", func(t *testing.T) {
+		svc := &userService{
+			appRepo:  appRepo,
+			userRepo: &mockUserRepo{err: gorm.ErrRecordNotFound},
+			uarRepo:  &mockUARRepo{},
+			ruleService: &mockRuleServiceForRegister{
+				policy: &util.RegistrationPolicy{
+					Mode:        "public",
+					DefaultRole: "ROOT",
+				},
 			},
-		},
-	}
+		}
 
-	_, err := svc.Register(request.RegisterRequest{
-		Email: "new@test.com",
-		AppID: "my-app",
+		_, err := svc.Register(request.RegisterRequest{
+			Email: "new@test.com",
+			AppID: "my-app",
+		})
+		if err == nil || !strings.Contains(err.Error(), "no puede otorgar roles") {
+			t.Fatalf("Esperaba bloqueo de rol ROOT en Register, obtuvo: %v", err)
+		}
 	})
-	if err == nil || !strings.Contains(err.Error(), "no puede otorgar roles administrativos") {
-		t.Fatalf("Esperaba bloqueo de rol administrativo en Register, obtuvo: %v", err)
-	}
+
+	t.Run("Forbids OWNER role", func(t *testing.T) {
+		svc := &userService{
+			appRepo:  appRepo,
+			userRepo: &mockUserRepo{err: gorm.ErrRecordNotFound},
+			uarRepo:  &mockUARRepo{},
+			ruleService: &mockRuleServiceForRegister{
+				policy: &util.RegistrationPolicy{
+					Mode:        "public",
+					DefaultRole: "OWNER",
+				},
+			},
+		}
+
+		_, err := svc.Register(request.RegisterRequest{
+			Email: "new@test.com",
+			AppID: "my-app",
+		})
+		if err == nil || !strings.Contains(err.Error(), "no puede otorgar roles") {
+			t.Fatalf("Esperaba bloqueo de rol OWNER en Register, obtuvo: %v", err)
+		}
+	})
 }
 
 func TestDeactivatedApp_RejectsLoginAndRegister(t *testing.T) {

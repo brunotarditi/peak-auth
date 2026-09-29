@@ -70,9 +70,9 @@ func (s *applicationRuleService) ValidateRegistration(appID uint, req request.Re
 		return nil, fmt.Errorf("configuración incompleta: la aplicación no tiene un rol por defecto configurado en %s", util.REGISTRATION_POLICY)
 	}
 
-	// Defensa en profundidad: el auto-registro nunca puede otorgar ROOT ni ADMIN.
-	if strings.EqualFold(policy.DefaultRole, "ROOT") || strings.EqualFold(policy.DefaultRole, "ADMIN") {
-		return nil, fmt.Errorf("el registro público no puede asignar roles administrativos (ROOT o ADMIN)")
+	// Defensa en profundidad: el auto-registro nunca puede otorgar ROOT ni OWNER.
+	if strings.EqualFold(policy.DefaultRole, "ROOT") || strings.EqualFold(policy.DefaultRole, "OWNER") {
+		return nil, fmt.Errorf("el auto-registro no puede asignar roles de sistema o propiedad (ROOT u OWNER)")
 	}
 
 	return policy, nil
@@ -120,11 +120,8 @@ func (s *applicationRuleService) CreateDefaultRules(appID uint) error {
 func (s *applicationRuleService) CreateRule(appID uint, code string, value []byte) error {
 	if code == util.REGISTRATION_POLICY {
 		if policy, err := util.ParseRegistrationPolicy(value); err == nil {
-			if strings.EqualFold(policy.DefaultRole, "ROOT") {
-				return fmt.Errorf("el rol por defecto no puede ser ROOT")
-			}
-			if policy.Mode == "public" && strings.EqualFold(policy.DefaultRole, "ADMIN") {
-				return fmt.Errorf("el registro público no puede tener como rol por defecto ADMIN")
+			if strings.EqualFold(policy.DefaultRole, "ROOT") || strings.EqualFold(policy.DefaultRole, "OWNER") {
+				return fmt.Errorf("el rol por defecto no puede ser ROOT ni OWNER")
 			}
 		}
 	}
@@ -138,14 +135,11 @@ func (s *applicationRuleService) CreateRule(appID uint, code string, value []byt
 
 func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value []byte) error {
 	// Defensa transversal: jamás permitir que el rol por defecto del auto-registro
-	// sea ROOT o ADMIN en modo público.
+	// sea ROOT u OWNER.
 	if code == util.REGISTRATION_POLICY {
 		if policy, err := util.ParseRegistrationPolicy(value); err == nil {
-			if strings.EqualFold(policy.DefaultRole, "ROOT") {
-				return fmt.Errorf("el rol por defecto no puede ser ROOT")
-			}
-			if policy.Mode == "public" && strings.EqualFold(policy.DefaultRole, "ADMIN") {
-				return fmt.Errorf("el registro público no puede tener como rol por defecto ADMIN")
+			if strings.EqualFold(policy.DefaultRole, "ROOT") || strings.EqualFold(policy.DefaultRole, "OWNER") {
+				return fmt.Errorf("el rol por defecto no puede ser ROOT ni OWNER")
 			}
 		}
 	}
@@ -169,7 +163,7 @@ func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value 
 			if policy.Mode == "public" {
 				return fmt.Errorf("el registro público no está permitido para la aplicación raíz")
 			}
-			if policy.DefaultRole != "ADMIN" && policy.DefaultRole != "ROOT" {
+			if policy.DefaultRole != "" && policy.DefaultRole != "ADMIN" && policy.DefaultRole != "ROOT" {
 				return fmt.Errorf("el rol por defecto para la aplicación raíz debe ser ADMIN o ROOT")
 			}
 		}

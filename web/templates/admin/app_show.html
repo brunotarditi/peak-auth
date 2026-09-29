@@ -81,7 +81,7 @@
                         <span style="flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             {{ if .App.Owner }}{{ .App.Owner.Email }}{{ else }}<span style="color:var(--text-muted);font-style:italic;">Sin propietario</span>{{ end }}
                         </span>
-                        {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
+                        {{ if and (ne .App.AppID "peak-auth") .IsOwner }}
                         <button type="button" id="btnOpenTransferModal" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; white-space: nowrap;" title="Transferir propiedad de la aplicación">
                             Transferir
                         </button>
@@ -154,7 +154,7 @@
     <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 </form>
 
-{{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
+{{ if and (ne .App.AppID "peak-auth") .IsOwner }}
 <!-- Modal de Transferencia de Propiedad -->
 <div id="transferModal" class="hidden" style="position: fixed; inset: 0; z-index: 50; overflow-y: auto;" aria-labelledby="transfer-modal-title" role="dialog" aria-modal="true">
     <div style="display: flex; align-items: flex-end; justify-content: center; min-height: 100vh; padding: 1rem 1rem 5rem 1rem; text-align: center;">
