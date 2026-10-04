@@ -212,3 +212,15 @@ type AuditFilter struct {
 	Page      int
 	Limit     int
 }
+
+// UserIdentity almacena identidades federadas externas vinculadas a usuarios (Social Login / Identity Brokering)
+type UserIdentity struct {
+	gorm.Model
+	UserID         uint      `gorm:"index;not null" json:"user_id"`
+	User           User      `gorm:"foreignKey:UserID" json:"-"`
+	Provider       string    `gorm:"type:varchar(50);index:idx_provider_user,unique;not null" json:"provider"` // ej: "google", "github"
+	ProviderUserID string    `gorm:"type:varchar(255);index:idx_provider_user,unique;not null" json:"provider_user_id"`
+	Email          string    `gorm:"type:varchar(100);index;not null" json:"email"`
+	AvatarURL      string    `gorm:"type:varchar(512)" json:"avatar_url"`
+	LastLoginAt    time.Time `json:"last_login_at"`
+}

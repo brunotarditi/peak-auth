@@ -188,9 +188,23 @@ func newMockUserRepo() *mockUserRepo {
 	}
 }
 
-func (m *mockUserRepo) FindAll() ([]model.User, error)                                   { return nil, nil }
-func (m *mockUserRepo) CreateWithProfile(user *model.User, profile *model.Profile) error { return nil }
-func (m *mockUserRepo) VerifyUserEmail(userID uint, verificationID uint) error           { return nil }
+func (m *mockUserRepo) FindAll() ([]model.User, error) { return nil, nil }
+func (m *mockUserRepo) CreateWithProfile(user *model.User, profile *model.Profile) error {
+	if user.ID == 0 {
+		user.ID = uint(len(m.users) + 1)
+	}
+	if profile != nil {
+		user.Profile = *profile
+	}
+	if m.users != nil {
+		m.users[user.Email] = user
+	}
+	if m.usersByID != nil {
+		m.usersByID[user.ID] = user
+	}
+	return nil
+}
+func (m *mockUserRepo) VerifyUserEmail(userID uint, verificationID uint) error { return nil }
 func (m *mockUserRepo) VerifyUserEmailByToken(tokenHash []byte) (uint, uint, error) {
 	if m.verifyEmailByTokenFn != nil {
 		return m.verifyEmailByTokenFn(tokenHash)
@@ -205,8 +219,12 @@ func (m *mockUserRepo) FindByEmail(email string) (model.User, error) {
 		if u, ok := m.users[email]; ok {
 			return *u, nil
 		}
+		return model.User{}, gorm.ErrRecordNotFound
 	}
-	return m.user, nil
+	if m.user.ID != 0 || m.user.Email != "" || m.user.Password != "" {
+		return m.user, nil
+	}
+	return model.User{}, gorm.ErrRecordNotFound
 }
 func (m *mockUserRepo) FindById(ID uint) (model.User, error) {
 	if m.err != nil {

@@ -71,13 +71,21 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	}
 
 	oauthCtrl := &controller.OAuthController{
-		OAuthService: app.OAuthService,
-		UserService:  app.UserService,
-		MfaService:   app.MfaService,
-		TokenManager: app.TokenManager,
-		RuleService:  app.RuleService,
-		AppService:   app.AppService,
+		OAuthService:  app.OAuthService,
+		UserService:   app.UserService,
+		MfaService:    app.MfaService,
+		TokenManager:  app.TokenManager,
+		RuleService:   app.RuleService,
+		AppService:    app.AppService,
+		BrokerService: app.BrokerService,
 	}
+
+	brokerCtrl := controller.NewBrokerController(
+		app.BrokerService,
+		app.TokenManager,
+		app.AppService,
+		app.RuleService,
+	)
 
 	docsCtrl := &controller.DocsController{}
 
@@ -157,6 +165,13 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			oauthWeb.GET("/mfa/setup", oauthCtrl.GetPublicLoginMfaSetup)
 			oauthWeb.POST("/mfa/setup/verify", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupVerify)
 			oauthWeb.POST("/mfa/setup/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupWebAuthnFinish)
+		}
+
+		// Identity Brokering (Social Login con Google y GitHub)
+		oauthBroker := oauth.Group("/broker")
+		{
+			oauthBroker.GET("/:provider/auth", loginLimiter, brokerCtrl.AuthEndpoint)
+			oauthBroker.GET("/:provider/callback", loginLimiter, brokerCtrl.CallbackEndpoint)
 		}
 	}
 

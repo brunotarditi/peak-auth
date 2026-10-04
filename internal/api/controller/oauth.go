@@ -3,7 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
-	"html/template"
+	"log"
 	"net/http"
 	"net/url"
 	"peak-auth/internal/api/request"
@@ -18,12 +18,13 @@ import (
 
 type OAuthController struct {
 	BaseController
-	OAuthService service.OAuthService
-	UserService  service.UserService
-	MfaService   service.MfaService
-	TokenManager *auth.JWTManager
-	RuleService  service.ApplicationRuleService
-	AppService   service.ApplicationService
+	OAuthService  service.OAuthService
+	UserService   service.UserService
+	MfaService    service.MfaService
+	TokenManager  *auth.JWTManager
+	RuleService   service.ApplicationRuleService
+	AppService    service.ApplicationService
+	BrokerService service.BrokerService
 }
 
 // AuthorizeEndpoint maneja GET /oauth/authorize
@@ -89,10 +90,17 @@ func (c *OAuthController) AuthorizeEndpoint(ctx *gin.Context) {
 		}
 	}
 
-	// Validar si la app destino exige MFA_POLICY
+	// Validar si la app destino exige MFA_POLICY y si el usuario tiene acceso
 	if c.AppService != nil && c.RuleService != nil {
 		targetApp, err := c.AppService.GetAppDetails(clientID)
 		if err == nil {
+			// Si el usuario en la sesión SSO actual no tiene acceso a esta aplicación,
+			// redirigir a login para permitir identificarse con una cuenta con permisos.
+			if err := c.RuleService.ValidateLogin(targetApp.ID, userID); err != nil {
+				c.redirectToOAuthLogin(ctx, "/oauth/login", clientID, redirectURI, state, codeChallenge, codeChallengeMethod)
+				return
+			}
+
 			rules, _ := c.RuleService.FindRulesByAppID(targetApp.ID)
 			for _, r := range rules {
 				if r.Code == "MFA_POLICY" {
@@ -220,8 +228,8 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 		// Para ello utilizamos CompleteLoginWithMfa (que simplemente expide un token JWT para el usuario en la app)
 		response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID, mfaCompleted, ctx.ClientIP(), ctx.GetHeader("User-Agent"))
 		if err != nil {
-			// Sanitize internal errors - do not expose database/service details
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "error_description": "Error al completar la autenticación"})
+			log.Printf("⚠️ [OAuth Token] Error al completar autenticación para usuario %d en app %s: %v", userID, req.ClientID, err)
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": err.Error()})
 			return
 		}
 
@@ -280,7 +288,7 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 
 func (c *OAuthController) getThemeData(clientID string) gin.H {
 	data := gin.H{
-		"ThemeCSS":       template.CSS(""),
+		"ThemeColors":    (*util.ThemeColors)(nil),
 		"AppName":        clientID,
 		"AppDescription": "",
 		"AppLogo":        "",
@@ -301,7 +309,7 @@ func (c *OAuthController) getThemeData(clientID string) gin.H {
 	data["AppDescription"] = app.Description
 	if app.Theme != nil {
 		if app.Theme.PrimaryColor != "" {
-			data["ThemeCSS"] = template.CSS(util.GenerateThemeCSS(app.Theme.PrimaryColor))
+			data["ThemeColors"] = util.ResolveThemeColors(app.Theme.PrimaryColor)
 		}
 		data["AppLogo"] = app.Theme.LogoURL
 		data["FaviconURL"] = app.Theme.FaviconURL
@@ -341,6 +349,10 @@ func (c *OAuthController) GetPublicLogin(ctx *gin.Context) {
 		"CodeChallengeMethod": codeChallengeMethod,
 		"CSRFToken":           csrf,
 		"Error":               ctx.Query("error"),
+	}
+	if c.BrokerService != nil {
+		viewData["GoogleEnabled"] = c.BrokerService.IsProviderConfigured("google")
+		viewData["GitHubEnabled"] = c.BrokerService.IsProviderConfigured("github")
 	}
 	for k, v := range themeData {
 		viewData[k] = v

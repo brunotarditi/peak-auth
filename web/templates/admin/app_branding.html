@@ -222,7 +222,16 @@
                 
                 <!-- Dynamic Injected Theme CSS for Preview -->
                 <style id="previewDynamicStyles">
-                    {{ .ThemeCSS }}
+                    {{ if .ThemeColors }}
+                    #previewContainer, #previewCard {
+                        --brand-50: {{ .ThemeColors.Brand50 }} !important;
+                        --brand-400: {{ .ThemeColors.Brand400 }} !important;
+                        --brand-500: {{ .ThemeColors.Brand500 }} !important;
+                        --brand-600: {{ .ThemeColors.Brand600 }} !important;
+                        --brand-700: {{ .ThemeColors.Brand700 }} !important;
+                        --brand-contrast-text: {{ .ThemeColors.ContrastText }} !important;
+                    }
+                    {{ end }}
                 </style>
 
                 <style>

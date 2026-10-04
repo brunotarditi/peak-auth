@@ -83,6 +83,7 @@ func AutoMigrate() {
 		&model.MfaAttemptTracker{},
 		&model.UserConsent{},
 		&model.ApplicationTheme{},
+		&model.UserIdentity{},
 	)
 	if err != nil {
 		log.Printf("⚠️ Error durante AutoMigrate: %v", err)

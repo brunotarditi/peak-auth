@@ -68,5 +68,10 @@ func getTestDB(t *testing.T) *gorm.DB {
 		&model.ApplicationTheme{},
 	)
 
-	return db
+	tx := db.Begin()
+	t.Cleanup(func() {
+		tx.Rollback()
+	})
+
+	return tx
 }

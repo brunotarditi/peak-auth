@@ -8,8 +8,17 @@
     <title>Autorizar {{ if .ClientName }}{{ .ClientName }}{{ else }}Aplicación{{ end }} - Peak Auth</title>
     <link rel="icon" type="image/png" href="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}{{ asset "/static/img/favicon.png" }}{{ end }}">
     <link rel="stylesheet" href="/static/css/main.css">
-    {{ if .ThemeCSS }}
-    <style>{{ .ThemeCSS }}</style>
+    {{ if .ThemeColors }}
+    <style>
+        :root {
+            --brand-50: {{ .ThemeColors.Brand50 }};
+            --brand-400: {{ .ThemeColors.Brand400 }};
+            --brand-500: {{ .ThemeColors.Brand500 }};
+            --brand-600: {{ .ThemeColors.Brand600 }};
+            --brand-700: {{ .ThemeColors.Brand700 }};
+            --brand-contrast-text: {{ .ThemeColors.ContrastText }};
+        }
+    </style>
     {{ end }}
     <script src="{{ js "config.js" }}"></script>
     <script src="{{ js "common.js" }}"></script>

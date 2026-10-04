@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"html/template"
 	"math"
 	"regexp"
 	"strconv"
@@ -93,34 +92,35 @@ func (c RGB) ContrastTextColor() string {
 	return "#ffffff"
 }
 
-// GenerateThemeCSS produce variables CSS personalizadas seguras para inyectar en vistas OAuth.
-// Si primaryColor es vacío o inválido, devuelve cadena vacía (manteniendo el tema por defecto).
-func GenerateThemeCSS(primaryColor string) template.CSS {
+// ThemeColors contiene las tonalidades y contrastes calculados a partir de un color primario.
+type ThemeColors struct {
+	Brand50      string
+	Brand400     string
+	Brand500     string
+	Brand600     string
+	Brand700     string
+	ContrastText string
+}
+
+// ResolveThemeColors calcula y valida la paleta de colores para un color hexadecimal primario.
+// Si el color es inválido o vacío, devuelve nil para mantener los estilos predeterminados de forma segura.
+func ResolveThemeColors(primaryColor string) *ThemeColors {
 	clean := SanitizeHexColor(primaryColor)
 	if clean == "" {
-		return ""
+		return nil
 	}
 
 	rgb, err := HexToRGB(clean)
 	if err != nil {
-		return ""
+		return nil
 	}
 
-	brand500 := rgb.Hex()
-	brand600 := rgb.Darken(0.12).Hex()
-	brand700 := rgb.Darken(0.24).Hex()
-	brand400 := rgb.Lighten(0.18).Hex()
-	brand50 := rgb.Lighten(0.92).Hex()
-	textColor := rgb.ContrastTextColor()
-
-	css := fmt.Sprintf(`:root {
-    --brand-50: %s;
-    --brand-400: %s;
-    --brand-500: %s;
-    --brand-600: %s;
-    --brand-700: %s;
-    --brand-contrast-text: %s;
-}`, brand50, brand400, brand500, brand600, brand700, textColor)
-
-	return template.CSS(css)
+	return &ThemeColors{
+		Brand50:      rgb.Lighten(0.92).Hex(),
+		Brand400:     rgb.Lighten(0.18).Hex(),
+		Brand500:     rgb.Hex(),
+		Brand600:     rgb.Darken(0.12).Hex(),
+		Brand700:     rgb.Darken(0.24).Hex(),
+		ContrastText: rgb.ContrastTextColor(),
+	}
 }

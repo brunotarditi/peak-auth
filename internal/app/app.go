@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"peak-auth/internal/auth"
+	"peak-auth/internal/auth/broker"
 	"peak-auth/internal/service"
 	"peak-auth/internal/storage"
 	"peak-auth/internal/store/repo"
@@ -33,6 +34,9 @@ type App struct {
 	SessionService service.SessionService
 	AuditRepo      repo.AuditRepository
 	AuditService   service.AuditService
+	BrokerService  service.BrokerService
+	BrokerRegistry *broker.Registry
+	IdentityRepo   repo.UserIdentityRepository
 }
 
 func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
@@ -84,6 +88,19 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	sessionService := service.NewSessionService(refreshRepo, oauthRepo, appRepo)
 	auditService := service.NewAuditService(auditRepo, userRepo, roleRepo, appRepo)
 
+	// Inicializar Identity Brokering (Social Login)
+	identityRepo := repo.NewUserIdentityRepository(db)
+	brokerConfig := broker.LoadConfigFromEnv()
+	brokerRegistry := broker.NewRegistry(brokerConfig)
+	brokerSecret := os.Getenv("BROKER_STATE_SECRET")
+	if brokerSecret == "" {
+		brokerSecret = os.Getenv("MFA_ENCRYPTION_KEY")
+		if brokerSecret == "" {
+			brokerSecret = setupToken
+		}
+	}
+	brokerService := service.NewBrokerService(identityRepo, userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, brokerRegistry, brokerSecret)
+
 	// 3. Iniciar Tareas en Segundo Plano
 	oauthService.StartCleanupTask(10 * time.Minute)
 
@@ -107,5 +124,8 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 		SessionService: sessionService,
 		AuditRepo:      auditRepo,
 		AuditService:   auditService,
+		BrokerService:  brokerService,
+		BrokerRegistry: brokerRegistry,
+		IdentityRepo:   identityRepo,
 	}
 }

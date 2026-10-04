@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/http"
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
@@ -453,7 +452,7 @@ func (ctrl *ApplicationController) GetAppBranding(c *gin.Context) {
 		privacyURL = theme.PrivacyURL
 	}
 
-	themeCSS := util.GenerateThemeCSS(primaryColor)
+	themeColors := util.ResolveThemeColors(primaryColor)
 
 	ctrl.renderAdmin(c, "app_branding.html", gin.H{
 		"App":            app,
@@ -465,7 +464,7 @@ func (ctrl *ApplicationController) GetAppBranding(c *gin.Context) {
 		"CustomSubtitle": customSubtitle,
 		"TermsURL":       termsURL,
 		"PrivacyURL":     privacyURL,
-		"ThemeCSS":       template.CSS(themeCSS),
+		"ThemeColors":    themeColors,
 		"Saved":          c.Query("saved") == "true",
 		"Breadcrumbs": []gin.H{
 			{"Label": "Apps", "URL": "/admin"},

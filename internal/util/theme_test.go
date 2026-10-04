@@ -1,6 +1,7 @@
 package util
 
 import (
+	"html/template"
 	"strings"
 	"testing"
 )
@@ -65,34 +66,56 @@ func TestRGB_ContrastTextColor(t *testing.T) {
 	}
 }
 
-func TestGenerateThemeCSS(t *testing.T) {
-	t.Run("Empty input produces empty CSS", func(t *testing.T) {
-		css := GenerateThemeCSS("")
-		if css != "" {
-			t.Errorf("expected empty string, got: %s", css)
+func TestResolveThemeColors(t *testing.T) {
+	t.Run("Empty input produces nil", func(t *testing.T) {
+		colors := ResolveThemeColors("")
+		if colors != nil {
+			t.Errorf("expected nil for empty input, got: %+v", colors)
 		}
 	})
 
-	t.Run("Invalid hex produces empty CSS without injection", func(t *testing.T) {
-		css := GenerateThemeCSS("#2563eb; } body { background: red; }")
-		if css != "" {
-			t.Errorf("expected empty string for malicious input, got: %s", css)
+	t.Run("Invalid hex produces nil without injection", func(t *testing.T) {
+		colors := ResolveThemeColors("#2563eb; } body { background: red; }")
+		if colors != nil {
+			t.Errorf("expected nil for malicious input, got: %+v", colors)
 		}
 	})
 
-	t.Run("Valid hex produces CSS variables block", func(t *testing.T) {
-		css := string(GenerateThemeCSS("#2563eb"))
-		if !strings.Contains(css, ":root {") {
-			t.Errorf("expected :root block in css: %s", css)
+	t.Run("Valid hex produces resolved theme colors", func(t *testing.T) {
+		colors := ResolveThemeColors("#2563eb")
+		if colors == nil {
+			t.Fatal("expected colors not to be nil")
 		}
-		if !strings.Contains(css, "--brand-500: #2563eb;") {
-			t.Errorf("expected --brand-500 in css: %s", css)
+		if colors.Brand500 != "#2563eb" {
+			t.Errorf("expected Brand500 #2563eb, got: %s", colors.Brand500)
 		}
-		if !strings.Contains(css, "--brand-600:") {
-			t.Errorf("expected --brand-600 in css: %s", css)
+		if !strings.HasPrefix(colors.Brand600, "#") {
+			t.Errorf("expected Brand600 to be hex, got: %s", colors.Brand600)
 		}
-		if !strings.Contains(css, "--brand-contrast-text:") {
-			t.Errorf("expected --brand-contrast-text in css: %s", css)
+		if colors.ContrastText == "" {
+			t.Errorf("expected non-empty ContrastText")
 		}
 	})
+}
+
+func TestThemeColorsTemplateRendering(t *testing.T) {
+	colors := ResolveThemeColors("#2563eb")
+	if colors == nil {
+		t.Fatal("expected colors not to be nil")
+	}
+
+	tmpl, err := template.New("test").Parse(`<style>:root { --brand-500: {{ .Brand500 }}; }</style>`)
+	if err != nil {
+		t.Fatalf("failed to parse template: %v", err)
+	}
+
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, colors); err != nil {
+		t.Fatalf("failed to execute template: %v", err)
+	}
+
+	expected := `<style>:root { --brand-500: #2563eb; }</style>`
+	if buf.String() != expected {
+		t.Errorf("got %q, expected %q", buf.String(), expected)
+	}
 }
