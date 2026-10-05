@@ -18,6 +18,7 @@ type UserRepository interface {
 	UpdateColumn(column string, value interface{}, id uint) error
 	LockUserForUpdate(userID uint) error
 	UpdateAvatar(userID uint, avatarURL string) error
+	UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error
 }
 
 type userRepository struct {
@@ -158,5 +159,30 @@ func (r *userRepository) UpdateAvatar(userID uint, avatarURL string) error {
 		return r.db.Create(&model.Profile{UserID: userID, AvatarURL: avatarURL}).Error
 	}
 	return r.db.Model(&model.Profile{}).Where("user_id = ?", userID).Update("avatar_url", avatarURL).Error
+}
+
+// UpdateProfile actualiza los campos informativos del perfil del usuario.
+func (r *userRepository) UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error {
+	var count int64
+	r.db.Model(&model.Profile{}).Where("user_id = ?", userID).Count(&count)
+	updates := map[string]interface{}{
+		"first_name": firstName,
+		"last_name":  lastName,
+		"birth_date": birthDate,
+	}
+	if avatarURL != "" {
+		updates["avatar_url"] = avatarURL
+	}
+	if count == 0 {
+		prof := model.Profile{
+			UserID:    userID,
+			FirstName: firstName,
+			LastName:  lastName,
+			BirthDate: birthDate,
+			AvatarURL: avatarURL,
+		}
+		return r.db.Create(&prof).Error
+	}
+	return r.db.Model(&model.Profile{}).Where("user_id = ?", userID).Updates(updates).Error
 }
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"peak-auth/internal/auth/broker"
 	"peak-auth/internal/store/model"
+	"peak-auth/internal/store/repo"
 	"strings"
 	"testing"
 	"time"
@@ -312,5 +313,135 @@ func TestBrokerService_ProcessCallback_ExchangeError(t *testing.T) {
 	_, err := svc.ProcessCallback(context.Background(), "google", "bad-code", rawState)
 	if err == nil || !strings.Contains(err.Error(), "invalid_grant") {
 		t.Fatalf("expected exchange error, got %v", err)
+	}
+}
+
+func TestBrokerService_ProcessCallback_LoginCSRFProtection(t *testing.T) {
+	svc, _, _, appRepo, registry, stateSecret := setupBrokerTest(t)
+	registry.Register(&mockBrokerProvider{
+		name:    "google",
+		profile: &broker.BrokerProfile{Provider: "google", ProviderUserID: "123", Email: "u@t.com"},
+	})
+	appRepo.apps["my-app"] = &model.Application{AppID: "my-app", RedirectURL: "https://my-app.com/cb", IsActive: true}
+
+	rawState, _ := broker.GenerateRelayState(broker.RelayState{
+		ClientID:    "my-app",
+		RedirectURI: "https://my-app.com/cb",
+		Nonce:       "attacker-nonce",
+	}, stateSecret)
+
+	// Victim's browser has a different nonce
+	_, err := svc.ProcessCallback(context.Background(), "google", "code", rawState, "victim-browser-nonce")
+	if err == nil || !strings.Contains(err.Error(), "CSRF") {
+		t.Fatalf("expected Login CSRF error, got: %v", err)
+	}
+}
+
+func TestBrokerService_ProcessCallback_ReplayAttackPrevented(t *testing.T) {
+	svc, _, _, appRepo, registry, stateSecret := setupBrokerTest(t)
+	registry.Register(&mockBrokerProvider{
+		name:    "google",
+		profile: &broker.BrokerProfile{Provider: "google", ProviderUserID: "123", Email: "u@t.com"},
+	})
+	appRepo.apps["my-app"] = &model.Application{AppID: "my-app", RedirectURL: "https://my-app.com/cb", IsActive: true}
+
+	rawState, _ := broker.GenerateRelayState(broker.RelayState{
+		ClientID:    "my-app",
+		RedirectURI: "https://my-app.com/cb",
+		Nonce:       "replayed-nonce",
+	}, stateSecret)
+
+	// First execution succeeds
+	_, err := svc.ProcessCallback(context.Background(), "google", "code", rawState, "replayed-nonce")
+	if err != nil {
+		t.Fatalf("first execution should succeed, got: %v", err)
+	}
+
+	// Replay attempt fails
+	_, err = svc.ProcessCallback(context.Background(), "google", "code", rawState, "replayed-nonce")
+	if err == nil || !strings.Contains(err.Error(), "replay") {
+		t.Fatalf("expected replay attack error, got: %v", err)
+	}
+}
+
+type mockTxRepoForBroker struct {
+	repo.TxRepository
+	userRepo  repo.UserRepository
+	identRepo repo.UserIdentityRepository
+	roleRepo  repo.RoleRepository
+	uarRepo   repo.UserApplicationRoleRepository
+}
+
+func (m *mockTxRepoForBroker) Users() repo.UserRepository               { return m.userRepo }
+func (m *mockTxRepoForBroker) Identities() repo.UserIdentityRepository   { return m.identRepo }
+func (m *mockTxRepoForBroker) Roles() repo.RoleRepository               { return m.roleRepo }
+func (m *mockTxRepoForBroker) UAR() repo.UserApplicationRoleRepository   { return m.uarRepo }
+
+type mockTxManagerForBroker struct {
+	txRepo repo.TxRepository
+}
+
+func (m *mockTxManagerForBroker) WithinTransaction(fn func(tx repo.TxRepository) error) error {
+	return fn(m.txRepo)
+}
+
+type mockFailingIdentityRepo struct {
+	*mockIdentityRepo
+}
+
+func (m *mockFailingIdentityRepo) Create(identity *model.UserIdentity) error {
+	return errors.New("database disk full on identities")
+}
+
+func TestBrokerService_ProcessCallback_TransactionalRollbackOnIdentityError(t *testing.T) {
+	identityRepo := newMockIdentityRepo()
+	userRepo := &mockUserRepo{users: make(map[string]*model.User)}
+	roleRepo := newMockRoleRepo()
+	uarRepo := &mockUARRepo{}
+	appRepo := newMockAppRepo()
+	ruleRepo := &mockRuleRepo{}
+	ruleService := NewApplicationRuleService(ruleRepo, uarRepo, roleRepo, appRepo)
+	tokenManager := newServiceTestJWTManager(t)
+	registry := broker.NewRegistry(broker.BrokerConfig{})
+	stateSecret := "test-broker-state-secret-12345"
+
+	failingIdentRepo := &mockFailingIdentityRepo{mockIdentityRepo: identityRepo}
+
+	txRepo := &mockTxRepoForBroker{
+		userRepo:  userRepo,
+		identRepo: failingIdentRepo,
+		roleRepo:  roleRepo,
+		uarRepo:   uarRepo,
+	}
+	txMgr := &mockTxManagerForBroker{txRepo: txRepo}
+
+	svc := NewBrokerService(
+		failingIdentRepo,
+		userRepo,
+		roleRepo,
+		uarRepo,
+		appRepo,
+		ruleService,
+		tokenManager,
+		registry,
+		stateSecret,
+		txMgr,
+	)
+
+	registry.Register(&mockBrokerProvider{
+		name:    "google",
+		profile: &broker.BrokerProfile{Provider: "google", ProviderUserID: "123", Email: "new-user@t.com"},
+	})
+	appRepo.apps["my-app"] = &model.Application{AppID: "my-app", RedirectURL: "https://my-app.com/cb", IsActive: true}
+
+	rawState, _ := broker.GenerateRelayState(broker.RelayState{
+		ClientID:    "my-app",
+		RedirectURI: "https://my-app.com/cb",
+		Nonce:       "tx-nonce",
+	}, stateSecret)
+
+	_, err := svc.ProcessCallback(context.Background(), "google", "code", rawState, "tx-nonce")
+	if err == nil || !strings.Contains(err.Error(), "database disk full on identities") {
+		t.Fatalf("expected transaction failure error, got: %v", err)
 	}
 }

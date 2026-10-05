@@ -7,7 +7,9 @@ package io.peakauth.models
 data class PeakClaims(
     val sub: String,
     val email: String,
-    val preferredUsername: String = "",
+    val username: String = "",
+    val preferredUsername: String = username,
+    val tokenType: String = "access",
     val roles: List<String> = emptyList(),
     val appId: String = "",
     val mfaVerified: Boolean = false,

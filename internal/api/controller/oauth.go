@@ -229,7 +229,7 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 		response, err := c.UserService.CompleteLoginWithMfa(userID, req.ClientID, mfaCompleted, ctx.ClientIP(), ctx.GetHeader("User-Agent"))
 		if err != nil {
 			log.Printf("⚠️ [OAuth Token] Error al completar autenticación para usuario %d en app %s: %v", userID, req.ClientID, err)
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": err.Error()})
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_grant", "error_description": "Error al completar la autenticación"})
 			return
 		}
 
@@ -321,6 +321,29 @@ func (c *OAuthController) getThemeData(clientID string) gin.H {
 	return data
 }
 
+func (c *OAuthController) isRegistrationAllowed(clientID string) bool {
+	if c.AppService == nil || c.RuleService == nil || clientID == "" {
+		return false
+	}
+	app, err := c.AppService.GetAppDetails(clientID)
+	if err != nil || !app.IsActive {
+		return false
+	}
+	rules, err := c.RuleService.FindRulesByAppID(app.ID)
+	if err != nil {
+		return false
+	}
+	for _, r := range rules {
+		if r.Code == util.REGISTRATION_POLICY {
+			policy, err := util.ParseRegistrationPolicy(r.Value)
+			if err == nil && policy != nil && policy.Mode == "public" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // GetPublicLogin renderiza la vista pública de login para el flujo OAuth2
 func (c *OAuthController) GetPublicLogin(ctx *gin.Context) {
 	clientID := ctx.Query("client_id")
@@ -349,6 +372,7 @@ func (c *OAuthController) GetPublicLogin(ctx *gin.Context) {
 		"CodeChallengeMethod": codeChallengeMethod,
 		"CSRFToken":           csrf,
 		"Error":               ctx.Query("error"),
+		"AllowRegistration":   c.isRegistrationAllowed(clientID),
 	}
 	if c.BrokerService != nil {
 		viewData["GoogleEnabled"] = c.BrokerService.IsProviderConfigured("google")
@@ -358,6 +382,167 @@ func (c *OAuthController) GetPublicLogin(ctx *gin.Context) {
 		viewData[k] = v
 	}
 	ctx.HTML(http.StatusOK, "oauth_login.html", viewData)
+}
+
+// GetPublicRegister renderiza la vista pública de auto-registro para el flujo OAuth2
+func (c *OAuthController) GetPublicRegister(ctx *gin.Context) {
+	clientID := ctx.Query("client_id")
+	redirectURI := ctx.Query("redirect_uri")
+	state := ctx.Query("state")
+	codeChallenge := ctx.Query("code_challenge")
+	codeChallengeMethod := ctx.Query("code_challenge_method")
+
+	if clientID == "" || redirectURI == "" {
+		ctx.String(http.StatusBadRequest, "Parámetros inválidos")
+		return
+	}
+
+	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
+		return
+	}
+
+	if !c.isRegistrationAllowed(clientID) {
+		loginURL := fmt.Sprintf("/oauth/login?client_id=%s&redirect_uri=%s&state=%s&error=%s",
+			url.QueryEscape(clientID), url.QueryEscape(redirectURI), url.QueryEscape(state),
+			url.QueryEscape("El auto-registro público no está habilitado para esta aplicación"))
+		if codeChallenge != "" {
+			loginURL += fmt.Sprintf("&code_challenge=%s&code_challenge_method=%s",
+				url.QueryEscape(codeChallenge), url.QueryEscape(codeChallengeMethod))
+		}
+		ctx.Redirect(http.StatusSeeOther, loginURL)
+		return
+	}
+
+	csrf, _ := ctx.Get("csrf_token")
+	themeData := c.getThemeData(clientID)
+	viewData := gin.H{
+		"ClientID":            clientID,
+		"RedirectURI":         redirectURI,
+		"State":               state,
+		"CodeChallenge":       codeChallenge,
+		"CodeChallengeMethod": codeChallengeMethod,
+		"CSRFToken":           csrf,
+		"Error":               ctx.Query("error"),
+	}
+	if c.BrokerService != nil {
+		viewData["GoogleEnabled"] = c.BrokerService.IsProviderConfigured("google")
+		viewData["GitHubEnabled"] = c.BrokerService.IsProviderConfigured("github")
+	}
+	for k, v := range themeData {
+		viewData[k] = v
+	}
+	ctx.HTML(http.StatusOK, "oauth_register.html", viewData)
+}
+
+// PostPublicRegister procesa el auto-registro público desde la interfaz web
+func (c *OAuthController) PostPublicRegister(ctx *gin.Context) {
+	clientID := ctx.PostForm("client_id")
+	redirectURI := ctx.PostForm("redirect_uri")
+	state := ctx.PostForm("state")
+	codeChallenge := ctx.PostForm("code_challenge")
+	codeChallengeMethod := ctx.PostForm("code_challenge_method")
+
+	firstName := strings.TrimSpace(ctx.PostForm("first_name"))
+	lastName := strings.TrimSpace(ctx.PostForm("last_name"))
+	email := strings.TrimSpace(ctx.PostForm("email"))
+	password := ctx.PostForm("password")
+	confirmPassword := ctx.PostForm("confirm_password")
+
+	if err := c.OAuthService.ValidateClientRedirect(clientID, redirectURI); err != nil {
+		ctx.String(http.StatusBadRequest, "Redirect URI o client_id inválidos")
+		return
+	}
+
+	themeData := c.getThemeData(clientID)
+	renderRegisterError := func(errMsg string) {
+		csrf, _ := ctx.Get("csrf_token")
+		viewData := gin.H{
+			"ClientID":            clientID,
+			"RedirectURI":         redirectURI,
+			"State":               state,
+			"CodeChallenge":       codeChallenge,
+			"CodeChallengeMethod": codeChallengeMethod,
+			"CSRFToken":           csrf,
+			"Error":               errMsg,
+			"FirstName":           firstName,
+			"LastName":            lastName,
+			"Email":               email,
+		}
+		if c.BrokerService != nil {
+			viewData["GoogleEnabled"] = c.BrokerService.IsProviderConfigured("google")
+			viewData["GitHubEnabled"] = c.BrokerService.IsProviderConfigured("github")
+		}
+		for k, v := range themeData {
+			viewData[k] = v
+		}
+		ctx.HTML(http.StatusBadRequest, "oauth_register.html", viewData)
+	}
+
+	if !c.isRegistrationAllowed(clientID) {
+		renderRegisterError("El registro no está habilitado para esta aplicación")
+		return
+	}
+
+	if firstName == "" || lastName == "" || email == "" || password == "" {
+		renderRegisterError("Todos los campos marcados son obligatorios")
+		return
+	}
+
+	if password != confirmPassword {
+		renderRegisterError("Las contraseñas no coinciden")
+		return
+	}
+
+	req := request.RegisterRequest{
+		Username:  email,
+		Email:     email,
+		AppID:     clientID,
+		Password:  password,
+		FirstName: firstName,
+		LastName:  lastName,
+	}
+
+	user, err := c.UserService.Register(req)
+	if err != nil {
+		renderRegisterError(err.Error())
+		return
+	}
+
+	// Si no requiere verificación, iniciamos sesión automáticamente y completamos el flujo OAuth hacia la app cliente
+	if user.IsVerified {
+		if err := c.setSSOSessionCookie(ctx, user.ID, user.Email, false, user.AuthzVersion); err != nil {
+			c.renderError(ctx, http.StatusInternalServerError, "Error de Servidor", "No se pudo generar la sesión SSO.")
+			return
+		}
+
+		authURL := fmt.Sprintf("/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&state=%s",
+			url.QueryEscape(clientID), url.QueryEscape(redirectURI), url.QueryEscape(state))
+		if codeChallenge != "" {
+			authURL += fmt.Sprintf("&code_challenge=%s&code_challenge_method=%s",
+				url.QueryEscape(codeChallenge), url.QueryEscape(codeChallengeMethod))
+		}
+		ctx.Redirect(http.StatusSeeOther, authURL)
+		return
+	}
+
+	// Si requiere verificación por email, mostramos pantalla de confirmación informándole que revise su correo
+	csrf, _ := ctx.Get("csrf_token")
+	viewData := gin.H{
+		"ClientID":            clientID,
+		"RedirectURI":         redirectURI,
+		"State":               state,
+		"CodeChallenge":       codeChallenge,
+		"CodeChallengeMethod": codeChallengeMethod,
+		"CSRFToken":           csrf,
+		"Success":             true,
+		"RequireVerification": true,
+		"Email":               email,
+	}
+	for k, v := range themeData {
+		viewData[k] = v
+	}
+	ctx.HTML(http.StatusOK, "oauth_register.html", viewData)
 }
 
 // PostPublicLogin procesa las credenciales públicas de login

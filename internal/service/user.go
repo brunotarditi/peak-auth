@@ -37,6 +37,8 @@ type UserService interface {
 	Refresh(token string, clientInfo ...string) (response.TokenResponse, error)
 	UnlockUser(userID uint) error
 	UpdateAvatar(userID uint, avatarURL string) error
+	UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error
+	ChangePassword(userID uint, currentPassword, newPassword string) error
 }
 
 type userService struct {
@@ -1213,6 +1215,55 @@ func (s *userService) UpdateAvatar(userID uint, avatarURL string) error {
 		return errors.New("ID de usuario inválido")
 	}
 	return s.userRepo.UpdateAvatar(userID, avatarURL)
+}
+
+func (s *userService) UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error {
+	if userID == 0 {
+		return errors.New("ID de usuario inválido")
+	}
+	if strings.TrimSpace(firstName) == "" && strings.TrimSpace(lastName) == "" {
+		return errors.New("el nombre o apellido no pueden estar vacíos")
+	}
+	return s.userRepo.UpdateProfile(userID, strings.TrimSpace(firstName), strings.TrimSpace(lastName), birthDate, strings.TrimSpace(avatarURL))
+}
+
+func (s *userService) ChangePassword(userID uint, currentPassword, newPassword string) error {
+	if userID == 0 {
+		return errors.New("ID de usuario inválido")
+	}
+	if currentPassword == "" || newPassword == "" {
+		return errors.New("las contraseñas no pueden estar vacías")
+	}
+	if err := util.ValidatePasswordLength(newPassword); err != nil {
+		return err
+	}
+	if err := util.ValidateMinimumPasswordPolicy(newPassword); err != nil {
+		return err
+	}
+
+	user, err := s.userRepo.FindById(userID)
+	if err != nil {
+		return errors.New("usuario no encontrado")
+	}
+
+	// Validar contraseña actual contra hash almacenado
+	if !util.CheckPasswordHash(currentPassword, user.Password) {
+		return errors.New("la contraseña actual es incorrecta")
+	}
+
+	hashed, err := util.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("error al procesar la nueva contraseña: %w", err)
+	}
+
+	if err := s.userRepo.UpdateColumn("password", hashed, userID); err != nil {
+		return err
+	}
+	now := time.Now()
+	_ = s.userRepo.UpdateColumn("password_changed_at", &now, userID)
+	_ = s.userRepo.UpdateColumn("authz_version", user.AuthzVersion+1, userID)
+
+	return nil
 }
 
 

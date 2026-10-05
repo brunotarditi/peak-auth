@@ -75,9 +75,18 @@ class JwtVerifier(
             throw SecurityException("PeakAuth: El token ha expirado (exp: $exp, ahora: $nowSeconds)")
         }
 
+        val tokenType = JwksProvider.extractJsonStringField(payloadJson, "token_type") ?: "access"
+        if (tokenType != "access") {
+            throw SecurityException("PeakAuth: Tipo de token inválido '$tokenType' (se esperaba 'access')")
+        }
+
         val iat = extractLongField(payloadJson, "iat") ?: 0L
         val email = JwksProvider.extractJsonStringField(payloadJson, "email") ?: ""
-        val preferredUsername = JwksProvider.extractJsonStringField(payloadJson, "preferred_username") ?: ""
+        val username = JwksProvider.extractJsonStringField(payloadJson, "username")
+            ?: JwksProvider.extractJsonStringField(payloadJson, "preferred_username")
+            ?: ""
+        val preferredUsername = JwksProvider.extractJsonStringField(payloadJson, "preferred_username")
+            ?: username
         val appId = JwksProvider.extractJsonStringField(payloadJson, "app_id") ?: ""
         val authzVersion = extractLongField(payloadJson, "authz_version") ?: 0L
         val mfaVerified = extractBooleanField(payloadJson, "mfa_verified") ?: false
@@ -95,7 +104,9 @@ class JwtVerifier(
         return PeakClaims(
             sub = sub,
             email = email,
+            username = username,
             preferredUsername = preferredUsername,
+            tokenType = tokenType,
             roles = roles,
             appId = appId,
             mfaVerified = mfaVerified,
@@ -126,13 +137,13 @@ class JwtVerifier(
             val match = pattern.find(json) ?: return emptyList()
             val arrayContent = match.groupValues[1]
 
-            val itemPattern = Regex("\"([^\"]+)\"")
+            val itemPattern = Regex("\"([^\"]*)\"")
             return itemPattern.findAll(arrayContent).map { it.groupValues[1] }.toList()
         }
 
         internal fun extractAudience(json: String): List<String> {
             // aud puede ser un string ("aud": "my-client") o un array ("aud": ["my-client", ...])
-            val singlePattern = Regex("\"aud\"\\s*:\\s*\"([^\"]+)\"")
+            val singlePattern = Regex("\"aud\"\\s*:\\s*\"([^\"]*)\"")
             val singleMatch = singlePattern.find(json)
             if (singleMatch != null) {
                 return listOf(singleMatch.groupValues[1])

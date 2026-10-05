@@ -5,6 +5,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.math.BigInteger
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 import java.security.KeyFactory
 import java.security.interfaces.RSAPublicKey
@@ -14,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Proveedor y gestor de claves públicas JWKS (RFC 7517) con cacheo TTL en memoria.
  */
-class JwksProvider(
+open class JwksProvider(
     private val jwksUrl: String,
     private val cacheTtlMs: Long = 60 * 60 * 1000L,
     private val connectTimeoutMs: Int = 10_000,
@@ -28,7 +29,7 @@ class JwksProvider(
      * Si la clave no está en caché o la caché expiró, consulta el endpoint JWKS.
      */
     @Synchronized
-    fun getKey(kid: String?): RSAPublicKey {
+    open fun getKey(kid: String?): RSAPublicKey {
         val now = System.currentTimeMillis()
         val isCacheExpired = (now - lastFetchTime) > cacheTtlMs
 
@@ -56,7 +57,7 @@ class JwksProvider(
      * Descarga el JSON de JWKS y reconstruye las instancias de [RSAPublicKey].
      */
     private fun fetchJwks() {
-        val connection = (URL(jwksUrl).openConnection() as HttpURLConnection).apply {
+        val connection = (URI(jwksUrl).toURL().openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = connectTimeoutMs
             readTimeout = readTimeoutMs
@@ -122,7 +123,7 @@ class JwksProvider(
 
     companion object {
         internal fun extractJsonStringField(json: String, fieldName: String): String? {
-            val pattern = Regex("\"$fieldName\"\\s*:\\s*\"([^\"]+)\"")
+            val pattern = Regex("\"$fieldName\"\\s*:\\s*\"([^\"]*)\"")
             return pattern.find(json)?.groupValues?.get(1)
         }
 

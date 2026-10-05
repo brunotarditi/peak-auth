@@ -298,6 +298,7 @@ func (m *mockUserRepo) FindById(ID uint) (model.User, error)                    
 func (m *mockUserRepo) UpdateColumn(column string, value interface{}, id uint) error    { return nil }
 func (m *mockUserRepo) LockUserForUpdate(userID uint) error                          { return nil }
 func (m *mockUserRepo) UpdateAvatar(userID uint, avatarURL string) error             { return nil }
+func (m *mockUserRepo) UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error { return nil }
 
 func TestAuthMiddleware_PasswordResetRevocation(t *testing.T) {
 	manager := newTestJWTManager(t)

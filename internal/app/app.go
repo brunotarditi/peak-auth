@@ -99,7 +99,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 			brokerSecret = setupToken
 		}
 	}
-	brokerService := service.NewBrokerService(identityRepo, userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, brokerRegistry, brokerSecret)
+	brokerService := service.NewBrokerService(identityRepo, userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, brokerRegistry, brokerSecret, txManager)
 
 	// 3. Iniciar Tareas en Segundo Plano
 	oauthService.StartCleanupTask(10 * time.Minute)

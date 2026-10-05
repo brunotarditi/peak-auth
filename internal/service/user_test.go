@@ -1159,4 +1159,67 @@ func TestAdminLogin_PasswordExpiration(t *testing.T) {
 	}
 }
 
+func TestUserService_UpdateProfile(t *testing.T) {
+	mockRepo := &mockUserRepo{
+		user: model.User{
+			Model: gorm.Model{ID: 10},
+			Email: "test@peak.local",
+		},
+	}
+	svc := &userService{userRepo: mockRepo}
+
+	err := svc.UpdateProfile(0, "John", "Doe", time.Time{}, "")
+	if err == nil {
+		t.Fatal("expected error for user ID 0")
+	}
+
+	err = svc.UpdateProfile(10, "", "", time.Time{}, "")
+	if err == nil {
+		t.Fatal("expected error for empty names")
+	}
+
+	err = svc.UpdateProfile(10, "John", "Doe", time.Time{}, "https://avatar.test/pic.png")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if mockRepo.user.Profile.FirstName != "John" || mockRepo.user.Profile.AvatarURL != "https://avatar.test/pic.png" {
+		t.Errorf("profile was not updated: %+v", mockRepo.user.Profile)
+	}
+}
+
+func TestUserService_ChangePassword(t *testing.T) {
+	currentSecret := "OldSecret#123A"
+	newSecret := "NewSecret#456B"
+	hashedOld, _ := util.HashPassword(currentSecret)
+
+	mockRepo := &mockUserRepo{
+		user: model.User{
+			Model:    gorm.Model{ID: 15},
+			Password: hashedOld,
+		},
+	}
+	svc := &userService{userRepo: mockRepo}
+
+	// 1. Wrong current password
+	err := svc.ChangePassword(15, "Incorrect#123", newSecret)
+	if err == nil || err.Error() != "la contraseña actual es incorrecta" {
+		t.Fatalf("expected wrong password error, got: %v", err)
+	}
+
+	// 2. Weak new password
+	err = svc.ChangePassword(15, currentSecret, "short")
+	if err == nil {
+		t.Fatal("expected error for weak new password")
+	}
+
+	// 3. Successful change
+	err = svc.ChangePassword(15, currentSecret, newSecret)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if mockRepo.updatedColumns["password"] == nil {
+		t.Fatal("expected password column to be updated")
+	}
+}
+
 

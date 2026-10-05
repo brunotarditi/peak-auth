@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"peak-auth/internal/api/request"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
@@ -154,6 +156,19 @@ type testUserService struct {
 	service.UserService
 	completeLoginFn func(userID uint, publicAppID string, mfaCompleted bool) (response.TokenResponse, error)
 	findUserFn      func(userID uint) (*model.User, error)
+	registerFn      func(req request.RegisterRequest) (model.User, error)
+}
+
+func (u *testUserService) Register(req request.RegisterRequest) (model.User, error) {
+	if u.registerFn != nil {
+		return u.registerFn(req)
+	}
+	return model.User{
+		Model:      gorm.Model{ID: 99},
+		Email:      req.Email,
+		IsActive:   true,
+		IsVerified: true,
+	}, nil
 }
 
 func (u *testUserService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool, clientInfo ...string) (response.TokenResponse, error) {
@@ -176,10 +191,14 @@ func (u *testUserService) FindVerifiedUserByID(userID uint) (*model.User, error)
 }
 
 func setupOAuthControllerTest(t *testing.T) (*gin.Engine, *auth.JWTManager, *testOAuthRepo, *testAppRepo) {
-	return setupOAuthControllerTestWithUser(t, nil)
+	return setupOAuthControllerTestWithUserAndRules(t, nil, nil)
 }
 
 func setupOAuthControllerTestWithUser(t *testing.T, customUserSvc *testUserService) (*gin.Engine, *auth.JWTManager, *testOAuthRepo, *testAppRepo) {
+	return setupOAuthControllerTestWithUserAndRules(t, customUserSvc, nil)
+}
+
+func setupOAuthControllerTestWithUserAndRules(t *testing.T, customUserSvc *testUserService, customRules *mockRuleServiceForOAuth) (*gin.Engine, *auth.JWTManager, *testOAuthRepo, *testAppRepo) {
 	t.Helper()
 
 	// Generar clave privada RSA para el test
@@ -227,14 +246,33 @@ func setupOAuthControllerTestWithUser(t *testing.T, customUserSvc *testUserServi
 		}
 	}
 
+	mockRules := customRules
+	if mockRules == nil {
+		mockRules = &mockRuleServiceForOAuth{
+			rules: []model.ApplicationRules{
+				{
+					ApplicationID: 1,
+					Code:          util.REGISTRATION_POLICY,
+					Value:         []byte(`{"mode":"public","default_role":"USER"}`),
+					IsActive:      true,
+				},
+			},
+		}
+	}
+	mockAppAdmin := &mockAppAdminService{}
+
 	ctrl := &OAuthController{
 		OAuthService: oauthSvc,
 		UserService:  mockUserSvc,
 		TokenManager: tm,
+		RuleService:  mockRules,
+		AppService:   mockAppAdmin,
 	}
 
 	r := gin.New()
 	tmpl := template.Must(template.New("error.html").Parse("<html>{{.Title}}: {{.Message}}</html>"))
+	template.Must(tmpl.New("oauth_login.html").Parse("<html>Login {{.AllowRegistration}}</html>"))
+	template.Must(tmpl.New("oauth_register.html").Parse("<html>Register {{.Error}} {{.Success}}</html>"))
 	r.SetHTMLTemplate(tmpl)
 
 	oauth := r.Group("/oauth")
@@ -244,6 +282,9 @@ func setupOAuthControllerTestWithUser(t *testing.T, customUserSvc *testUserServi
 		oauth.OPTIONS("/token", ctrl.TokenEndpoint)
 		oauth.GET("/logout", ctrl.LogoutEndpoint)
 		oauth.POST("/logout", ctrl.LogoutEndpoint)
+		oauth.GET("/login", ctrl.GetPublicLogin)
+		oauth.GET("/register", ctrl.GetPublicRegister)
+		oauth.POST("/register", ctrl.PostPublicRegister)
 	}
 
 	return r, tm, oauthRepo, appRepo
@@ -1290,5 +1331,137 @@ func TestOAuth_TokenEndpoint_ClientCredentialsGrant(t *testing.T) {
 		}
 	})
 }
+
+type mockRuleServiceForOAuth struct {
+	service.ApplicationRuleService
+	rules []model.ApplicationRules
+}
+
+func (m *mockRuleServiceForOAuth) FindRulesByAppID(appID uint) ([]model.ApplicationRules, error) {
+	return m.rules, nil
+}
+
+func (m *mockRuleServiceForOAuth) ValidateLogin(appID uint, userID uint) error {
+	return nil
+}
+
+func TestOAuth_GetPublicRegister_RendersWhenPublic(t *testing.T) {
+	r, _, _, _ := setupOAuthControllerTest(t)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/oauth/register?client_id=client-portal&redirect_uri=https://portal.client.com/oauth/callback", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("se esperaba status 200 para registro público, obtenido: %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "Register") {
+		t.Errorf("se esperaba renderizar template oauth_register, obtenido: %s", w.Body.String())
+	}
+}
+
+func TestOAuth_PostPublicRegister_Success(t *testing.T) {
+	r, _, _, _ := setupOAuthControllerTest(t)
+
+	secretPass := "SecureP@ss123!"
+	form := url.Values{}
+	form.Set("client_id", "client-portal")
+	form.Set("redirect_uri", "https://portal.client.com/oauth/callback")
+	form.Set("state", "xyz987")
+	form.Set("first_name", "Jane")
+	form.Set("last_name", "Doe")
+	form.Set("email", "jane@client.com")
+	form.Set("password", secretPass)
+	form.Set("confirm_password", secretPass)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/oauth/register", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(w, req)
+
+	// Cuenta verificada sin requerir email -> 303 redirect a /oauth/authorize
+	if w.Code != http.StatusSeeOther {
+		t.Fatalf("se esperaba status 303 See Other, obtenido: %d, body: %s", w.Code, w.Body.String())
+	}
+
+	location := w.Header().Get("Location")
+	if !strings.HasPrefix(location, "/oauth/authorize") {
+		t.Errorf("se esperaba redirección a /oauth/authorize, obtenido: %s", location)
+	}
+
+	// Verificar cookie SSO peak_session
+	var hasPeakSession bool
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.Name == "peak_session" {
+			hasPeakSession = true
+			break
+		}
+	}
+	if !hasPeakSession {
+		t.Errorf("se esperaba cookie peak_session para SSO")
+	}
+}
+
+func TestOAuth_PostPublicRegister_PasswordMismatch(t *testing.T) {
+	r, _, _, _ := setupOAuthControllerTest(t)
+
+	form := url.Values{}
+	form.Set("client_id", "client-portal")
+	form.Set("redirect_uri", "https://portal.client.com/oauth/callback")
+	form.Set("state", "xyz987")
+	form.Set("first_name", "Jane")
+	form.Set("last_name", "Doe")
+	form.Set("email", "jane@client.com")
+	form.Set("password", "Pass1#One")
+	form.Set("confirm_password", "Pass2#Two")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/oauth/register", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("se esperaba status 400 Bad Request por mismatch, obtenido: %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "Las contraseñas no coinciden") {
+		t.Errorf("se esperaba mensaje de error de coincidencia de contraseñas, obtenido: %s", w.Body.String())
+	}
+}
+
+func TestOAuth_PostPublicRegister_RegistrationNotAllowed(t *testing.T) {
+	mockRules := &mockRuleServiceForOAuth{
+		rules: []model.ApplicationRules{
+			{
+				ApplicationID: 1,
+				Code:          util.REGISTRATION_POLICY,
+				Value:         []byte(`{"mode":"invitation"}`),
+				IsActive:      true,
+			},
+		},
+	}
+	r, _, _, _ := setupOAuthControllerTestWithUserAndRules(t, nil, mockRules)
+
+	form := url.Values{}
+	form.Set("client_id", "client-portal")
+	form.Set("redirect_uri", "https://portal.client.com/oauth/callback")
+	form.Set("first_name", "Jane")
+	form.Set("last_name", "Doe")
+	form.Set("email", "jane@client.com")
+	form.Set("password", "SecureP@ss123!")
+	form.Set("confirm_password", "SecureP@ss123!")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/oauth/register", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("se esperaba status 400 Bad Request, obtenido: %d", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "El registro no está habilitado para esta aplicación") {
+		t.Errorf("se esperaba mensaje de registro no habilitado, obtenido: %s", w.Body.String())
+	}
+}
+
 
 

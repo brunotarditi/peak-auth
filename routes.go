@@ -103,7 +103,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		HealthService: app.HealthService,
 	}
 
-	sessionCtrl := controller.NewSessionController(app.SessionService)
+	sessionCtrl := controller.NewSessionController(app.SessionService, app.UserService, app.UserRepo)
 	auditCtrl := controller.NewAuditController(app.AuditService, app.AppService)
 
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
@@ -165,6 +165,14 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			oauthWeb.GET("/mfa/setup", oauthCtrl.GetPublicLoginMfaSetup)
 			oauthWeb.POST("/mfa/setup/verify", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupVerify)
 			oauthWeb.POST("/mfa/setup/webauthn/finish", loginLimiter, oauthCtrl.PostPublicLoginMfaSetupWebAuthnFinish)
+		}
+
+		// Flujo público de registro para Web (SSO) protegido con CSRF
+		oauthRegister := oauth.Group("/register")
+		oauthRegister.Use(middleware.CSRFMiddleware())
+		{
+			oauthRegister.GET("", oauthCtrl.GetPublicRegister)
+			oauthRegister.POST("", loginLimiter, oauthCtrl.PostPublicRegister)
 		}
 
 		// Identity Brokering (Social Login con Google y GitHub)
@@ -271,6 +279,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	{
 		adminPrivate.GET("/", middleware.PlatformScopeMiddleware(app.UarRepo, app.AppRepo), dashboardCtrl.Dashboard)
 		adminPrivate.GET("/settings", sessionCtrl.GetSettingsPage)
+		adminPrivate.POST("/settings/profile", sessionCtrl.PostUpdateProfile)
+		adminPrivate.POST("/settings/password", resetLimiter, sessionCtrl.PostUpdatePassword)
 		adminPrivate.POST("/logout", loginCtrl.PostLogout)
 
 		// Gestión de Apps (crear/listar = solo plataforma)

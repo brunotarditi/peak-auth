@@ -31,6 +31,15 @@ type RelayState struct {
 	Nonce               string `json:"nonce"`
 }
 
+// GenerateNonce genera un identificador criptográfico pseudo-aleatorio de 32 caracteres hexadecimales (16 bytes)
+func GenerateNonce() (string, error) {
+	nonceBytes := make([]byte, 16)
+	if _, err := rand.Read(nonceBytes); err != nil {
+		return "", fmt.Errorf("error generando nonce aleatorio: %w", err)
+	}
+	return hex.EncodeToString(nonceBytes), nil
+}
+
 // GenerateRelayState serializa y firma criptográficamente el estado con HMAC-SHA256
 func GenerateRelayState(params RelayState, secretKey string) (string, error) {
 	if secretKey == "" {
@@ -42,11 +51,11 @@ func GenerateRelayState(params RelayState, secretKey string) (string, error) {
 	}
 
 	if params.Nonce == "" {
-		nonceBytes := make([]byte, 16)
-		if _, err := rand.Read(nonceBytes); err != nil {
-			return "", fmt.Errorf("error generando nonce aleatorio: %w", err)
+		nonce, err := GenerateNonce()
+		if err != nil {
+			return "", err
 		}
-		params.Nonce = hex.EncodeToString(nonceBytes)
+		params.Nonce = nonce
 	}
 
 	payloadJSON, err := json.Marshal(params)

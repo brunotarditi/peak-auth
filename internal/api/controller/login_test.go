@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"peak-auth/internal/api/request"
 	"peak-auth/internal/api/response"
@@ -202,6 +203,12 @@ func (m *mockUserServiceForLogin) UnlockUser(userID uint) error {
 	return nil
 }
 func (m *mockUserServiceForLogin) UpdateAvatar(userID uint, avatarURL string) error {
+	return nil
+}
+func (m *mockUserServiceForLogin) UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error {
+	return nil
+}
+func (m *mockUserServiceForLogin) ChangePassword(userID uint, currentPassword, newPassword string) error {
 	return nil
 }
 

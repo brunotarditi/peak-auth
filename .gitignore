@@ -46,5 +46,7 @@ node_modules
 !/web/static/uploads/.gitkeep
 !/web/static/uploads/*/.gitkeep
 
-
-
+# Gradle / Kotlin
+.gradle/
+build/
+*.class

@@ -11,6 +11,7 @@ import (
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
 	"strings"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -27,21 +28,24 @@ type BrokerAuthResult struct {
 
 type BrokerService interface {
 	GetAuthURL(provider string, relay broker.RelayState) (string, error)
-	ProcessCallback(ctx context.Context, provider string, code string, rawState string) (*BrokerAuthResult, error)
+	ProcessCallback(ctx context.Context, provider string, code string, rawState string, expectedNonce ...string) (*BrokerAuthResult, error)
 	IsProviderConfigured(provider string) bool
 	ListConfiguredProviders() []string
 }
 
 type brokerService struct {
-	identityRepo repo.UserIdentityRepository
-	userRepo     repo.UserRepository
-	roleRepo     repo.RoleRepository
-	uarRepo      repo.UserApplicationRoleRepository
-	appRepo      repo.ApplicationRepository
-	ruleService  ApplicationRuleService
-	tokenManager *auth.JWTManager
-	registry     *broker.Registry
-	stateSecret  string
+	identityRepo     repo.UserIdentityRepository
+	userRepo         repo.UserRepository
+	roleRepo         repo.RoleRepository
+	uarRepo          repo.UserApplicationRoleRepository
+	appRepo          repo.ApplicationRepository
+	ruleService      ApplicationRuleService
+	tokenManager     *auth.JWTManager
+	registry         *broker.Registry
+	stateSecret      string
+	txManager        repo.TransactionManager
+	consumedNonces   map[string]int64
+	consumedNoncesMu sync.Mutex
 }
 
 func NewBrokerService(
@@ -54,17 +58,24 @@ func NewBrokerService(
 	tokenManager *auth.JWTManager,
 	registry *broker.Registry,
 	stateSecret string,
+	txManager ...repo.TransactionManager,
 ) BrokerService {
+	var txMgr repo.TransactionManager
+	if len(txManager) > 0 {
+		txMgr = txManager[0]
+	}
 	return &brokerService{
-		identityRepo: identityRepo,
-		userRepo:     userRepo,
-		roleRepo:     roleRepo,
-		uarRepo:      uarRepo,
-		appRepo:      appRepo,
-		ruleService:  ruleService,
-		tokenManager: tokenManager,
-		registry:     registry,
-		stateSecret:  stateSecret,
+		identityRepo:   identityRepo,
+		userRepo:       userRepo,
+		roleRepo:       roleRepo,
+		uarRepo:        uarRepo,
+		appRepo:        appRepo,
+		ruleService:    ruleService,
+		tokenManager:   tokenManager,
+		registry:       registry,
+		stateSecret:    stateSecret,
+		txManager:      txMgr,
+		consumedNonces: make(map[string]int64),
 	}
 }
 
@@ -107,7 +118,7 @@ func (s *brokerService) GetAuthURL(provider string, relay broker.RelayState) (st
 	return p.GetAuthURL(signedState), nil
 }
 
-func (s *brokerService) ProcessCallback(ctx context.Context, provider string, code string, rawState string) (*BrokerAuthResult, error) {
+func (s *brokerService) ProcessCallback(ctx context.Context, provider string, code string, rawState string, expectedNonce ...string) (*BrokerAuthResult, error) {
 	if code == "" {
 		return nil, errors.New("código de autorización ausente en la respuesta del proveedor")
 	}
@@ -118,6 +129,32 @@ func (s *brokerService) ProcessCallback(ctx context.Context, provider string, co
 			return nil, errors.New("la sesión de autenticación social ha expirado; por favor intente nuevamente")
 		}
 		return nil, errors.New("el estado de autorización es inválido o fue alterado")
+	}
+
+	// 1. Validar vinculación con el navegador (Login CSRF)
+	if len(expectedNonce) > 0 && expectedNonce[0] != "" {
+		if relay.Nonce == "" || relay.Nonce != expectedNonce[0] {
+			return nil, errors.New("login CSRF detectado: la sesión del navegador no coincide con el estado de autorización")
+		}
+	}
+
+	// 2. Mitigar Replay Attack invalidando el nonce de un solo uso
+	if relay.Nonce != "" {
+		s.consumedNoncesMu.Lock()
+		if _, used := s.consumedNonces[relay.Nonce]; used {
+			s.consumedNoncesMu.Unlock()
+			return nil, errors.New("el estado de autorización ya ha sido utilizado (ataque de replay prevenido)")
+		}
+		s.consumedNonces[relay.Nonce] = relay.Timestamp + int64((10 * time.Minute).Seconds())
+
+		// Limpieza de nonces expirados periódica
+		now := time.Now().Unix()
+		for n, exp := range s.consumedNonces {
+			if exp < now {
+				delete(s.consumedNonces, n)
+			}
+		}
+		s.consumedNoncesMu.Unlock()
 	}
 
 	p, err := s.registry.Get(provider)
@@ -320,32 +357,64 @@ func (s *brokerService) resolveOrCreateUser(profile *broker.BrokerProfile, app *
 		AvatarURL: profile.AvatarURL,
 	}
 
-	if err := s.userRepo.CreateWithProfile(&newUser, &userProfile); err != nil {
-		return nil, fmt.Errorf("error creando usuario federado: %w", err)
-	}
-	newUser.Profile = userProfile
+	if s.txManager != nil {
+		err = s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
+			if err := tx.Users().CreateWithProfile(&newUser, &userProfile); err != nil {
+				return fmt.Errorf("error creando usuario federado: %w", err)
+			}
+			newUser.Profile = userProfile
 
-	// Crear UserIdentity
-	newIdent := model.UserIdentity{
-		UserID:         newUser.ID,
-		Provider:       profile.Provider,
-		ProviderUserID: profile.ProviderUserID,
-		Email:          profile.Email,
-		AvatarURL:      profile.AvatarURL,
-		LastLoginAt:    time.Now(),
-	}
-	if err := s.identityRepo.Create(&newIdent); err != nil {
-		return nil, fmt.Errorf("error asociando identidad federada: %w", err)
-	}
+			newIdent := model.UserIdentity{
+				UserID:         newUser.ID,
+				Provider:       profile.Provider,
+				ProviderUserID: profile.ProviderUserID,
+				Email:          profile.Email,
+				AvatarURL:      profile.AvatarURL,
+				LastLoginAt:    time.Now(),
+			}
+			if err := tx.Identities().Create(&newIdent); err != nil {
+				return fmt.Errorf("error asociando identidad federada: %w", err)
+			}
 
-	// Asignar rol inicial en la app
-	role, err := s.roleRepo.FindByNameForApp(defaultRole, app.ID)
-	if err != nil {
-		// Fallback a rol global USER
-		role, err = s.roleRepo.FindGlobalByName("USER")
-	}
-	if err == nil {
-		_ = s.uarRepo.AssignRole(newUser.ID, app.ID, role.ID)
+			role, err := tx.Roles().FindByNameForApp(defaultRole, app.ID)
+			if err != nil {
+				role, err = tx.Roles().FindGlobalByName("USER")
+			}
+			if err == nil {
+				if err := tx.UAR().AssignRole(newUser.ID, app.ID, role.ID); err != nil {
+					return fmt.Errorf("error asignando rol inicial: %w", err)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if err := s.userRepo.CreateWithProfile(&newUser, &userProfile); err != nil {
+			return nil, fmt.Errorf("error creando usuario federado: %w", err)
+		}
+		newUser.Profile = userProfile
+
+		newIdent := model.UserIdentity{
+			UserID:         newUser.ID,
+			Provider:       profile.Provider,
+			ProviderUserID: profile.ProviderUserID,
+			Email:          profile.Email,
+			AvatarURL:      profile.AvatarURL,
+			LastLoginAt:    time.Now(),
+		}
+		if err := s.identityRepo.Create(&newIdent); err != nil {
+			return nil, fmt.Errorf("error asociando identidad federada: %w", err)
+		}
+
+		role, err := s.roleRepo.FindByNameForApp(defaultRole, app.ID)
+		if err != nil {
+			role, err = s.roleRepo.FindGlobalByName("USER")
+		}
+		if err == nil {
+			_ = s.uarRepo.AssignRole(newUser.ID, app.ID, role.ID)
+		}
 	}
 
 	return &newUser, nil

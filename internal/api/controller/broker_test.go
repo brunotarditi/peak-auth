@@ -22,7 +22,7 @@ import (
 
 type mockBrokerServiceForController struct {
 	authURLFn     func(provider string, relay broker.RelayState) (string, error)
-	processFn     func(ctx context.Context, provider string, code string, rawState string) (*service.BrokerAuthResult, error)
+	processFn     func(ctx context.Context, provider string, code string, rawState string, expectedNonce ...string) (*service.BrokerAuthResult, error)
 	isConfigured  bool
 	providersList []string
 }
@@ -34,9 +34,9 @@ func (m *mockBrokerServiceForController) GetAuthURL(provider string, relay broke
 	return "https://accounts.google.com/auth?state=dummy", nil
 }
 
-func (m *mockBrokerServiceForController) ProcessCallback(ctx context.Context, provider string, code string, rawState string) (*service.BrokerAuthResult, error) {
+func (m *mockBrokerServiceForController) ProcessCallback(ctx context.Context, provider string, code string, rawState string, expectedNonce ...string) (*service.BrokerAuthResult, error) {
 	if m.processFn != nil {
-		return m.processFn(ctx, provider, code, rawState)
+		return m.processFn(ctx, provider, code, rawState, expectedNonce...)
 	}
 	return &service.BrokerAuthResult{
 		User: &model.User{
@@ -165,8 +165,22 @@ func TestBrokerController_CallbackEndpoint(t *testing.T) {
 		}
 	})
 
+	t.Run("Missing broker_nonce cookie triggers Login CSRF block", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/broker/google/callback?code=valid-code&state=valid-state", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusSeeOther {
+			t.Errorf("expected 303 See Other, got %d", w.Code)
+		}
+		loc := w.Header().Get("Location")
+		if !strings.Contains(loc, "Login+CSRF+prevenido") && !strings.Contains(loc, "Login%20CSRF%20prevenido") {
+			t.Errorf("expected Login CSRF error in redirect, got %s", loc)
+		}
+	})
+
 	t.Run("Successful callback sets SSO cookie and redirects to authorize", func(t *testing.T) {
-		mockBroker.processFn = func(ctx context.Context, provider, code, rawState string) (*service.BrokerAuthResult, error) {
+		mockBroker.processFn = func(ctx context.Context, provider, code, rawState string, expectedNonce ...string) (*service.BrokerAuthResult, error) {
 			return &service.BrokerAuthResult{
 				User: &model.User{
 					Model:        gorm.Model{ID: 5},
@@ -181,6 +195,7 @@ func TestBrokerController_CallbackEndpoint(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodGet, "/oauth/broker/google/callback?code=valid-code&state=valid-state", nil)
+		req.AddCookie(&http.Cookie{Name: "broker_nonce", Value: "valid-nonce"})
 		r.ServeHTTP(w, req)
 
 		if w.Code != http.StatusSeeOther {
@@ -212,7 +227,7 @@ func TestBrokerController_CallbackEndpoint(t *testing.T) {
 	})
 
 	t.Run("MFA required callback sets mfa_pending cookie and redirects to MFA challenge", func(t *testing.T) {
-		mockBroker.processFn = func(ctx context.Context, provider, code, rawState string) (*service.BrokerAuthResult, error) {
+		mockBroker.processFn = func(ctx context.Context, provider, code, rawState string, expectedNonce ...string) (*service.BrokerAuthResult, error) {
 			return &service.BrokerAuthResult{
 				User: &model.User{
 					Model:    gorm.Model{ID: 5},
@@ -227,6 +242,7 @@ func TestBrokerController_CallbackEndpoint(t *testing.T) {
 
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodGet, "/oauth/broker/google/callback?code=valid-code&state=valid-state", nil)
+		req.AddCookie(&http.Cookie{Name: "broker_nonce", Value: "valid-nonce"})
 		r.ServeHTTP(w, req)
 
 		if w.Code != http.StatusSeeOther {

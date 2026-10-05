@@ -7,6 +7,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 import java.net.URLEncoder
 
@@ -248,7 +249,7 @@ class PeakAuthClient(
         body: String? = null,
         headers: Map<String, String> = emptyMap()
     ): String {
-        val conn = (URL(urlString).openConnection() as HttpURLConnection).apply {
+        val conn = (URI(urlString).toURL().openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = config.connectTimeoutMs
             readTimeout = config.readTimeoutMs
@@ -363,9 +364,32 @@ class PeakAuthClient(
         return URLEncoder.encode(value, "UTF-8")
     }
 
-    private fun buildJson(vararg pairs: Pair<String, String>): String {
-        return pairs.joinToString(prefix = "{", postfix = "}") { (k, v) ->
-            "\"$k\":\"$v\""
+    internal fun escapeJsonString(value: String): String {
+        val sb = StringBuilder()
+        for (c in value) {
+            when (c) {
+                '\\' -> sb.append("\\\\")
+                '"' -> sb.append("\\\"")
+                '\b' -> sb.append("\\b")
+                '\u000C' -> sb.append("\\f")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> {
+                    if (c < ' ') {
+                        sb.append(String.format("\\u%04x", c.code))
+                    } else {
+                        sb.append(c)
+                    }
+                }
+            }
+        }
+        return sb.toString()
+    }
+
+    internal fun buildJson(vararg pairs: Pair<String, String>): String {
+        return pairs.joinToString(separator = ",", prefix = "{", postfix = "}") { (k, v) ->
+            "\"${escapeJsonString(k)}\":\"${escapeJsonString(v)}\""
         }
     }
 }

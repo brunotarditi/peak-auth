@@ -40,6 +40,8 @@ class JwtVerifierTest {
     private fun createJwt(
         sub: String = "123",
         email: String = "user@peak.local",
+        username: String = "testuser",
+        tokenType: String = "access",
         aud: String = "\"my-test-app\"",
         iss: String = "peak-auth",
         exp: Long = (System.currentTimeMillis() / 1000) + 3600,
@@ -51,7 +53,8 @@ class JwtVerifierTest {
             {
                 "sub": "$sub",
                 "email": "$email",
-                "preferred_username": "testuser",
+                "username": "$username",
+                "token_type": "$tokenType",
                 "aud": $aud,
                 "iss": "$iss",
                 "exp": $exp,
@@ -91,7 +94,9 @@ class JwtVerifierTest {
         val claims = verifier.verify(token)
         assertEquals("123", claims.sub)
         assertEquals("user@peak.local", claims.email)
+        assertEquals("testuser", claims.username)
         assertEquals("testuser", claims.preferredUsername)
+        assertEquals("access", claims.tokenType)
         assertEquals("peak-auth", claims.iss)
         assertTrue(claims.hasRole("ADMIN"))
         assertTrue(claims.hasRole("USER"))
@@ -100,6 +105,29 @@ class JwtVerifierTest {
         assertEquals("Test", claims.firstName)
         assertEquals("User", claims.lastName)
         assertFalse(claims.isExpired())
+    }
+
+    @Test
+    fun `verify rejects token with mfa_pending token type`() {
+        val token = createJwt(tokenType = "mfa_pending")
+
+        val customJwks = object : JwksProvider("https://dummy") {
+            override fun getKey(kid: String?): RSAPublicKey = rsaPublicKey
+        }
+        val verifier = JwtVerifier(config, customJwks)
+
+        val ex = assertThrows(SecurityException::class.java) {
+            verifier.verify(token)
+        }
+        assertTrue(ex.message?.contains("Tipo de token inválido") == true)
+    }
+
+    @Test
+    fun `extractJsonStringField parses empty strings accurately`() {
+        val json = "{\"empty_field\":\"\",\"normal_field\":\"value\"}"
+        assertEquals("", JwksProvider.extractJsonStringField(json, "empty_field"))
+        assertEquals("value", JwksProvider.extractJsonStringField(json, "normal_field"))
+        assertNull(JwksProvider.extractJsonStringField(json, "non_existent"))
     }
 
     @Test

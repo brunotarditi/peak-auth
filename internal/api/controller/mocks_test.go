@@ -177,7 +177,7 @@ func (m *mockAppAdminService) UpdateApp(appID string, description, redirectURL s
 }
 
 func (m *mockAppAdminService) GetAppDetails(appID string) (model.Application, error) {
-	return model.Application{ID: 1, AppID: appID, Name: "Test App"}, nil
+	return model.Application{ID: 1, AppID: appID, Name: "Test App", IsActive: true}, nil
 }
 
 type mockRuleAdminService struct {

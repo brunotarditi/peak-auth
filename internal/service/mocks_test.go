@@ -256,6 +256,17 @@ func (m *mockUserRepo) UpdateAvatar(userID uint, avatarURL string) error {
 	}
 	return m.err
 }
+func (m *mockUserRepo) UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error {
+	if m.user.ID == userID {
+		m.user.Profile.FirstName = firstName
+		m.user.Profile.LastName = lastName
+		m.user.Profile.BirthDate = birthDate
+		if avatarURL != "" {
+			m.user.Profile.AvatarURL = avatarURL
+		}
+	}
+	return m.err
+}
 
 type mockUARRepo struct {
 	roles                map[uint][]string

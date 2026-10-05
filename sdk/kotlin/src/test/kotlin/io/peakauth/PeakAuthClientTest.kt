@@ -79,4 +79,20 @@ class PeakAuthClientTest {
             PeakAuthConfig(issuerUrl = "https://auth.peak.local", clientId = "")
         }
     }
+
+    @Test
+    fun `buildJson properly escapes quotes and backslashes`() {
+        val config = PeakAuthConfig(
+            issuerUrl = "https://auth.peak.local",
+            clientId = "my-client-app"
+        )
+        val client = PeakAuthClient(config)
+
+        val json = client.buildJson(
+            "token" to "abc\"def\\ghi\njkl",
+            "empty" to ""
+        )
+
+        assertEquals("{\"token\":\"abc\\\"def\\\\ghi\\njkl\",\"empty\":\"\"}", json)
+    }
 }

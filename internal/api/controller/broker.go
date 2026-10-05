@@ -50,12 +50,19 @@ func (c *BrokerController) AuthEndpoint(ctx *gin.Context) {
 		return
 	}
 
+	nonce, nerr := broker.GenerateNonce()
+	if nerr != nil {
+		ctx.String(http.StatusInternalServerError, "error generando estado de seguridad")
+		return
+	}
+
 	relay := broker.RelayState{
 		ClientID:            clientID,
 		RedirectURI:         redirectURI,
 		State:               state,
 		CodeChallenge:       codeChallenge,
 		CodeChallengeMethod: codeChallengeMethod,
+		Nonce:               nonce,
 	}
 
 	authURL, err := c.BrokerService.GetAuthURL(provider, relay)
@@ -74,6 +81,18 @@ func (c *BrokerController) AuthEndpoint(ctx *gin.Context) {
 		ctx.Redirect(http.StatusSeeOther, loginURL.String())
 		return
 	}
+
+	// Vincular el nonce al navegador del usuario vía cookie HttpOnly SameSite=Lax para mitigar Login CSRF
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie(
+		"broker_nonce",
+		nonce,
+		600, // 10 minutos (misma duración máxima que el RelayState)
+		"/oauth/broker",
+		"",
+		util.IsProduction(),
+		true, // HttpOnly
+	)
 
 	ctx.Redirect(http.StatusFound, authURL)
 }
@@ -102,7 +121,17 @@ func (c *BrokerController) CallbackEndpoint(ctx *gin.Context) {
 		return
 	}
 
-	res, err := c.BrokerService.ProcessCallback(ctx.Request.Context(), provider, code, rawState)
+	// Validar y destruir de inmediato la cookie de nonce para vincular la petición al navegador y prevenir Replay
+	cookieNonce, _ := ctx.Cookie("broker_nonce")
+	ctx.SetSameSite(http.SameSiteLaxMode)
+	ctx.SetCookie("broker_nonce", "", -1, "/oauth/broker", "", util.IsProduction(), true)
+
+	if cookieNonce == "" {
+		c.redirectToLoginWithError(ctx, rawState, "Sesión de autenticación social inválida o expirada (Login CSRF prevenido)")
+		return
+	}
+
+	res, err := c.BrokerService.ProcessCallback(ctx.Request.Context(), provider, code, rawState, cookieNonce)
 	if err != nil {
 		c.redirectToLoginWithError(ctx, rawState, err.Error())
 		return
