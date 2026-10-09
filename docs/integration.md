@@ -32,9 +32,9 @@ Usuario en Frontend (Angular, React, Web)
 1. Inicia sesión en el panel administrativo de Peak Auth (`/admin`).
 2. Ve a **Aplicaciones** ➔ **Nueva Aplicación**.
 3. Configura:
-   - **Nombre:** Ej. `Librería Mariela`
-   - **App ID (Client ID):** Ej. `libreria-mariela`
-   - **URI de Redirección:** Ej. `http://localhost:4200/callback` (donde vuelve tu frontend tras autenticarse).
+   - **Nombre:** Ej. `App prueba`
+   - **App ID (Client ID):** Ej. `app-prueba`
+   - **URI de Redirección:** Ej. `http://localhost:3000/callback` (donde vuelve tu frontend tras autenticarse).
 4. El sistema generará el `client_id` y su `client_secret`.
 
 ---
@@ -50,7 +50,7 @@ Para aplicaciones frontend (SPAs o móviles), se debe utilizar PKCE con método 
 ### 2. Redirigir al usuario al endpoint de autorización:
 ```text
 GET https://<TU_DOMINIO_PEAK_AUTH>/oauth/authorize
-    ?client_id=libreria-mariela
+    ?client_id=app-prueba
     &redirect_uri=https://tu-app.com/callback
     &response_type=code
     &state=<STATE_CSRF_ALEATORIO>
@@ -66,7 +66,7 @@ https://tu-app.com/callback?code=<AUTHORIZATION_CODE>&state=<STATE>
 
 ---
 
-## Paso 3: Flujo Machine-to-Machine (Client Credentials Grant - RFC 6749 §4.4)
+## Paso 3: Flujo Machine-to-Machine (Client Credentials Grant - RFC 6749)
 
 Cuando la interacción no involucra a un usuario final interactivo (por ejemplo: microservicios internos, workers en segundo plano, tareas programadas / cron jobs o APIs backend que consumen otros servicios), se utiliza el flujo **Client Credentials Grant**.
 
@@ -94,7 +94,7 @@ curl -X POST https://<TU_DOMINIO_PEAK_AUTH>/oauth/token \
   }'
 ```
 
-### 2. Respuesta de Token (RFC 6749 §4.4.3)
+### 2. Respuesta de Token (RFC 6749)
 ```json
 {
   "access_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InBlYWstYXV0aC1rZXktMSIsInR5cCI6IkpXVCJ9...",
@@ -109,7 +109,7 @@ curl -X POST https://<TU_DOMINIO_PEAK_AUTH>/oauth/token \
 > - El `sub` (Subject) del token contiene el `client_id` del microservicio o daemon.
 > - El `aud` (Audience) contiene el `client_id` para garantizar el aislamiento entre aplicaciones.
 > - Los scopes solicitados se incluyen en el claim `roles` para control de permisos granular en los endpoints consumidores.
-> - Conforme al estándar RFC 6749 §4.4.3, este flujo no genera ni emite refresh tokens.
+> - Conforme al estándar RFC 6749, este flujo no genera ni emite refresh tokens.
 
 ---
 
@@ -377,7 +377,7 @@ Respuesta cuando el token es válido:
   "active": true,
   "sub": "42",
   "username": "usuario@ejemplo.com",
-  "aud": "libreria-mariela",
+  "aud": "app-prueba",
   "roles": ["USER", "ADMIN"],
   "mfa_verified": true,
   "exp": 1735689600,

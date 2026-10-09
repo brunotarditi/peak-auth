@@ -2,7 +2,7 @@
 <div id="content_mfa" class="tab-content hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
         <div>
-            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Autenticación en Dos Pasos (MFA)</h3>
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Autenticación en dos pasos (MFA)</h3>
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Configura el requisito de segundo factor (TOTP) para esta aplicación.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
@@ -18,7 +18,7 @@
             <!-- Política de MFA -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Modo de Verificación</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Modo de verificación</span>
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">
                         Determina si el inicio de sesión exige un segundo factor.
                     </span>

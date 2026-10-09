@@ -2,39 +2,40 @@
 
 <div id="appDetailsContainer" data-app-id="{{ .App.AppID }}" style="display: flex; flex-direction: column; gap: 2rem;">
     <!-- Top Bar -->
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-        <a href="/admin" class="peak-btn peak-btn-brand-soft" style="font-size: 0.75rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <a href="/admin" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem;">
             {{ template "icon-arrow-back" }}
             Volver a aplicaciones
         </a>
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="/admin/apps/{{.App.AppID}}/users" title="Gestionar usuarios de la aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem;">
+                {{ template "icon-users" }}
+                Usuarios ({{.UserCount}})
+            </a>
+            <a href="/admin/apps/{{.App.AppID}}/audit" title="Registro de auditoría de la aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem;">
+                <svg style="width: 1.125rem; height: 1.125rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                Auditoría
+            </a>
             {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
-            <a href="/admin/apps/{{.App.AppID}}/branding" title="Personalizar diseño y tema de OAuth" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
+            <a href="/admin/apps/{{.App.AppID}}/branding" title="Personalizar diseño y tema de autenticación" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem;">
                 {{ template "icon-palette" }}
                 Personalización
             </a>
             {{ end }}
-            <a href="/admin/apps/{{.App.AppID}}/edit" title="Editar aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
+            <a href="/admin/apps/{{.App.AppID}}/edit" title="Editar configuración de la aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem;">
                 {{ template "icon-edit" }}
                 Editar
             </a>
             {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
-            <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" style="margin: 0; display: flex;">
+            <div style="width: 1px; height: 1.5rem; background-color: var(--border-color); margin: 0 0.25rem;"></div>
+            <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" style="margin: 0; display: inline-flex;">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                <button type="button" data-action="delete-app" title="Eliminar aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--rose-600);">
+                <button type="button" data-action="delete-app" title="Eliminar aplicación" class="peak-btn peak-btn-danger" style="font-size: 0.8125rem;">
                     {{template "icon-delete"}}
                     Eliminar
                 </button>
             </form>
             {{ end }}
-            <a href="/admin/apps/{{.App.AppID}}/users" title="Gestionar usuarios" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem; color: var(--brand-600);">
-                {{ template "icon-users" }}
-                Usuarios ({{.UserCount}})
-            </a>
-            <a href="/admin/apps/{{.App.AppID}}/audit" title="Registro de auditoría de la aplicación" class="peak-btn peak-btn-secondary" style="font-size: 0.75rem;">
-                <svg style="width: 1.25em; height: 1.25em;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                Auditoría
-            </a>
         </div>
     </div>
     
@@ -96,7 +97,7 @@
                         <div style="position: relative; flex-grow: 1;">
                             <input type="password" readonly value="********************************" autocomplete="new-password" data-bwignore data-1p-ignore style="width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--slate-400); outline: none;">
                         </div>
-                        <button type="button" data-action="revoke-secret" class="icon-btn icon-btn-danger" style="padding: 0.75rem;" title="Revocar Secreto" aria-label="Revocar Secreto">
+                        <button type="button" data-action="revoke-secret" class="icon-btn icon-btn-danger" style="padding: 0.75rem;" title="Revocar secreto" aria-label="Revocar secreto">
                             {{template "icon-reload"}}
                         </button>
                     </div>
@@ -162,7 +163,7 @@
         
         <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 32rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="transfer-modal-title">Transferir Propiedad</h3>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="transfer-modal-title">Transferir propiedad</h3>
                 <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Transfiere la propiedad de <strong>{{ .App.Name }}</strong> a otro usuario del sistema. Tu rol pasará a ser ADMIN.</p>
             </div>
 
@@ -185,7 +186,7 @@
                         Cancelar
                     </button>
                     <button type="submit" id="submitTransferBtn" class="peak-btn peak-btn-primary peak-btn-block" style="background-color: var(--amber-600); border-color: var(--amber-600);">
-                        Confirmar Transferencia
+                        Confirmar transferencia
                     </button>
                 </div>
             </form>

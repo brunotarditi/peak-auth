@@ -3,7 +3,7 @@
 <div id="content_autorizacion" class="tab-content hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
         <div>
-            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Políticas de Autorización (RBAC)</h3>
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Políticas de autorización (RBAC)</h3>
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Administra cómo se aplican los roles y permisos en la aplicación.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
@@ -19,7 +19,7 @@
             <!-- Activar Control de Acceso (RBAC) -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Activar Control de Acceso (RBAC)</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Activar control de acceso (RBAC)</span>
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400); line-height: 1.5;" id="authz_description">
                         {{ if .AuthzPolicy.EnableRoles }}
                         Los accesos de los usuarios están supeditados a los roles y permisos asignados.

@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Security](https://img.shields.io/badge/security-hardened-success.svg)
 
-**Peak Auth** es un proveedor de identidad (IdP) y servidor de autenticación Single Sign-On (SSO) empresarial desarrollado en **Go**. Permite que múltiples aplicaciones web, móviles y microservicios se autentiquen de forma centralizada mediante el estándar **OAuth 2.0 con PKCE** y **JWT asimétricos (RSA-256)**, con verificación offline ultrarrápida vía JWKS y seguridad integral respaldada por **MFA multi-modal (TOTP + WebAuthn/Passkeys)**.
+**Peak Auth** es un proveedor de identidad (IdP) y servidor de autenticación Single Sign-On (SSO) empresarial desarrollado en **Go**. Permite que múltiples aplicaciones web, móviles y microservicios se autentiquen de forma centralizada mediante el estándar **OAuth 2.0 con PKCE** y **JWT asimétricos (RSA-256)**, con verificación offline ultrarrápida vía JWKS y seguridad integral respaldada por **MFA multi-modal (TOTP + WebAuthn/Passkeys)**, Social Login federado (Google & GitHub) y almacenamiento desacoplado de perfiles (Local y Cloudflare R2 / AWS S3).
 
 ---
 
@@ -14,7 +14,8 @@
 
 - 🔐 **Autenticación Centralizada (SSO)**: Inicio de sesión único con cookie de sesión segura (`peak_session`) compartida entre tus aplicaciones cliente.
 - ⚡ **OAuth 2.0 + PKCE (RFC 7636)**: Flujo de autorización estándar (`authorization_code`) con soporte estricto para Proof Key for Code Exchange (S256), protegiendo SPAs, apps móviles y clientes web contra intercepción de códigos.
-- 🤖 **OAuth 2.0 Client Credentials Grant (RFC 6749 §4.4)**: Autenticación Machine-to-Machine (M2M) segura para microservicios, daemons, workers y APIs backend sin interacción de usuario.
+- 🤖 **OAuth 2.0 Client Credentials Grant (RFC 6749)**: Autenticación Machine-to-Machine (M2M) segura para microservicios, daemons, workers y APIs backend sin interacción de usuario.
+- 🔍 **Token Introspection (RFC 7662)**: Endpoint `/oauth/introspect` para que API gateways y microservicios consulten el estado y los metadatos de tokens en tiempo real.
 - 🔑 **JWT Asimétricos (RSA-256) & OIDC Discovery**: 
   - Firma con clave privada RSA en el servidor y verificación offline con clave pública en clientes.
   - Endpoint de descubrimiento estándar `GET /.well-known/openid-configuration`.
@@ -25,29 +26,31 @@
   - **WebAuthn / Passkeys / FIDO2**: Autenticación biométrica nativa (TouchID, FaceID, Windows Hello) y llaves de seguridad físicas (YubiKey). Errores centinela tipados que aíslan la validación de ceremonias.
   - **Recovery Codes**: Códigos de recuperación de respaldo de un solo uso protegidos con hash criptográfico `bcrypt`.
   - **MFA Enforcement por Aplicación**: Políticas configurables (`MFA_POLICY`: `NONE`, `OPTIONAL`, `REQUIRED`) que fuerzan al usuario a enrolarse en MFA durante el login si la app lo exige.
+- 🌐 **Identity Brokering (Social Login)**:
+  - Soporte nativo para inicio de sesión social federado con **Google** y **GitHub**.
+  - Vinculación automática de identidades (`UserIdentity`) por correo verificado sin duplicación de usuarios.
+- 📱 **Gestión de Sesiones Activas & Revocación Remota**:
+  - Detección de dispositivos (`Desktop`, `Móvil`, `Tablet`), IP y última actividad.
+  - Cierre individual de sesiones o revocación masiva de todas las demás sesiones (`revoke-others`).
+- 📁 **Almacenamiento de Perfiles Desacoplado**:
+  - Soporte multi-driver para avatares y archivos: **Disco local** o **Cloudflare R2 / AWS S3** (S3-compatible sin costos de egress).
 - 👥 **Control de Acceso Basado en Roles (RBAC) & Modelo de Propiedad**:
   - Distinción jerárquica clara: Superusuario de plataforma (`ROOT`) vs. Propietario de aplicación (`OWNER`).
   - Propietario único (`OWNER`) por aplicación cliente, auto-asignado al creador con capacidad de transferir la propiedad y control exclusivo de operaciones críticas (eliminación y regeneración de secretos).
   - Roles contextuales por aplicación (`OWNER`, `ADMIN`, `USER` o roles personalizados).
-  - Políticas de seguridad granulares por aplicación:
-    - `MFA_POLICY`: Nivel de obligatoriedad de MFA.
-    - `PWD_POLICY`: Longitud mínima, mayúsculas, números y caracteres especiales.
-    - `SESSION_POLICY`: Duración y expiración de tokens/sesiones.
-    - `REGISTRATION_POLICY`: Habilitación o restricción del auto-registro de usuarios.
+  - Políticas de seguridad granulares por aplicación: `MFA_POLICY`, `PWD_POLICY`, `SESSION_POLICY`, `REGISTRATION_POLICY`.
   - **App Raíz Inmutable**: El tenant maestro `peak-auth` (`util.AppIdPeakAuth`) está blindado contra eliminación accidental.
 - 🏢 **Multi-Tenancy Real**: Gestión centralizada de múltiples aplicaciones cliente con credenciales independientes (`client_id` y `client_secret`).
 - 🔄 **Refresh Tokens Rotativos**: Sesiones persistentes con rotación automática de refresh tokens; tokens previos son destruidos de inmediato y almacenados con hash criptográfico SHA-256.
 - 🔄 **Rotación Multi-Clave & Período de Gracia (Grace Period)**: Compatibilidad multi-key fail-closed identificada por `kid`, permitiendo rotar claves RSA sin invalidar tokens activos.
 - 📧 **Servicio de Correo Electrónico**: Verificación de cuentas de correo y recuperación de contraseñas mediante **Resend** (con fallback a proveedor en consola para desarrollo).
+- ⚖️ **Cumplimiento Legal y Normativo**: Páginas públicas y administrativas de Términos y condiciones (`/terms`) y Políticas de privacidad (`/privacy`), enlazadas en el pie de página y formularios de autenticación.
 - 🛡️ **Seguridad Defensiva y Protección Activa**:
   - **Mitigación de Timing Attacks**: Hashes de relleno (dummy bcrypt) para mantener tiempo de respuesta constante ante usuarios inexistentes.
   - **Protección CSRF**: Tokens de doble submit cookie en formularios administrativos y flujos interactivos.
-  - **Rate Limiting por IP (In-Memory)**: Limitadores de tasa en memoria (`sync.Mutex`) para endpoints sensibles (login, MFA, reset de contraseña, mutación de reglas) en entornos mono-instancia. Para despliegues horizontales (Kubernetes/Cloud), se recomienda delegar el rate-limiting en el Ingress Controller (NGINX/Traefik) o CDN/WAF perimetral (Cloudflare, AWS WAF).
-  - **Observabilidad y Health Probes**: Endpoints estándar `/health` (Liveness) y `/ready` (Readiness con ping activo a PostgreSQL y validación de claves JWT) listos para orquestadores y balanceadores.
+  - **Rate Limiting por IP (In-Memory)**: Limitadores de tasa en memoria (`sync.Mutex`) para endpoints sensibles en entornos mono-instancia.
+  - **Observabilidad y Health Probes**: Endpoints estándar `/health` (Liveness) y `/ready` (Readiness con ping activo a PostgreSQL y validación de claves JWT).
   - **Trazabilidad y Correlation ID**: Propagación automática de cabeceras `X-Request-ID` y logging estructurado mediante `log/slog` nativo de Go.
-  - **Sanitización de Errores**: Handlers con captura controlada (`internalErrorJSON`) que registran fallos en el servidor y responden mensajes genéricos, previniendo fuga de esquemas SQL o infraestructura.
-  - **Prevención de Replay**: Consumo atómico de tokens temporales de MFA (`ConsumeApiMfaToken`).
-  - **Límites de Memoria**: Decodificación acotada de payloads JSON respetando `MaxBytesReader`.
 - 🎨 **Frontend 100% CSS Vanilla Semántico**: Interfaz moderna, responsiva, con temas Light/Dark nativos mediante tokens en `web/static/css/variables.css`. Cero dependencias de Tailwind CSS ni procesos pesados de compilación.
 
 ---
@@ -62,6 +65,7 @@
 | **Base de Datos** | PostgreSQL (Driver pgx) | `16-alpine` |
 | **JWT** | `golang-jwt/jwt/v5` (RSA-256) | `v5.3.1` |
 | **Criptografía / MFA** | `go-webauthn/webauthn`, `pquerna/otp`, `golang.org/x/crypto` | Última |
+| **Almacenamiento** | AWS SDK Go v2 (S3 / R2), Local Storage | `v1.30+` |
 | **Email Service** | Resend Go SDK | `v2.28.0` |
 | **Frontend UI** | HTML5 + CSS Vanilla Semántico (Light/Dark) | Nativo |
 | **Contenedor** | Docker Multi-Stage (Google Distroless nonroot) | Debian 12 |
@@ -83,14 +87,15 @@ peak-auth/
 │
 ├── internal/
 │   ├── api/
-│   │   ├── controller/           # Controladores HTTP (OAuth, Admin, Login, MFA, Setup, Discovery)
+│   │   ├── controller/           # Controladores HTTP (OAuth, Admin, Login, MFA, Setup, Discovery, Docs, Broker)
 │   │   ├── middleware/           # Middlewares: Auth JWT, AppAuth, Role RBAC, CSRF, RateLimit
 │   │   ├── request/              # DTOs y validación de entrada
 │   │   └── response/             # DTOs estructurados de salida
 │   ├── app/                      # Inicialización e inyección de dependencias
 │   ├── audit/                    # Registro de auditoría y eventos de seguridad
 │   ├── auth/                     # TokenManager (Firma RSA, Claims, JWKS, Validación)
-│   ├── service/                  # Lógica de negocio (OAuth, User, MFA, WebAuthn, App, Rule, Role)
+│   ├── service/                  # Lógica de negocio (OAuth, User, MFA, WebAuthn, App, Rule, Role, Broker)
+│   ├── storage/                  # StorageService: Local y Cloudflare R2 / AWS S3
 │   ├── store/
 │   │   ├── db/                   # Conexión PostgreSQL y auto-migración GORM
 │   │   ├── model/                # Modelos y entidades de base de datos
@@ -99,12 +104,13 @@ peak-auth/
 │
 ├── sdk/
 │   ├── go/                       # SDK Go oficial (net/http y subpaquete gin/)
+│   ├── kotlin/                   # SDK Kotlin / Android oficial (io.peakauth:peak-auth-kotlin)
 │   └── typescript/               # SDK TypeScript/Node oficial (@brunotarditi/peak-auth)
 │
 └── web/
     ├── static/                   # Assets estáticos (CSS Vanilla, JS modular, imágenes)
     │   └── css/variables.css     # Tokens de diseño y soporte Dark/Light mode
-    └── templates/                # Vistas HTML Gin (Admin, OAuth, MFA, Emails)
+    └── templates/                # Vistas HTML Gin (Admin, OAuth, MFA, Emails, Legal)
 ```
 
 ---
@@ -175,9 +181,6 @@ FRONTEND_URL=http://localhost:3000 # Orígenes permitidos CORS para la API
 MFA_ENCRYPTION_KEY=tu_clave_base64_de_32_bytes_generada_con_openssl
 
 # === Claves JWT Asimétricas ===
-# Puedes usar los archivos locales (jwt_private.pem / jwt_public.pem)
-# o inyectar el contenido PEM directamente:
-# JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 JWT_ISSUER=peak-auth
 JWT_KEY_ID=peak-auth-key-1
 
@@ -186,8 +189,20 @@ EMAIL_PROVIDER=CONSOLE          # CONSOLE para pruebas locales | RESEND para pro
 RESEND_API_KEY=re_tu_api_key    # Requerido si EMAIL_PROVIDER=RESEND
 EMAIL_FROM=Peak Auth <no-reply@tudominio.com>
 
-# === Setup Inicial (Opcional) ===
-# SETUP_TOKEN=token_secreto_personalizado # Si se omite, se genera uno aleatorio en consola
+# === Almacenamiento de Archivos (Avatares y Perfiles) ===
+STORAGE_DRIVER=local            # local | s3
+# Si STORAGE_DRIVER=s3 (Cloudflare R2 o AWS S3):
+# R2_ACCOUNT_ID=tu_account_id
+# R2_BUCKET=tu_bucket_name
+# R2_ACCESS_KEY_ID=tu_access_key
+# R2_SECRET_ACCESS_KEY=tu_secret_key
+# R2_PUBLIC_URL=https://pub-xxxx.r2.dev
+
+# === Social Login / Identity Brokering (Opcional) ===
+# GOOGLE_CLIENT_ID=tu_google_client_id
+# GOOGLE_CLIENT_SECRET=tu_google_client_secret
+# GITHUB_CLIENT_ID=tu_github_client_id
+# GITHUB_CLIENT_SECRET=tu_github_client_secret
 ```
 
 ---
@@ -202,7 +217,7 @@ go run main.go
 Al iniciar por primera vez:
 1. GORM ejecutará automáticamente las migraciones necesarias en PostgreSQL.
 2. Si no definiste `SETUP_TOKEN` en `.env`, el servidor imprimirá un token efímero en la consola.
-3. Abre en tu navegador `http://localhost:8080/setup` e ingresa el token para crear el usuario **Administrador Inicial**.
+3. Abre en tu navegador `http://localhost:8080/setup` e ingresa el token para crear el usuario **Administrador Inicial (ROOT)**.
 
 ---
 
@@ -257,6 +272,7 @@ grant_type=authorization_code
 ```json
 {
   "access_token": "<token_jwt_firmado>",
+  "refresh_token": "<refresh_token_rotativo>",
   "token_type": "Bearer",
   "expires_in": 3600
 }
@@ -264,7 +280,7 @@ grant_type=authorization_code
 
 ---
 
-### 2. Flujo OAuth 2.0 Client Credentials Grant (M2M / Microservicios - RFC 6749 §4.4)
+### 2. Flujo OAuth 2.0 Client Credentials Grant (M2M / Microservicios - RFC 6749)
 
 Diseñado para comunicación directa entre servicios backend, daemons, tareas programadas (cron jobs) y microservicios que necesitan autenticarse ante Peak Auth sin requerir intervención de un usuario:
 
@@ -276,7 +292,7 @@ Authorization: Basic <base64(client_id:client_secret)>
 grant_type=client_credentials&scope=service:read service:write
 ```
 
-O enviando las credenciales en el cuerpo de la solicitud (soporta `application/x-www-form-urlencoded` y `application/json`):
+O enviando las credenciales en el cuerpo de la solicitud:
 
 ```json
 POST /oauth/token
@@ -290,7 +306,7 @@ Content-Type: application/json
 }
 ```
 
-**Respuesta Exitosa (RFC 6749 §4.4.3):**
+**Respuesta Exitosa (RFC 6749):**
 ```json
 {
   "access_token": "<token_jwt_firmado_rs256>",
@@ -299,9 +315,6 @@ Content-Type: application/json
   "scope": "service:read service:write"
 }
 ```
-
-> [!NOTE]
-> Conforme al estándar RFC 6749 §4.4.3, este flujo no emite refresh token. El token JWT asimétrico emitido contiene `sub: client_id`, `aud: [client_id]`, `iss: peak-auth` y los scopes solicitados en el claim `roles`.
 
 ---
 
@@ -322,6 +335,7 @@ Peak Auth provee paquetes oficiales ultra-livianos con cero dependencias inneces
 | :--- | :--- | :--- |
 | **Go / Gin / net/http** | [`github.com/brunotarditi/peak-auth/sdk/go`](sdk/go/README.md) | Cache JWKS thread-safe, generador PKCE, middlewares para `net/http` y subpaquete `gin/`. |
 | **TypeScript / Node.js** | [`@brunotarditi/peak-auth`](sdk/typescript/README.md) | Basado en `jose` (sin binarios C++), generador PKCE nativo, middlewares para Express y Next.js. |
+| **Kotlin / Android / JVM** | [`io.peakauth:peak-auth-kotlin`](sdk/kotlin/README.md) | Corrutinas nativas, validación JWKS asimétrica offline, compatible con Android y Ktor. |
 
 ### Ejemplo en Go (con subpaquete Gin)
 
@@ -372,6 +386,30 @@ app.get('/api/protegido', peakAuthMiddleware(client), (req, res) => {
 app.listen(3000);
 ```
 
+### Ejemplo en Kotlin (Android / JVM)
+
+```kotlin
+import io.peakauth.PeakAuthClient
+import io.peakauth.PeakAuthConfig
+
+val client = PeakAuthClient(
+    PeakAuthConfig(
+        baseUrl = "https://auth.tuempresa.com",
+        clientId = "mi-aplicacion"
+    )
+)
+
+// Verificación offline de token mediante corrutinas
+suspend fun validarToken(token: String) {
+    val result = client.verifyToken(token)
+    result.onSuccess { claims ->
+        println("Usuario autenticado: ${claims.email}, Roles: ${claims.roles}")
+    }.onFailure { error ->
+        println("Token inválido: ${error.message}")
+    }
+}
+```
+
 ---
 
 ## 🔄 Rotación Multi-Clave con Período de Gracia
@@ -389,6 +427,15 @@ Peak Auth soporta rotación de claves criptográficas en caliente sin desconecta
    - Generar el nuevo par de claves RSA.
    - Configurar la nueva clave como activa y pasar la anterior a `JWT_PREVIOUS_KEYS`.
    - Una vez transcurrido el TTL de los tokens de acceso antiguos (ej. 24h), retirar la clave anterior. Los clientes y SDKs actualizarán automáticamente su caché.
+
+---
+
+## ⚖️ Páginas Legales y de Cumplimiento
+
+Peak Auth cuenta con secciones públicas de cumplimiento normativo integradas:
+
+- **Términos y condiciones**: [`/terms`](http://localhost:8080/terms) (Lineamientos de uso aceptable, responsabilidades de desarrolladores sobre `client_secret` y SLA de servicio).
+- **Políticas de privacidad**: [`/privacy`](http://localhost:8080/privacy) (Tratamiento técnico de credenciales bcrypt, cifrado AES-GCM en MFA, almacenamiento seguro de avatares y derechos de revocación de sesiones).
 
 ---
 

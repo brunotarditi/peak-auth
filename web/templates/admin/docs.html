@@ -4,7 +4,7 @@
     <aside style="width: 16rem; flex-shrink: 0; border-right: 1px solid var(--border-light); padding-right: 1.5rem; display: none;">
         <nav style="position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem;">
             <div>
-                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Conceptos Core</h4>
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Conceptos core</h4>
                 <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
                     <li>
                         <a href="/admin/docs" style="color: var(--brand-600); font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
@@ -12,21 +12,31 @@
                             Introducción
                         </a>
                     </li>
-                    <li><a href="#jwt" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">JWT Asimétrico & JWKS</a></li>
+                    <li><a href="#jwt" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">JWT asimétrico & JWKS</a></li>
                     <li><a href="#sso" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">OAuth 2.0 PKCE & SSO</a></li>
-                    <li><a href="#sdks" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">SDKs Oficiales</a></li>
+                    <li><a href="#m2m" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Client credentials (M2M)</a></li>
+                    <li><a href="#broker" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Social login (Brokering)</a></li>
+                    <li><a href="#storage" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Almacenamiento & perfiles</a></li>
+                    <li><a href="#sdks" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">SDKs oficiales</a></li>
                 </ul>
             </div>
             <div>
-                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Desarrollo</h4>
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Desarrollo & API</h4>
                 <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
                     <li>
                         <a href="/admin/docs/api" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">
                             <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                            API & Discovery
+                            Referencia de API
                         </a>
                     </li>
-                    <li><a href="/admin/docs/api#validation" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Validación en Cliente</a></li>
+                    <li><a href="/admin/docs/api#validation" style="color: var(--text-muted); text-decoration: none; padding-left: 1.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Validación en cliente</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Legal & cumplimiento</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                    <li><a href="/terms" style="color: var(--text-muted); text-decoration: none;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Términos y condiciones</a></li>
+                    <li><a href="/privacy" style="color: var(--text-muted); text-decoration: none;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Políticas de privacidad</a></li>
                 </ul>
             </div>
         </nav>
@@ -42,31 +52,31 @@
         <div style="margin-bottom: 3rem;">
             <h1 style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); margin-bottom: 1rem; letter-spacing: -0.025em;">Documentación de Peak Auth</h1>
             <p style="font-size: 1.125rem; color: var(--text-muted); line-height: 1.625;">
-                Peak Auth es un Proveedor de Identidad (IdP) centralizado y servidor de autorización Single Sign-On (SSO), diseñado para ser seguro, rápido y compatible con estándares modernos mediante <strong style="color: var(--text-main); font-weight: 700;">OAuth 2.0 con PKCE</strong>, <strong style="color: var(--text-main); font-weight: 700;">JWT Asimétrico (RSA-256)</strong> y descubrimiento dinámico de claves vía <strong style="color: var(--text-main); font-weight: 700;">JWKS</strong>.
+                Peak Auth es un Proveedor de Identidad (IdP) centralizado y servidor de autorización Single Sign-On (SSO), diseñado para ser seguro, rápido y compatible con estándares modernos mediante <strong style="color: var(--text-main); font-weight: 700;">OAuth 2.0 con PKCE</strong>, <strong style="color: var(--text-main); font-weight: 700;">JWT asimétrico (RSA-256)</strong> y descubrimiento dinámico de claves vía <strong style="color: var(--text-main); font-weight: 700;">JWKS</strong>.
             </p>
         </div>
 
         <section id="jwt" style="margin-bottom: 3rem;">
-            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">JWT Asimétrico (RSA-256) & JWKS</h2>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">JWT asimétrico (RSA-256) & JWKS</h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
                 A diferencia de los esquemas tradicionales que comparten un secreto simétrico (HS256) entre todos los servidores, Peak Auth opera con criptografía asimétrica de clave pública y privada, con rotación multi-clave e identificación por <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">kid</code>:
             </p>
             <ul style="list-style: none; padding: 0; margin-bottom: 1.5rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.75rem;">
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                     <svg style="width: 1.25rem; height: 1.25rem; color: var(--emerald-500); flex-shrink: 0; margin-top: 0.125rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span><strong style="color: var(--text-main); font-weight: 700;">Clave Privada:</strong> Reside exclusivamente en Peak Auth. Se utiliza para firmar los tokens JWT cuando un usuario inicia sesión.</span>
+                    <span><strong style="color: var(--text-main); font-weight: 700;">Clave privada:</strong> Reside exclusivamente en Peak Auth. Se utiliza para firmar los tokens JWT cuando un usuario inicia sesión.</span>
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                     <svg style="width: 1.25rem; height: 1.25rem; color: var(--emerald-500); flex-shrink: 0; margin-top: 0.125rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span><strong style="color: var(--text-main); font-weight: 700;">Descubrimiento JWKS (RFC 7517):</strong> Expuesto públicamente en <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">/.well-known/jwks.json</code>. Las aplicaciones satélite no necesitan gestionar archivos PEM manualmente; descargan las claves públicas automáticamente, las cachean en memoria y resuelven la clave adecuada según el <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">kid</code> del header del token.</span>
+                    <span><strong style="color: var(--text-main); font-weight: 700;">Descubrimiento JWKS (RFC 7517):</strong> Expuesto públicamente en <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">/.well-known/jwks.json</code>. Las aplicaciones satélite no necesitan gestionar archivos PEM manualmente; descargan las claves públicas automáticamente, las cachean en memoria y resuelven la clave adecuada según el <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">kid</code> del encabezado del token.</span>
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 0.5rem;">
                     <svg style="width: 1.25rem; height: 1.25rem; color: var(--emerald-500); flex-shrink: 0; margin-top: 0.125rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span><strong style="color: var(--text-main); font-weight: 700;">Rotación sin Downtime (Grace Period):</strong> Soporta múltiples claves previas en verificación. La clave activa firma nuevos tokens, mientras que los tokens emitidos previamente se validan sin interrupción durante la ventana de gracia.</span>
+                    <span><strong style="color: var(--text-main); font-weight: 700;">Rotación sin tiempo de inactividad (Grace Period):</strong> Soporta múltiples claves previas en verificación. La clave activa firma nuevos tokens, mientras que los tokens emitidos previamente se validan sin interrupción durante la ventana de gracia.</span>
                 </li>
             </ul>
             <div style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); padding: 1rem; border-radius: var(--radius-xl); color: #1e40af; font-size: 0.875rem;">
-                <strong style="font-weight: 700; display: block; margin-bottom: 0.25rem;">Seguridad y Audiencia Estricta</strong>
+                <strong style="font-weight: 700; display: block; margin-bottom: 0.25rem;">Seguridad y audiencia estricta</strong>
                 Cada JWT emitido contiene el claim <code style="background: rgba(255,255,255,0.5); padding: 0.125rem 0.25rem; border-radius: 0.25rem;">aud: [client_id]</code>. Los SDKs y microservicios deben verificar que la audiencia coincida exactamente con el Client ID de la app para evitar la reutilización no autorizada de tokens entre distintos clientes.
             </div>
             <style>
@@ -82,25 +92,61 @@
             </p>
             <ol style="margin-left: 1.5rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 1rem;">
                 <li style="padding-left: 0.5rem;">
-                    <strong style="color: var(--text-main);">Inicio de Autorización:</strong> La app cliente redirige al usuario a <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">/oauth/authorize</code> incluyendo <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">client_id</code>, <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">redirect_uri</code>, <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">code_challenge</code> (S256) y <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">state</code>.
+                    <strong style="color: var(--text-main);">Inicio de autorización:</strong> La app cliente redirige al usuario a <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">/oauth/authorize</code> incluyendo <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">client_id</code>, <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">redirect_uri</code>, <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">code_challenge</code> (S256) y <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">state</code>.
                 </li>
                 <li style="padding-left: 0.5rem;">
-                    <strong style="color: var(--text-main);">Sesión SSO o Autenticación:</strong> Peak Auth verifica si existe una sesión activa compartida (<code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">peak_session</code>). Si no existe, muestra el portal de inicio de sesión con soporte MFA (TOTP / WebAuthn). Si la política de la aplicación exige MFA y el usuario aún no lo configuró, se le guía a completarlo.
+                    <strong style="color: var(--text-main);">Sesión SSO o autenticación:</strong> Peak Auth verifica si existe una sesión activa compartida (<code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">peak_session</code>). Si no existe, muestra el portal de inicio de sesión con soporte MFA (TOTP / WebAuthn). Si la política de la aplicación exige MFA y el usuario aún no lo configuró, se le guía a completarlo.
                 </li>
                 <li style="padding-left: 0.5rem;">
-                    <strong style="color: var(--text-main);">Redirección con Código:</strong> Peak Auth genera un código de autorización temporal de un solo uso (válido por 5 minutos) y redirige de vuelta a la app: <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">https://tu-app.com/callback?code=...&state=...</code>.
+                    <strong style="color: var(--text-main);">Redirección con código:</strong> Peak Auth genera un código de autorización temporal de un solo uso (válido por 5 minutos) y redirige de vuelta a la app: <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">https://tu-app.com/callback?code=...&state=...</code>.
                 </li>
                 <li style="padding-left: 0.5rem;">
-                    <strong style="color: var(--text-main);">Intercambio de Token:</strong> El backend o cliente seguro intercambia el código en <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">POST /oauth/token</code> enviando el <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">code_verifier</code> original.
+                    <strong style="color: var(--text-main);">Intercambio de token:</strong> El backend o cliente seguro intercambia el código en <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">POST /oauth/token</code> enviando el <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">code_verifier</code> original.
                 </li>
                 <li style="padding-left: 0.5rem;">
-                    <strong style="color: var(--text-main);">Emisión de Tokens:</strong> Peak Auth responde con el Access Token firmado (RS256) y un Refresh Token rotativo.
+                    <strong style="color: var(--text-main);">Emisión de tokens:</strong> Peak Auth responde con el Access Token firmado (RS256) y un Refresh Token rotativo.
                 </li>
             </ol>
         </section>
 
+        <!-- SECCIÓN M2M CLIENT CREDENTIALS -->
+        <section id="m2m" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">OAuth 2.0 Client Credentials Grant (M2M)</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Diseñado para comunicación <strong>Machine-to-Machine (M2M)</strong> entre microservicios, daemons, workers y servicios backend que operan sin intervención humana directa (RFC 6749).
+            </p>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                El microservicio se autentica contra <code style="background: var(--bg-card); border: 1px solid var(--border-light); padding: 0.125rem 0.375rem; border-radius: 0.25rem;">POST /oauth/token</code> enviando su <code style="font-family: monospace;">client_id</code> y <code style="font-family: monospace;">client_secret</code> (vía cabecera HTTP Basic Auth o cuerpo JSON) con <code style="font-family: monospace;">grant_type: "client_credentials"</code>. Peak Auth emite un Access Token JWT (RS256) sin refresh token, garantizando credenciales efímeras y seguras.
+            </p>
+        </section>
+
+        <!-- SECCIÓN IDENTITY BROKERING -->
+        <section id="broker" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Identity Brokering (Social Login)</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Peak Auth actúa como intermediario central de federación de identidades externas:
+            </p>
+            <ul style="list-style: disc; margin-left: 1.5rem; color: var(--text-muted); line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                <li><strong>Proveedores soportados:</strong> Google y GitHub.</li>
+                <li><strong>Vinculación automática:</strong> Si el usuario ya posee una cuenta local con el mismo correo verificado, se asocia su identidad federada de forma segura mediante <code style="font-family: monospace;">UserIdentity</code>.</li>
+                <li><strong>Flujo sin fricción:</strong> Los usuarios pueden iniciar sesión con un clic desde el portal central o desde el flujo SSO de cualquier aplicación cliente.</li>
+            </ul>
+        </section>
+
+        <!-- SECCIÓN ALMACENAMIENTO & PERFILES -->
+        <section id="storage" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">Almacenamiento de archivos y perfiles</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Peak Auth incluye un subsistema de almacenamiento desacoplado mediante la interfaz <code style="font-family: monospace;">StorageService</code>:
+            </p>
+            <ul style="list-style: disc; margin-left: 1.5rem; color: var(--text-muted); line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li><strong style="color: var(--text-main);">Disco local (<code style="font-family: monospace;">STORAGE_DRIVER=local</code>):</strong> Almacena avatares y archivos subidos en el sistema de archivos local (<code style="font-family: monospace;">web/static/uploads/</code>), ideal para entornos locales o despliegues ligeros.</li>
+                <li><strong style="color: var(--text-main);">Cloudflare R2 / AWS S3 (<code style="font-family: monospace;">STORAGE_DRIVER=s3</code>):</strong> Compatible con buckets S3 y Cloudflare R2 sin costo de egreso, configurables mediante variables de entorno (<code style="font-family: monospace;">R2_ACCOUNT_ID</code>, <code style="font-family: monospace;">R2_BUCKET</code>, <code style="font-family: monospace;">R2_ACCESS_KEY_ID</code>, <code style="font-family: monospace;">R2_SECRET_ACCESS_KEY</code>, <code style="font-family: monospace;">R2_PUBLIC_URL</code>).</li>
+            </ul>
+        </section>
+
         <section id="sdks" style="margin-bottom: 3rem;">
-            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">SDKs Oficiales</h2>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">SDKs oficiales</h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
                 Peak Auth provee librerías oficiales livianas con verificación offline, auto-descubrimiento JWKS con caching en memoria y middlewares listos para producción:
             </p>
@@ -108,7 +154,7 @@
                 <div style="background-color: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-xl); padding: 1.25rem;">
                     <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">TypeScript / Node.js</h3>
                     <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem;">
-                        Compatible con Express, Next.js y cualquier runtime Node.js / Bun moderno.
+                        Compatible con Express, Next.js y cualquier entorno de ejecución Node.js / Bun moderno.
                     </p>
                     <code style="display: block; background: var(--slate-900); color: var(--slate-300); padding: 0.5rem 0.75rem; border-radius: var(--radius-md); font-family: monospace; font-size: 0.8125rem;">
                         npm install @brunotarditi/peak-auth
@@ -121,6 +167,15 @@
                     </p>
                     <code style="display: block; background: var(--slate-900); color: var(--slate-300); padding: 0.5rem 0.75rem; border-radius: var(--radius-md); font-family: monospace; font-size: 0.8125rem;">
                         go get github.com/brunotarditi/peak-auth/sdk/go
+                    </code>
+                </div>
+                <div style="background-color: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-xl); padding: 1.25rem;">
+                    <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Kotlin / Android / JVM</h3>
+                    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem;">
+                        Librería nativa en Kotlin con corrutinas para aplicaciones Android y servidores backend JVM (Ktor, Spring).
+                    </p>
+                    <code style="display: block; background: var(--slate-900); color: var(--slate-300); padding: 0.5rem 0.75rem; border-radius: var(--radius-md); font-family: monospace; font-size: 0.8125rem;">
+                        implementation("io.peakauth:peak-auth-kotlin:0.1.0")
                     </code>
                 </div>
             </div>

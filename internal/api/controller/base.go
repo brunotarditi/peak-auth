@@ -151,9 +151,34 @@ func (ctrl *BaseController) renderAdmin(c *gin.Context, templateName string, dat
 	if email, exists := c.Get("user_email"); exists {
 		data["UserEmail"] = email
 	}
+	if name, exists := c.Get("user_name"); exists && name != "" {
+		data["UserName"] = name
+	} else if data["UserName"] == nil {
+		data["UserName"] = data["UserEmail"]
+	}
 	if token, exists := c.Get("csrf_token"); exists {
 		data["CSRFToken"] = token
 	}
+
+	userRole := "Administrador"
+	if isRoot, exists := c.Get("is_root"); exists {
+		if b, ok := isRoot.(bool); ok && b {
+			userRole = "Root"
+		}
+	}
+	if userRole != "Root" {
+		if roles, exists := c.Get("user_roles"); exists {
+			if rList, ok := roles.([]string); ok {
+				for _, r := range rList {
+					if strings.EqualFold(r, "ROOT") {
+						userRole = "Root"
+						break
+					}
+				}
+			}
+		}
+	}
+	data["UserRole"] = userRole
 
 	if data["Title"] == nil {
 		data["Title"] = "Panel"
@@ -171,6 +196,11 @@ func (ctrl *BaseController) renderError(c *gin.Context, status int, title, messa
 	}
 	if email, exists := c.Get("user_email"); exists {
 		data["UserEmail"] = email
+	}
+	if name, exists := c.Get("user_name"); exists && name != "" {
+		data["UserName"] = name
+	} else if data["UserName"] == nil {
+		data["UserName"] = data["UserEmail"]
 	}
 	if token, exists := c.Get("csrf_token"); exists {
 		data["CSRFToken"] = token

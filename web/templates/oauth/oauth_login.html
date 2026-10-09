@@ -57,7 +57,7 @@
                 <input type="hidden" name="code_challenge_method" value="{{ .CodeChallengeMethod }}">
 
                 <div class="form-group">
-                    <label class="form-label">Correo Electrónico</label>
+                    <label class="form-label">Correo electrónico</label>
                     <input type="email" name="email" required placeholder="tu@correo.com" class="peak-input">
                 </div>
 
@@ -112,13 +112,11 @@
             {{ end }}
         </div>
 
-        {{ if or .TermsURL .PrivacyURL }}
         <div style="text-align: center; margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; font-size: 0.75rem;">
-            {{ if .TermsURL }}<a href="{{ .TermsURL }}" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline;">Términos de servicio</a>{{ end }}
-            {{ if and .TermsURL .PrivacyURL }}<span style="color: var(--text-muted);">•</span>{{ end }}
-            {{ if .PrivacyURL }}<a href="{{ .PrivacyURL }}" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline;">Política de privacidad</a>{{ end }}
+            <a href="{{ if .TermsURL }}{{ .TermsURL }}{{ else }}/terms{{ end }}" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline;">Términos de servicio</a>
+            <span style="color: var(--text-muted);">•</span>
+            <a href="{{ if .PrivacyURL }}{{ .PrivacyURL }}{{ else }}/privacy{{ end }}" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline;">Política de privacidad</a>
         </div>
-        {{ end }}
 
         <p style="text-align: center; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; margin-top: 1.5rem;">
             Secured by Peak <span style="color: var(--brand-600); font-weight: 700;">Auth</span> SSO

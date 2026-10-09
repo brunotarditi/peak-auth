@@ -594,19 +594,27 @@ async function setupWebAuthn(palette, themeConfig, keyName) {
     }
 }
 
-async function showRecoveryCodes(codes, palette, themeConfig) {
+async function showRecoveryCodes(codes, palette, themeConfig, customTitle) {
+    const titleText = customTitle || '¡MFA activado!';
     const safeCodes = Array.isArray(codes) ? codes.map(c => escapeHtml(String(c))) : [];
     const rawCodes = Array.isArray(codes) ? codes.join('\n') : '';
-    const recoveryHtml = safeCodes.map(c => `<div style="background-color: var(--bg-surface-secondary); padding: 0.5rem; border-radius: var(--radius); font-family: monospace; font-size: 0.875rem; border: 1px solid var(--border-light);">${c}</div>`).join('');
+    const recoveryHtml = safeCodes.map(c => `<div style="background-color: var(--bg-surface-secondary); padding: 0.5rem; border-radius: var(--radius-md); font-family: monospace; font-size: 0.875rem; border: 1px solid var(--border-light); font-weight: 700; text-align: center;">${c}</div>`).join('');
     
     await PeakModal.fire({
-        title: '¡MFA Activado!',
+        title: titleText,
         html: `
-            <p style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--text-muted);">Guarde estos códigos de recuperación en un lugar seguro:</p>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem;">${recoveryHtml}</div>
-            <button id="download-codes" class="peak-btn peak-btn-primary peak-btn-block">
-                📥 Descargar Códigos (.txt)
-            </button>
+            <p style="margin-bottom: 1rem; font-size: 0.8125rem; color: var(--text-muted); text-align: left;">
+                Guarda estos códigos de recuperación en un gestor seguro. Cada código solo puede ser utilizado una única vez.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1.25rem;">${recoveryHtml}</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <button type="button" id="btn-copy-codes" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem;">
+                    📋 Copiar códigos
+                </button>
+                <button type="button" id="btn-download-codes" class="peak-btn peak-btn-primary" style="font-size: 0.8125rem;">
+                    📥 Descargar (.txt)
+                </button>
+            </div>
         `,
         icon: 'success',
         confirmButtonText: 'Entendido',
@@ -619,15 +627,30 @@ async function showRecoveryCodes(codes, palette, themeConfig) {
             actions: 'swal2-actions-custom'
         },
         didOpen: () => {
-            document.getElementById('download-codes').addEventListener('click', () => {
-                const blob = new Blob([rawCodes], { type: 'text/plain' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'peak_auth_recovery_codes.txt';
-                a.click();
-                window.URL.revokeObjectURL(url);
-            });
+            const copyBtn = document.getElementById('btn-copy-codes');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(rawCodes);
+                        copyBtn.textContent = '✓ ¡Copiados!';
+                        setTimeout(() => { copyBtn.textContent = '📋 Copiar códigos'; }, 2000);
+                    } catch (e) {
+                        showToast('No se pudo copiar al portapapeles', 'error');
+                    }
+                });
+            }
+            const dlBtn = document.getElementById('btn-download-codes');
+            if (dlBtn) {
+                dlBtn.addEventListener('click', () => {
+                    const blob = new Blob([rawCodes], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'peak_auth_recovery_codes.txt';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                });
+            }
         }
     });
 }

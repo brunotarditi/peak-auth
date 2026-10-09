@@ -66,7 +66,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 	auditRepo := repo.NewAuditRepository(db)
 
 	// Inicializar Storage Service para uploads (logos, avatares, favicons)
-	storageService, err := storage.NewLocalStorageService("")
+	storageService, err := storage.NewStorageService()
 	if err != nil {
 		log.Fatalf("Error crítico al inicializar servicio de almacenamiento: %v", err)
 	}

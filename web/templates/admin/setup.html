@@ -25,7 +25,7 @@
                 <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 2.25rem; height: 2.25rem;">
             </div>
             <h1 style="font-size: 1.625rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Setup Peak <span style="color: var(--brand-600);">Auth</span></h1>
-            <p style="color: var(--text-muted); margin-top: 0.25rem; font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em;">Paso final de instalación</p>
+            <p style="color: var(--text-muted); margin-top: 0.25rem; font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em;">Paso 1 de 2: Credenciales maestras</p>
         </div>
 
         <div class="glass-panel" style="padding: 1.75rem 2rem;">
@@ -47,7 +47,7 @@
                 </div>
 
                 <div style="margin-bottom: 0;" class="form-group">
-                    <label style="display: block; font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Contraseña Maestra</label>
+                    <label style="display: block; font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Contraseña maestra</label>
                     <div class="password-toggle-wrapper">
                         <input type="password" id="password" name="password" required placeholder="••••••••" class="peak-input" style="padding: 0.75rem 2.75rem 0.75rem 1rem;">
                         <button type="button" class="password-toggle-btn" onclick="toggleLoginPassword('password', this)" aria-label="Mostrar u ocultar contraseña">
@@ -58,7 +58,7 @@
 
                     <!-- Checklist Dinámica Mejorada -->
                     <div style="margin-top: 0.75rem; padding: 0.875rem 1rem; background-color: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <p style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem;">Requisitos de Seguridad</p>
+                        <p style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem;">Requisitos de seguridad</p>
 
                         <!-- Requisito Largo -->
                         <div id="req-length" class="checklist-item">
@@ -116,8 +116,8 @@
 
                 <div style="padding-top: 0.25rem;">
                     <button type="submit" id="submitBtn" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 0.875rem 1.25rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem;">
-                        <span>Finalizar Instalación</span>
-                        {{template "icon-check"}}
+                        <span>Continuar a configuración de MFA</span>
+                        {{template "icon-arrow-right"}}
                     </button>
                 </div>
             </form>
@@ -125,7 +125,7 @@
 
         <div style="margin-top: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 1.5rem;">
             <div style="height: 1px; background-color: var(--border-light); width: 3rem;"></div>
-            <p style="font-size: 0.625rem; color: var(--slate-400); font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;">Paso 1 de 1</p>
+            <p style="font-size: 0.625rem; color: var(--slate-400); font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;">Paso 1 de 2</p>
             <div style="height: 1px; background-color: var(--border-light); width: 3rem;"></div>
         </div>
     </div>

@@ -3,7 +3,7 @@
 <div id="content_accesos" class="tab-content hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
         <div>
-            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Políticas de Acceso</h3>
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Políticas de acceso</h3>
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Define la complejidad requerida para las contraseñas de tus usuarios.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
@@ -19,7 +19,7 @@
             <!-- Largo Mínimo -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Largo Mínimo de Contraseña</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Largo mínimo de contraseña</span>
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Especifica la cantidad mínima de caracteres requeridos para una contraseña válida.</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-lg);">
@@ -34,7 +34,7 @@
             <!-- Requisitos de Caracteres -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Complejidad de Contraseña</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Complejidad de contraseña</span>
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Obliga la inclusión de ciertos tipos de caracteres (mayúsculas, números y símbolos).</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -60,7 +60,7 @@
             <!-- Expiración de Contraseña -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Vigencia de Contraseña</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Vigencia de contraseña</span>
                     <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Días de validez antes de exigir actualización obligatoria. Usa 0 para desactivar la expiración.</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-lg);">

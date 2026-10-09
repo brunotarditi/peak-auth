@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
+    color-scheme: light;
     /* Brand Colors (Peak Auth Brand - Blue) */
     --brand-50: #eff6ff;
     --brand-100: #dbeafe;
@@ -104,7 +105,10 @@
 }
 
 /* Dark Mode Tokens */
+html.dark,
+:root.dark,
 .dark {
+    color-scheme: dark;
     --bg-body: var(--slate-950);
     --bg-surface: var(--slate-900);
     --bg-surface-hover: var(--slate-800);

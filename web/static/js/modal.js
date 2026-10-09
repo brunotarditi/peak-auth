@@ -128,6 +128,31 @@
                 card.appendChild(contentEl);
             }
 
+            // 5.1 Campo de entrada interactivo si se especifica input
+            if (opt.input) {
+                const inputWrapper = document.createElement('div');
+                inputWrapper.className = 'peak-modal-input-wrapper';
+                inputWrapper.style.cssText = 'margin: 1rem 0 0.5rem 0; width: 100%; box-sizing: border-box;';
+
+                const inputEl = document.createElement('input');
+                inputEl.type = opt.input === 'password' ? 'password' : 'text';
+                inputEl.className = 'peak-input peak-modal-input';
+                inputEl.style.cssText = 'width: 100%; box-sizing: border-box; font-size: 0.9375rem; padding: 0.625rem 0.875rem;';
+                if (opt.inputPlaceholder) inputEl.placeholder = opt.inputPlaceholder;
+                if (opt.inputValue) inputEl.value = opt.inputValue;
+
+                inputEl.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.handleConfirm();
+                    }
+                });
+
+                inputWrapper.appendChild(inputEl);
+                card.appendChild(inputWrapper);
+                this.inputEl = inputEl;
+            }
+
             // 6. Botones de acción
             if (opt.showConfirmButton || opt.showCancelButton) {
                 const actions = document.createElement('div');
@@ -230,12 +255,19 @@
         }
 
         async handleConfirm() {
-            let preConfirmValue = true;
+            let confirmValue = true;
+            if (this.inputEl) {
+                confirmValue = this.inputEl.value.trim();
+            }
+
             if (typeof this.options.preConfirm === 'function') {
                 try {
-                    preConfirmValue = await this.options.preConfirm();
-                    if (preConfirmValue === false) {
+                    const preRes = await this.options.preConfirm(confirmValue);
+                    if (preRes === false) {
                         return;
+                    }
+                    if (preRes !== undefined) {
+                        confirmValue = preRes;
                     }
                 } catch (err) {
                     console.error('preConfirm error:', err);
@@ -246,7 +278,7 @@
             this.close({
                 isConfirmed: true,
                 isDismissed: false,
-                value: preConfirmValue
+                value: confirmValue
             });
         }
 

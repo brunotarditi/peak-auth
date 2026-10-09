@@ -298,7 +298,7 @@ func (s *oauthService) GrantConsent(userID uint, clientID string) error {
 	return s.oauthRepo.CreateConsent(consent)
 }
 
-// AuthenticateClientCredentials autentica una aplicación mediante su client_id y client_secret (RFC 6749 §4.4).
+// AuthenticateClientCredentials autentica una aplicación mediante su client_id y client_secret (RFC 6749).
 func (s *oauthService) AuthenticateClientCredentials(clientID, clientSecret string) (*model.Application, error) {
 	if clientID == "" || clientSecret == "" {
 		return nil, errors.New("client_id y client_secret son requeridos")
@@ -315,4 +315,3 @@ func (s *oauthService) AuthenticateClientCredentials(clientID, clientSecret stri
 
 	return &app, nil
 }
-

@@ -418,15 +418,15 @@ func TestOAuthController_DynamicThemeRendering(t *testing.T) {
 	t.Run("GetPublicLogin with themed app renders custom brand attributes", func(t *testing.T) {
 		appSvc := &mockAppService{
 			app: model.Application{
-				AppID:       "libreria-mariela",
-				Name:        "Librería Mariela",
-				RedirectURL: "https://mariela.local/callback",
+				AppID:       "app-prueba",
+				Name:        "App prueba",
+				RedirectURL: "https://app.local/callback",
 				Theme: &model.ApplicationTheme{
 					PrimaryColor:   "#059669",
-					LogoURL:        "/static/uploads/logos/mariela-logo.png",
-					CustomTitle:    "Portal Librería Mariela",
+					LogoURL:        "/static/uploads/logos/app-logo.png",
+					CustomTitle:    "Portal App prueba",
 					CustomSubtitle: "Inicia sesión para gestionar compras",
-					TermsURL:       "https://mariela.local/terms",
+					TermsURL:       "https://app.local/terms",
 				},
 			},
 		}
@@ -434,8 +434,8 @@ func TestOAuthController_DynamicThemeRendering(t *testing.T) {
 		ctrl := &OAuthController{
 			AppService: appSvc,
 			OAuthService: &mockOAuthServiceForBranding{
-				clientID:    "libreria-mariela",
-				redirectURI: "https://mariela.local/callback",
+				clientID:    "app-prueba",
+				redirectURI: "https://app.local/callback",
 			},
 		}
 
@@ -444,20 +444,20 @@ func TestOAuthController_DynamicThemeRendering(t *testing.T) {
 		r.GET("/oauth/login", ctrl.GetPublicLogin)
 
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest(http.MethodGet, "/oauth/login?client_id=libreria-mariela&redirect_uri=https://mariela.local/callback", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/oauth/login?client_id=app-prueba&redirect_uri=https://app.local/callback", nil)
 		r.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
 			t.Fatalf("se esperaba 200 OK, se obtuvo %d: %s", w.Code, w.Body.String())
 		}
 		body := w.Body.String()
-		if !strings.Contains(body, "Portal Librería Mariela") {
+		if !strings.Contains(body, "Portal App prueba") {
 			t.Errorf("se esperaba título personalizado en el render: %s", body)
 		}
-		if !strings.Contains(body, "/static/uploads/logos/mariela-logo.png") {
+		if !strings.Contains(body, "/static/uploads/logos/app-logo.png") {
 			t.Errorf("se esperaba logo personalizado en el render: %s", body)
 		}
-		if !strings.Contains(body, "https://mariela.local/terms") {
+		if !strings.Contains(body, "https://app.local/terms") {
 			t.Errorf("se esperaba terms_url en el render: %s", body)
 		}
 	})

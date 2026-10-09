@@ -1,10 +1,13 @@
 package controller_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +17,7 @@ import (
 	"peak-auth/internal/api/request"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/service"
+	"peak-auth/internal/storage"
 	"peak-auth/internal/store/model"
 
 	"github.com/gin-gonic/gin"
@@ -252,6 +256,46 @@ func TestSessionController_PostUpdateProfile(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodPost, "/settings/profile", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("se esperaba status 200, obtenido: %d, body: %s", w.Code, w.Body.String())
+	}
+	if !userMock.updateProfileCalled {
+		t.Errorf("se esperaba que UpdateProfile fuese llamado")
+	}
+}
+
+func TestSessionController_PostUpdateProfile_WithAvatarFile(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	userMock := &mockUserServiceForSession{}
+	tempDir, err := os.MkdirTemp("", "peak-auth-session-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+	storageSvc, _ := storage.NewLocalStorageService(tempDir)
+
+	ctrl := controller.NewSessionController(&mockSessionService{}, userMock, nil, storageSvc)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("user_id", uint(42))
+		c.Next()
+	})
+	r.POST("/settings/profile", ctrl.PostUpdateProfile)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	_ = writer.WriteField("first_name", "Jane")
+	_ = writer.WriteField("last_name", "Doe")
+	part, _ := writer.CreateFormFile("avatar_file", "avatar.png")
+	_, _ = part.Write([]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D})
+	_ = writer.Close()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/settings/profile", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

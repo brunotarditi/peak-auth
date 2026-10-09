@@ -51,11 +51,11 @@ func TestGenerateAndVerifyToken_WithProfile(t *testing.T) {
 	m := newTestManager(t)
 	profile := TokenProfile{
 		Name:    "Mariela Gómez",
-		Email:   "mariela@libreriamariela.com",
+		Email:   "app@appprueba.com",
 		Picture: "https://cdn.peak.com/avatars/42.jpg",
 	}
 
-	tok, err := m.GenerateTokenWithProfile(42, "mariela@libreriamariela.com", "libreria-mariela", []string{"READ", "WRITE", "ADMIN"}, time.Hour, true, 0, profile)
+	tok, err := m.GenerateTokenWithProfile(42, "app@appprueba.com", "app-prueba", []string{"READ", "WRITE", "ADMIN"}, time.Hour, true, 0, profile)
 	if err != nil {
 		t.Fatalf("GenerateTokenWithProfile falló: %v", err)
 	}
@@ -71,8 +71,8 @@ func TestGenerateAndVerifyToken_WithProfile(t *testing.T) {
 	if claims.Name != "Mariela Gómez" {
 		t.Errorf("expected name Mariela Gómez, got %s", claims.Name)
 	}
-	if claims.Email != "mariela@libreriamariela.com" {
-		t.Errorf("expected email mariela@libreriamariela.com, got %s", claims.Email)
+	if claims.Email != "app@appprueba.com" {
+		t.Errorf("expected email app@appprueba.com, got %s", claims.Email)
 	}
 	if claims.Picture != "https://cdn.peak.com/avatars/42.jpg" {
 		t.Errorf("expected picture https://cdn.peak.com/avatars/42.jpg, got %s", claims.Picture)
@@ -325,5 +325,3 @@ func TestNewJWTManager_MalformedPreviousKeysEnv(t *testing.T) {
 		t.Fatal("se esperaba error al iniciar JWTManager con JWT_PREVIOUS_KEYS malformado")
 	}
 }
-
-

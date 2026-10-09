@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
 
@@ -425,6 +426,157 @@ func TestUserController_PostUpdateAccessTime(t *testing.T) {
 		}
 		if appSvc.updatedAccessExpires != nil || appSvc.updatedAccessStarts != nil {
 			t.Errorf("expected nil times for permanent access, got starts=%v expires=%v", appSvc.updatedAccessStarts, appSvc.updatedAccessExpires)
+		}
+	})
+}
+
+type mockUserServiceForProfile struct {
+	service.UserService
+	userID    uint
+	firstName string
+	lastName  string
+	birthDate time.Time
+	avatarURL string
+}
+
+func (m *mockUserServiceForProfile) UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error {
+	m.userID = userID
+	m.firstName = firstName
+	m.lastName = lastName
+	m.birthDate = birthDate
+	m.avatarURL = avatarURL
+	return nil
+}
+
+func TestUserController_GetProfile(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	user := &model.User{
+		Email:      "test@example.com",
+		IsVerified: true,
+		MfaEnabled: true,
+		Profile: model.Profile{
+			FirstName: "Bruno",
+			LastName:  "Tarditi",
+			AvatarURL: "https://r2.peakauth.com/avatars/me.png",
+		},
+	}
+	user.ID = 10
+	userSvc := &mockUserServiceForStepUp{user: user}
+	ctrl := &UserController{UserService: userSvc}
+
+	r := gin.New()
+	r.GET("/api/v1/user/profile", func(c *gin.Context) {
+		c.Set("user_id", uint(10))
+		ctrl.GetProfile(c)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/user/profile", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("se esperaba 200, obtenido %d: %s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "Bruno") || !strings.Contains(w.Body.String(), "Tarditi") {
+		t.Errorf("datos de perfil no encontrados en la respuesta: %s", w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "https://r2.peakauth.com/avatars/me.png") {
+		t.Errorf("avatar_url no encontrado en la respuesta: %s", w.Body.String())
+	}
+}
+
+func TestUserController_PatchProfile(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockUser := &mockUserServiceForProfile{}
+	ctrl := &UserController{UserService: mockUser}
+
+	r := gin.New()
+	r.PATCH("/api/v1/user/profile", func(c *gin.Context) {
+		c.Set("user_id", uint(10))
+		ctrl.PatchProfile(c)
+	})
+
+	t.Run("JSON payload updates profile successfully", func(t *testing.T) {
+		payload := `{"first_name":"Jane","last_name":"Doe","birth_date":"1992-04-12"}`
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPatch, "/api/v1/user/profile", strings.NewReader(payload))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200, obtenido %d: %s", w.Code, w.Body.String())
+		}
+		if mockUser.firstName != "Jane" || mockUser.lastName != "Doe" {
+			t.Errorf("valores inesperados: %s %s", mockUser.firstName, mockUser.lastName)
+		}
+	})
+
+	t.Run("Invalid date format returns 400", func(t *testing.T) {
+		payload := `{"first_name":"Jane","last_name":"Doe","birth_date":"12/04/1992"}`
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPatch, "/api/v1/user/profile", strings.NewReader(payload))
+		req.Header.Set("Content-Type", "application/json")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400, obtenido %d", w.Code)
+		}
+	})
+}
+
+func TestUserController_RegenerateRecoveryCodes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("unauthenticated request returns 401", func(t *testing.T) {
+		ctrl := &UserController{}
+		r := gin.New()
+		r.POST("/api/v1/mfa/recovery/regenerate", ctrl.RegenerateRecoveryCodes)
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/recovery/regenerate", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("se esperaba 401, obtenido %d", w.Code)
+		}
+	})
+
+	t.Run("mfa not configured returns 400", func(t *testing.T) {
+		mfaSvc := &mockMfaServiceForStepUp{mfaEnabled: false}
+		ctrl := &UserController{MfaService: mfaSvc}
+		r := gin.New()
+		r.POST("/api/v1/mfa/recovery/regenerate", func(c *gin.Context) {
+			c.Set("user_id", uint(1))
+			ctrl.RegenerateRecoveryCodes(c)
+		})
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/recovery/regenerate", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba 400, obtenido %d: %s", w.Code, w.Body.String())
+		}
+	})
+
+	t.Run("mfa configured regenerates and returns codes", func(t *testing.T) {
+		mfaSvc := &mockMfaServiceForStepUp{mfaEnabled: true}
+		ctrl := &UserController{MfaService: mfaSvc}
+		r := gin.New()
+		r.POST("/api/v1/mfa/recovery/regenerate", func(c *gin.Context) {
+			c.Set("user_id", uint(1))
+			ctrl.RegenerateRecoveryCodes(c)
+		})
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/mfa/recovery/regenerate", nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba 200, obtenido %d: %s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "CODE-1") {
+			t.Errorf("respuesta no contiene códigos generados: %s", w.Body.String())
 		}
 	})
 }

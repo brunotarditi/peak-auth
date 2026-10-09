@@ -145,11 +145,13 @@ func (r *userApplicationRoleRepository) GetUsersWithRolesByApp(appID uint) ([]re
 	var rows []response.UserAppRow
 
 	err := r.db.Table("users").
-		Select("users.id, users.email, users.is_verified, users.is_active, users.mfa_enabled, profiles.first_name, profiles.last_name, roles.name as role_name, uar.access_starts_at, uar.access_expires_at").
-		Joins("JOIN profiles ON profiles.user_id = users.id").
+		Select("users.id, users.email, users.is_verified, users.is_active, users.mfa_enabled, profiles.first_name, profiles.last_name, string_agg(roles.name, ', ') as role_name, MIN(uar.access_starts_at) as access_starts_at, MAX(uar.access_expires_at) as access_expires_at").
+		Joins("LEFT JOIN profiles ON profiles.user_id = users.id").
 		Joins("JOIN user_application_roles uar ON uar.user_id = users.id").
 		Joins("JOIN roles ON roles.id = uar.role_id").
 		Where("uar.application_id = ? AND uar.deleted_at IS NULL", appID).
+		Group("users.id, users.email, users.is_verified, users.is_active, users.mfa_enabled, profiles.first_name, profiles.last_name").
+		Order("users.email ASC").
 		Scan(&rows).Error
 
 	now := time.Now()
@@ -172,7 +174,7 @@ func (r *userApplicationRoleRepository) GetUsersWithRolesByAppPaginated(appID ui
 	var total int64
 
 	baseQuery := r.db.Table("users").
-		Joins("JOIN profiles ON profiles.user_id = users.id").
+		Joins("LEFT JOIN profiles ON profiles.user_id = users.id").
 		Joins("JOIN user_application_roles uar ON uar.user_id = users.id").
 		Joins("JOIN roles ON roles.id = uar.role_id").
 		Where("uar.application_id = ? AND uar.deleted_at IS NULL", appID)

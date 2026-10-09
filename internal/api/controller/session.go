@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"peak-auth/internal/storage"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -21,13 +23,26 @@ type SessionController struct {
 	SessionService service.SessionService
 	UserService    service.UserService
 	UserRepo       repo.UserRepository
+	StorageService storage.StorageService
+	IdentityRepo   repo.UserIdentityRepository
 }
 
-func NewSessionController(sessionService service.SessionService, userService service.UserService, userRepo repo.UserRepository) *SessionController {
+func NewSessionController(sessionService service.SessionService, userService service.UserService, userRepo repo.UserRepository, extras ...any) *SessionController {
+	var st storage.StorageService
+	var idRepo repo.UserIdentityRepository
+	for _, extra := range extras {
+		if s, ok := extra.(storage.StorageService); ok {
+			st = s
+		} else if id, ok := extra.(repo.UserIdentityRepository); ok {
+			idRepo = id
+		}
+	}
 	return &SessionController{
 		SessionService: sessionService,
 		UserService:    userService,
 		UserRepo:       userRepo,
+		StorageService: st,
+		IdentityRepo:   idRepo,
 	}
 }
 
@@ -184,16 +199,42 @@ func (c *SessionController) GetSettingsPage(ctx *gin.Context) {
 	})
 	apps, _ := c.SessionService.ListAuthorizedApps(userID)
 
+	hasOtherSessions := false
+	for _, s := range sessions {
+		if !s.IsCurrent {
+			hasOtherSessions = true
+			break
+		}
+	}
+
 	var user model.User
 	if c.UserRepo != nil {
 		user, _ = c.UserRepo.FindById(userID)
 	}
 
+	var identities []model.UserIdentity
+	hasGoogle := false
+	hasGithub := false
+	if c.IdentityRepo != nil {
+		identities, _ = c.IdentityRepo.FindByUserID(userID)
+		for _, idn := range identities {
+			if strings.EqualFold(idn.Provider, "google") {
+				hasGoogle = true
+			} else if strings.EqualFold(idn.Provider, "github") {
+				hasGithub = true
+			}
+		}
+	}
+
 	c.renderAdmin(ctx, "settings.html", gin.H{
-		"Title":        "Ajustes de Cuenta",
-		"User":         user,
-		"Sessions":     sessions,
-		"Applications": apps,
+		"Title":            "Ajustes de cuenta",
+		"User":             user,
+		"Sessions":         sessions,
+		"HasOtherSessions": hasOtherSessions,
+		"Applications":     apps,
+		"HasGoogle":        hasGoogle,
+		"HasGitHub":        hasGithub,
+		"Identities":       identities,
 		"Breadcrumbs": []gin.H{
 			{"Label": "Ajustes", "URL": ""},
 		},
@@ -214,10 +255,21 @@ func (c *SessionController) PostUpdateProfile(ctx *gin.Context) {
 	birthDateStr := strings.TrimSpace(ctx.PostForm("birth_date"))
 	avatarURL := strings.TrimSpace(ctx.PostForm("avatar_url"))
 
+	// Soporte para subida directa de archivo de imagen desde el formulario
+	if file, header, err := ctx.Request.FormFile("avatar_file"); err == nil && file != nil && c.StorageService != nil {
+		defer file.Close()
+		uploadedURL, uploadErr := c.StorageService.Upload(ctx.Request.Context(), file, header.Filename, storage.FolderAvatars)
+		if uploadErr != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": uploadErr.Error()})
+			return
+		}
+		avatarURL = uploadedURL
+	}
+
 	var birthDate time.Time
 	if birthDateStr != "" {
 		if t, err := time.Parse("2006-01-02", birthDateStr); err == nil {
-			birthDate = t
+			birthDate = time.Date(t.Year(), t.Month(), t.Day(), 12, 0, 0, 0, time.UTC)
 		}
 	}
 
@@ -232,7 +284,10 @@ func (c *SessionController) PostUpdateProfile(ctx *gin.Context) {
 	}
 
 	audit.Event(ctx, "user.profile_update", fmt.Sprintf("user_id=%d", userID))
-	ctx.JSON(http.StatusOK, gin.H{"message": "Perfil actualizado exitosamente"})
+	ctx.JSON(http.StatusOK, gin.H{
+		"message":    "Perfil actualizado exitosamente",
+		"avatar_url": avatarURL,
+	})
 }
 
 // PostUpdatePassword actualiza la contraseña del usuario tras validar la actual.

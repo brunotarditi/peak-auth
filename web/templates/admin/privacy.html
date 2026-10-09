@@ -1,0 +1,127 @@
+{{ define "content" }}
+<div style="display: flex; gap: 2rem; width: 100%; padding: 1rem 0;">
+    <!-- Sidebar Navegación -->
+    <aside style="width: 16rem; flex-shrink: 0; border-right: 1px solid var(--border-light); padding-right: 1.5rem; display: none;">
+        <nav style="position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem;">
+            <div>
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Secciones</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                    <li><a href="#informacion" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">1. Información recopilada</a></li>
+                    <li><a href="#finalidad" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">2. Finalidad del tratamiento</a></li>
+                    <li><a href="#criptografia" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">3. Criptografía y retención</a></li>
+                    <li><a href="#cookies" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">4. Cookies y almacenamiento</a></li>
+                    <li><a href="#derechos" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">5. Derechos del usuario</a></li>
+                    <li><a href="#terceros" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">6. Terceros y subprocesadores</a></li>
+                    <li><a href="#contacto" style="color: var(--text-muted); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">7. Contacto</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">Legal & Enlaces</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                    <li><a href="/terms" style="color: var(--brand-600); text-decoration: none; font-weight: 600;">Términos y condiciones</a></li>
+                    <li><a href="/admin/docs" style="color: var(--text-muted); text-decoration: none;">Documentación técnica</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+    <style>
+        @media (min-width: 768px) {
+            aside { display: block !important; }
+        }
+    </style>
+
+    <!-- Contenido Principal -->
+    <main style="flex: 1; max-width: 48rem;">
+        <div style="margin-bottom: 2.5rem;">
+            <h1 style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); margin-bottom: 0.75rem; letter-spacing: -0.025em;">Políticas de privacidad</h1>
+            <p style="font-size: 1rem; color: var(--text-muted); line-height: 1.6;">
+                Última actualización: <strong>Octubre 2026</strong>. En <strong>Peak Auth</strong> nos tomamos la privacidad y la protección de datos con la máxima seriedad y rigor técnico. A continuación, detallamos cómo recopilamos, procesamos y resguardamos tu información.
+            </p>
+        </div>
+
+        <section id="informacion" style="margin-bottom: 2.5rem;">
+            <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">1. Información recopilada</h2>
+            <p style="color: var(--text-muted); line-height: 1.625; margin-bottom: 1rem;">
+                Peak Auth opera bajo el principio de <em>minimización de datos</em> (recopilando únicamente lo estrictamente necesario para autenticar y autorizar usuarios):
+            </p>
+            <ul style="list-style: disc; margin-left: 1.5rem; color: var(--text-muted); line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li><strong style="color: var(--text-main);">Datos de cuenta:</strong> Correo electrónico y contraseña (hasheada criptográficamente con bcrypt con salt aleatorio).</li>
+                <li><strong style="color: var(--text-main);">Datos de perfil (opcionales):</strong> Nombre, apellido, fecha de nacimiento y foto de perfil / avatar.</li>
+                <li><strong style="color: var(--text-main);">Credenciales MFA:</strong> Secretos TOTP (almacenados con cifrado autenticado AES-GCM) y credenciales públicas WebAuthn/Passkeys (FIDO2). <em>Nota: los datos biométricos de tu dispositivo nunca salen de él ni son transmitidos a Peak Auth</em>.</li>
+                <li><strong style="color: var(--text-main);">Metadatos de sesión y seguridad:</strong> Dirección IP, User-Agent de navegador/dispositivo y sellos de tiempo de última actividad para la gestión y revocación de sesiones activas.</li>
+            </ul>
+        </section>
+
+        <section id="finalidad" style="margin-bottom: 2.5rem;">
+            <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">2. Finalidad del tratamiento</h2>
+            <p style="color: var(--text-muted); line-height: 1.625; margin-bottom: 1rem;">
+                Los datos se tratan con los siguientes fines exclusivos:
+            </p>
+            <ul style="list-style: disc; margin-left: 1.5rem; color: var(--text-muted); line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li>Autenticar tu identidad y emitir credenciales seguras (Access Tokens JWT y Refresh Tokens).</li>
+                <li>Validar el segundo factor de autenticación (MFA) cuando sea requerido por ti o por la aplicación cliente.</li>
+                <li>Proteger la plataforma contra accesos no autorizados, ataques de fuerza bruta y abusos mediante rate limiting y detección de anomalías.</li>
+                <li>Enviar correos electrónicos transaccionales críticos: confirmación de registro y restablecimiento de contraseña.</li>
+            </ul>
+        </section>
+
+        <section id="criptografia" style="margin-bottom: 2.5rem;">
+            <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">3. Criptografía y retención de datos</h2>
+            <p style="color: var(--text-muted); line-height: 1.625; margin-bottom: 1rem;">
+                Peak Auth implementa estándares criptográficos de grado industrial para garantizar la confidencialidad:
+            </p>
+            <div style="background: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 1.25rem; font-size: 0.875rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.75rem;">
+                <div><strong style="color: var(--text-main);">Sin contraseñas en texto claro:</strong> Las contraseñas nunca se registran ni almacenan en texto plano. Se procesan con bcrypt y funciones de hashing lentas y resistentes a aceleración GPU.</div>
+                <div><strong style="color: var(--text-main);">Tokens rotativos con SHA-256:</strong> Los refresh tokens en la base de datos se almacenan exclusivamente en formato hash SHA-256. Al renovarse un token, el anterior se destruye inmediatamente.</div>
+                <div><strong style="color: var(--text-main);">Firmas asimétricas RSA-256:</strong> Los tokens emitidos son verificados por los clientes sin necesidad de compartir secretos simétricos con el servidor.</div>
+            </div>
+        </section>
+
+        <section id="cookies" style="margin-bottom: 2.5rem;">
+            <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">4. Cookies y almacenamiento en el navegador</h2>
+            <p style="color: var(--text-muted); line-height: 1.625; margin-bottom: 1rem;">
+                Peak Auth solo utiliza cookies técnicas y estrictamente necesarias para el funcionamiento del servicio (cero rastreadores de publicidad o análisis de terceros invasivos):
+            </p>
+            <ul style="list-style: disc; margin-left: 1.5rem; color: var(--text-muted); line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li><code style="font-family: monospace;">peak_session</code>: Cookie HttpOnly y SameSite utilizada para mantener la sesión central de SSO.</li>
+                <li><code style="font-family: monospace;">admin_token</code>: Cookie HttpOnly para la administración de la plataforma.</li>
+                <li><code style="font-family: monospace;">csrf_token</code>: Cookie de seguridad contra ataques de falsificación de peticiones en sitios cruzados.</li>
+                <li><code style="font-family: monospace;">peak_theme</code>: Almacenamiento local para recordar tu preferencia de interfaz (claro u oscuro).</li>
+            </ul>
+        </section>
+
+        <section id="derechos" style="margin-bottom: 2.5rem;">
+            <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">5. Derechos del usuario</h2>
+            <p style="color: var(--text-muted); line-height: 1.625; margin-bottom: 1rem;">
+                Tienes control total sobre tu cuenta y privacidad:
+            </p>
+            <ul style="list-style: disc; margin-left: 1.5rem; color: var(--text-muted); line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li><strong>Acceso y rectificación:</strong> Puedes consultar y actualizar tus datos de perfil en cualquier momento desde los ajustes de cuenta.</li>
+                <li><strong>Revocación de sesiones:</strong> Puedes cerrar sesiones de forma remota en dispositivos específicos o revocar todas las demás sesiones desde la pestaña de sesiones activas.</li>
+                <li><strong>Desconexión de aplicaciones:</strong> Puedes revocar el acceso a cualquier aplicación conectada en OAuth 2.0 de forma inmediata.</li>
+                <li><strong>Eliminación de credenciales MFA:</strong> Puedes gestionar o eliminar llaves de acceso (Passkeys) y restablecer la configuración de doble factor.</li>
+            </ul>
+        </section>
+
+        <section id="terceros" style="margin-bottom: 2.5rem;">
+            <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">6. Terceros y subprocesadores</h2>
+            <p style="color: var(--text-muted); line-height: 1.625; margin-bottom: 1rem;">
+                Peak Auth puede interactuar con proveedores externos seleccionados exclusivamente para infraestructura y entrega de servicios:
+            </p>
+            <ul style="list-style: disc; margin-left: 1.5rem; color: var(--text-muted); line-height: 1.625; display: flex; flex-direction: column; gap: 0.5rem;">
+                <li><strong style="color: var(--text-main);">Resend:</strong> Para el envío transaccional de correos de verificación y restablecimiento de contraseña.</li>
+                <li><strong style="color: var(--text-main);">Cloudflare R2 / AWS S3:</strong> Para el almacenamiento distribuido y seguro de fotos de perfil y avatares (cuando está habilitado el almacenamiento en la nube).</li>
+                <li><strong style="color: var(--text-main);">Google / GitHub:</strong> Exclusivamente en caso de que vincules tu cuenta mediante Social Login (Identity Brokering).</li>
+            </ul>
+        </section>
+
+        <section id="contacto" style="margin-bottom: 2.5rem;">
+            <h2 style="font-size: 1.375rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">7. Contacto</h2>
+            <p style="color: var(--text-muted); line-height: 1.625;">
+                Si tienes preguntas sobre estas políticas de privacidad o deseas ejercer cualquiera de tus derechos, comunícate con el administrador responsable de la instancia de Peak Auth.
+            </p>
+        </section>
+    </main>
+</div>
+{{ end }}
+{{ template "base_admin" . }}

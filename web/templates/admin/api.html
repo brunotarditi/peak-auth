@@ -2,32 +2,51 @@
 <div style="display: flex; gap: 2rem; width: 100%; padding: 1rem 0;">
     <!-- Sidebar Navegación -->
     <aside class="api-sidebar" style="width: 16rem; flex-shrink: 0; border-right: 1px solid var(--border-light); padding-right: 1.5rem; display: none;">
-        <nav style="position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 2rem;">
+        <nav style="position: sticky; top: 2rem; display: flex; flex-direction: column; gap: 1.75rem;">
             <div>
                 <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
-                    Conceptos Core
+                    Guías
                 </h4>
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.625rem; font-size: 0.875rem;">
                     <li>
                         <a href="/admin/docs" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">
-                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Introducción
+                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Conceptos y arquitectura
                         </a>
                     </li>
                 </ul>
             </div>
             <div>
                 <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
-                    Endpoints
+                    Endpoints OIDC & OAuth
                 </h4>
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.8125rem;">
                     <li><a href="#discovery" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">OIDC Discovery & JWKS</a></li>
                     <li><a href="#oauth" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">OAuth 2.0 PKCE</a></li>
-                    <li><a href="#login" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">API Directa: Login</a></li>
-                    <li><a href="#refresh" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">API Directa: Refresh</a></li>
-                    <li><a href="#validation" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">SDKs & Validación</a></li>
+                    <li><a href="#m2m" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Client Credentials (M2M)</a></li>
+                    <li><a href="#introspect" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Token Introspection</a></li>
+                    <li><a href="#broker" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Social Login Broker</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                    API REST (v1)
+                </h4>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.8125rem;">
+                    <li><a href="#login" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Login & MFA directo</a></li>
+                    <li><a href="#refresh" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Refresh rotativo</a></li>
+                    <li><a href="#sessions" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Gestión de sesiones</a></li>
+                    <li><a href="#health" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">Health probes</a></li>
+                    <li><a href="#validation" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-600)'" onmouseout="this.style.color='var(--text-muted)'">SDKs oficiales</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                    Legal
+                </h4>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.8125rem;">
+                    <li><a href="/terms" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem;">Términos de servicio</a></li>
+                    <li><a href="/privacy" style="color: var(--text-muted); text-decoration: none; padding-left: 0.5rem;">Políticas de privacidad</a></li>
                 </ul>
             </div>
         </nav>
@@ -36,16 +55,103 @@
         @media (min-width: 768px) {
             .api-sidebar { display: block !important; }
         }
+
+        /* --- Estilos de bloques de código y Syntax Highlighting --- */
+        .code-block {
+            position: relative;
+            background-color: #0b1120;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            margin: 0.75rem 0 1.25rem 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.875rem;
+            background-color: #080d19;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: var(--font-mono, monospace);
+            font-size: 0.6875rem;
+        }
+        .code-lang {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            color: #94a3b8;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .code-dots {
+            display: inline-flex;
+            gap: 0.3125rem;
+        }
+        .code-dot {
+            width: 0.5625rem;
+            height: 0.5625rem;
+            border-radius: 50%;
+        }
+        .code-dot-red { background-color: #ef4444; }
+        .code-dot-yellow { background-color: #f59e0b; }
+        .code-dot-green { background-color: #10b981; }
+        .code-copy-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            padding: 0.25rem 0.625rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            transition: all 0.2s ease;
+        }
+        .code-copy-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .code-body {
+            padding: 1rem 1.25rem;
+            margin: 0;
+            overflow-x: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.8125rem;
+            line-height: 1.65;
+            color: #e2e8f0;
+            background-color: transparent;
+        }
+        .code-body code {
+            font-family: inherit;
+            color: inherit;
+        }
+
+        /* Syntax colors */
+        .tok-kw { color: #f472b6; font-weight: 600; } /* keywords (import, const, func, val) */
+        .tok-str { color: #86efac; } /* strings */
+        .tok-fn { color: #60a5fa; } /* functions and methods */
+        .tok-type { color: #fbbf24; } /* types, interfaces, classes */
+        .tok-cmt { color: #64748b; font-style: italic; } /* comments */
+        .tok-key { color: #38bdf8; font-weight: 500; } /* json keys / object properties */
+        .tok-num { color: #f97316; } /* numbers */
+        .tok-bool { color: #f97316; font-weight: 600; } /* booleans */
+        .tok-method { color: #38bdf8; font-weight: 700; } /* HTTP methods */
+        .tok-param { color: #cbd5e1; } /* query params */
     </style>
 
     <!-- Contenido Principal -->
     <main style="flex: 1; max-width: 48rem;">
         <div style="margin-bottom: 3rem;">
             <h1 style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); margin-bottom: 1rem; letter-spacing: -0.025em;">
-                Referencia de API y Protocolos
+                Referencia de API y protocolos
             </h1>
             <p style="font-size: 1.125rem; color: var(--text-muted); line-height: 1.625;">
-                Peak Auth expone interfaces estándar para descubrimiento OIDC, flujos de autorización OAuth 2.0 con PKCE, y una API REST directa (Headless) para clientes móviles y servicios backend.
+                Peak Auth expone interfaces estándar para descubrimiento OIDC, flujos de autorización OAuth 2.0 con PKCE, M2M Client Credentials, y una API REST directa con rotación criptográfica de sesiones.
             </p>
         </div>
 
@@ -64,18 +170,32 @@
                     <code style="font-size: 1rem; font-weight: 600; color: var(--text-main);">/.well-known/jwks.json</code>
                 </div>
                 <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem;">
-                    Retorna el conjunto de claves públicas en formato estándar JWK (RFC 7517), incluyendo la clave activa actual y claves previas válidas durante periodos de rotación (<code style="font-family: monospace;">kid</code>).
+                    Retorna el conjunto de claves públicas en formato estándar JWK (RFC 7517), incluyendo la clave activa actual y claves previas válidas durante períodos de rotación (<code style="font-family: monospace;">kid</code>).
                 </p>
-                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--emerald-500); font-family: monospace; overflow-x: auto;">
-                    <pre style="margin: 0;"><code>{
-  "keys": [
+                <div class="code-block">
+                    <div class="code-header">
+                        <div class="code-lang">
+                            <span class="code-dots">
+                                <span class="code-dot code-dot-red"></span>
+                                <span class="code-dot code-dot-yellow"></span>
+                                <span class="code-dot code-dot-green"></span>
+                            </span>
+                            JSON
+                        </div>
+                        <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                            <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span>Copiar</span>
+                        </button>
+                    </div>
+                    <pre class="code-body"><code>{
+  <span class="tok-key">"keys"</span>: [
     {
-      "kty": "RSA",
-      "use": "sig",
-      "alg": "RS256",
-      "kid": "peak-auth-key-1",
-      "n": "&lt;MODULO_RSA_BASE64URL&gt;",
-      "e": "AQAB"
+      <span class="tok-key">"kty"</span>: <span class="tok-str">"RSA"</span>,
+      <span class="tok-key">"use"</span>: <span class="tok-str">"sig"</span>,
+      <span class="tok-key">"alg"</span>: <span class="tok-str">"RS256"</span>,
+      <span class="tok-key">"kid"</span>: <span class="tok-str">"peak-auth-key-1"</span>,
+      <span class="tok-key">"n"</span>: <span class="tok-str">"&lt;MODULO_RSA_BASE64URL&gt;"</span>,
+      <span class="tok-key">"e"</span>: <span class="tok-str">"AQAB"</span>
     }
   ]
 }</code></pre>
@@ -88,7 +208,7 @@
                     <code style="font-size: 1rem; font-weight: 600; color: var(--text-main);">/.well-known/openid-configuration</code>
                 </div>
                 <p style="color: var(--text-muted); font-size: 0.875rem;">
-                    Metadatos de descubrimiento OpenID Connect con las URLs canónicas del servidor de autenticación.
+                    Metadatos de descubrimiento OpenID Connect con las URLs canónicas del servidor de autenticación (authorization_endpoint, token_endpoint, jwks_uri, etc.).
                 </p>
             </div>
         </section>
@@ -96,7 +216,7 @@
         <!-- SECCIÓN OAUTH 2.0 PKCE -->
         <section id="oauth" style="margin-bottom: 3rem;">
             <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
-                OAuth 2.0 con PKCE (Flujo de Autorización SSO)
+                OAuth 2.0 con PKCE (Flujo de autorización SSO)
             </h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
                 Recomendado para aplicaciones web, SPAs (Angular, React, Vue) y móviles. Permite autenticación centralizada con sesión compartida.
@@ -107,16 +227,27 @@
                     <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
                     <code style="font-size: 1rem; font-weight: 600; color: var(--text-main);">/oauth/authorize</code>
                 </div>
-                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">
-                    Redirige al usuario al portal de login. Si ya existe sesión SSO activa, emite el código de inmediato.
-                </p>
-                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace; overflow-x: auto;">
-                    <pre style="margin: 0;"><code>GET /oauth/authorize?response_type=code
-  &client_id=mi-app-id
-  &redirect_uri=https%3A%2F%2Fmi-app.com%2Fcallback
-  &code_challenge=&lt;CODE_CHALLENGE&gt;
-  &code_challenge_method=S256
-  &state=&lt;STATE&gt;</code></pre>
+                <div class="code-block">
+                    <div class="code-header">
+                        <div class="code-lang">
+                            <span class="code-dots">
+                                <span class="code-dot code-dot-red"></span>
+                                <span class="code-dot code-dot-yellow"></span>
+                                <span class="code-dot code-dot-green"></span>
+                            </span>
+                            HTTP GET
+                        </div>
+                        <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                            <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span>Copiar</span>
+                        </button>
+                    </div>
+                    <pre class="code-body"><code><span class="tok-method">GET</span> /oauth/authorize?response_type=code
+  &amp;<span class="tok-key">client_id</span>=mi-app-id
+  &amp;<span class="tok-key">redirect_uri</span>=https%3A%2F%2Fmi-app.com%2Fcallback
+  &amp;<span class="tok-key">code_challenge</span>=&lt;CODE_CHALLENGE&gt;
+  &amp;<span class="tok-key">code_challenge_method</span>=S256
+  &amp;<span class="tok-key">state</span>=&lt;STATE&gt;</code></pre>
                 </div>
             </div>
 
@@ -126,46 +257,183 @@
                     <code style="font-size: 1rem; font-weight: 600; color: var(--text-main);">/oauth/token</code>
                 </div>
                 <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">
-                    Intercambia el código de autorización temporal por los tokens de acceso definitivos (Access Token + Refresh Token).
+                    Intercambia el código de autorización por los tokens definitivos (Access Token + Refresh Token).
                 </p>
-                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace; overflow-x: auto;">
-                    <pre style="margin: 0;"><code>{
-  "grant_type": "authorization_code",
-  "client_id": "mi-app-id",
-  "client_secret": "&lt;CLIENT_SECRET&gt;",
-  "code": "&lt;AUTHORIZATION_CODE&gt;",
-  "redirect_uri": "https://mi-app.com/callback",
-  "code_verifier": "&lt;CODE_VERIFIER&gt;"
+                <div class="code-block">
+                    <div class="code-header">
+                        <div class="code-lang">
+                            <span class="code-dots">
+                                <span class="code-dot code-dot-red"></span>
+                                <span class="code-dot code-dot-yellow"></span>
+                                <span class="code-dot code-dot-green"></span>
+                            </span>
+                            JSON
+                        </div>
+                        <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                            <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span>Copiar</span>
+                        </button>
+                    </div>
+                    <pre class="code-body"><code>{
+  <span class="tok-key">"grant_type"</span>: <span class="tok-str">"authorization_code"</span>,
+  <span class="tok-key">"client_id"</span>: <span class="tok-str">"mi-app-id"</span>,
+  <span class="tok-key">"client_secret"</span>: <span class="tok-str">"&lt;CLIENT_SECRET&gt;"</span>,
+  <span class="tok-key">"code"</span>: <span class="tok-str">"&lt;AUTHORIZATION_CODE&gt;"</span>,
+  <span class="tok-key">"redirect_uri"</span>: <span class="tok-str">"https://mi-app.com/callback"</span>,
+  <span class="tok-key">"code_verifier"</span>: <span class="tok-str">"&lt;CODE_VERIFIER&gt;"</span>
 }</code></pre>
                 </div>
             </div>
+        </section>
+
+        <!-- SECCIÓN M2M CLIENT CREDENTIALS -->
+        <section id="m2m" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
+                /oauth/token (Client Credentials - RFC 6749)
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Autenticación Machine-to-Machine (M2M) para microservicios y workers. Admite credenciales en cabecera HTTP Basic Auth (<code style="font-family: monospace;">Authorization: Basic base64(client_id:client_secret)</code>) o en el cuerpo de la petición.
+            </p>
+            <div class="code-block">
+                <div class="code-header">
+                    <div class="code-lang">
+                        <span class="code-dots">
+                            <span class="code-dot code-dot-red"></span>
+                            <span class="code-dot code-dot-yellow"></span>
+                            <span class="code-dot code-dot-green"></span>
+                        </span>
+                        JSON Request
+                    </div>
+                    <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                        <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>Copiar</span>
+                    </button>
+                </div>
+                <pre class="code-body"><code>{
+  <span class="tok-key">"grant_type"</span>: <span class="tok-str">"client_credentials"</span>,
+  <span class="tok-key">"client_id"</span>: <span class="tok-str">"mi-microservicio-id"</span>,
+  <span class="tok-key">"client_secret"</span>: <span class="tok-str">"&lt;CLIENT_SECRET&gt;"</span>,
+  <span class="tok-key">"scope"</span>: <span class="tok-str">"service:read service:write"</span>
+}</code></pre>
+            </div>
+            <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Respuesta</h4>
+            <div class="code-block">
+                <div class="code-header">
+                    <div class="code-lang">
+                        <span class="code-dots">
+                            <span class="code-dot code-dot-red"></span>
+                            <span class="code-dot code-dot-yellow"></span>
+                            <span class="code-dot code-dot-green"></span>
+                        </span>
+                        JSON Response
+                    </div>
+                    <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                        <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>Copiar</span>
+                    </button>
+                </div>
+                <pre class="code-body"><code>{
+  <span class="tok-key">"access_token"</span>: <span class="tok-str">"ey..."</span>,
+  <span class="tok-key">"token_type"</span>: <span class="tok-str">"Bearer"</span>,
+  <span class="tok-key">"expires_in"</span>: <span class="tok-num">3600</span>,
+  <span class="tok-key">"scope"</span>: <span class="tok-str">"service:read service:write"</span>
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- SECCIÓN TOKEN INTROSPECTION -->
+        <section id="introspect" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
+                /oauth/introspect (RFC 7662)
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Permite a gateways y APIs consultar el estado activo y metadatos de un token en tiempo real:
+            </p>
+            <div class="code-block">
+                <div class="code-header">
+                    <div class="code-lang">
+                        <span class="code-dots">
+                            <span class="code-dot code-dot-red"></span>
+                            <span class="code-dot code-dot-yellow"></span>
+                            <span class="code-dot code-dot-green"></span>
+                        </span>
+                        HTTP Request
+                    </div>
+                    <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                        <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>Copiar</span>
+                    </button>
+                </div>
+                <pre class="code-body"><code><span class="tok-method">POST</span> /oauth/introspect
+<span class="tok-key">Headers</span>: Content-Type: application/x-www-form-urlencoded
+<span class="tok-key">Body</span>: token=&lt;ACCESS_TOKEN&gt;</code></pre>
+            </div>
+        </section>
+
+        <!-- SECCIÓN BROKER -->
+        <section id="broker" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+                Social Login (Identity Brokering)
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Endpoints para iniciar sesión social y delegar la autenticación en proveedores externos:
+            </p>
+            <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                <li style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
+                    <code style="color: var(--text-main); font-weight: 600;">/oauth/broker/:provider/auth</code>
+                    <span style="color: var(--text-muted);">(Donde :provider puede ser google o github)</span>
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
+                    <code style="color: var(--text-main); font-weight: 600;">/oauth/broker/:provider/callback</code>
+                    <span style="color: var(--text-muted);">(Callback procesado de forma atómica y segura)</span>
+                </li>
+            </ul>
         </section>
 
         <!-- SECCIÓN API DIRECTA -->
         <section id="login" style="margin-bottom: 3rem;">
             <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
                 <span style="background-color: rgba(16, 185, 129, 0.1); color: var(--emerald-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
-                /api/v1/login (Headless / M2M)
+                /api/v1/login (Headless / Móvil)
             </h2>
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
-                Para clientes nativos o APIs máquina a máquina (M2M) que requieren autenticación directa sin interfaz web de redirección. Si el usuario tiene MFA activo o la aplicación lo exige mediante políticas, retorna un token temporal <code style="font-family: monospace;">mfa_pending</code>.
+                Para clientes móviles nativos o aplicaciones que requieren autenticación directa sin interfaz web de redirección. Si el usuario tiene MFA activo o la aplicación lo exige mediante políticas, retorna un token temporal <code style="font-family: monospace;">mfa_pending</code>.
             </p>
-            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace;">
-                <pre style="margin: 0;"><code>{
-  "email": "usuario@ejemplo.com",
-  "password": "&lt;PASSWORD&gt;",
-  "client_id": "mi-app-id",
-  "client_secret": "&lt;CLIENT_SECRET&gt;"
+            <div class="code-block">
+                <div class="code-header">
+                    <div class="code-lang">
+                        <span class="code-dots">
+                            <span class="code-dot code-dot-red"></span>
+                            <span class="code-dot code-dot-yellow"></span>
+                            <span class="code-dot code-dot-green"></span>
+                        </span>
+                        JSON Request
+                    </div>
+                    <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                        <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>Copiar</span>
+                    </button>
+                </div>
+                <pre class="code-body"><code>{
+  <span class="tok-key">"email"</span>: <span class="tok-str">"usuario@ejemplo.com"</span>,
+  <span class="tok-key">"password"</span>: <span class="tok-str">"&lt;PASSWORD&gt;"</span>,
+  <span class="tok-key">"client_id"</span>: <span class="tok-str">"mi-app-id"</span>,
+  <span class="tok-key">"client_secret"</span>: <span class="tok-str">"&lt;CLIENT_SECRET&gt;"</span>
 }</code></pre>
             </div>
-            <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Respuesta Exitosa</h4>
-            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.8125rem; color: var(--emerald-500); font-family: monospace;">
-                <pre style="margin: 0;"><code>{
-  "access_token": "&lt;ACCESS_TOKEN&gt;",
-  "refresh_token": "&lt;REFRESH_TOKEN&gt;",
-  "expires_in": 3600
-}</code></pre>
-            </div>
+            <h4 style="font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Desafío MFA</h4>
+            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.75rem;">
+                Si se requiere un segundo factor, intercambia el token <code style="font-family: monospace;">mfa_pending</code> en:
+            </p>
+            <ul style="list-style: disc; margin-left: 1.5rem; color: var(--text-muted); font-size: 0.875rem; display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1rem;">
+                <li><code style="font-weight: 600;">POST /api/v1/login/mfa/totp</code> (código de 6 dígitos)</li>
+                <li><code style="font-weight: 600;">POST /api/v1/login/mfa/recovery</code> (código de recuperación)</li>
+                <li><code style="font-weight: 600;">POST /api/v1/login/mfa/webauthn/register/finish</code> (afirmación FIDO2/Passkey)</li>
+            </ul>
         </section>
 
         <section id="refresh" style="margin-bottom: 3rem;">
@@ -176,18 +444,81 @@
             <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
                 Renueva el Access Token utilizando un Refresh Token válido. Implementa rotación criptográfica estricta con hash SHA-256: al consumirse el refresh token actual, es invalidado inmediatamente y se emite uno nuevo.
             </p>
-            <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; margin-bottom: 1rem; overflow-x: auto; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace;">
-                <pre style="margin: 0;"><code>{
-  "refresh_token": "&lt;REFRESH_TOKEN&gt;",
-  "client_id": "mi-app-id"
+            <div class="code-block">
+                <div class="code-header">
+                    <div class="code-lang">
+                        <span class="code-dots">
+                            <span class="code-dot code-dot-red"></span>
+                            <span class="code-dot code-dot-yellow"></span>
+                            <span class="code-dot code-dot-green"></span>
+                        </span>
+                        JSON Request
+                    </div>
+                    <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                        <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>Copiar</span>
+                    </button>
+                </div>
+                <pre class="code-body"><code>{
+  <span class="tok-key">"refresh_token"</span>: <span class="tok-str">"&lt;REFRESH_TOKEN&gt;"</span>,
+  <span class="tok-key">"client_id"</span>: <span class="tok-str">"mi-app-id"</span>
 }</code></pre>
             </div>
+        </section>
+
+        <!-- SECCIÓN SESIONES -->
+        <section id="sessions" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+                Gestión de sesiones activas y revocación
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Endpoints protegidos mediante JWT para auditoría y control de dispositivos conectados:
+            </p>
+            <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                <li style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
+                    <code style="color: var(--text-main); font-weight: 600;">/api/v1/user/sessions</code>
+                    <span style="color: var(--text-muted);">(Lista sesiones activas y dispositivo actual)</span>
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background-color: rgba(239, 68, 68, 0.1); color: var(--rose-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">DELETE</span>
+                    <code style="color: var(--text-main); font-weight: 600;">/api/v1/user/sessions/:id</code>
+                    <span style="color: var(--text-muted);">(Revoca una sesión específica)</span>
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background-color: rgba(239, 68, 68, 0.1); color: var(--rose-500); font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">POST</span>
+                    <code style="color: var(--text-main); font-weight: 600;">/api/v1/user/sessions/revoke-others</code>
+                    <span style="color: var(--text-muted);">(Revoca todas las demás sesiones excepto la actual)</span>
+                </li>
+            </ul>
+        </section>
+
+        <!-- SECCIÓN HEALTH -->
+        <section id="health" style="margin-bottom: 3rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+                Health probes & observabilidad
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1rem; line-height: 1.625;">
+                Diseñados para balanceadores de carga, Docker y Kubernetes:
+            </p>
+            <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem;">
+                <li style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
+                    <code style="color: var(--text-main); font-weight: 600;">/health</code>
+                    <span style="color: var(--text-muted);">(Liveness probe con tiempo de actividad)</span>
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-weight: 700;">GET</span>
+                    <code style="color: var(--text-main); font-weight: 600;">/ready</code>
+                    <span style="color: var(--text-muted);">(Readiness probe con verificación activa de PostgreSQL y claves JWT)</span>
+                </li>
+            </ul>
         </section>
 
         <!-- SECCIÓN VALIDACIÓN CON SDKS -->
         <section id="validation" style="margin-bottom: 3rem;">
             <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
-                Validación en tu Aplicación (SDKs Oficiales)
+                Validación en tu aplicación (SDKs oficiales)
             </h2>
             <p style="color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.625;">
                 Tu backend NO debe llamar a Peak Auth en cada petición. Los SDKs oficiales consultan el endpoint JWKS, cachean las claves públicas en memoria y validan la firma criptográfica RSA-256, expiración y audiencia de forma 100% local y con latencia cero.
@@ -197,21 +528,38 @@
                 <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
                     1. TypeScript / Node.js (<code style="font-family: monospace;">@brunotarditi/peak-auth</code>)
                 </h3>
-                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace; overflow-x: auto;">
-                    <pre style="margin: 0;"><code>import { createPeakAuthClient } from "@brunotarditi/peak-auth";
-import { peakAuthExpress } from "@brunotarditi/peak-auth/express";
+                <div class="code-block">
+                    <div class="code-header">
+                        <div class="code-lang">
+                            <span class="code-dots">
+                                <span class="code-dot code-dot-red"></span>
+                                <span class="code-dot code-dot-yellow"></span>
+                                <span class="code-dot code-dot-green"></span>
+                            </span>
+                            TypeScript
+                        </div>
+                        <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                            <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span>Copiar</span>
+                        </button>
+                    </div>
+                    <pre class="code-body"><code><span class="tok-kw">import</span> { <span class="tok-fn">createPeakAuthClient</span> } <span class="tok-kw">from</span> <span class="tok-str">"@brunotarditi/peak-auth"</span>;
+<span class="tok-kw">import</span> { <span class="tok-fn">peakAuthExpress</span> } <span class="tok-kw">from</span> <span class="tok-str">"@brunotarditi/peak-auth/express"</span>;
 
-const client = createPeakAuthClient({
-  baseUrl: "https://auth.tu-dominio.com",
-  clientId: "mi-app-id",
+<span class="tok-kw">const</span> client = <span class="tok-fn">createPeakAuthClient</span>({
+  <span class="tok-key">baseUrl</span>: <span class="tok-str">"https://auth.tu-dominio.com"</span>,
+  <span class="tok-key">clientId</span>: <span class="tok-str">"mi-app-id"</span>,
 });
 
-// Middleware Express automático:
-app.use("/api", peakAuthExpress({ baseUrl: "https://auth.tu-dominio.com", clientId: "mi-app-id" }));
+<span class="tok-cmt">// Middleware Express automático:</span>
+app.<span class="tok-fn">use</span>(<span class="tok-str">"/api"</span>, <span class="tok-fn">peakAuthExpress</span>({ 
+  <span class="tok-key">baseUrl</span>: <span class="tok-str">"https://auth.tu-dominio.com"</span>, 
+  <span class="tok-key">clientId</span>: <span class="tok-str">"mi-app-id"</span> 
+}));
 
-// O verificación manual en cualquier endpoint:
-const claims = await client.verifyToken(token);
-console.log("Usuario autenticado:", claims.email, claims.roles);</code></pre>
+<span class="tok-cmt">// O verificación manual en cualquier endpoint:</span>
+<span class="tok-kw">const</span> claims = <span class="tok-kw">await</span> client.<span class="tok-fn">verifyToken</span>(token);
+console.<span class="tok-fn">log</span>(<span class="tok-str">"Usuario autenticado:"</span>, claims.email, claims.roles);</code></pre>
                 </div>
             </div>
 
@@ -219,22 +567,75 @@ console.log("Usuario autenticado:", claims.email, claims.roles);</code></pre>
                 <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
                     2. Go (<code style="font-family: monospace;">github.com/brunotarditi/peak-auth/sdk/go</code>)
                 </h3>
-                <div style="background-color: var(--slate-900); border-radius: var(--radius-xl); padding: 1rem; font-size: 0.8125rem; color: var(--slate-300); font-family: monospace; overflow-x: auto;">
-                    <pre style="margin: 0;"><code>import (
-    peakauth "github.com/brunotarditi/peak-auth/sdk/go"
-    ginpeak "github.com/brunotarditi/peak-auth/sdk/go/gin"
+                <div class="code-block">
+                    <div class="code-header">
+                        <div class="code-lang">
+                            <span class="code-dots">
+                                <span class="code-dot code-dot-red"></span>
+                                <span class="code-dot code-dot-yellow"></span>
+                                <span class="code-dot code-dot-green"></span>
+                            </span>
+                            Go
+                        </div>
+                        <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                            <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span>Copiar</span>
+                        </button>
+                    </div>
+                    <pre class="code-body"><code><span class="tok-kw">import</span> (
+    peakauth <span class="tok-str">"github.com/brunotarditi/peak-auth/sdk/go"</span>
+    ginpeak  <span class="tok-str">"github.com/brunotarditi/peak-auth/sdk/go/gin"</span>
 )
 
-client, err := peakauth.NewClient(peakauth.Config{
-    BaseURL:  "https://auth.tu-dominio.com",
-    ClientID: "mi-app-id",
+client, err := peakauth.<span class="tok-fn">NewClient</span>(peakauth.<span class="tok-type">Config</span>{
+    <span class="tok-key">BaseURL</span>:  <span class="tok-str">"https://auth.tu-dominio.com"</span>,
+    <span class="tok-key">ClientID</span>: <span class="tok-str">"mi-app-id"</span>,
 })
 
-// Middleware para Gin Web Framework:
-r.GET("/protegido", ginpeak.AuthMiddleware(client), func(c *gin.Context) {
-    claims, _ := ginpeak.GetClaims(c)
-    c.JSON(200, gin.H{"user": claims.Email, "roles": claims.Roles})
+<span class="tok-cmt">// Middleware para Gin Web Framework:</span>
+r.<span class="tok-fn">GET</span>(<span class="tok-str">"/protegido"</span>, ginpeak.<span class="tok-fn">AuthMiddleware</span>(client), <span class="tok-kw">func</span>(c *gin.<span class="tok-type">Context</span>) {
+    claims, _ := ginpeak.<span class="tok-fn">GetClaims</span>(c)
+    c.<span class="tok-fn">JSON</span>(<span class="tok-num">200</span>, gin.<span class="tok-type">H</span>{<span class="tok-str">"user"</span>: claims.Email, <span class="tok-str">"roles"</span>: claims.Roles})
 })</code></pre>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
+                    3. Kotlin / Android (<code style="font-family: monospace;">io.peakauth:peak-auth-kotlin</code>)
+                </h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <div class="code-lang">
+                            <span class="code-dots">
+                                <span class="code-dot code-dot-red"></span>
+                                <span class="code-dot code-dot-yellow"></span>
+                                <span class="code-dot code-dot-green"></span>
+                            </span>
+                            Kotlin
+                        </div>
+                        <button type="button" class="code-copy-btn" onclick="copyCode(this)">
+                            <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span>Copiar</span>
+                        </button>
+                    </div>
+                    <pre class="code-body"><code><span class="tok-kw">import</span> io.peakauth.<span class="tok-type">PeakAuthClient</span>
+<span class="tok-kw">import</span> io.peakauth.<span class="tok-type">PeakAuthConfig</span>
+
+<span class="tok-kw">val</span> client = <span class="tok-type">PeakAuthClient</span>(
+    <span class="tok-type">PeakAuthConfig</span>(
+        <span class="tok-key">baseUrl</span> = <span class="tok-str">"https://auth.tu-dominio.com"</span>,
+        <span class="tok-key">clientId</span> = <span class="tok-str">"mi-app-id"</span>
+    )
+)
+
+<span class="tok-cmt">// Verificación offline con corrutinas de Kotlin:</span>
+<span class="tok-kw">val</span> result = client.<span class="tok-fn">verifyToken</span>(accessToken)
+result.<span class="tok-fn">onSuccess</span> { claims -&gt;
+    <span class="tok-fn">println</span>(<span class="tok-str">"Bienvenido ${claims.email}, roles: ${claims.roles}"</span>)
+}.<span class="tok-fn">onFailure</span> { error -&gt;
+    <span class="tok-fn">println</span>(<span class="tok-str">"Token inválido: ${error.message}"</span>)
+}</code></pre>
                 </div>
             </div>
 
@@ -250,5 +651,25 @@ r.GET("/protegido", ginpeak.AuthMiddleware(client), func(c *gin.Context) {
 
     </main>
 </div>
+<script>
+function copyCode(btn) {
+    const codeBlock = btn.closest('.code-block');
+    if (!codeBlock) return;
+    const code = codeBlock.querySelector('code');
+    if (!code) return;
+    navigator.clipboard.writeText(code.innerText).then(() => {
+        const span = btn.querySelector('span');
+        const prevText = span ? span.textContent : '';
+        if (span) span.textContent = '¡Copiado!';
+        btn.style.borderColor = 'var(--emerald-500)';
+        btn.style.color = 'var(--emerald-500)';
+        setTimeout(() => {
+            if (span) span.textContent = prevText;
+            btn.style.borderColor = '';
+            btn.style.color = '';
+        }, 2000);
+    });
+}
+</script>
 {{ end }}
 {{ template "base_admin" . }}

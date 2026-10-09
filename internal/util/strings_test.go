@@ -31,7 +31,7 @@ func TestIsValidSlug(t *testing.T) {
 		{"", false},
 		{"a", false}, // too short (< 2)
 		{"mi-app", true},
-		{"libreria-mariela-api", true},
+		{"app-prueba-api", true},
 		{"invalid slug with spaces", false},
 		{"invalid_slug_with_underscores", false},
 		{"-leading-dash", false},

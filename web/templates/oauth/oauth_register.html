@@ -46,7 +46,7 @@
                 <div style="width: 3.5rem; height: 3.5rem; margin: 0 auto 1.25rem; border-radius: 9999px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: var(--emerald-600);">
                     <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                 </div>
-                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.75rem;">¡Cuenta Creada con Éxito!</h3>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.75rem;">¡Cuenta creada con éxito!</h3>
                 {{ if .RequireVerification }}
                 <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.75rem;">
                     Hemos enviado un enlace de confirmación a <strong>{{ .Email }}</strong>.<br>
@@ -58,7 +58,7 @@
                 </p>
                 {{ end }}
                 <a href="/oauth/login?client_id={{ .ClientID }}&redirect_uri={{ .RedirectURI }}&state={{ .State }}{{ if .CodeChallenge }}&code_challenge={{ .CodeChallenge }}&code_challenge_method={{ .CodeChallengeMethod }}{{ end }}" class="peak-btn peak-btn-primary peak-btn-block" style="text-decoration: none; display: inline-flex; justify-content: center;">
-                    Continuar al Inicio de Sesión
+                    Continuar al inicio de sesión
                 </a>
             </div>
             {{ else }}
@@ -90,7 +90,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Correo Electrónico</label>
+                    <label class="form-label">Correo electrónico</label>
                     <input type="email" name="email" required value="{{ .Email }}" placeholder="tu@correo.com" class="peak-input">
                 </div>
 
@@ -100,7 +100,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Confirmar Contraseña</label>
+                    <label class="form-label">Confirmar contraseña</label>
                     <input type="password" name="confirm_password" required placeholder="••••••••" class="peak-input" autocomplete="new-password">
                 </div>
 
@@ -149,13 +149,11 @@
             {{ end }}
         </div>
 
-        {{ if or .TermsURL .PrivacyURL }}
         <div style="text-align: center; margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; font-size: 0.75rem;">
-            {{ if .TermsURL }}<a href="{{ .TermsURL }}" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline;">Términos de servicio</a>{{ end }}
-            {{ if and .TermsURL .PrivacyURL }}<span style="color: var(--text-muted);">•</span>{{ end }}
-            {{ if .PrivacyURL }}<a href="{{ .PrivacyURL }}" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline;">Política de privacidad</a>{{ end }}
+            <a href="{{ if .TermsURL }}{{ .TermsURL }}{{ else }}/terms{{ end }}" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline;">Términos de servicio</a>
+            <span style="color: var(--text-muted);">•</span>
+            <a href="{{ if .PrivacyURL }}{{ .PrivacyURL }}{{ else }}/privacy{{ end }}" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline;">Política de privacidad</a>
         </div>
-        {{ end }}
 
         <p style="text-align: center; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; margin-top: 1.5rem;">
             Secured by Peak <span style="color: var(--brand-600); font-weight: 700;">Auth</span> SSO

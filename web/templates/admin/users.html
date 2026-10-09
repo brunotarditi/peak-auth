@@ -1,6 +1,6 @@
 {{ define "content" }}
 <div style="margin-bottom: 2rem;">
-    <a href="/admin" class="peak-btn peak-btn-brand-soft" style="font-size: 0.75rem;">
+    <a href="/admin" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem;">
         {{ template "icon-arrow-back" }}
         Volver a aplicaciones
     </a>
@@ -47,10 +47,10 @@
                     <div id="temporaryOptions" class="hidden" style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
                         <label class="form-label" style="font-size: 0.75rem;">Duración del acceso</label>
                         <select name="duration_preset" id="duration_preset" class="peak-input" style="font-size: 0.75rem; padding: 0.375rem 0.5rem;" onchange="toggleCustomDuration(this.value)">
-                            <option value="24h">24 Horas (1 día)</option>
-                            <option value="7d" selected>7 Días (1 semana)</option>
-                            <option value="30d">30 Días (1 mes)</option>
-                            <option value="90d">90 Días (3 meses)</option>
+                            <option value="24h">24 horas (1 día)</option>
+                            <option value="7d" selected>7 días (1 semana)</option>
+                            <option value="30d">30 días (1 mes)</option>
+                            <option value="90d">90 días (3 meses)</option>
                             <option value="custom">Fecha personalizada</option>
                         </select>
                         <div id="customDurationBox" class="hidden">
@@ -163,7 +163,11 @@
                                     {{ end }}
 
                                     {{ if and (ne .RoleName "ROOT") (ne .RoleName "OWNER") }}
-                                    <button onclick="openAccessModal('{{$.App.AppID}}', '{{.ID}}', '{{.Email}}', '{{if .AccessExpiresAt}}{{format_time .AccessExpiresAt "2006-01-02T15:04"}}{{end}}', {{if .AccessExpiresAt}}true{{else}}false{{end}})"
+                                    {{ $expiresAt := "" }}
+                                    {{ if .AccessExpiresAt }}{{ $expiresAt = format_time .AccessExpiresAt "2006-01-02T15:04" }}{{ end }}
+                                    {{ $isTemporary := "false" }}
+                                    {{ if .AccessExpiresAt }}{{ $isTemporary = "true" }}{{ end }}
+                                    <button onclick="openAccessModal('{{$.App.AppID}}', '{{.ID}}', '{{.Email}}', '{{$expiresAt}}', '{{$isTemporary}}')"
                                         class="peak-badge peak-badge-secondary" style="cursor: pointer;"
                                         title="Configurar vigencia o reactivar acceso">
                                         {{if eq .AccessStatus "expired"}}Reactivar{{else}}Vigencia{{end}}
@@ -263,13 +267,13 @@
         
         <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 32rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="modal-title">Nuevo Rol de Aplicación</h3>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="modal-title">Nuevo rol de aplicación</h3>
                 <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Define un nuevo rol propio de esta aplicación.</p>
             </div>
 
             <form id="roleForm" onsubmit="event.preventDefault(); createRole(event, '{{.App.AppID}}');" style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <div style="margin-bottom: 0;" class="form-group">
-                    <label class="form-label">Identificador del Rol</label>
+                    <label class="form-label">Identificador del rol</label>
                     <input type="text" id="roleName" name="name" placeholder="Ej: EDITOR, VIEWER, ADMIN" required
                         class="peak-input" style="text-transform: uppercase; font-weight: 700;">
                 </div>
@@ -279,19 +283,19 @@
                         Cancelar
                     </button>
                     <button type="submit" id="submitRoleBtn" class="peak-btn peak-btn-primary peak-btn-block">
-                        Crear Rol
+                        Crear rol
                     </button>
                 </div>
             </form>
 
             <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-light);">
-                <h4 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">Roles Existentes</h4>
+                <h4 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">Roles existentes</h4>
                 <div id="modal-roles-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 12rem; overflow-y: auto;">
                     {{range .Roles}}
                     {{ if .ApplicationID }}
                     <div id="modal-role-item-{{.Name}}" class="group" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light); transition: all 0.2s ease;">
                         <span style="font-size: 0.875rem; font-weight: 700; color: var(--text-main);">{{.Name}}</span>
-                        <button type="button" onclick="deleteRole('{{.Name}}', '{{$.App.AppID}}')" class="icon-btn icon-btn-danger" style="padding: 0.25rem;" title="Eliminar Rol">
+                        <button type="button" onclick="deleteRole('{{.Name}}', '{{$.App.AppID}}')" class="icon-btn icon-btn-danger" style="padding: 0.25rem;" title="Eliminar rol">
                             {{ template "icon-delete" }}
                         </button>
                     </div>
@@ -320,7 +324,7 @@
         
         <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 30rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="access-modal-title">Vigencia de Acceso</h3>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="access-modal-title">Vigencia de acceso</h3>
                 <p id="accessModalSubtitle" style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Configura el período de acceso del usuario a esta aplicación.</p>
             </div>
 
@@ -328,7 +332,7 @@
                 <input type="hidden" id="accessModalUserID" name="user_id">
 
                 <div class="form-group" style="margin-bottom: 0;">
-                    <label class="form-label">Tipo de Acceso</label>
+                    <label class="form-label">Tipo de acceso</label>
                     <div style="display: flex; gap: 1.5rem; margin-top: 0.25rem;">
                         <label style="display: flex; align-items: center; gap: 0.375rem; cursor: pointer; font-size: 0.875rem; color: var(--text-main);">
                             <input type="radio" name="modal_access_type" id="modalAccessPermanent" value="permanent" onchange="toggleModalAccessType('permanent')">
@@ -343,12 +347,12 @@
 
                 <div id="modalTemporarySection" class="hidden" style="display: flex; flex-direction: column; gap: 0.875rem; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-size: 0.75rem;">Extender o Definir Duración</label>
+                        <label class="form-label" style="font-size: 0.75rem;">Extender o definir duración</label>
                         <select id="modalDurationPreset" name="duration_preset" class="peak-input" onchange="toggleModalCustomDuration(this.value)">
-                            <option value="24h">24 Horas (+1 día)</option>
-                            <option value="7d" selected>7 Días (+1 semana)</option>
-                            <option value="30d">30 Días (+1 mes)</option>
-                            <option value="90d">90 Días (+3 meses)</option>
+                            <option value="24h">24 horas (+1 día)</option>
+                            <option value="7d" selected>7 días (+1 semana)</option>
+                            <option value="30d">30 días (+1 mes)</option>
+                            <option value="90d">90 días (+3 meses)</option>
                             <option value="custom">Fecha y hora específica</option>
                         </select>
                     </div>
@@ -364,7 +368,7 @@
                         Cancelar
                     </button>
                     <button type="submit" id="saveAccessBtn" class="peak-btn peak-btn-primary peak-btn-block">
-                        Guardar Cambios
+                        Guardar cambios
                     </button>
                 </div>
             </form>

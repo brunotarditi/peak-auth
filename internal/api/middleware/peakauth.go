@@ -45,6 +45,9 @@ func AuthMiddleware(manager *auth.JWTManager, userRepo ...repo.UserRepository) g
 			return
 		}
 
+		userEmail := jsonToken.Username
+		userName := ""
+
 		if uRepo != nil {
 			user, err := uRepo.FindById(uint(userID))
 			if err != nil || !user.IsActive {
@@ -63,10 +66,17 @@ func AuthMiddleware(manager *auth.JWTManager, userRepo ...repo.UserRepository) g
 				handleAuthError(c, fmt.Errorf("token invalidado por revocación de acceso"))
 				return
 			}
+			if user.Email != "" {
+				userEmail = user.Email
+			}
+			if uName := strings.TrimSpace(user.Profile.FirstName + " " + user.Profile.LastName); uName != "" {
+				userName = uName
+			}
 		}
 
 		c.Set("user_id", uint(userID))
-		c.Set("user_email", jsonToken.Username)
+		c.Set("user_email", userEmail)
+		c.Set("user_name", userName)
 		c.Set("user_roles", jsonToken.Roles)
 		c.Set("is_authenticated", true)
 

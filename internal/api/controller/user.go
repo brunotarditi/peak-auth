@@ -9,6 +9,7 @@ import (
 	"peak-auth/internal/storage"
 	"peak-auth/internal/util"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -93,7 +94,7 @@ func (c *UserController) PostResetPassword(ctx *gin.Context) {
 
 // Refresh maneja la renovación de tokens vía refresh token
 func (c *UserController) Refresh(ctx *gin.Context) {
-	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	// Directivas de no almacenamiento en caché conforme a RFC 6749
 	ctx.Header("Cache-Control", "no-store")
 	ctx.Header("Pragma", "no-cache")
 
@@ -547,6 +548,36 @@ func (ctrl *UserController) DeleteWebAuthnKey(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Llave de seguridad eliminada exitosamente"})
 }
 
+// RegenerateRecoveryCodes genera un nuevo conjunto de 10 códigos de recuperación invalidando los previos
+func (ctrl *UserController) RegenerateRecoveryCodes(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	// Validar que el usuario tenga MFA activo
+	status, err := ctrl.MfaService.GetMfaStatus(userID)
+	if err != nil || (!status.TOTPConfigured && len(status.WebAuthnKeys) == 0) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Debes tener al menos un método de MFA configurado para regenerar códigos de recuperación"})
+		return
+	}
+
+	codes, err := ctrl.MfaService.RegenerateRecoveryCodes(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al regenerar códigos de recuperación"})
+		return
+	}
+
+	audit.Event(c, "mfa.recovery.regenerate", fmt.Sprintf("user=%d", userID))
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":        "Códigos de recuperación regenerados con éxito",
+		"recovery_codes": codes,
+	})
+}
+
 // PostUploadAvatar procesa la subida de un avatar de perfil para el usuario autenticado.
 func (ctrl *UserController) PostUploadAvatar(c *gin.Context) {
 	val, exists := c.Get("user_id")
@@ -609,3 +640,88 @@ func (ctrl *UserController) DeleteAvatar(c *gin.Context) {
 	})
 }
 
+// GetProfile obtiene los datos del perfil del usuario autenticado.
+func (ctrl *UserController) GetProfile(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	if ctrl.UserService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Servicio de usuario no disponible"})
+		return
+	}
+
+	user, err := ctrl.UserService.FindVerifiedUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Usuario no encontrado o no activo"})
+		return
+	}
+
+	var birthDateStr string
+	if !user.Profile.BirthDate.IsZero() {
+		birthDateStr = user.Profile.BirthDate.Format("2006-01-02")
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":          user.ID,
+		"email":       user.Email,
+		"first_name":  user.Profile.FirstName,
+		"last_name":   user.Profile.LastName,
+		"birth_date":  birthDateStr,
+		"avatar_url":  user.Profile.AvatarURL,
+		"is_verified": user.IsVerified,
+		"mfa_enabled": user.MfaEnabled,
+	})
+}
+
+// PatchProfile actualiza los campos permitidos del perfil del usuario autenticado vía API REST.
+func (ctrl *UserController) PatchProfile(c *gin.Context) {
+	val, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
+		return
+	}
+	userID := val.(uint)
+
+	var req struct {
+		FirstName string `json:"first_name" form:"first_name"`
+		LastName  string `json:"last_name" form:"last_name"`
+		BirthDate string `json:"birth_date" form:"birth_date"`
+		AvatarURL string `json:"avatar_url" form:"avatar_url"`
+	}
+
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
+		return
+	}
+
+	var birthDate time.Time
+	if strings.TrimSpace(req.BirthDate) != "" {
+		parsedDate, err := time.Parse("2006-01-02", strings.TrimSpace(req.BirthDate))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de fecha inválido. Utilice YYYY-MM-DD"})
+			return
+		}
+		birthDate = time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 12, 0, 0, 0, time.UTC)
+	}
+
+	if ctrl.UserService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Servicio de usuario no disponible"})
+		return
+	}
+
+	if err := ctrl.UserService.UpdateProfile(userID, req.FirstName, req.LastName, birthDate, req.AvatarURL); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	audit.Event(c, "user.profile.update", fmt.Sprintf("user=%d", userID))
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Perfil actualizado exitosamente",
+	})
+}

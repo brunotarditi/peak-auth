@@ -192,7 +192,7 @@ func (m *JWTManager) GenerateTokenWithProfile(userID uint, username string, appI
 }
 
 // GenerateClientCredentialsToken crea un nuevo access token JWT asimétrico (RS256)
-// para autenticación Machine-to-Machine (RFC 6749 §4.4).
+// para autenticación Machine-to-Machine (RFC 6749).
 // El Subject es el client_id, el Issuer es peak-auth, y la Audiencia es client_id.
 func (m *JWTManager) GenerateClientCredentialsToken(clientID string, scopes []string, duration time.Duration) (string, error) {
 	claims := CustomClaims{

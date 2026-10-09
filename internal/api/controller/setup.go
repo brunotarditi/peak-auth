@@ -13,6 +13,7 @@ import (
 type SetupController struct {
 	BaseController
 	SetupService service.SetupService
+	MfaService   service.MfaService
 	TokenManager *auth.JWTManager
 }
 
@@ -85,7 +86,6 @@ func (ctrl *SetupController) ShowSetup(c *gin.Context) {
 }
 
 func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
-
 	first, _ := ctrl.SetupService.IsFirstRun()
 	if !first {
 		c.Redirect(http.StatusSeeOther, "/admin/login")
@@ -112,15 +112,127 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		return
 	}
 
-	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, "System Root", util.AppIdPeakAuth, []string{"ROOT"}, 24*time.Hour, true, user.AuthzVersion)
+	// Borrar setup_token inmediatamente tras la creación del usuario
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("setup_token", "", -1, "/", "", util.IsProduction(), true)
+
+	// Paso 2: Si MfaService está configurado, generar enrolamiento TOTP y redirigir a /setup/mfa
+	if ctrl.MfaService != nil && ctrl.TokenManager != nil {
+		mfaToken, err := ctrl.TokenManager.GenerateToken(user.ID, user.Email, "setup-mfa", []string{"SETUP_MFA"}, 15*time.Minute, false, user.AuthzVersion)
+		if err == nil {
+			c.SetCookie("setup_root_mfa", mfaToken, 900, "/", "", util.IsProduction(), true)
+			c.Redirect(http.StatusSeeOther, "/setup/mfa")
+			return
+		}
+	}
+
+	// Fallback si no hay MFA service
+	tokenString, err := ctrl.TokenManager.GenerateToken(user.ID, user.Email, util.AppIdPeakAuth, []string{"ROOT"}, 24*time.Hour, true, user.AuthzVersion)
 	if err != nil {
 		ctrl.renderError(c, http.StatusInternalServerError, "Error del Sistema", "No se pudo generar la sesión administrativa.")
 		return
 	}
 
 	ctrl.setAdminCookie(c, tokenString, 86400) // 1 día
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("setup_token", "", -1, "/", "", util.IsProduction(), true)
-
 	c.Redirect(http.StatusSeeOther, "/admin/login")
+}
+
+// ShowSetupMFA renderiza el paso 2 de setup: configuración obligatoria de TOTP
+func (ctrl *SetupController) ShowSetupMFA(c *gin.Context) {
+	c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
+
+	mfaCookie, err := c.Cookie("setup_root_mfa")
+	if err != nil || mfaCookie == "" {
+		c.Redirect(http.StatusSeeOther, "/admin/login")
+		return
+	}
+
+	claims, err := ctrl.TokenManager.VerifyTokenForApp(mfaCookie, "setup-mfa")
+	if err != nil || claims == nil {
+		c.Redirect(http.StatusSeeOther, "/admin/login")
+		return
+	}
+
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/admin/login")
+		return
+	}
+
+	if ctrl.MfaService == nil {
+		c.Redirect(http.StatusSeeOther, "/admin/login")
+		return
+	}
+
+	totpResp, err := ctrl.MfaService.SetupTOTP(userID, claims.Username)
+	if err != nil {
+		// Si ya está activo o hubo error, verificar si ya tiene mfa o mostrar error
+		ctrl.renderError(c, http.StatusBadRequest, "Error MFA", "No se pudo iniciar la configuración de MFA: "+err.Error())
+		return
+	}
+
+	csrf, _ := c.Get("csrf_token")
+	c.HTML(http.StatusOK, "setup_mfa.html", gin.H{
+		"QRCode":    totpResp.QRCode,
+		"Secret":    totpResp.Secret,
+		"CSRFToken": csrf,
+	})
+}
+
+// ProcessSetupMFAVerify verifica el código TOTP, activa el 2FA del Root y devuelve los códigos de recuperación
+func (ctrl *SetupController) ProcessSetupMFAVerify(c *gin.Context) {
+	mfaCookie, err := c.Cookie("setup_root_mfa")
+	if err != nil || mfaCookie == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Sesión de setup expirada"})
+		return
+	}
+
+	claims, err := ctrl.TokenManager.VerifyTokenForApp(mfaCookie, "setup-mfa")
+	if err != nil || claims == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Sesión de setup inválida o expirada"})
+		return
+	}
+
+	userID, err := parseUserIDFromSubject(claims.Subject)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Sesión de setup inválida"})
+		return
+	}
+
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Código TOTP requerido"})
+		return
+	}
+
+	if ctrl.MfaService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Servicio de MFA no disponible"})
+		return
+	}
+
+	recoveryCodes, err := ctrl.MfaService.VerifyAndActivateTOTP(userID, req.Code)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Código TOTP incorrecto. Verifica la sincronización horaria de tu dispositivo"})
+		return
+	}
+
+	// Generar sesión administrativa definitiva para el superusuario Root
+	tokenString, err := ctrl.TokenManager.GenerateToken(userID, claims.Username, util.AppIdPeakAuth, []string{"ROOT"}, 24*time.Hour, true, claims.AuthzVersion)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al generar sesión administrativa"})
+		return
+	}
+
+	ctrl.setAdminCookie(c, tokenString, 86400) // 1 día
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("setup_root_mfa", "", -1, "/", "", util.IsProduction(), true)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":        true,
+		"recovery_codes": recoveryCodes,
+	})
 }

@@ -20,8 +20,8 @@ const (
 	MaxLogoSize int64 = 5 * 1024 * 1024
 	// MaxFaviconSize define el tamaño máximo para favicons (2 MB).
 	MaxFaviconSize int64 = 2 * 1024 * 1024
-	// MaxAvatarSize define el tamaño máximo para avatares de usuario (2 MB).
-	MaxAvatarSize int64 = 2 * 1024 * 1024
+	// MaxAvatarSize define el tamaño máximo para avatares de usuario (5 MB).
+	MaxAvatarSize int64 = 5 * 1024 * 1024
 	// MaxFileSize define el tamaño máximo genérico por defecto (5 MB).
 	MaxFileSize int64 = 5 * 1024 * 1024
 
@@ -35,7 +35,7 @@ var (
 	ErrFileTooLarge     = errors.New("el archivo excede el tamaño máximo permitido")
 	ErrLogoTooLarge     = errors.New("el logo excede el tamaño máximo permitido de 5 MB")
 	ErrFaviconTooLarge  = errors.New("el favicon excede el tamaño máximo permitido de 2 MB")
-	ErrAvatarTooLarge   = errors.New("el avatar excede el tamaño máximo permitido de 2 MB")
+	ErrAvatarTooLarge   = errors.New("el avatar excede el tamaño máximo permitido de 5 MB")
 	ErrInvalidFileType  = errors.New("formato de imagen no permitido. Solo se aceptan PNG, JPG, WebP, SVG e ICO")
 	ErrEmptyFile        = errors.New("el archivo está vacío")
 	ErrInvalidFolder    = errors.New("directorio de almacenamiento inválido")
@@ -207,11 +207,14 @@ func NewStorageService() (StorageService, error) {
 
 	switch driver {
 	case "s3", "r2":
-		// Preparado para Cloudflare R2 / AWS S3 SDK
-		// Por ahora, si no están configuradas las credenciales completas, cae limpiamente en LocalStorageService
-		if os.Getenv("R2_ACCOUNT_ID") != "" && os.Getenv("R2_ACCESS_KEY_ID") != "" {
-			// En la fase R2 se conectará con el cliente S3
-			return NewLocalStorageService(uploadsDir)
+		accountID := os.Getenv("R2_ACCOUNT_ID")
+		accessKey := os.Getenv("R2_ACCESS_KEY_ID")
+		secretKey := os.Getenv("R2_SECRET_ACCESS_KEY")
+		bucket := os.Getenv("R2_BUCKET_NAME")
+		publicURL := os.Getenv("R2_PUBLIC_URL")
+
+		if accountID != "" && accessKey != "" && secretKey != "" && bucket != "" {
+			return NewR2StorageService(accountID, accessKey, secretKey, bucket, publicURL)
 		}
 		return NewLocalStorageService(uploadsDir)
 	default:

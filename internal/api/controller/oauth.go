@@ -173,7 +173,7 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 		return
 	}
 
-	// Directivas de no almacenamiento en caché conforme a RFC 6749 §5.1
+	// Directivas de no almacenamiento en caché conforme a RFC 6749
 	ctx.Header("Cache-Control", "no-store")
 	ctx.Header("Pragma", "no-cache")
 
@@ -193,7 +193,7 @@ func (c *OAuthController) TokenEndpoint(ctx *gin.Context) {
 		return
 	}
 
-	// Soporte client_secret_basic (RFC 6749 §2.3.1): si client_id o client_secret faltan en el cuerpo,
+	// Soporte client_secret_basic (RFC 6749): si client_id o client_secret faltan en el cuerpo,
 	// intentar extraerlos del encabezado Authorization: Basic <base64(client_id:client_secret)>
 	if basicUser, basicPass, ok := ctx.Request.BasicAuth(); ok {
 		if unescapedUser, err := url.QueryUnescape(basicUser); err == nil {

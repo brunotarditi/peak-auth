@@ -140,6 +140,17 @@ func (m *mockMfaServiceForStepUp) SetupTOTP(userID uint, userEmail string) (*res
 	return &response.TOTPSetupResponse{Secret: "TEST_MOCK_TOTP_KEY_ONLY"}, nil
 }
 
+func (m *mockMfaServiceForStepUp) GetMfaStatus(userID uint) (*response.MfaStatusResponse, error) {
+	return &response.MfaStatusResponse{
+		Enabled:        m.mfaEnabled,
+		TOTPConfigured: m.mfaEnabled,
+	}, nil
+}
+
+func (m *mockMfaServiceForStepUp) RegenerateRecoveryCodes(userID uint) ([]string, error) {
+	return []string{"CODE-1", "CODE-2", "CODE-3", "CODE-4", "CODE-5", "CODE-6", "CODE-7", "CODE-8", "CODE-9", "CODE-10"}, nil
+}
+
 type mockAppAdminService struct {
 	service.ApplicationService
 	createAppFn      func(name, description, redirectURL string, isActive bool, ownerID ...uint) (model.Application, string, error)

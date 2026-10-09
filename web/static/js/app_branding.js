@@ -362,6 +362,69 @@
         });
     }
 
+    // Preview Mode Toggle: Iniciar sesión vs. Registro
+    const previewModeLogin = document.getElementById('previewModeLogin');
+    const previewModeRegister = document.getElementById('previewModeRegister');
+    const previewMockLoginForm = document.getElementById('previewMockLoginForm');
+    const previewMockRegisterForm = document.getElementById('previewMockRegisterForm');
+
+    function setPreviewViewMode(mode) {
+        if (!previewMockLoginForm || !previewMockRegisterForm) return;
+
+        if (mode === 'register') {
+            previewMockLoginForm.style.display = 'none';
+            previewMockRegisterForm.style.display = 'flex';
+
+            if (previewModeLogin && previewModeRegister) {
+                previewModeRegister.style.background = 'var(--bg-surface)';
+                previewModeRegister.style.color = 'var(--text-main)';
+                previewModeRegister.style.fontWeight = '700';
+                previewModeRegister.style.boxShadow = 'var(--shadow-sm)';
+
+                previewModeLogin.style.background = 'transparent';
+                previewModeLogin.style.color = 'var(--text-muted)';
+                previewModeLogin.style.fontWeight = '600';
+                previewModeLogin.style.boxShadow = 'none';
+            }
+
+            if (previewTitleText) {
+                previewTitleText.textContent = 'Crear cuenta';
+            }
+            if (previewSubtitleText) {
+                previewSubtitleText.textContent = 'Ingresa tus datos para registrarte';
+            }
+        } else {
+            previewMockLoginForm.style.display = 'flex';
+            previewMockRegisterForm.style.display = 'none';
+
+            if (previewModeLogin && previewModeRegister) {
+                previewModeLogin.style.background = 'var(--bg-surface)';
+                previewModeLogin.style.color = 'var(--text-main)';
+                previewModeLogin.style.fontWeight = '700';
+                previewModeLogin.style.boxShadow = 'var(--shadow-sm)';
+
+                previewModeRegister.style.background = 'transparent';
+                previewModeRegister.style.color = 'var(--text-muted)';
+                previewModeRegister.style.fontWeight = '600';
+                previewModeRegister.style.boxShadow = 'none';
+            }
+
+            if (previewTitleText) {
+                previewTitleText.textContent = customTitleInput && customTitleInput.value.trim() ? customTitleInput.value.trim() : 'Iniciar sesión';
+            }
+            if (previewSubtitleText) {
+                previewSubtitleText.textContent = customSubtitleInput && customSubtitleInput.value.trim() ? customSubtitleInput.value.trim() : 'Continuar hacia tu app';
+            }
+        }
+    }
+
+    if (previewModeLogin) {
+        previewModeLogin.addEventListener('click', () => setPreviewViewMode('login'));
+    }
+    if (previewModeRegister) {
+        previewModeRegister.addEventListener('click', () => setPreviewViewMode('register'));
+    }
+
     // Reset Theme confirmation
     if (btnResetTheme && resetThemeForm) {
         btnResetTheme.addEventListener('click', function (e) {

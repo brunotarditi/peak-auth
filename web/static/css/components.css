@@ -60,6 +60,24 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); /* brand-500/10 */
 }
 
+.peak-input[type="date"] {
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.peak-input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.2s;
+    padding: 0.2rem;
+    border-radius: var(--radius-sm);
+}
+
+.peak-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
 /* --- Buttons --- */
 .peak-btn {
     display: inline-flex;
@@ -152,6 +170,48 @@
 
 .dark .peak-btn-danger:hover {
     background-color: rgba(159, 18, 57, 0.4);
+}
+
+/* --- Estados deshabilitados para botones --- */
+.peak-btn:disabled,
+.peak-btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.peak-btn:disabled:hover,
+.peak-btn[disabled]:hover {
+    transform: none !important;
+}
+
+.peak-btn-primary:disabled,
+.peak-btn-primary[disabled] {
+    background-color: var(--slate-300);
+    color: var(--slate-500);
+    border-color: var(--slate-300);
+}
+
+.dark .peak-btn-primary:disabled,
+.dark .peak-btn-primary[disabled] {
+    background-color: var(--slate-800);
+    color: var(--slate-600);
+    border-color: var(--slate-800);
+}
+
+.peak-btn-danger:disabled,
+.peak-btn-danger[disabled] {
+    background-color: var(--slate-100);
+    color: var(--slate-400);
+    border-color: var(--slate-200);
+}
+
+.dark .peak-btn-danger:disabled,
+.dark .peak-btn-danger[disabled] {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: var(--slate-500);
+    border-color: var(--slate-800);
 }
 
 .peak-btn-block {
@@ -350,29 +410,207 @@
     accent-color: var(--brand-400);
 }
 
+/* Settings Vertical Sidebar Navigation */
 .settings-tab-btn {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    white-space: nowrap;
-    padding-bottom: 1rem;
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    background: none;
+    gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius-lg);
     border: none;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    text-decoration: none;
+    white-space: normal;
+    line-height: 1.3;
 }
+
+.settings-tab-btn svg {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color 0.15s ease;
+}
+
 .settings-tab-btn:hover {
     color: var(--text-main);
+    background: var(--bg-surface-secondary);
 }
-.settings-tab-btn.active-tab {
+
+.settings-tab-btn:hover svg {
+    color: var(--text-main);
+}
+
+.settings-tab-btn.active {
+    background: var(--bg-surface-secondary);
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.settings-tab-btn.active svg {
     color: var(--brand-600);
-    border-bottom-color: var(--brand-600);
 }
-.dark .settings-tab-btn.active-tab {
+
+.dark .settings-tab-btn.active svg {
     color: var(--brand-400);
-    border-bottom-color: var(--brand-400);
+}
+
+/* --- Peak DatePicker Popover Component --- */
+.peak-datepicker-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.peak-datepicker-popover {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    z-index: 100;
+    width: 320px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+    padding: 1.25rem;
+    animation: datepickerFadeIn 0.15s ease-out;
+}
+
+@keyframes datepickerFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.peak-datepicker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.peak-datepicker-nav-btn {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface-secondary);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+
+.peak-datepicker-nav-btn:hover {
+    background: var(--bg-surface-hover);
+    color: var(--brand-600);
+}
+
+.peak-datepicker-selects {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.peak-datepicker-select {
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface-secondary);
+    color: var(--text-main);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.peak-datepicker-select:focus {
+    border-color: var(--brand-500);
+}
+
+.peak-datepicker-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.peak-datepicker-weekday {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0;
+}
+
+.peak-datepicker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+}
+
+.peak-datepicker-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+}
+
+.peak-datepicker-day:hover:not(.empty):not(.disabled) {
+    background: var(--bg-surface-secondary);
+    color: var(--brand-500);
+}
+
+.peak-datepicker-day.selected {
+    background: var(--brand-600) !important;
+    color: #ffffff !important;
+    font-weight: 800;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
+}
+
+.peak-datepicker-day.today {
+    border-color: var(--brand-500);
+}
+
+.peak-datepicker-day.other-month {
+    color: var(--text-light);
+    opacity: 0.35;
+}
+
+.peak-datepicker-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
 }

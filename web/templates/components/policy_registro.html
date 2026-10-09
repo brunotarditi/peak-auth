@@ -3,7 +3,7 @@
 <div id="content_registro" class="tab-content" style="display: flex; flex-direction: column; gap: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
         <div>
-            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Registro de Usuarios</h3>
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Registro de usuarios</h3>
             <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Controla cómo los nuevos usuarios pueden unirse a tu aplicación.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
@@ -19,7 +19,7 @@
             <!-- Modo de Registro -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 65%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Modo de Registro</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Modo de registro</span>
                     <span style="font-size: 0.6875rem; font-weight: 500; color: var(--text-muted); line-height: 1.4;">
                         <strong style="color: var(--text-main);">Público:</strong> Cualquier persona puede auto-registrarse desde la app.<br>
                         <strong style="color: var(--text-main);">Solo App Admin:</strong> El auto-registro público está cerrado. Solo el Propietario o Administradores de esta app pueden registrar/invitar usuarios desde este panel.<br>
@@ -48,7 +48,7 @@
             <!-- Rol por Defecto (Aplica solo en modo Público) -->
             <div id="row_reg_default_role" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light); {{ if ne .RegPolicy.Mode "public" }}display: none;{{ end }}">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 65%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Rol por Defecto</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Rol por defecto</span>
                     <span style="font-size: 0.6875rem; font-weight: 500; color: var(--text-muted); line-height: 1.4;">Rol asignado automáticamente en el auto-registro público (los roles de sistema o propiedad <code>ROOT</code> y <code>OWNER</code> están excluidos por seguridad).</span>
                 </div>
                 <div>

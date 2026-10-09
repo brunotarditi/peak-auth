@@ -454,9 +454,26 @@ func (ctrl *ApplicationController) GetAppBranding(c *gin.Context) {
 
 	themeColors := util.ResolveThemeColors(primaryColor)
 
+	allowRegistration := false
+	if ctrl.RuleService != nil {
+		rules, err := ctrl.RuleService.FindRulesByAppID(app.ID)
+		if err == nil {
+			for _, r := range rules {
+				if r.Code == util.REGISTRATION_POLICY {
+					policy, err := util.ParseRegistrationPolicy(r.Value)
+					if err == nil && policy != nil && policy.Mode == "public" {
+						allowRegistration = true
+						break
+					}
+				}
+			}
+		}
+	}
+
 	ctrl.renderAdmin(c, "app_branding.html", gin.H{
-		"App":            app,
-		"Theme":          theme,
+		"App":               app,
+		"Theme":             theme,
+		"AllowRegistration": allowRegistration,
 		"PrimaryColor":   primaryColor,
 		"LogoURL":        logoURL,
 		"FaviconURL":     faviconURL,

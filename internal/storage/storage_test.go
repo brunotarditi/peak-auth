@@ -127,10 +127,50 @@ func TestLocalStorageService_UploadAndValidation(t *testing.T) {
 		}
 	})
 
+	t.Run("Upload file exceeding 5MB for avatar fails", func(t *testing.T) {
+		oversized := make([]byte, MaxAvatarSize+10)
+		copy(oversized, pngHeader)
+
+		_, err := svc.Upload(ctx, bytes.NewReader(oversized), "big_avatar.png", FolderAvatars)
+		if err != ErrAvatarTooLarge {
+			t.Errorf("expected ErrAvatarTooLarge, got: %v", err)
+		}
+	})
+
 	t.Run("Delete with path traversal is blocked", func(t *testing.T) {
 		err := svc.Delete(ctx, "/static/uploads/logos/../../etc/passwd")
 		if err == nil || !strings.Contains(err.Error(), "inválida") {
 			t.Errorf("expected path traversal to be rejected, got: %v", err)
+		}
+	})
+}
+
+func TestNewStorageService(t *testing.T) {
+	t.Run("Defaults to LocalStorageService", func(t *testing.T) {
+		os.Unsetenv("STORAGE_DRIVER")
+		svc, err := NewStorageService()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if _, ok := svc.(*LocalStorageService); !ok {
+			t.Errorf("expected *LocalStorageService, got %T", svc)
+		}
+	})
+
+	t.Run("R2 driver initializes R2StorageService when credentials present", func(t *testing.T) {
+		t.Setenv("STORAGE_DRIVER", "r2")
+		t.Setenv("R2_ACCOUNT_ID", "test-account")
+		t.Setenv("R2_ACCESS_KEY_ID", "test-key")
+		t.Setenv("R2_SECRET_ACCESS_KEY", "test-secret")
+		t.Setenv("R2_BUCKET_NAME", "test-bucket")
+		t.Setenv("R2_PUBLIC_URL", "https://cdn.example.com")
+
+		svc, err := NewStorageService()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if _, ok := svc.(*R2StorageService); !ok {
+			t.Errorf("expected *R2StorageService, got %T", svc)
 		}
 	})
 }

@@ -33,6 +33,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 
 	setupCtrl := &controller.SetupController{
 		SetupService: app.SetupService,
+		MfaService:   app.MfaService,
 		TokenManager: app.TokenManager,
 	}
 
@@ -103,7 +104,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		HealthService: app.HealthService,
 	}
 
-	sessionCtrl := controller.NewSessionController(app.SessionService, app.UserService, app.UserRepo)
+	sessionCtrl := controller.NewSessionController(app.SessionService, app.UserService, app.UserRepo, app.StorageService, app.IdentityRepo)
 	auditCtrl := controller.NewAuditController(app.AuditService, app.AppService)
 
 	// Limitadores por IP para mitigar fuerza bruta en endpoints sensibles.
@@ -129,6 +130,12 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	r.OPTIONS("/.well-known/jwks.json", discoveryCtrl.JWKS)
 	r.GET("/.well-known/openid-configuration", discoveryCtrl.OpenIDConfiguration)
 	r.OPTIONS("/.well-known/openid-configuration", discoveryCtrl.OpenIDConfiguration)
+
+	// ============================================================================
+	// TÉRMINOS & PRIVACIDAD (Público para usuarios, apps clientes y cumplimiento)
+	// ============================================================================
+	r.GET("/terms", docsCtrl.ShowTerms)
+	r.GET("/privacy", docsCtrl.ShowPrivacy)
 
 	// ============================================================================
 	// OAUTH 2.0 & SSO FLOW (/oauth)
@@ -189,6 +196,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	r.POST("/setup/auth", setupLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
 	r.GET("/setup", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetup)
 	r.POST("/setup", setupLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
+	r.GET("/setup/mfa", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ShowSetupMFA)
+	r.POST("/setup/mfa/verify", setupLimiter, middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetupMFAVerify)
 	r.GET("/verify", verifyLimiter, middleware.RequireHTTPSMiddleware(), middleware.CSRFMiddleware(), registerCtrl.GetVerifyEmail)
 	r.POST("/verify", verifyLimiter, middleware.RequireHTTPSMiddleware(), middleware.CSRFMiddleware(), registerCtrl.PostVerifyEmail)
 	r.GET("/reset-password", middleware.RequireHTTPSMiddleware(), middleware.AdminCSRFMiddleware(), userCtrl.GetResetPassword)
@@ -218,7 +227,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// API V1 Protegida (MFA configuration)
 	// ============================================================================
 	apiPrivate := r.Group("/api/v1")
-	apiPrivate.Use(middleware.RequestBodyLimitMiddleware(4 * 1024 * 1024))
+	apiPrivate.Use(middleware.RequestBodyLimitMiddleware(8 * 1024 * 1024))
 	apiPrivate.Use(middleware.CORSMiddleware())
 	apiPrivate.Use(middleware.AuthMiddleware(app.TokenManager, app.UserRepo))
 	{
@@ -229,9 +238,12 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		apiPrivate.GET("/mfa/webauthn/credentials", userCtrl.ListWebAuthnKeys)
 		apiPrivate.DELETE("/mfa/webauthn/credentials/:id", mfaSetupLimiter, userCtrl.DeleteWebAuthnKey)
 		apiPrivate.POST("/mfa/totp/disable", mfaSetupLimiter, userCtrl.DisableMFA)
+		apiPrivate.POST("/mfa/recovery/regenerate", mfaSetupLimiter, userCtrl.RegenerateRecoveryCodes)
 		apiPrivate.GET("/mfa/status", userCtrl.GetMfaStatus)
 
 		// Perfil de Usuario y Avatar
+		apiPrivate.GET("/user/profile", userCtrl.GetProfile)
+		apiPrivate.PATCH("/user/profile", userCtrl.PatchProfile)
 		apiPrivate.POST("/user/avatar", userCtrl.PostUploadAvatar)
 		apiPrivate.DELETE("/user/avatar", userCtrl.DeleteAvatar)
 
@@ -267,6 +279,8 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		adminPublic.POST("/setup/auth", setupLimiter, middleware.AdminCSRFMiddleware(), setupCtrl.AuthenticateSetup)
 		adminPublic.GET("/setup", setupCtrl.ShowSetup)
 		adminPublic.POST("/setup", setupLimiter, middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetup)
+		adminPublic.GET("/setup/mfa", setupCtrl.ShowSetupMFA)
+		adminPublic.POST("/setup/mfa/verify", setupLimiter, middleware.AdminCSRFMiddleware(), setupCtrl.ProcessSetupMFAVerify)
 	}
 
 	// ============================================================================
@@ -279,7 +293,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	{
 		adminPrivate.GET("/", middleware.PlatformScopeMiddleware(app.UarRepo, app.AppRepo), dashboardCtrl.Dashboard)
 		adminPrivate.GET("/settings", sessionCtrl.GetSettingsPage)
-		adminPrivate.POST("/settings/profile", sessionCtrl.PostUpdateProfile)
+		adminPrivate.POST("/settings/profile", middleware.RequestBodyLimitMiddleware(8*1024*1024), sessionCtrl.PostUpdateProfile)
 		adminPrivate.POST("/settings/password", resetLimiter, sessionCtrl.PostUpdatePassword)
 		adminPrivate.POST("/logout", loginCtrl.PostLogout)
 
@@ -287,9 +301,11 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		adminPrivate.GET("/apps/new", middleware.PlatformAdminMiddleware(app.UarRepo, app.AppRepo), appCtrl.GetFormApp)
 		adminPrivate.POST("/apps", middleware.PlatformAdminMiddleware(app.UarRepo, app.AppRepo), appCtrl.PostFormApp)
 
-		// Documentación
+		// Documentación y Legal
 		adminPrivate.GET("/docs", docsCtrl.ShowDocs)
 		adminPrivate.GET("/docs/api", docsCtrl.ShowAPI)
+		adminPrivate.GET("/terms", docsCtrl.ShowTerms)
+		adminPrivate.GET("/privacy", docsCtrl.ShowPrivacy)
 
 		// Detalle/edición de una app: requiere ser admin de ESA app (o plataforma)
 		adminPrivate.GET("/apps/:id", middleware.RoleMiddleware(app.UarRepo, app.AppRepo, "ADMIN"), appCtrl.GetAppDetails)
