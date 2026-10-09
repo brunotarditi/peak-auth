@@ -1,6 +1,13 @@
 (() => {
     'use strict';
 
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('resetForm');
+        if (form) {
+            form.addEventListener('submit', handleReset);
+        }
+    });
+
     /**
      * Maneja el restablecimiento de contraseña y activación de cuenta.
      */

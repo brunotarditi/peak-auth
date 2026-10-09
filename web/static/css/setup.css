@@ -81,3 +81,152 @@
     opacity: 1;
     pointer-events: auto;
 }
+
+.setup-shell {
+    max-width: 32rem;
+    animation: slide-in-right 0.3s ease-out;
+}
+
+.setup-brand {
+    margin-bottom: 1.25rem;
+    text-align: center;
+}
+
+.setup-brand-large { margin-bottom: 2rem; }
+.setup-title-large { font-size: 1.875rem; }
+.setup-step-large { margin-top: 0.5rem; }
+
+.setup-brand .auth-logo-mark {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.75rem;
+}
+
+.setup-brand .auth-logo-mark img {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+
+.setup-title {
+    color: var(--text-main);
+    font-size: 1.625rem;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+}
+
+.setup-step {
+    margin-top: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+}
+
+.setup-panel {
+    padding: 1.75rem 2rem;
+}
+
+.setup-heading {
+    margin-bottom: 1.25rem;
+}
+
+.setup-heading h2 {
+    margin-bottom: 0.25rem;
+    color: var(--text-main);
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.setup-heading p {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.setup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.setup-form .form-group { margin-bottom: 0; }
+.setup-input { padding: 0.75rem 1rem; }
+.setup-password-input { padding: 0.75rem 2.75rem 0.75rem 1rem; }
+.setup-field-label { margin-bottom: 0.5rem; }
+
+.setup-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    background-color: rgb(0 0 0 / 0.02);
+}
+
+.setup-checklist-title {
+    margin-bottom: 0.25rem;
+    color: var(--slate-400);
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.setup-checklist-item span {
+    font-size: 0.6875rem;
+    font-weight: 700;
+}
+
+.setup-check-icon { width: 0.625rem; height: 0.625rem; }
+.setup-error-icon { width: 0.5rem; height: 0.5rem; }
+
+.setup-step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+}
+
+.setup-step-indicator div {
+    width: 3rem;
+    height: 1px;
+    background-color: var(--border-light);
+}
+
+.setup-step-indicator p {
+    color: var(--slate-400);
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.mfa-heading, .mfa-secret { margin-bottom: 1.25rem; text-align: center; }
+.mfa-heading h2 { margin-bottom: 0.25rem; color: var(--text-main); font-size: 1.125rem; font-weight: 700; }
+.mfa-heading p, .mfa-recovery-copy { color: var(--text-muted); font-size: 0.8125rem; font-weight: 500; line-height: 1.5; }
+.mfa-qr { display: flex; justify-content: center; margin-bottom: 1rem; }
+.mfa-qr-frame { display: inline-flex; padding: 0.75rem; background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
+.mfa-qr-frame img { display: block; width: 180px; height: 180px; }
+.mfa-secret-label { color: var(--text-muted); font-size: 0.6875rem; font-weight: 600; }
+.mfa-secret code { display: inline-block; margin-top: 0.25rem; padding: 0.25rem 0.625rem; color: var(--text-main); background: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.1em; user-select: all; }
+.mfa-feedback { display: none; margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius-lg); font-size: 0.8125rem; font-weight: 600; text-align: center; }
+.mfa-feedback.is-visible { display: block; }
+.mfa-feedback.is-success { color: var(--emerald-600); background: rgb(16 185 129 / 0.12); border: 1px solid rgb(16 185 129 / 0.25); }
+.mfa-feedback.is-error { color: var(--danger-600); background: rgb(239 68 68 / 0.12); border: 1px solid rgb(239 68 68 / 0.25); }
+.mfa-form { display: flex; flex-direction: column; gap: 1rem; }
+.mfa-code-label { text-align: center; }
+.mfa-code-input { padding: 0.75rem 1rem; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.25em; text-align: center; }
+.mfa-recovery-heading { margin-bottom: 1.25rem; text-align: center; }
+.mfa-success-icon { display: inline-flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; margin-bottom: 0.75rem; color: var(--emerald-600); background: rgb(16 185 129 / 0.15); border-radius: 9999px; }
+.mfa-success-icon svg { width: 1.75rem; height: 1.75rem; }
+.mfa-recovery-heading h2 { margin-bottom: 0.25rem; color: var(--text-main); font-size: 1.25rem; font-weight: 800; }
+.recovery-codes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.25rem; padding: 1rem; color: var(--text-main); background: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.875rem; font-weight: 700; text-align: center; }
+.recovery-code { padding: 0.25rem; }
+.mfa-recovery-actions { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; }
+.mfa-recovery-actions .peak-btn { flex: 1; justify-content: center; padding: 0.625rem; font-size: 0.8125rem; }
+.mfa-enter-admin { text-decoration: none; }

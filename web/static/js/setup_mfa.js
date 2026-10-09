@@ -16,16 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function showFeedback(msg, isSuccess) {
             feedback.textContent = msg;
-            feedback.style.display = 'block';
-            if (isSuccess) {
-                feedback.style.backgroundColor = 'rgba(16, 185, 129, 0.12)';
-                feedback.style.color = 'var(--emerald-600)';
-                feedback.style.border = '1px solid rgba(16, 185, 129, 0.25)';
-            } else {
-                feedback.style.backgroundColor = 'rgba(239, 68, 68, 0.12)';
-                feedback.style.color = 'var(--danger-600)';
-                feedback.style.border = '1px solid rgba(239, 68, 68, 0.25)';
-            }
+            feedback.classList.toggle('is-success', isSuccess);
+            feedback.classList.toggle('is-error', !isSuccess);
+            feedback.classList.add('is-visible');
         }
 
         form.addEventListener('submit', async (e) => {
@@ -55,12 +48,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     generatedCodes.forEach(c => {
                         const codeEl = document.createElement('div');
                         codeEl.textContent = c;
-                        codeEl.style.padding = '0.25rem';
+                        codeEl.className = 'recovery-code';
                         recoveryCodesContainer.appendChild(codeEl);
                     });
 
-                    setupStep.style.display = 'none';
-                    recoveryStep.style.display = 'block';
+                    setupStep.classList.add('hidden');
+                    recoveryStep.classList.remove('hidden');
                 } else {
                     showFeedback(data.error || 'Código incorrecto. Verifica la hora de tu dispositivo e intenta de nuevo.', false);
                 }

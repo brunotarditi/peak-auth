@@ -51,20 +51,19 @@ async function createRole(event, appID) {
             if (modalList) {
                 const item = document.createElement('div');
                 item.id = `modal-role-item-${roleName}`;
-                item.className = 'group';
-                item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light); transition: all 0.2s ease;';
+                item.className = 'group users-role-item';
 
                 const nameSpan = document.createElement('span');
-                nameSpan.style.cssText = 'font-size: 0.875rem; font-weight: 700; color: var(--text-main);';
+                nameSpan.className = 'users-role-item-name';
                 nameSpan.textContent = roleName;
 
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
                 delBtn.className = 'icon-btn icon-btn-danger';
-                delBtn.style.padding = '0.25rem';
+                delBtn.classList.add('users-role-delete');
                 delBtn.title = 'Eliminar Rol';
                 delBtn.setAttribute('aria-label', `Eliminar rol ${roleName}`);
-                delBtn.innerHTML = '<svg style="width:1rem;height:1rem" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>';
+                delBtn.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>';
                 delBtn.onclick = () => deleteRole(roleName, appID);
 
                 item.appendChild(nameSpan);
@@ -171,14 +170,14 @@ async function revokeAccess(appID, userID) {
                         if (tbody && tbody.querySelectorAll('tr').length === 0) {
                             tbody.innerHTML = `
                                 <tr id="empty-users-row">
-                                    <td colspan="3" style="text-align: center; padding: 4rem 1.5rem;">
-                                        <div style="width: 3.5rem; height: 3.5rem; border-radius: 9999px; background-color: var(--bg-surface-secondary); border: 1px solid var(--border-light); color: var(--text-light); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
-                                            <svg style="width: 1.75rem; height: 1.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <td colspan="3" class="users-empty-cell">
+                                        <div class="users-empty-icon">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                             </svg>
                                         </div>
-                                        <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No hay usuarios vinculados</h4>
-                                        <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 22rem; margin: 0 auto; line-height: 1.5;">Utiliza el formulario de la izquierda para vincular el primer usuario a esta aplicación.</p>
+                                        <h4 class="users-empty-title">No hay usuarios vinculados</h4>
+                                        <p class="users-empty-copy">Utiliza el formulario de la izquierda para vincular el primer usuario a esta aplicación.</p>
                                     </td>
                                 </tr>
                             `;
@@ -472,6 +471,83 @@ document.addEventListener('DOMContentLoaded', () => {
     if (roleBackdrop) {
         roleBackdrop.addEventListener('click', closeRoleModal);
     }
+
+    const assignForm = document.getElementById('assignUserForm');
+    if (assignForm) {
+        assignForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            assignUser(event, assignForm.dataset.appId);
+        });
+    }
+
+    const roleForm = document.getElementById('roleForm');
+    if (roleForm) {
+        roleForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            createRole(event, roleForm.dataset.appId);
+        });
+    }
+
+    const accessTimeForm = document.getElementById('accessTimeForm');
+    if (accessTimeForm) {
+        accessTimeForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            saveAccessTime(event, accessTimeForm.dataset.appId);
+        });
+    }
+
+    document.querySelectorAll('[data-action="toggle-temporary-access"]').forEach((input) => {
+        input.addEventListener('change', () => toggleTemporaryAccess(input.checked));
+    });
+
+    document.querySelectorAll('[data-action="toggle-custom-duration"]').forEach((select) => {
+        select.addEventListener('change', () => toggleCustomDuration(select.value));
+    });
+
+    document.querySelectorAll('[data-action="toggle-modal-access"]').forEach((input) => {
+        input.addEventListener('change', () => toggleModalAccessType(input.dataset.accessType));
+    });
+
+    document.querySelectorAll('[data-action="toggle-modal-custom-duration"]').forEach((select) => {
+        select.addEventListener('change', () => toggleModalCustomDuration(select.value));
+    });
+
+    document.querySelectorAll('[data-action="close-access-modal"]').forEach((button) => {
+        button.addEventListener('click', closeAccessModal);
+    });
+
+    const accessModalBackdrop = document.getElementById('accessModalBackdrop');
+    if (accessModalBackdrop) {
+        accessModalBackdrop.addEventListener('click', closeAccessModal);
+    }
+
+    document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return;
+        const action = event.target.closest('[data-action]');
+        if (!action) return;
+
+        const { appId, userId, email, expiresAt, temporary, roleName } = action.dataset;
+        switch (action.dataset.action) {
+            case 'unlock-user':
+                unlockUser(appId, userId);
+                break;
+            case 'open-access-modal':
+                openAccessModal(appId, userId, email, expiresAt, temporary === 'true');
+                break;
+            case 'resend-verification':
+                resendVerification(appId, userId);
+                break;
+            case 'send-reset-password':
+                sendResetPassword(appId, userId);
+                break;
+            case 'revoke-access':
+                revokeAccess(appId, userId);
+                break;
+            case 'delete-role':
+                deleteRole(roleName, appId);
+                break;
+        }
+    });
 });
 
     // Exportar funciones para eventos HTML inline inmediatamente
@@ -492,4 +568,3 @@ document.addEventListener('DOMContentLoaded', () => {
     window.toggleModalCustomDuration = toggleModalCustomDuration;
     window.saveAccessTime = saveAccessTime;
 })();
-

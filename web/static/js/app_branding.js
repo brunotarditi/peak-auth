@@ -45,7 +45,12 @@
 
     const previewContainer = document.getElementById('previewContainer');
     const previewCard = document.getElementById('previewCard');
-    const previewDynamicStyles = document.getElementById('previewDynamicStyles');
+    let previewDynamicStyles = document.getElementById('previewDynamicStyles');
+    if (!previewDynamicStyles) {
+        previewDynamicStyles = document.createElement('style');
+        previewDynamicStyles.id = 'previewDynamicStyles';
+        document.head.appendChild(previewDynamicStyles);
+    }
     const previewThemeToggle = document.getElementById('previewThemeToggle');
     const previewThemeLabel = document.getElementById('previewThemeLabel');
     const previewThemeIcon = document.getElementById('previewThemeIcon');
@@ -435,4 +440,3 @@
         });
     }
 })();
-

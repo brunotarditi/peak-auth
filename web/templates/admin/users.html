@@ -1,6 +1,6 @@
 {{ define "content" }}
-<div style="margin-bottom: 2rem;">
-    <a href="/admin" class="peak-btn peak-btn-secondary" style="font-size: 0.8125rem;">
+<div class="users-back-link">
+    <a href="/admin" class="peak-btn peak-btn-secondary">
         {{ template "icon-arrow-back" }}
         Volver a aplicaciones
     </a>
@@ -8,26 +8,25 @@
 
 <div class="layout-grid-3">
     <!-- Formulario de Vincular Usuario -->
-    <div style="grid-column: span 1;">
-        <div class="peak-card" style="position: sticky; top: 6rem;">
-            <div class="peak-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="users-grid-column-primary">
+        <div class="peak-card users-form-card">
+            <div class="peak-card-header users-card-header">
                 <h2 class="peak-card-title">Vincular usuario</h2>
-                <button type="button" id="openRoleModalBtn" class="peak-btn peak-btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                <button type="button" id="openRoleModalBtn" class="peak-btn peak-btn-secondary users-role-button">
                     + Roles
                 </button>
             </div>
 
-            <form id="assignUserForm" action="/admin/apps/{{.App.AppID}}/users" method="POST"
-                onsubmit="event.preventDefault(); assignUser(event, '{{.App.AppID}}');" style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="margin-bottom: 0;" class="form-group">
+            <form id="assignUserForm" class="users-form" action="/admin/apps/{{.App.AppID}}/users" method="POST" data-app-id="{{.App.AppID}}">
+                <div class="form-group users-form-group">
                     <label class="form-label">Email del usuario</label>
                     <input type="email" name="email" placeholder="ejemplo@correo.com" required autocomplete="off"
                         data-bwignore data-1p-ignore class="peak-input">
                 </div>
 
-                <div style="margin-bottom: 0; position: relative;" class="form-group">
+                <div class="form-group users-form-group">
                     <label class="form-label">Rol en la app</label>
-                    <select name="role" required class="peak-input" style="appearance: none; cursor: pointer; text-transform: uppercase;">
+                    <select name="role" required class="peak-input users-role-select">
                         <option value="" disabled selected>Selecciona un rol</option>
                         {{range .Roles}}
                         {{ if and (ne .Name "ROOT") (ne .Name "OWNER") }}
@@ -38,15 +37,15 @@
                 </div>
 
                 <!-- Control de Acceso Temporal -->
-                <div style="padding: 0.75rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.8125rem; font-weight: 600; color: var(--text-main); margin-bottom: 0;">
-                        <input type="checkbox" id="is_temporary" name="is_temporary" value="true" onchange="toggleTemporaryAccess(this.checked)" style="cursor: pointer;">
+                <div class="users-temporary-card">
+                    <label class="users-temporary-label">
+                        <input type="checkbox" id="is_temporary" name="is_temporary" value="true" data-action="toggle-temporary-access">
                         Acceso temporal
                     </label>
 
-                    <div id="temporaryOptions" class="hidden" style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <label class="form-label" style="font-size: 0.75rem;">Duración del acceso</label>
-                        <select name="duration_preset" id="duration_preset" class="peak-input" style="font-size: 0.75rem; padding: 0.375rem 0.5rem;" onchange="toggleCustomDuration(this.value)">
+                    <div id="temporaryOptions" class="hidden users-temporary-options">
+                        <label class="form-label users-small-label">Duración del acceso</label>
+                        <select name="duration_preset" id="duration_preset" class="peak-input users-small-input" data-action="toggle-custom-duration">
                             <option value="24h">24 horas (1 día)</option>
                             <option value="7d" selected>7 días (1 semana)</option>
                             <option value="30d">30 días (1 mes)</option>
@@ -54,12 +53,12 @@
                             <option value="custom">Fecha personalizada</option>
                         </select>
                         <div id="customDurationBox" class="hidden">
-                            <input type="datetime-local" name="access_expires_at" id="access_expires_at" class="peak-input" style="font-size: 0.75rem;">
+                            <input type="datetime-local" name="access_expires_at" id="access_expires_at" class="peak-input users-small-input">
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block" style="margin-top: 0.5rem;">
+                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block users-submit">
                     {{ template "icon-user-add" }}
                     Asignar acceso
                 </button>
@@ -68,11 +67,11 @@
     </div>
 
     <!-- Users List -->
-    <div style="grid-column: span 2 / span 2;">
+    <div class="users-grid-column-secondary">
         <div class="table-container">
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid var(--border-light);" style="border-color: var(--border-light); background-color: var(--bg-surface-secondary);">
-                <h3 style="font-weight: 700; color: var(--text-main);">Listado de usuarios</h3>
-                <span id="user-total-count" class="peak-badge" style="background-color: var(--bg-surface); color: var(--text-muted); border-color: var(--border-light);">
+            <div class="users-table-header">
+                <h3 class="users-table-title">Listado de usuarios</h3>
+                <span id="user-total-count" class="peak-badge users-total-badge">
                     Total: {{.TotalCount}}
                 </span>
             </div>
@@ -83,30 +82,30 @@
                         <tr>
                             <th>Usuario</th>
                             <th>Estado</th>
-                            <th style="text-align: right;">Acciones</th>
+                            <th class="text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
                         {{range .Users}}
-                        <tr id="user-row-{{.ID}}" class="group" style="transition: opacity 0.3s ease, transform 0.3s ease;">
+                        <tr id="user-row-{{.ID}}" class="group users-row">
                             <td>
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <div style="width: 2.5rem; height: 2.5rem; border-radius: 9999px; background-color: var(--brand-50); color: var(--brand-600); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
+                                <div class="users-identity">
+                                    <div class="users-avatar">
                                         {{ safe_slice .Email 0 2 }}
                                     </div>
                                     <div>
-                                        <div style="font-weight: 700; color: var(--text-main);">{{.Email}}</div>
-                                        <div style="font-size: 0.625rem; font-weight: 900; color: var(--brand-500); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.125rem;">
+                                        <div class="users-email">{{.Email}}</div>
+                                        <div class="users-role-name">
                                             {{.RoleName}}
                                         </div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                                <div class="users-status-list">
                                     {{if .IsVerified}}
                                     <span class="peak-badge peak-badge-success">
-                                        <span class="peak-badge-indicator" style="animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"></span>
+                                        <span class="peak-badge-indicator users-verified-indicator"></span>
                                         Verificado
                                     </span>
                                     {{else}}
@@ -132,7 +131,7 @@
                                             Programado
                                         </span>
                                         {{else}}
-                                        <span class="peak-badge peak-badge-brand" style="border: 1px dashed var(--brand-300);" title="Expira el {{format_time .AccessExpiresAt "02/01/2006 15:04"}}">
+                                        <span class="peak-badge peak-badge-brand users-expiration-badge" title="Expira el {{format_time .AccessExpiresAt "02/01/2006 15:04"}}">
                                             ⏳ Expira: {{format_time .AccessExpiresAt "02/01/06"}}
                                         </span>
                                         {{end}}
@@ -145,18 +144,18 @@
                                             Bloqueado
                                         </span>
                                         {{ else }}
-                                        <span id="user-failed-badge-{{.ID}}" class="peak-badge" style="background-color: var(--bg-surface-secondary); color: var(--text-muted); border-color: var(--border-light);">
+                                        <span id="user-failed-badge-{{.ID}}" class="peak-badge users-failed-badge">
                                             Intentos: {{.FailedLogins}}/{{$max}}
                                         </span>
                                         {{ end }}
                                     {{ end }}
                                 </div>
                             </td>
-                            <td style="text-align: right;">
-                                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;">
+                            <td class="users-action-cell">
+                                <div class="users-action-list">
                                     {{ if gt .FailedLogins 0 }}
-                                    <button id="btn-unlock-{{.ID}}" onclick="unlockUser('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="peak-badge peak-badge-warning" style="cursor: pointer; border: 1px solid var(--amber-200);"
+                                    <button id="btn-unlock-{{.ID}}" data-action="unlock-user" data-app-id="{{$.App.AppID}}" data-user-id="{{.ID}}"
+                                        class="peak-badge peak-badge-warning users-action-button"
                                         title="Resetear intentos fallidos">
                                         Habilitar
                                     </button>
@@ -167,52 +166,52 @@
                                     {{ if .AccessExpiresAt }}{{ $expiresAt = format_time .AccessExpiresAt "2006-01-02T15:04" }}{{ end }}
                                     {{ $isTemporary := "false" }}
                                     {{ if .AccessExpiresAt }}{{ $isTemporary = "true" }}{{ end }}
-                                    <button onclick="openAccessModal('{{$.App.AppID}}', '{{.ID}}', '{{.Email}}', '{{$expiresAt}}', '{{$isTemporary}}')"
-                                        class="peak-badge peak-badge-secondary" style="cursor: pointer;"
+                                    <button data-action="open-access-modal" data-app-id="{{$.App.AppID}}" data-user-id="{{.ID}}" data-email="{{.Email}}" data-expires-at="{{$expiresAt}}" data-temporary="{{$isTemporary}}"
+                                        class="peak-badge peak-badge-secondary users-action-button"
                                         title="Configurar vigencia o reactivar acceso">
                                         {{if eq .AccessStatus "expired"}}Reactivar{{else}}Vigencia{{end}}
                                     </button>
                                     {{ end }}
 
                                     {{ if and (not .IsVerified) (not .IsRoot) }}
-                                    <button onclick="resendVerification('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="peak-badge peak-badge-brand" style="cursor: pointer;"
+                                    <button data-action="resend-verification" data-app-id="{{$.App.AppID}}" data-user-id="{{.ID}}"
+                                        class="peak-badge peak-badge-brand users-action-button"
                                         title="Reenviar email de activación">
                                         Reenviar
                                     </button>
                                     {{ end }}
 
                                     {{ if not .IsRoot }}
-                                    <button onclick="sendResetPassword('{{$.App.AppID}}', '{{.ID}}')"
-                                        class="peak-badge" style="cursor: pointer; background-color: var(--bg-surface-secondary); color: var(--text-muted); border-color: var(--border-light);"
+                                    <button data-action="send-reset-password" data-app-id="{{$.App.AppID}}" data-user-id="{{.ID}}"
+                                        class="peak-badge users-reset-button users-action-button"
                                         title="Enviar email de recuperación">
                                         Reset
                                     </button>
                                     {{ end }}
 
                                     {{ if and (not .IsOwner) (not .IsRoot) (not .IsSelf) }}
-                                    <button onclick="revokeAccess('{{$.App.AppID}}', '{{.ID}}')"
-                                        style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); background: none; border: none; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--rose-600)'" onmouseout="this.style.color='var(--text-muted)'">
+                                    <button data-action="revoke-access" data-app-id="{{$.App.AppID}}" data-user-id="{{.ID}}"
+                                        class="users-revoke-button">
                                         Revocar
                                     </button>
                                     {{ else if .IsOwner }}
-                                    <span class="peak-badge peak-badge-brand" style="font-size: 0.6875rem;">Propietario</span>
+                                    <span class="peak-badge peak-badge-brand users-owner-badge">Propietario</span>
                                     {{ else if .IsRoot }}
-                                    <span class="peak-badge peak-badge-brand" style="font-size: 0.6875rem;">Superadmin</span>
+                                    <span class="peak-badge peak-badge-brand users-owner-badge">Superadmin</span>
                                     {{ else if .IsSelf }}
-                                    <span class="peak-badge peak-badge-secondary" style="font-size: 0.6875rem;">Tú</span>
+                                    <span class="peak-badge peak-badge-secondary users-owner-badge">Tú</span>
                                     {{ end }}
                                 </div>
                             </td>
                         </tr>
                         {{else}}
                         <tr id="empty-users-row">
-                            <td colspan="3" style="text-align: center; padding: 4rem 1.5rem;">
-                                <div style="width: 3.5rem; height: 3.5rem; border-radius: 9999px; background-color: var(--bg-surface-secondary); border: 1px solid var(--border-light); color: var(--text-light); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                            <td colspan="3" class="users-empty-cell">
+                                <div class="users-empty-icon">
                                     {{ template "icon-user-empty" }}
                                 </div>
-                                <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">No hay usuarios vinculados</h4>
-                                <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 22rem; margin: 0 auto; line-height: 1.5;">Utiliza el formulario de la izquierda para vincular el primer usuario a esta aplicación.</p>
+                                <h4 class="users-empty-title">No hay usuarios vinculados</h4>
+                                <p class="users-empty-copy">Utiliza el formulario de la izquierda para vincular el primer usuario a esta aplicación.</p>
                             </td>
                         </tr>
                         {{end}}
@@ -222,25 +221,25 @@
 
             <!-- Paginación -->
             {{ if gt .TotalPages 1 }}
-            <div style="padding: 1.5rem; border-top: 1px solid var(--border-light); background-color: var(--bg-surface-secondary); display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <div class="users-pagination">
                 {{ if gt .CurrentPg 1 }}
-                <a href="?page={{ .PrevPg }}" class="icon-btn" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl);">
+                <a href="?page={{ .PrevPg }}" class="icon-btn users-pagination-link">
                     {{ template "icon-back" }}
                 </a>
                 {{ else }}
-                <span class="icon-btn" style="border: 1px solid var(--border-light); border-radius: var(--radius-xl); color: var(--text-light); opacity: 0.5; cursor: not-allowed;">
+                <span class="icon-btn users-pagination-disabled">
                     {{ template "icon-back" }}
                 </span>
                 {{ end }}
 
-                <div style="display: flex; align-items: center; gap: 0.5rem; padding-left: 0.5rem; padding-right: 0.5rem;">
+                <div class="users-pagination-pages">
                     {{ range .Pages }}
                     {{ if eq . $.CurrentPg }}
-                    <span style="width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; align-items: center; border-radius: var(--radius-xl); background-color: var(--brand-600); color: white; font-weight: 700; box-shadow: var(--shadow-sm); cursor: default;">
+                    <span class="users-pagination-current">
                         {{ . }}
                     </span>
                     {{ else }}
-                    <a href="?page={{ . }}" class="icon-btn" style="width: 2.5rem; height: 2.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-xl); font-weight: 500;">
+                    <a href="?page={{ . }}" class="icon-btn users-pagination-link">
                         {{ . }}
                     </a>
                     {{ end }}
@@ -248,11 +247,11 @@
                 </div>
 
                 {{ if lt .CurrentPg .TotalPages }}
-                <a href="?page={{ .NextPg }}" class="icon-btn" style="border: 1px solid var(--border-color); border-radius: var(--radius-xl);">
+                <a href="?page={{ .NextPg }}" class="icon-btn users-pagination-link">
                     {{ template "icon-forward" }}
                 </a>
                 {{ else }}
-                <span class="icon-btn" style="border: 1px solid var(--border-light); border-radius: var(--radius-xl); color: var(--text-light); opacity: 0.5; cursor: not-allowed;">
+                <span class="icon-btn users-pagination-disabled">
                     {{ template "icon-forward" }}
                 </span>
                 {{ end }}
@@ -263,24 +262,24 @@
 </div>
 
 <!-- Role Modal -->
-<div id="roleModal" class="hidden" style="position: fixed; inset: 0; z-index: 50; overflow-y: auto;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; text-align: center;">
-        <div style="position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);" id="roleModalBackdrop"></div>
+<div id="roleModal" class="hidden users-modal" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="users-modal-center">
+        <div class="users-modal-backdrop" id="roleModalBackdrop"></div>
         
-        <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 32rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="modal-title">Nuevo rol de aplicación</h3>
-                <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Define un nuevo rol propio de esta aplicación.</p>
+        <div class="peak-card users-modal-card users-role-modal-card">
+            <div class="users-modal-heading">
+                <h3 class="users-modal-title" id="modal-title">Nuevo rol de aplicación</h3>
+                <p class="users-modal-subtitle">Define un nuevo rol propio de esta aplicación.</p>
             </div>
 
-            <form id="roleForm" onsubmit="event.preventDefault(); createRole(event, '{{.App.AppID}}');" style="display: flex; flex-direction: column; gap: 1.5rem;">
-                <div style="margin-bottom: 0;" class="form-group">
+            <form id="roleForm" class="users-role-form" data-app-id="{{.App.AppID}}">
+                <div class="form-group users-form-group">
                     <label class="form-label">Identificador del rol</label>
                     <input type="text" id="roleName" name="name" placeholder="Ej: EDITOR, VIEWER, ADMIN" required
-                        class="peak-input" style="text-transform: uppercase; font-weight: 700;">
+                        class="peak-input uppercase font-bold">
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                <div class="users-modal-actions">
                     <button type="button" id="closeRoleModalBtn" class="peak-btn peak-btn-secondary peak-btn-block">
                         Cancelar
                     </button>
@@ -290,24 +289,24 @@
                 </div>
             </form>
 
-            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-light);">
-                <h4 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem;">Roles existentes</h4>
-                <div id="modal-roles-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 12rem; overflow-y: auto;">
+            <div class="mt-8 pt-8 border-t">
+                <h4 class="text-sm font-bold text-main mb-4">Roles existentes</h4>
+                <div id="modal-roles-list" class="users-role-list">
                     {{range .Roles}}
                     {{ if .ApplicationID }}
-                    <div id="modal-role-item-{{.Name}}" class="group" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light); transition: all 0.2s ease;">
-                        <span style="font-size: 0.875rem; font-weight: 700; color: var(--text-main);">{{.Name}}</span>
-                        <button type="button" onclick="deleteRole('{{.Name}}', '{{$.App.AppID}}')" class="icon-btn icon-btn-danger" style="padding: 0.25rem;" title="Eliminar rol">
+                    <div id="modal-role-item-{{.Name}}" class="group users-role-item">
+                        <span class="users-role-item-name">{{.Name}}</span>
+                        <button type="button" data-action="delete-role" data-role-name="{{.Name}}" data-app-id="{{$.App.AppID}}" class="icon-btn icon-btn-danger users-role-delete" title="Eliminar rol">
                             {{ template "icon-delete" }}
                         </button>
                     </div>
                     {{ else }}
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-xl); border: 1px solid var(--border-light); opacity: 0.6;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 0.875rem; font-weight: 700; color: var(--text-main);">{{.Name}}</span>
+                    <div class="users-system-role">
+                        <div class="users-system-role-info">
+                            <span class="users-system-role-name">{{.Name}}</span>
                             <span class="peak-badge peak-badge-brand">Sistema</span>
                         </div>
-                        <div style="color: var(--text-light);">
+                        <div class="users-system-role-icon">
                             {{ template "icon-lock" }}
                         </div>
                     </div>
@@ -320,37 +319,37 @@
 </div>
 
 <!-- Modal Gestión de Acceso Temporal -->
-<div id="accessModal" class="hidden" style="position: fixed; inset: 0; z-index: 50; overflow-y: auto;" aria-labelledby="access-modal-title" role="dialog" aria-modal="true">
-    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; text-align: center;">
-        <div style="position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);" id="accessModalBackdrop" onclick="closeAccessModal()"></div>
+<div id="accessModal" class="hidden users-modal" aria-labelledby="access-modal-title" role="dialog" aria-modal="true">
+    <div class="users-modal-center">
+        <div class="users-modal-backdrop" id="accessModalBackdrop"></div>
         
-        <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 30rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
-            <div style="margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);" id="access-modal-title">Vigencia de acceso</h3>
-                <p id="accessModalSubtitle" style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem;">Configura el período de acceso del usuario a esta aplicación.</p>
+        <div class="peak-card users-modal-card users-access-modal-card">
+            <div class="users-modal-heading">
+                <h3 class="users-modal-title" id="access-modal-title">Vigencia de acceso</h3>
+                <p id="accessModalSubtitle" class="users-modal-subtitle">Configura el período de acceso del usuario a esta aplicación.</p>
             </div>
 
-            <form id="accessTimeForm" onsubmit="event.preventDefault(); saveAccessTime(event, '{{.App.AppID}}');" style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <form id="accessTimeForm" data-app-id="{{.App.AppID}}">
                 <input type="hidden" id="accessModalUserID" name="user_id">
 
-                <div class="form-group" style="margin-bottom: 0;">
+                <div class="form-group users-form-group">
                     <label class="form-label">Tipo de acceso</label>
-                    <div style="display: flex; gap: 1.5rem; margin-top: 0.25rem;">
-                        <label style="display: flex; align-items: center; gap: 0.375rem; cursor: pointer; font-size: 0.875rem; color: var(--text-main);">
-                            <input type="radio" name="modal_access_type" id="modalAccessPermanent" value="permanent" onchange="toggleModalAccessType('permanent')">
+                    <div class="users-access-types">
+                        <label class="users-radio-label">
+                            <input type="radio" name="modal_access_type" id="modalAccessPermanent" value="permanent" data-action="toggle-modal-access" data-access-type="permanent">
                             Permanente
                         </label>
-                        <label style="display: flex; align-items: center; gap: 0.375rem; cursor: pointer; font-size: 0.875rem; color: var(--text-main);">
-                            <input type="radio" name="modal_access_type" id="modalAccessTemporary" value="temporary" onchange="toggleModalAccessType('temporary')">
+                        <label class="users-radio-label">
+                            <input type="radio" name="modal_access_type" id="modalAccessTemporary" value="temporary" data-action="toggle-modal-access" data-access-type="temporary">
                             Temporal
                         </label>
                     </div>
                 </div>
 
-                <div id="modalTemporarySection" class="hidden" style="display: flex; flex-direction: column; gap: 0.875rem; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-size: 0.75rem;">Extender o definir duración</label>
-                        <select id="modalDurationPreset" name="duration_preset" class="peak-input" onchange="toggleModalCustomDuration(this.value)">
+                <div id="modalTemporarySection" class="hidden users-modal-temporary">
+                    <div class="form-group users-form-group">
+                        <label class="form-label users-small-label">Extender o definir duración</label>
+                        <select id="modalDurationPreset" name="duration_preset" class="peak-input" data-action="toggle-modal-custom-duration">
                             <option value="24h">24 horas (+1 día)</option>
                             <option value="7d" selected>7 días (+1 semana)</option>
                             <option value="30d">30 días (+1 mes)</option>
@@ -359,14 +358,14 @@
                         </select>
                     </div>
 
-                    <div id="modalCustomDateBox" class="hidden form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-size: 0.75rem;">Fecha y hora de expiración</label>
-                        <input type="datetime-local" id="modalExpiresAt" name="access_expires_at" class="peak-input" style="font-size: 0.75rem;">
+                    <div id="modalCustomDateBox" class="hidden form-group">
+                        <label class="form-label users-small-label">Fecha y hora de expiración</label>
+                        <input type="datetime-local" id="modalExpiresAt" name="access_expires_at" class="peak-input users-small-input">
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-top: 0.5rem;">
-                    <button type="button" onclick="closeAccessModal()" class="peak-btn peak-btn-secondary peak-btn-block">
+                <div class="users-modal-actions users-modal-actions-spaced">
+                    <button type="button" data-action="close-access-modal" class="peak-btn peak-btn-secondary peak-btn-block">
                         Cancelar
                     </button>
                     <button type="submit" id="saveAccessBtn" class="peak-btn peak-btn-primary peak-btn-block">

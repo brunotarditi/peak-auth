@@ -13,6 +13,24 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+document.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+    const trigger = event.target.closest('[data-action]');
+    if (!trigger) return;
+
+    const action = trigger.dataset.action;
+    if (action === 'toggle-dark-mode' && typeof toggleDarkMode === 'function') {
+        toggleDarkMode();
+    } else if (action === 'open-mfa-settings' && typeof openMfaSettings === 'function') {
+        openMfaSettings();
+    } else if (action === 'toggle-password') {
+        toggleLoginPassword(trigger.dataset.target, trigger);
+    } else if (action === 'admin-password-help') {
+        event.preventDefault();
+        peakAlert('Seguridad de cuentas administrativas', 'Por políticas de seguridad, las cuentas con privilegios de administración no admiten restablecimiento público por correo. Para recuperar su acceso, comuníquese con otro administrador de la plataforma.', 'info');
+    }
+});
+
 /**
  * Muestra una notificación visual tipo toast.
  * @param {string} message 
@@ -49,11 +67,12 @@ function showToast(message, type = 'success', duration = 4000) {
     toast.innerHTML = `
         <div class="toast-icon">${config.icon}</div>
         <div class="toast-message"></div>
-        <button onclick="this.parentElement.remove()" class="toast-close">
+        <button type="button" class="toast-close" aria-label="Cerrar notificación">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
     `;
     toast.querySelector('.toast-message').textContent = message;
+    toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
 
     container.appendChild(toast);
 

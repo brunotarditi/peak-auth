@@ -5,32 +5,32 @@
             <div class="navbar-left">
                 <a href="/admin" class="navbar-logo-link">
                     <div class="navbar-logo-wrapper">
-                        <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 2rem; height: 2rem;">
+                        <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" class="navbar-logo">
                     </div>
                     <span class="navbar-logo-text">
-                        Peak <span class="brand-accent" style="color: var(--brand-600);">Auth</span>
+                        Peak <span class="brand-accent">Auth</span>
                     </span>
                 </a>
                 <div class="navbar-breadcrumbs">
                     {{ range .Breadcrumbs }}
-                    <span style="color: var(--brand-300);">/</span>
+                    <span class="navbar-breadcrumb-separator">/</span>
                     {{ if .URL }}
-                    <a href="{{ .URL }}" style="font-size: 0.75rem; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='var(--brand-400)'" onmouseout="this.style.color='inherit'">{{ .Label }}</a>
+                    <a href="{{ .URL }}" class="navbar-breadcrumb-link">{{ .Label }}</a>
                     {{ else }}
-                    <span style="font-size: 0.875rem; font-weight: 500; color: var(--text-main);">{{ .Label }}</span>
+                    <span class="navbar-breadcrumb-current">{{ .Label }}</span>
                     {{ end }}
                     {{ end }}
                 </div>
             </div>
             <div class="navbar-right">
                 <!-- Dark Mode Toggle -->
-                <button onclick="toggleDarkMode()" class="icon-btn" title="Alternar modo oscuro" aria-label="Alternar modo oscuro">
+                <button type="button" data-action="toggle-dark-mode" class="icon-btn" title="Alternar modo oscuro" aria-label="Alternar modo oscuro">
                     {{ template "icon-moon" }}
                     {{ template "icon-sun" }}
                 </button>
 
                 <!-- Configuración 2FA Admin -->
-                <button onclick="openMfaSettings()" class="icon-btn" title="Configurar seguridad 2FA" aria-label="Configurar seguridad 2FA">
+                <button type="button" data-action="open-mfa-settings" class="icon-btn" title="Configurar seguridad 2FA" aria-label="Configurar seguridad 2FA">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                 </button>
 
@@ -42,12 +42,12 @@
                 {{ if or .UserName .UserEmail }}
                 <div class="navbar-user-info">
                     <span class="navbar-user-role">
-                        Rol: {{ if .UserRole }}{{ .UserRole }}{{ else }}Administrador{{ end }}
+                        Rol {{ if .UserRole }}{{ .UserRole }}{{ else }}Administrador{{ end }}
                     </span>
                     <span class="navbar-user-email">{{ if .UserName }}{{ .UserName }}{{ else }}{{ .UserEmail }}{{ end }}</span>
                 </div>
                 {{ end }}
-                <form action="/admin/logout" method="POST" style="display: inline;">
+                <form action="/admin/logout" method="POST" class="navbar-logout-form">
                     <button type="submit" class="icon-btn icon-btn-danger" title="Cerrar sesión" aria-label="Cerrar sesión">
                         {{ template "logout" }}
                     </button>

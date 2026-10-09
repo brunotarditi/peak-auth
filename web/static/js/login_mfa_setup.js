@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    const verifyButton = document.querySelector('[data-action="verify-totp"]');
+    if (verifyButton) {
+        verifyButton.addEventListener('click', verifyTotp);
+    }
+
     // Load QR code - MFA token is now in HttpOnly cookie, no need to pass it
     try {
         const res = await fetch('/admin/mfa/setup', {
@@ -11,18 +16,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const img = document.createElement('img');
                         img.src = data.qr_code;
                         img.alt = 'QR Code';
-                        img.style.width = '100%';
-                        img.style.height = '100%';
-                        img.style.objectFit = 'contain';
+                        img.className = 'auth-qr-image';
                         
                         const box = document.getElementById('qr-code-box');
                         box.innerHTML = '';
                         box.appendChild(img);
                     } else {
-                        document.getElementById('qr-code-box').innerHTML = `<p style="color:var(--rose-600)">QR inválido</p>`;
+                        document.getElementById('qr-code-box').innerHTML = '<p class="auth-inline-error">QR inválido</p>';
                     }
                 } else {
-                    document.getElementById('qr-code-box').innerHTML = `<p style="color:var(--rose-600)">Error al cargar QR</p>`;
+                    document.getElementById('qr-code-box').innerHTML = '<p class="auth-inline-error">Error al cargar QR</p>';
                 }
             } catch (err) {
                 console.error(err);

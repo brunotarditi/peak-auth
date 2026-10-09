@@ -14,41 +14,41 @@
 </head>
 
 <body class="layout-auth bg-pattern">
-    <div class="auth-container" style="max-width: 28rem;">
-        <div style="text-align: center; margin-bottom: 2.5rem;">
-            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="height: 4rem; margin: 0 auto 1rem;">
-            <h1 style="font-size: 2.25rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Peak <span style="color: var(--brand-600);">Auth</span></h1>
-            <p style="color: var(--text-muted); margin-top: 0.5rem; font-weight: 500;">Panel de control de identidad</p>
+    <div class="auth-container auth-container-wide">
+        <div class="auth-brand">
+            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" class="auth-logo">
+            <h1 class="auth-title">Peak <span class="auth-title-accent">Auth</span></h1>
+            <p class="auth-subtitle">Panel de control de identidad</p>
         </div>
 
-        <div class="peak-card" style="padding: 2.5rem;">
-            <h2 class="peak-card-title" style="margin-bottom: 2rem;">Bienvenido al panel</h2>
+        <div class="peak-card auth-panel">
+            <h2 class="peak-card-title mb-8">Bienvenido al panel</h2>
 
-            <form action="/admin/login" method="POST" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <form action="/admin/login" method="POST" class="auth-form">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group auth-form-group">
                     <label class="form-label" for="login_email">Email de administrador</label>
                     <input type="email" id="login_email" name="email" required placeholder="admin@ejemplo.com" class="peak-input">
                 </div>
 
-                <div class="form-group" style="margin: 0;">
+                <div class="form-group auth-form-group">
                     <label class="form-label" for="password_field">Contraseña</label>
-                    <div style="position: relative;">
-                        <input type="password" name="password" id="password_field" required placeholder="••••••••" class="peak-input" style="padding-right: 3rem;">
-                        <button type="button" onclick="toggleLoginPassword('password_field')" aria-label="Mostrar u ocultar contraseña" style="position: absolute; right: 0; top: 0; bottom: 0; padding: 0 1rem; color: var(--text-muted); background: transparent; border: none; cursor: pointer;">
+                    <div class="auth-password-wrapper">
+                        <input type="password" name="password" id="password_field" required placeholder="••••••••" class="peak-input auth-input-password">
+                        <button type="button" data-action="toggle-password" data-target="password_field" aria-label="Mostrar u ocultar contraseña" class="auth-password-toggle icon-btn">
                             {{template "icon-eye"}}
                         </button>
                     </div>
                 </div>
 
-                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; margin-top: 0.5rem;">
+                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block auth-form-button">
                     <span>Entrar al panel</span>
                     {{template "icon-arrow-forward"}}
                 </button>
             </form>
 
-            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light); text-align: center;">
-                <a href="javascript:void(0)" onclick="peakAlert('Seguridad de cuentas administrativas', 'Por políticas de seguridad, las cuentas con privilegios de administración no admiten restablecimiento público por correo. Para recuperar su acceso, comuníquese con otro administrador de la plataforma.', 'info')" style="font-size: 0.75rem; font-weight: 700; color: var(--brand-600); text-decoration: none;">¿Olvidaste tu contraseña?</a>
+            <div class="auth-help">
+                <a href="/admin/login" data-action="admin-password-help">¿Olvidaste tu contraseña?</a>
             </div>
         </div>
     </div>

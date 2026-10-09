@@ -19,52 +19,49 @@
         <div class="auth-blob-2"></div>
     </div>
 
-    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; border-radius: 1rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 1rem; border: 1px solid var(--border-light);">
-                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
+    <div class="auth-container auth-container-animated">
+        <div class="auth-brand auth-brand-compact">
+            <div class="auth-logo-mark">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth">
             </div>
-            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Acceso restringido</h1>
-            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Por política de seguridad, debes configurar el segundo factor (MFA) obligatoriamente antes de continuar.</p>
+            <h1 class="auth-title auth-title-small">Acceso restringido</h1>
+            <p class="auth-subtitle auth-subtitle-small">Por política de seguridad, debes configurar el segundo factor (MFA) obligatoriamente antes de continuar.</p>
         </div>
 
-        <div class="glass-panel" style="padding: 2rem;">
+        <div class="glass-panel auth-panel auth-panel-compact">
             {{ if .Error }}
-            <div style="margin-bottom: 1.5rem; padding: 1rem; background-color: var(--rose-50); border: 1px solid var(--rose-100); border-radius: var(--radius-xl); display: flex; align-items: center; gap: 0.75rem; color: var(--rose-600); font-size: 0.75rem; font-weight: 700;">
-                <svg style="width: 1.25rem; height: 1.25rem; flex-shrink: 0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <div class="auth-error">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 <span>{{ .Error }}</span>
             </div>
             {{ end }}
 
-            <div id="totp-setup-container" style="text-align: center;">
-                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">1. App de autenticación</h3>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Escanea el código QR con Google Authenticator o Authy.</p>
-                <div id="qr-code-box" style="display: flex; justify-content: center; align-items: center; min-height: 200px; background-color: white; padding: 1rem; border-radius: var(--radius-xl); border: 1px solid var(--slate-200); margin-bottom: 1rem;">
-                    <div style="color: var(--text-muted);">Cargando QR...</div>
+            <div id="totp-setup-container" class="auth-totp">
+                <h3 class="auth-step-title">1. App de autenticación</h3>
+                <p class="auth-step-copy">Escanea el código QR con Google Authenticator o Authy.</p>
+                <div id="qr-code-box" class="auth-qr-box">
+                    <div class="auth-muted">Cargando QR...</div>
                 </div>
                 
                 <input type="text" id="totp-code" name="code" required
-                    class="peak-input"
-                    style="font-family: monospace; text-align: center; font-size: 1.25rem; letter-spacing: 0.2em; padding: 1rem; margin-bottom: 1rem;"
+                    class="auth-totp-input"
                     placeholder="000 000" autocomplete="off" maxlength="6">
 
-                <button type="button" onclick="verifyTotp()" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center;">
+                <button type="button" data-action="verify-totp" class="peak-btn peak-btn-primary peak-btn-block auth-icon-button">
                     <span>Verificar y Entrar</span>
                 </button>
             </div>
 
-            <div style="margin-top: 1.5rem;">
-                <div style="position: relative; margin-bottom: 1.5rem;">
-                    <div style="position: absolute; inset: 0; display: flex; align-items: center;">
-                        <div style="width: 100%; border-top: 1px solid var(--border-color);"></div>
-                    </div>
-                    <div style="position: relative; display: flex; justify-content: center; font-size: 0.75rem;">
-                        <span style="background-color: var(--bg-surface); padding: 0 1rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">o usar</span>
-                    </div>
+            <div class="auth-divider">
+                <div class="auth-divider-line">
+                    <div></div>
+                </div>
+                <div class="auth-divider-label">
+                    <span class="auth-divider-label-strong">o usar</span>
                 </div>
 
-                <button type="button" id="btn-webauthn-register" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
-                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
+                <button type="button" id="btn-webauthn-register" class="peak-btn peak-btn-secondary peak-btn-block auth-icon-button">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
                     <span>Registrar Llave de Seguridad (Passkey)</span>
                 </button>
             </div>

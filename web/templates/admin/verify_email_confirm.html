@@ -17,29 +17,29 @@
         <div class="auth-blob-2"></div>
     </div>
 
-    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
-        <div class="glass-panel" style="padding: 3rem 2rem; text-align: center;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 1.5rem; border-radius: 1.5rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 2rem; border: 1px solid var(--border-light);">
-                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 4rem; height: 4rem;">
+    <div class="auth-container auth-container-animated">
+        <div class="glass-panel auth-panel auth-panel-centered">
+            <div class="auth-logo-mark auth-logo-mark-large">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth">
             </div>
 
-            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main); margin-bottom: 1rem;">Verificar tu <span style="color: var(--emerald-500);">Email</span></h1>
+            <h1 class="auth-title auth-title-small auth-title-margin">Verificar tu <span class="auth-title-success">Email</span></h1>
             
-            <p style="font-size: 0.875rem; color: var(--text-muted); font-weight: 500; line-height: 1.625; margin-bottom: 2.5rem;">
+            <p class="auth-result-copy">
                 Haz clic en el botón de abajo para confirmar tu dirección de correo electrónico y activar tu cuenta.
             </p>
 
-            <form method="POST" action="/verify" style="width: 100%;">
+            <form method="POST" action="/verify" class="auth-result-form">
                 <input type="hidden" name="token" value="{{ .Token }}">
                 <input type="hidden" name="csrf_token" value="{{ .csrf_token }}">
-                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem; border: none; cursor: pointer;">
+                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block auth-success-link">
                     <span>Verificar Email</span>
                     {{template "icon-forward"}}
                 </button>
             </form>
         </div>
 
-        <p style="text-align: center; color: var(--slate-400); font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2.5rem;">
+        <p class="auth-footer-note">
             Peak Auth Security Protocol
         </p>
     </div>

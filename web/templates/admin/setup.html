@@ -19,103 +19,103 @@
         <div class="auth-blob-2"></div>
     </div>
 
-    <div class="auth-container" style="max-width: 32rem; animation: slide-in-right 0.3s ease-out;">
-        <div style="text-align: center; margin-bottom: 1.25rem;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem; border-radius: 0.75rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 0.5rem; border: 1px solid var(--border-light);">
-                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" style="width: 2.25rem; height: 2.25rem;">
+    <div class="auth-container setup-shell">
+        <div class="setup-brand">
+            <div class="auth-logo-mark">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth">
             </div>
-            <h1 style="font-size: 1.625rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Setup Peak <span style="color: var(--brand-600);">Auth</span></h1>
-            <p style="color: var(--text-muted); margin-top: 0.25rem; font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em;">Paso 1 de 2: Credenciales maestras</p>
+            <h1 class="setup-title">Setup Peak <span class="auth-title-accent">Auth</span></h1>
+            <p class="setup-step">Paso 1 de 2: Credenciales maestras</p>
         </div>
 
-        <div class="glass-panel" style="padding: 1.75rem 2rem;">
-            <div style="margin-bottom: 1.25rem;">
-                <h2 style="font-size: 1.125rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem;">Usuario maestro (ROOT)</h2>
-                <p style="font-size: 0.8125rem; color: var(--text-muted); font-weight: 500; line-height: 1.5;">Crea la cuenta de administrador con control total sobre todos los recursos.</p>
-                <div class="setup-warning-banner" style="margin-top: 0.5rem; padding: 0.625rem 0.875rem; font-size: 0.75rem;">
+        <div class="glass-panel setup-panel">
+            <div class="setup-heading">
+                <h2>Usuario maestro (ROOT)</h2>
+                <p>Crea la cuenta de administrador con control total sobre todos los recursos.</p>
+                <div class="setup-warning-banner setup-warning-compact">
                     ⚠️ <strong>Aviso de seguridad:</strong> Esta cuenta posee control absoluto del sistema. Se recomienda reservarla únicamente para tareas de instalación y recuperación de emergencia.
                 </div>
             </div>
 
-            <form id="setupForm" action="/setup" method="POST" style="display: flex; flex-direction: column; gap: 1rem;" novalidate>
+            <form id="setupForm" action="/setup" method="POST" class="setup-form" novalidate>
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 
-                <div style="margin-bottom: 0;" class="form-group">
-                    <label style="display: block; font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Email del Root</label>
-                    <input type="email" id="email" name="email" required placeholder="admin@proyectopeak.com" class="peak-input" style="padding: 0.75rem 1rem;">
-                    <span id="emailError" class="hidden" style="font-size: 0.625rem; color: var(--rose-600); font-weight: 700; margin-top: 0.25rem; margin-left: 0.25rem; display: block;">Introduzca un email válido</span>
+                <div class="form-group">
+                    <label class="auth-label setup-field-label">Email del Root</label>
+                    <input type="email" id="email" name="email" required placeholder="admin@proyectopeak.com" class="peak-input setup-input">
+                    <span id="emailError" class="hidden auth-field-error">Introduzca un email válido</span>
                 </div>
 
-                <div style="margin-bottom: 0;" class="form-group">
-                    <label style="display: block; font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Contraseña maestra</label>
+                <div class="form-group">
+                    <label class="auth-label setup-field-label">Contraseña maestra</label>
                     <div class="password-toggle-wrapper">
-                        <input type="password" id="password" name="password" required placeholder="••••••••" class="peak-input" style="padding: 0.75rem 2.75rem 0.75rem 1rem;">
-                        <button type="button" class="password-toggle-btn" onclick="toggleLoginPassword('password', this)" aria-label="Mostrar u ocultar contraseña">
+                        <input type="password" id="password" name="password" required placeholder="••••••••" class="peak-input setup-password-input">
+                        <button type="button" class="password-toggle-btn" data-action="toggle-password" data-target="password" aria-label="Mostrar u ocultar contraseña">
                             <span class="icon-eye-open">{{template "icon-eye"}}</span>
                             <span class="icon-eye-closed hidden">{{template "icon-eye-off"}}</span>
                         </button>
                     </div>
 
                     <!-- Checklist Dinámica Mejorada -->
-                    <div style="margin-top: 0.75rem; padding: 0.875rem 1rem; background-color: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <p style="font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem;">Requisitos de seguridad</p>
+                    <div class="setup-checklist">
+                        <p class="setup-checklist-title">Requisitos de seguridad</p>
 
                         <!-- Requisito Largo -->
                         <div id="req-length" class="checklist-item">
                             <div class="status-icon">
-                                <svg class="check-icon hidden" style="width: 0.625rem; height: 0.625rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon hidden" style="width: 0.5rem; height: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
-                            <span style="font-size: 0.6875rem; font-weight: 700;">Mínimo 8 caracteres</span>
+                            <span>Mínimo 8 caracteres</span>
                         </div>
 
                         <!-- Requisito Mayúscula -->
                         <div id="req-upper" class="checklist-item">
                             <div class="status-icon">
-                                <svg class="check-icon hidden" style="width: 0.625rem; height: 0.625rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon hidden" style="width: 0.5rem; height: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
-                            <span style="font-size: 0.6875rem; font-weight: 700;">Al menos una MAYÚSCULA</span>
+                            <span>Al menos una MAYÚSCULA</span>
                         </div>
 
                         <!-- Requisito Número -->
                         <div id="req-number" class="checklist-item">
                             <div class="status-icon">
-                                <svg class="check-icon hidden" style="width: 0.625rem; height: 0.625rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon hidden" style="width: 0.5rem; height: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
-                            <span style="font-size: 0.6875rem; font-weight: 700;">Al menos un número (0-9)</span>
+                            <span>Al menos un número (0-9)</span>
                         </div>
 
                         <!-- Requisito Símbolo -->
                         <div id="req-symbol" class="checklist-item">
                             <div class="status-icon">
-                                <svg class="check-icon hidden" style="width: 0.625rem; height: 0.625rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon hidden" style="width: 0.5rem; height: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
-                            <span style="font-size: 0.6875rem; font-weight: 700;">Un símbolo (@$!%*?&#)</span>
+                            <span>Un símbolo (@$!%*?&#)</span>
                         </div>
                     </div>
                 </div>
 
-                <div style="padding-top: 0.25rem;">
-                    <button type="submit" id="submitBtn" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 0.875rem 1.25rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem;">
+                <div class="auth-submit-wrapper">
+                    <button type="submit" id="submitBtn" class="peak-btn peak-btn-primary peak-btn-block auth-form-button auth-form-button-plain">
                         <span>Continuar a configuración de MFA</span>
                         {{template "icon-arrow-right"}}
                     </button>
@@ -123,10 +123,10 @@
             </form>
         </div>
 
-        <div style="margin-top: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 1.5rem;">
-            <div style="height: 1px; background-color: var(--border-light); width: 3rem;"></div>
-            <p style="font-size: 0.625rem; color: var(--slate-400); font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em;">Paso 1 de 2</p>
-            <div style="height: 1px; background-color: var(--border-light); width: 3rem;"></div>
+        <div class="setup-step-indicator">
+            <div></div>
+            <p>Paso 1 de 2</p>
+            <div></div>
         </div>
     </div>
 
