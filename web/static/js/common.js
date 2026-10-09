@@ -28,6 +28,10 @@ document.addEventListener('click', (event) => {
     } else if (action === 'admin-password-help') {
         event.preventDefault();
         peakAlert('Seguridad de cuentas administrativas', 'Por políticas de seguridad, las cuentas con privilegios de administración no admiten restablecimiento público por correo. Para recuperar su acceso, comuníquese con otro administrador de la plataforma.', 'info');
+    } else if (action === 'copy-text') {
+        copyToClipboard(trigger.dataset.text || '', trigger);
+    } else if (action === 'reload-page') {
+        window.location.reload();
     }
 });
 
@@ -468,18 +472,18 @@ async function openMfaSettings() {
                 html: `
                     <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">Elija el método que desea usar para su segundo factor:</p>
                     <div style="display: flex; flex-direction: column; gap: 0.75rem; text-align: left;">
-                        <label style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-2xl); cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--bg-surface-secondary)'" onmouseout="this.style.backgroundColor='transparent'">
-                            <input type="radio" name="mfa_type" value="totp" style="width: 1rem; height: 1rem; accent-color: var(--brand-600);" checked>
+                        <label class="mfa-method-option">
+                            <input type="radio" name="mfa_type" value="totp" class="mfa-method-radio" checked>
                             <div>
-                                <span style="display: block; font-weight: 700; font-size: 0.875rem;">App Authenticator</span>
-                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">Google Auth, Authy, etc.</span>
+                                <span class="mfa-method-title">App Authenticator</span>
+                                <span class="mfa-method-description">Google Auth, Authy, etc.</span>
                             </div>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-2xl); cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--bg-surface-secondary)'" onmouseout="this.style.backgroundColor='transparent'">
-                            <input type="radio" name="mfa_type" value="webauthn" style="width: 1rem; height: 1rem; accent-color: var(--brand-600);">
+                        <label class="mfa-method-option">
+                            <input type="radio" name="mfa_type" value="webauthn" class="mfa-method-radio">
                             <div>
-                                <span style="display: block; font-weight: 700; font-size: 0.875rem;">Llave de Seguridad / Passkey</span>
-                                <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">TouchID, FaceID o YubiKey</span>
+                                <span class="mfa-method-title">Llave de Seguridad / Passkey</span>
+                                <span class="mfa-method-description">TouchID, FaceID o YubiKey</span>
                             </div>
                         </label>
                     </div>

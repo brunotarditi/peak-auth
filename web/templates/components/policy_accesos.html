@@ -1,74 +1,74 @@
 {{ define "components/policy_accesos" }}
 {{ if .PwdPolicy }}
-<div id="content_accesos" class="tab-content hidden" style="display: flex; flex-direction: column; gap: 1.5rem;">
-    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid var(--border-light);">
+<div id="content_accesos" class="tab-content hidden phase8-style-97">
+    <div class="phase8-style-98">
         <div>
-            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Políticas de acceso</h3>
-            <p style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted); margin-top: 0.125rem;">Define la complejidad requerida para las contraseñas de tus usuarios.</p>
+            <h3 class="phase8-style-99">Políticas de acceso</h3>
+            <p class="phase8-style-100">Define la complejidad requerida para las contraseñas de tus usuarios.</p>
         </div>
         {{ if ne .App.AppID "peak-auth" }}
-        <button type="button" data-action="toggle-edit" data-section="pwd" id="btn_edit_pwd" class="peak-btn peak-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+        <button type="button" data-action="toggle-edit" data-section="pwd" id="btn_edit_pwd" class="peak-btn peak-btn-secondary phase8-style-101">
             <span>Editar</span>
-            <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+            <svg class="phase8-style-102" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
         {{ end }}
     </div>
 
-    <fieldset id="fs_pwd" disabled style="padding-top: 0.5rem; transition: opacity 0.3s; opacity: 0.8; cursor: not-allowed; border: none; margin: 0; padding: 0;">
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
+    <fieldset id="fs_pwd" disabled class="phase8-style-103">
+        <div class="phase8-style-104">
             <!-- Largo Mínimo -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Largo mínimo de contraseña</span>
-                    <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Especifica la cantidad mínima de caracteres requeridos para una contraseña válida.</span>
+            <div class="phase8-style-105">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Largo mínimo de contraseña</span>
+                    <span class="phase8-style-108">Especifica la cantidad mínima de caracteres requeridos para una contraseña válida.</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-lg);">
+                <div class="phase8-style-109">
                     <input type="number" autocomplete="new-password" data-bwignore data-1p-ignore
                         id="pwd_min_length" data-policy="password" value="{{ .PwdPolicy.MinLength }}"
                         {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                        style="width: 2.5rem; text-align: right; background: transparent; font-weight: 900; color: var(--text-main); outline: none; border: none; font-size: 0.75rem;">
-                    <span style="font-size: 0.75rem; font-weight: 900; color: var(--text-muted);">Car.</span>
+                        class="phase8-style-110">
+                    <span class="phase8-style-111">Car.</span>
                 </div>
             </div>
 
             <!-- Requisitos de Caracteres -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Complejidad de contraseña</span>
-                    <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Obliga la inclusión de ciertos tipos de caracteres (mayúsculas, números y símbolos).</span>
+            <div class="phase8-style-105">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Complejidad de contraseña</span>
+                    <span class="phase8-style-108">Obliga la inclusión de ciertos tipos de caracteres (mayúsculas, números y símbolos).</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div class="phase8-style-112">
                     <!-- Tailwind toggle classes removed in favor of direct JS class toggling or explicit styles -->
                     <!-- We use standard checkboxes for simplicity in vanilla CSS instead of pill toggles to avoid complex JS logic here -->
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="phase8-style-112">
                         <input type="checkbox" id="pwd_require_uppercase" data-policy="password" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireUppercase }}checked{{ end }} class="peak-checkbox">
-                        <label for="pwd_require_uppercase" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Mayús</label>
+                        <label for="pwd_require_uppercase" class="phase8-style-113">Mayús</label>
                     </div>
                     
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="phase8-style-112">
                         <input type="checkbox" id="pwd_require_numbers" data-policy="password" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireNumbers }}checked{{ end }} class="peak-checkbox">
-                        <label for="pwd_require_numbers" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Núms</label>
+                        <label for="pwd_require_numbers" class="phase8-style-113">Núms</label>
                     </div>
                     
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="phase8-style-112">
                         <input type="checkbox" id="pwd_require_symbols" data-policy="password" {{ if eq .App.AppID "peak-auth" }}disabled{{ end }} {{ if .PwdPolicy.RequireSymbols }}checked{{ end }} class="peak-checkbox">
-                        <label for="pwd_require_symbols" style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; color: var(--slate-600); cursor: pointer;">Símb</label>
+                        <label for="pwd_require_symbols" class="phase8-style-113">Símb</label>
                     </div>
                 </div>
             </div>
 
             <!-- Expiración de Contraseña -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: var(--bg-surface-secondary); border-radius: var(--radius-xl); border: 1px solid var(--border-light);">
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 70%;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">Vigencia de contraseña</span>
-                    <span style="font-size: 0.625rem; font-weight: 500; color: var(--slate-400);">Días de validez antes de exigir actualización obligatoria. Usa 0 para desactivar la expiración.</span>
+            <div class="phase8-style-105">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Vigencia de contraseña</span>
+                    <span class="phase8-style-108">Días de validez antes de exigir actualización obligatoria. Usa 0 para desactivar la expiración.</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--border-color); padding: 0.25rem 0.75rem; background-color: var(--bg-surface); border-radius: var(--radius-lg);">
+                <div class="phase8-style-109">
                     <input type="number" autocomplete="off" min="0" max="365"
                         id="pwd_expiration_days" data-policy="password" value="{{ .PwdPolicy.ExpirationDays }}"
                         {{ if eq .App.AppID "peak-auth" }}disabled{{ end }}
-                        style="width: 3rem; text-align: right; background: transparent; font-weight: 900; color: var(--text-main); outline: none; border: none; font-size: 0.75rem;">
-                    <span style="font-size: 0.75rem; font-weight: 900; color: var(--text-muted);">Días</span>
+                        class="phase8-style-114">
+                    <span class="phase8-style-111">Días</span>
                 </div>
             </div>
         </div>

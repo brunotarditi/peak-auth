@@ -46,17 +46,17 @@
         const isDisabled = fs.hasAttribute('disabled');
         if (isDisabled) {
             fs.removeAttribute('disabled');
-            fs.style.opacity = '1';
-            fs.style.cursor = 'default';
+            fs.classList.add('policy-fieldset-editable');
+            fs.classList.remove('policy-fieldset-disabled');
             btn.innerHTML = `<span>Listo</span>
-                <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
+                <svg class="policy-action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
             btn.title = "Bloquear edición";
         } else {
             fs.setAttribute('disabled', 'disabled');
-            fs.style.opacity = '0.8';
-            fs.style.cursor = 'not-allowed';
+            fs.classList.add('policy-fieldset-disabled');
+            fs.classList.remove('policy-fieldset-editable');
             btn.innerHTML = `<span>Editar</span>
-                <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
+                <svg class="policy-action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`;
             btn.title = "Desbloquear para editar";
         }
 
@@ -120,10 +120,12 @@
 
         const isPublic = modeEl.value === 'public';
         if (roleRow) {
-            roleRow.style.display = isPublic ? 'flex' : 'none';
+            roleRow.classList.toggle('hidden', !isPublic);
+            roleRow.classList.toggle('is-flex', isPublic);
         }
         if (manualNotice) {
-            manualNotice.style.display = isPublic ? 'none' : 'block';
+            manualNotice.classList.toggle('hidden', isPublic);
+            manualNotice.classList.toggle('is-block', !isPublic);
         }
     }
 

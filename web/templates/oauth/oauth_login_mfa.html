@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" href="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}{{ asset "/static/img/favicon.png" }}{{ end }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="{{ asset "/static/css/oauth.css" }}">
     {{ if .ThemeColors }}
     <style>
         :root {
@@ -26,151 +27,58 @@
     <script src="/static/js/common.js"></script>
 </head>
 
-<body class="bg-pattern layout-auth">
+<body class="bg-pattern layout-auth" data-client-id="{{ .ClientID }}">
     <div class="auth-bg-shapes">
         <div class="auth-blob-1"></div>
         <div class="auth-blob-2"></div>
     </div>
 
-    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; border-radius: 1rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 1rem; border: 1px solid var(--border-light);">
-                <img src="{{ if .AppLogo }}{{ .AppLogo }}{{ else }}/static/img/logo.svg{{ end }}" alt="{{ if .AppName }}{{ .AppName }}{{ else }}Peak Auth{{ end }}" style="width: 2.5rem; height: 2.5rem; object-fit: contain;">
+    <div class="auth-container oauth-style-37">
+        <div class="oauth-style-1">
+            <div class="oauth-style-38">
+                <img src="{{ if .AppLogo }}{{ .AppLogo }}{{ else }}/static/img/logo.svg{{ end }}" alt="{{ if .AppName }}{{ .AppName }}{{ else }}Peak Auth{{ end }}" class="oauth-style-3">
             </div>
-            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Verificación</h1>
-            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Confirma tu identidad para continuar{{ if .AppName }} hacia {{ .AppName }}{{ end }}</p>
+            <h1 class="oauth-style-39">Verificación</h1>
+            <p class="oauth-style-40">Confirma tu identidad para continuar{{ if .AppName }} hacia {{ .AppName }}{{ end }}</p>
         </div>
 
-        <div class="glass-panel" style="padding: 2.5rem 2rem;">
+        <div class="glass-panel oauth-style-41">
             <div id="totp-container">
-                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; text-align: center;">Ingresa el código de tu Authenticator</h3>
+                <h3 class="oauth-style-42">Ingresa el código de tu Authenticator</h3>
                 <input type="text" id="totp-code"
-                    class="peak-input"
-                    style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5em; font-family: monospace; margin-bottom: 1rem; padding: 1rem;"
+                    class="peak-input oauth-style-43"
                     placeholder="••••••" maxlength="6" autocomplete="one-time-code" autofocus>
 
-                <button onclick="verifyTotp()" id="totp-btn" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; margin-bottom: 1rem; display: flex; justify-content: center;">
+                <button type="button" data-action="verify-totp" id="totp-btn" class="peak-btn peak-btn-primary peak-btn-block oauth-mfa-submit">
                     <span>Verificar Código</span>
                 </button>
             </div>
 
-            <div style="position: relative; margin: 1.5rem 0;">
-                <div style="position: absolute; inset: 0; display: flex; align-items: center;">
-                    <div style="width: 100%; border-top: 1px solid var(--border-color);"></div>
+            <div class="oauth-style-44">
+                <div class="oauth-style-45">
+                    <div class="oauth-style-46"></div>
                 </div>
-                <div style="position: relative; display: flex; justify-content: center; font-size: 0.75rem;">
-                    <span style="background-color: var(--bg-surface); padding: 0 1rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">o usa</span>
+                <div class="oauth-style-47">
+                    <span class="oauth-style-48">o usa</span>
                 </div>
             </div>
 
-            <button onclick="loginWebAuthn()" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem;">
-                <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+            <button type="button" data-action="login-webauthn" class="peak-btn peak-btn-secondary peak-btn-block oauth-webauthn-button">
+                <svg class="oauth-style-49" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                 <span>Llave de Seguridad (Passkey)</span>
             </button>
         </div>
     </div>
 
     <!-- Hidden form for redirect -->
-    <form id="redirect-form" action="/oauth/authorize" method="GET" style="display: none;">
+    <form id="redirect-form" action="/oauth/authorize" method="GET" class="oauth-style-50">
         <input type="hidden" name="client_id" value="{{ .ClientID }}">
         <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
         <input type="hidden" name="response_type" value="code">
         <input type="hidden" name="state" value="{{ .State }}">
     </form>
 
-    <script>
-        const clientID = "{{ .ClientID }}";
-
-        async function verifyTotp() {
-            const code = document.getElementById('totp-code').value;
-            if (!code || code.length !== 6) {
-                peakAlert('Error', 'Ingresa el código de 6 dígitos', 'error');
-                return;
-            }
-
-            try {
-                const res = await fetch('/oauth/login/mfa/totp', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ code: code })
-                });
-
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Código incorrecto');
-
-                document.getElementById('redirect-form').submit();
-            } catch (err) {
-                peakAlert('Error', err.message, 'error');
-            }
-        }
-
-        async function loginWebAuthn() {
-            try {
-                const res = await fetch('/api/v1/login/mfa/webauthn/begin', {
-                    headers: { 'X-App-ID': clientID }
-                });
-                if (!res.ok) throw new Error('Error al iniciar WebAuthn');
-                
-                const options = await res.json();
-                
-                options.publicKey.challenge = base64urlToBuffer(options.publicKey.challenge);
-                if (options.publicKey.allowCredentials) {
-                    options.publicKey.allowCredentials.forEach(cred => {
-                        cred.id = base64urlToBuffer(cred.id);
-                    });
-                }
-
-                const assertion = await navigator.credentials.get({ publicKey: options.publicKey });
-                
-                const assertionResponse = {
-                    id: assertion.id,
-                    rawId: bufferToBase64url(assertion.rawId),
-                    type: assertion.type,
-                    response: {
-                        authenticatorData: bufferToBase64url(assertion.response.authenticatorData),
-                        clientDataJSON: bufferToBase64url(assertion.response.clientDataJSON),
-                        signature: bufferToBase64url(assertion.response.signature),
-                        userHandle: assertion.response.userHandle ? bufferToBase64url(assertion.response.userHandle) : null
-                    }
-                };
-
-                const finishRes = await fetch('/oauth/login/mfa/webauthn/finish', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ assertion: assertionResponse })
-                });
-                
-                const finishData = await finishRes.json();
-                if (!finishRes.ok) throw new Error(finishData.error || 'Fallo de WebAuthn');
-                
-                document.getElementById('redirect-form').submit();
-            } catch (err) {
-                console.error(err);
-                peakAlert('Error', err.message, 'error');
-            }
-        }
-
-        function bufferToBase64url(buffer) {
-            const bytes = new Uint8Array(buffer);
-            let str = '';
-            for (let charCode of bytes) str += String.fromCharCode(charCode);
-            const base64String = btoa(str);
-            return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        }
-
-        function base64urlToBuffer(base64url) {
-            const padding = '='.repeat((4 - base64url.length % 4) % 4);
-            const base64 = (base64url + padding).replace(/\-/g, '+').replace(/_/g, '/');
-            const rawData = atob(base64);
-            const buffer = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) buffer[i] = rawData.charCodeAt(i);
-            return buffer.buffer;
-        }
-    </script>
+    <script src="{{ js "oauth_login_mfa.js" }}"></script>
 </body>
 </html>
 {{ end }}

@@ -56,11 +56,11 @@
                 <form id="formVerifySetupMfa" class="mfa-form">
                     <div class="form-group">
                         <label for="totpCodeInput" class="auth-label mfa-code-label">Código de 6 dígitos</label>
-                        <input type="text" id="totpCodeInput" name="code" required maxlength="6" inputmode="numeric" placeholder="123456" class="peak-input" class="mfa-code-input" autocomplete="one-time-code">
+                        <input type="text" id="totpCodeInput" name="code" required maxlength="6" inputmode="numeric" placeholder="123456" class="peak-input mfa-code-input" autocomplete="one-time-code">
                     </div>
 
                     <div class="auth-submit-wrapper">
-                        <button type="submit" id="btnSubmitMfa" class="peak-btn peak-btn-primary peak-btn-block" class="auth-form-button-plain">
+                        <button type="submit" id="btnSubmitMfa" class="peak-btn peak-btn-primary peak-btn-block auth-form-button-plain">
                             <span>Verificar y finalizar instalación</span>
                             {{template "icon-check"}}
                         </button>
@@ -90,7 +90,7 @@
                     </button>
                 </div>
 
-                <a href="/admin" id="btnEnterAdmin" class="peak-btn peak-btn-primary peak-btn-block" class="mfa-enter-admin">
+                <a href="/admin" id="btnEnterAdmin" class="peak-btn peak-btn-primary peak-btn-block mfa-enter-admin">
                     <span>Entrar al panel de administración</span>
                     {{template "icon-arrow-right"}}
                 </a>

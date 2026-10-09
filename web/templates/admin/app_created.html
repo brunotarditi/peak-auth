@@ -15,8 +15,7 @@
                 <div class="created-credential-value">
                     <code class="created-credential-code">{{.App.AppID}}</code>
                 </div>
-                <button type="button" data-text="{{.App.AppID}}"
-                    onclick="copyToClipboard(this.getAttribute('data-text'), this)"
+                <button type="button" data-action="copy-text" data-text="{{.App.AppID}}"
                     title="Copiar App ID"
                     aria-label="Copiar App ID"
                     class="created-credential-button created-credential-button-copy">
@@ -31,8 +30,7 @@
                 <div class="created-credential-value">
                     <code class="created-credential-code">{{.PlainSecret}}</code>
                 </div>
-                <button type="button" data-text="{{.PlainSecret}}"
-                    onclick="copyToClipboard(this.getAttribute('data-text'), this)"
+                <button type="button" data-action="copy-text" data-text="{{.PlainSecret}}"
                     title="Copiar Secret Key"
                     aria-label="Copiar Secret Key"
                     class="created-credential-button created-credential-button-secret">
@@ -46,7 +44,7 @@
         </div>
     </div>
 
-    <div style="margin-top: 3rem;">
+    <div class="created-actions">
         <a href="/admin" class="created-primary">
             Ir a aplicaciones
         </a>

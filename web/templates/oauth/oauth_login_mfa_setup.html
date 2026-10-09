@@ -9,236 +9,88 @@
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="{{ asset "/static/css/oauth.css" }}">
     <script src="{{ js "config.js" }}"></script>
     <script src="/static/js/modal.js"></script>
     <script src="/static/js/common.js"></script>
 </head>
 
-<body class="bg-pattern layout-auth">
+<body class="bg-pattern layout-auth" data-client-id="{{ .ClientID }}">
     <div class="auth-bg-shapes">
         <div class="auth-blob-1"></div>
         <div class="auth-blob-2"></div>
     </div>
 
-    <div class="auth-container" style="animation: slide-in-right 0.3s ease-out;">
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; border-radius: 1rem; background-color: var(--bg-surface); box-shadow: var(--shadow-md); margin-bottom: 1rem; border: 1px solid var(--border-light);">
-                <img src="/static/img/logo.svg" alt="Peak Auth" style="width: 2.5rem; height: 2.5rem;">
+    <div class="auth-container oauth-style-37">
+        <div class="oauth-style-1">
+            <div class="oauth-style-38">
+                <img src="/static/img/logo.svg" alt="Peak Auth" class="oauth-style-51">
             </div>
-            <h1 style="font-size: 1.875rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main);">Acceso Restringido</h1>
-            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.875rem; font-weight: 500;">Por política de seguridad, debes configurar el Segundo Factor (MFA) obligatoriamente antes de continuar.</p>
+            <h1 class="oauth-style-39">Acceso Restringido</h1>
+            <p class="oauth-style-40">Por política de seguridad, debes configurar el Segundo Factor (MFA) obligatoriamente antes de continuar.</p>
         </div>
 
-        <div class="glass-panel" style="padding: 2.5rem 2rem;">
-            <div id="totp-setup-container" style="text-align: center;">
-                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">1. App de Autenticación</h3>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">Escanea el código QR con Google Authenticator o Authy.</p>
-                <div id="qr-code-box" style="display: flex; justify-content: center; align-items: center; min-height: 200px; background-color: white; padding: 1rem; border-radius: var(--radius-xl); border: 1px solid var(--slate-200); margin-bottom: 1rem;">
-                    <div style="color: var(--text-muted);">Cargando QR...</div>
+        <div class="glass-panel oauth-style-41">
+            <div id="totp-setup-container" class="oauth-style-52">
+                <h3 class="oauth-style-53">1. App de Autenticación</h3>
+                <p class="oauth-style-54">Escanea el código QR con Google Authenticator o Authy.</p>
+                <div id="qr-code-box" class="oauth-style-55">
+                    <div class="oauth-style-35">Cargando QR...</div>
                 </div>
                 
                 <input type="text" id="totp-code" name="code" required
-                    class="peak-input"
-                    style="font-family: monospace; text-align: center; font-size: 1.5rem; letter-spacing: 0.5em; padding: 1rem; margin-bottom: 1rem;"
+                    class="peak-input oauth-style-56"
                     placeholder="••••••" autocomplete="off" maxlength="6">
 
-                <button type="button" onclick="verifyTotp()" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center;">
+                <button type="button" data-action="verify-totp" class="peak-btn peak-btn-primary peak-btn-block oauth-mfa-submit">
                     <span>Verificar y Continuar</span>
                 </button>
             </div>
 
-            <div style="position: relative; margin: 1.5rem 0;">
-                <div style="position: absolute; inset: 0; display: flex; align-items: center;">
-                    <div style="width: 100%; border-top: 1px solid var(--border-color);"></div>
+            <div class="oauth-style-44">
+                <div class="oauth-style-45">
+                    <div class="oauth-style-46"></div>
                 </div>
-                <div style="position: relative; display: flex; justify-content: center; font-size: 0.75rem;">
-                    <span style="background-color: var(--bg-surface); padding: 0 1rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">o usa</span>
+                <div class="oauth-style-47">
+                    <span class="oauth-style-48">o usa</span>
                 </div>
             </div>
             
-            <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; text-align: center;">2. Llave de Seguridad FÍSICA</h3>
-            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; text-align: center;">Usa Windows Hello, TouchID, FaceID o YubiKey.</p>
-            <button type="button" onclick="registerWebAuthn()" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; display: flex; justify-content: center; align-items: center; gap: 0.75rem;">
-                <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+            <h3 class="oauth-style-57">2. Llave de Seguridad FÍSICA</h3>
+            <p class="oauth-style-58">Usa Windows Hello, TouchID, FaceID o YubiKey.</p>
+            <button type="button" data-action="register-webauthn" class="peak-btn peak-btn-secondary peak-btn-block oauth-webauthn-button">
+                <svg class="oauth-style-49" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                 <span>Vincular Passkey</span>
             </button>
         </div>
     </div>
 
     <!-- Modal de Códigos de Recuperación -->
-    <div id="recovery-modal" style="display: none; position: fixed; inset: 0; z-index: 50; background-color: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 1rem;">
-        <div style="background-color: var(--bg-surface); border-radius: var(--radius-2xl); max-width: 28rem; width: 100%; padding: 2rem; box-shadow: var(--shadow-2xl); border: 1px solid var(--border-light);">
-            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">¡MFA Configurado!</h2>
-            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">Guarda estos códigos de recuperación en un lugar seguro. Solo se mostrarán una vez.</p>
-            <div id="recovery-codes-list" style="background-color: var(--slate-100); padding: 1rem; border-radius: var(--radius-xl); font-family: monospace; font-size: 0.875rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; color: var(--text-main);">
+    <div id="recovery-modal" class="oauth-style-59">
+        <div class="oauth-style-60">
+            <h2 class="oauth-style-61">¡MFA Configurado!</h2>
+            <p class="oauth-style-62">Guarda estos códigos de recuperación en un lugar seguro. Solo se mostrarán una vez.</p>
+            <div id="recovery-codes-list" class="oauth-style-63">
             </div>
             
-            <button onclick="downloadRecoveryCodes()" class="peak-btn peak-btn-secondary peak-btn-block" style="padding: 1rem; margin-bottom: 0.75rem;">
+            <button type="button" data-action="download-recovery-codes" class="peak-btn peak-btn-secondary peak-btn-block oauth-recovery-download">
                 📥 Descargar Códigos (.txt)
             </button>
-            <button onclick="continueOAuth()" class="peak-btn peak-btn-primary peak-btn-block" style="padding: 1rem;">
+            <button type="button" data-action="continue-oauth" class="peak-btn peak-btn-primary peak-btn-block oauth-recovery-continue">
                 Ya los guardé. Continuar.
             </button>
         </div>
     </div>
 
     <!-- Hidden form for redirect -->
-    <form id="redirect-form" action="/oauth/authorize" method="GET" style="display: none;">
+    <form id="redirect-form" action="/oauth/authorize" method="GET" class="oauth-style-50">
         <input type="hidden" name="client_id" value="{{ .ClientID }}">
         <input type="hidden" name="redirect_uri" value="{{ .RedirectURI }}">
         <input type="hidden" name="response_type" value="code">
         <input type="hidden" name="state" value="{{ .State }}">
     </form>
 
-    <script>
-        const clientID = "{{ .ClientID }}";
-        let generatedCodes = [];
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            const box = document.getElementById('qr-code-box');
-            try {
-                const res = await fetch('/api/v1/login/mfa/totp/setup', { 
-                    method: 'POST',
-                    headers: { 'X-App-ID': clientID }
-                });
-                if (!res.ok) throw new Error('No se pudo cargar el QR');
-                const data = await res.json();
-                
-                const img = document.createElement('img');
-                img.src = data.qr_code;
-                img.alt = 'QR Code';
-                img.style.maxWidth = '200px';
-                img.style.height = 'auto';
-                img.style.borderRadius = '0.5rem';
-                img.style.margin = '0 auto';
-                box.replaceChildren(img);
-            } catch (err) {
-                console.error(err);
-                const p = document.createElement('p');
-                p.style.color = 'var(--rose-500)';
-                p.style.fontSize = '0.875rem';
-                p.textContent = 'Error cargando el código QR';
-                box.replaceChildren(p);
-            }
-        });
-
-        async function verifyTotp() {
-            const code = document.getElementById('totp-code').value;
-            if (!code || code.length !== 6) {
-                peakAlert('Error', 'Ingresa el código de 6 dígitos', 'error');
-                return;
-            }
-
-            try {
-                const res = await fetch('/oauth/login/mfa/setup/verify', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ code: code })
-                });
-
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Código incorrecto');
-
-                generatedCodes = data.recovery_codes || [];
-                showRecoveryCodes(generatedCodes);
-            } catch (err) {
-                peakAlert('Error', err.message, 'error');
-            }
-        }
-
-        async function registerWebAuthn() {
-            try {
-                const res = await fetch('/api/v1/login/mfa/webauthn/register/begin', {
-                    method: 'POST',
-                    headers: { 'X-App-ID': clientID }
-                });
-                if (!res.ok) throw new Error('Error al iniciar WebAuthn');
-                
-                const options = await res.json();
-                options.publicKey.challenge = base64urlToBuffer(options.publicKey.challenge);
-                options.publicKey.user.id = base64urlToBuffer(options.publicKey.user.id);
-
-                const credential = await navigator.credentials.create({ publicKey: options.publicKey });
-                
-                const credentialData = {
-                    id: credential.id,
-                    rawId: bufferToBase64url(credential.rawId),
-                    type: credential.type,
-                    response: {
-                        attestationObject: bufferToBase64url(credential.response.attestationObject),
-                        clientDataJSON: bufferToBase64url(credential.response.clientDataJSON)
-                    }
-                };
-
-                const finishRes = await fetch('/oauth/login/mfa/setup/webauthn/finish', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ credential: credentialData })
-                });
-                
-                const finishData = await finishRes.json();
-                if (!finishRes.ok) throw new Error(finishData.error || 'Fallo de WebAuthn');
-                
-                generatedCodes = finishData.recovery_codes || [];
-                if (generatedCodes.length > 0) {
-                    showRecoveryCodes(generatedCodes);
-                } else {
-                    document.getElementById('redirect-form').submit();
-                }
-            } catch (err) {
-                console.error(err);
-                peakAlert('Error', err.message, 'error');
-            }
-        }
-
-        function showRecoveryCodes(codes) {
-            const list = document.getElementById('recovery-codes-list');
-            list.replaceChildren(...codes.map(c => {
-                const d = document.createElement('div');
-                d.textContent = c;
-                return d;
-            }));
-            document.getElementById('recovery-modal').style.display = 'flex';
-        }
-
-        function downloadRecoveryCodes() {
-            const content = `Peak Auth - Códigos de Recuperación\n\nGuardá este archivo en un lugar seguro.\n\n${generatedCodes.join('\n')}`;
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'peak_auth_recovery_codes.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        function continueOAuth() {
-            document.getElementById('redirect-form').submit();
-        }
-
-        function bufferToBase64url(buffer) {
-            const bytes = new Uint8Array(buffer);
-            let str = '';
-            for (let charCode of bytes) str += String.fromCharCode(charCode);
-            const base64String = btoa(str);
-            return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        }
-
-        function base64urlToBuffer(base64url) {
-            const padding = '='.repeat((4 - base64url.length % 4) % 4);
-            const base64 = (base64url + padding).replace(/\-/g, '+').replace(/_/g, '/');
-            const rawData = atob(base64);
-            const buffer = new Uint8Array(rawData.length);
-            for (let i = 0; i < rawData.length; ++i) buffer[i] = rawData.charCodeAt(i);
-            return buffer.buffer;
-        }
-    </script>
+    <script src="{{ js "oauth_login_mfa_setup.js" }}"></script>
 </body>
 </html>
 {{ end }}

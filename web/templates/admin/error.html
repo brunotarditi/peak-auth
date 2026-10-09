@@ -1,26 +1,26 @@
 {{ define "content" }}
-<div style="max-width: 36rem; margin: 5rem auto; text-align: center;">
-    <div style="margin-bottom: 2rem; position: relative; display: inline-block;">
-        <div style="position: absolute; inset: 0; background-color: var(--rose-500); filter: blur(32px); opacity: 0.2; transform: scale(1.5);"></div>
-        <div style="position: relative; background-color: var(--rose-50); color: var(--rose-600); width: 6rem; height: 6rem; border-radius: 1.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto; transform: rotate(-6deg); box-shadow: var(--shadow-2xl); border: 1px solid var(--rose-100);">
-            <svg style="width: 3rem; height: 3rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="phase8-style-70">
+    <div class="phase8-style-71">
+        <div class="phase8-style-72"></div>
+        <div class="phase8-style-73">
+            <svg class="phase8-style-74" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
             </svg>
         </div>
     </div>
 
-    <h1 style="font-size: 2.25rem; font-weight: 900; color: var(--text-main); margin-bottom: 1rem; letter-spacing: -0.025em;">¡Algo salió mal!</h1>
+    <h1 class="phase8-style-13">¡Algo salió mal!</h1>
     
-    <div style="background-color: var(--slate-100); color: var(--text-muted); padding: 1.5rem; border-radius: 1.25rem; font-weight: 500; margin-bottom: 2.5rem; border: 1px solid var(--border-light); line-height: 1.625; font-style: italic;">
+    <div class="phase8-style-75">
         "{{ if .Message }}{{ .Message }}{{ else }}{{ .error }}{{ end }}"
     </div>
 
-    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem;">
-        <a href="/admin" class="peak-btn peak-btn-primary" style="padding: 1rem 2rem; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex: 1; min-width: 200px;">
+    <div class="phase8-style-76">
+        <a href="/admin" class="peak-btn peak-btn-primary phase8-style-77">
             {{template "icon-arrow-back"}}
             <span>Volver a aplicaciones</span>
         </a>
-        <button onclick="window.location.reload()" class="peak-btn peak-btn-secondary" style="padding: 1rem 2rem; display: flex; align-items: center; justify-content: center; flex: 1; min-width: 200px;">
+        <button data-action="reload-page" class="peak-btn peak-btn-secondary phase8-style-78">
             <span>Reintentar</span>
         </button>
     </div>
