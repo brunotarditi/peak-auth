@@ -162,7 +162,7 @@
                                     </button>
                                     {{ end }}
 
-                                    {{ if and (ne .RoleName "ROOT") (ne .RoleName "OWNER") }}
+                                    {{ if and (not .IsOwner) (not .IsRoot) (not .IsSelf) }}
                                     {{ $expiresAt := "" }}
                                     {{ if .AccessExpiresAt }}{{ $expiresAt = format_time .AccessExpiresAt "2006-01-02T15:04" }}{{ end }}
                                     {{ $isTemporary := "false" }}
@@ -174,7 +174,7 @@
                                     </button>
                                     {{ end }}
 
-                                    {{ if and (not .IsVerified) (ne .RoleName "ROOT") }}
+                                    {{ if and (not .IsVerified) (not .IsRoot) }}
                                     <button onclick="resendVerification('{{$.App.AppID}}', '{{.ID}}')"
                                         class="peak-badge peak-badge-brand" style="cursor: pointer;"
                                         title="Reenviar email de activación">
@@ -182,7 +182,7 @@
                                     </button>
                                     {{ end }}
 
-                                    {{ if ne .RoleName "ROOT" }}
+                                    {{ if not .IsRoot }}
                                     <button onclick="sendResetPassword('{{$.App.AppID}}', '{{.ID}}')"
                                         class="peak-badge" style="cursor: pointer; background-color: var(--bg-surface-secondary); color: var(--text-muted); border-color: var(--border-light);"
                                         title="Enviar email de recuperación">
@@ -190,16 +190,18 @@
                                     </button>
                                     {{ end }}
 
-                                    {{if and (ne .RoleName "ROOT") (ne .RoleName "OWNER")}}
+                                    {{ if and (not .IsOwner) (not .IsRoot) (not .IsSelf) }}
                                     <button onclick="revokeAccess('{{$.App.AppID}}', '{{.ID}}')"
                                         style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); background: none; border: none; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--rose-600)'" onmouseout="this.style.color='var(--text-muted)'">
                                         Revocar
                                     </button>
-                                    {{else if eq .RoleName "OWNER"}}
-                                    <span style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--brand-500); font-style: italic;">Propietario</span>
-                                    {{else}}
-                                    <span style="font-size: 0.625rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate-300); font-style: italic;">Sistema</span>
-                                    {{end}}
+                                    {{ else if .IsOwner }}
+                                    <span class="peak-badge peak-badge-brand" style="font-size: 0.6875rem;">Propietario</span>
+                                    {{ else if .IsRoot }}
+                                    <span class="peak-badge peak-badge-brand" style="font-size: 0.6875rem;">Superadmin</span>
+                                    {{ else if .IsSelf }}
+                                    <span class="peak-badge peak-badge-secondary" style="font-size: 0.6875rem;">Tú</span>
+                                    {{ end }}
                                 </div>
                             </td>
                         </tr>
@@ -262,7 +264,7 @@
 
 <!-- Role Modal -->
 <div id="roleModal" class="hidden" style="position: fixed; inset: 0; z-index: 50; overflow-y: auto;" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div style="display: flex; align-items: flex-end; justify-content: center; min-height: 100vh; padding: 1rem 1rem 5rem 1rem; text-align: center;">
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; text-align: center;">
         <div style="position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);" id="roleModalBackdrop"></div>
         
         <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 32rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">
@@ -319,7 +321,7 @@
 
 <!-- Modal Gestión de Acceso Temporal -->
 <div id="accessModal" class="hidden" style="position: fixed; inset: 0; z-index: 50; overflow-y: auto;" aria-labelledby="access-modal-title" role="dialog" aria-modal="true">
-    <div style="display: flex; align-items: flex-end; justify-content: center; min-height: 100vh; padding: 1rem 1rem 5rem 1rem; text-align: center;">
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; text-align: center;">
         <div style="position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);" id="accessModalBackdrop" onclick="closeAccessModal()"></div>
         
         <div class="peak-card" style="position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 30rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl);">

@@ -35,6 +35,9 @@ type UserAppRow struct {
 	AccessStartsAt  *time.Time
 	AccessExpiresAt *time.Time
 	AccessStatus    string // "active", "expired", "scheduled"
+	IsOwner         bool
+	IsRoot          bool
+	IsSelf          bool
 }
 
 // TOTPSetupResponse contiene los datos necesarios para configurar TOTP en el authenticator.

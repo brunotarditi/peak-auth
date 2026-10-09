@@ -187,6 +187,25 @@ func (ctrl *UserController) GetAppUsers(c *gin.Context) {
 		return
 	}
 
+	currentUserID := uint(0)
+	if val, exists := c.Get("user_id"); exists {
+		if id, ok := val.(uint); ok {
+			currentUserID = id
+		}
+	}
+
+	for i := range users {
+		if (app.OwnerID != nil && *app.OwnerID == users[i].ID) || strings.Contains(users[i].RoleName, "OWNER") {
+			users[i].IsOwner = true
+		}
+		if ctrl.AppService.IsRootUser(users[i].ID, app.ID) || strings.Contains(users[i].RoleName, "ROOT") {
+			users[i].IsRoot = true
+		}
+		if currentUserID > 0 && users[i].ID == currentUserID {
+			users[i].IsSelf = true
+		}
+	}
+
 	roles, err := ctrl.RoleService.FindVisibleForApp(app.ID)
 	if err != nil {
 		ctrl.internalErrorHTML(c, "GetAppUsers.FindVisibleForApp", err, "Error al cargar los roles.")
@@ -291,6 +310,16 @@ func (ctrl *UserController) PostUpdateAccessTime(c *gin.Context) {
 	var startsAt, expiresAt *time.Time
 
 	if !isPermanent {
+		// Defensa: no se puede asignar acceso temporal al usuario ROOT ni al OWNER de la app
+		if app.AppID == util.AppIdPeakAuth && ctrl.AppService.IsRootUser(userID, app.ID) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "No se puede asignar acceso temporal al usuario ROOT"})
+			return
+		}
+		if app.OwnerID != nil && *app.OwnerID == userID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "No se puede asignar acceso temporal al propietario (OWNER) de la aplicación"})
+			return
+		}
+
 		preset := c.PostForm("duration_preset")
 		customExpiresAt := c.PostForm("access_expires_at")
 		exp, err := util.ParseAccessExpiration(preset, customExpiresAt)

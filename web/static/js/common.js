@@ -122,7 +122,7 @@ async function peakConfirm({ title, text, confirmText = 'Confirmar', type = 'dan
         showCancelButton: true,
         confirmButtonText: confirmText,
         cancelButtonText: 'Cancelar',
-        reverseButtons: true,
+        reverseButtons: false,
         customClass: {
             confirmButton: confirmBtnClass,
             cancelButton: 'peak-btn peak-modal-btn-cancel',
