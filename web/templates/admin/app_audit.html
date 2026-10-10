@@ -1,29 +1,29 @@
 {{ define "content" }}
-<div id="appAuditContainer" data-app-id="{{ .App.AppID }}" class="app-refactor-web-templates-admin-app_audit-html-2">
+<div id="appAuditContainer" data-app-id="{{ .App.AppID }}" class="audit-page">
     <!-- Top Bar -->
-    <div class="app-refactor-web-templates-admin-app_audit-html-3">
-        <a href="/admin/apps/{{ .App.AppID }}" class="peak-btn peak-btn-secondary app-refactor-web-templates-admin-app_audit-html-4">
+    <div class="audit-toolbar">
+        <a href="/admin/apps/{{ .App.AppID }}" class="peak-btn peak-btn-secondary audit-back-btn">
             {{ template "icon-arrow-back" }}
             Volver a {{ .App.Name }}
         </a>
-        <div class="app-refactor-web-templates-admin-app_audit-html-5">
+        <div class="audit-app-pill">
             <span class="peak-badge peak-badge-brand">{{ .App.Name }}</span>
-            <code class="app-refactor-web-templates-admin-app_audit-html-6">{{ .App.AppID }}</code>
+            <code class="audit-appid-badge">{{ .App.AppID }}</code>
         </div>
     </div>
 
     <!-- Header -->
-    <div>
-        <h2 class="app-refactor-web-templates-admin-app_audit-html-7">Registro de Auditoría</h2>
-        <p class="app-refactor-web-templates-admin-app_audit-html-8">Historial cronológico de cambios, modificaciones de reglas y asignaciones en <strong>{{ .App.Name }}</strong>.</p>
+    <div class="audit-header">
+        <h2 class="audit-title">Registro de Auditoría</h2>
+        <p class="audit-subtitle">Historial cronológico de cambios, modificaciones de reglas y asignaciones en <strong>{{ .App.Name }}</strong>.</p>
     </div>
 
     <!-- Filtros de Búsqueda -->
-    <div class="peak-card app-refactor-web-templates-admin-app_audit-html-9">
-        <form method="GET" action="/admin/apps/{{ .App.AppID }}/audit" class="app-refactor-web-templates-admin-app_audit-html-209876543210">
-            <div class="app-refactor-web-templates-admin-app_audit-html-21">
-                <label class="app-refactor-web-templates-admin-app_audit-html-22">Recurso / Tabla</label>
-                <select name="table" class="peak-input app-refactor-web-templates-admin-app_audit-html-23">
+    <div class="peak-card audit-filters-card">
+        <form method="GET" action="/admin/apps/{{ .App.AppID }}/audit" class="audit-filters-form">
+            <div class="audit-filter-field audit-filter-field-table">
+                <label class="form-label" for="filter-table">Recurso / Tabla</label>
+                <select id="filter-table" name="table" class="peak-input">
                     <option value="">Todos los recursos</option>
                     <option value="applications" {{ if eq .Filter.TableName "applications" }}selected{{ end }}>Configuración de App</option>
                     <option value="application_rules" {{ if eq .Filter.TableName "application_rules" }}selected{{ end }}>Reglas de Acceso</option>
@@ -32,9 +32,9 @@
                 </select>
             </div>
 
-            <div class="app-refactor-web-templates-admin-app_audit-html-24">
-                <label class="app-refactor-web-templates-admin-app_audit-html-25">Acción</label>
-                <select name="action" class="peak-input app-refactor-web-templates-admin-app_audit-html-26">
+            <div class="audit-filter-field audit-filter-field-action">
+                <label class="form-label" for="filter-action">Acción</label>
+                <select id="filter-action" name="action" class="peak-input">
                     <option value="">Todas las acciones</option>
                     <option value="INSERT" {{ if eq .Filter.Action "INSERT" }}selected{{ end }}>Creación (INSERT)</option>
                     <option value="UPDATE" {{ if eq .Filter.Action "UPDATE" }}selected{{ end }}>Modificación (UPDATE)</option>
@@ -42,11 +42,11 @@
                 </select>
             </div>
 
-            <div class="app-refactor-web-templates-admin-app_audit-html-27">
-                <button type="submit" class="peak-btn peak-btn-primary app-refactor-web-templates-admin-app_audit-html-28">
+            <div class="audit-filter-actions">
+                <button type="submit" class="peak-btn peak-btn-primary audit-filter-submit">
                     Filtrar
                 </button>
-                <a href="/admin/apps/{{ .App.AppID }}/audit" class="peak-btn peak-btn-secondary app-refactor-web-templates-admin-app_audit-html-29">
+                <a href="/admin/apps/{{ .App.AppID }}/audit" class="peak-btn peak-btn-secondary audit-filter-reset">
                     Limpiar
                 </a>
             </div>
@@ -54,57 +54,57 @@
     </div>
 
     <!-- Tabla de Logs -->
-    <div class="peak-card app-refactor-web-templates-admin-app_audit-html-30">
-        <div class="app-refactor-web-templates-admin-app_audit-html-31">
-            <table class="peak-table app-refactor-web-templates-admin-app_audit-html-32">
+    <div class="peak-card audit-table-card">
+        <div class="audit-table-responsive">
+            <table class="peak-table audit-table">
                 <thead>
-                    <tr class="app-refactor-web-templates-admin-app_audit-html-33">
-                        <th class="app-refactor-web-templates-admin-app_audit-html-34">Fecha y Hora</th>
-                        <th class="app-refactor-web-templates-admin-app_audit-html-35">Acción</th>
-                        <th class="app-refactor-web-templates-admin-app_audit-html-36">Recurso</th>
-                        <th class="app-refactor-web-templates-admin-app_audit-html-37">Resumen del Cambio</th>
-                        <th class="app-refactor-web-templates-admin-app_audit-html-38">Detalle</th>
+                    <tr>
+                        <th class="audit-th-time">Fecha y hora</th>
+                        <th class="audit-th-action">Acción</th>
+                        <th class="audit-th-resource">Recurso</th>
+                        <th class="audit-th-summary">Resumen del cambio</th>
+                        <th class="audit-th-detail text-right">Detalle</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{ range .Audit.Items }}
-                    <tr class="app-refactor-web-templates-admin-app_audit-html-39 audit-row">
-                        <td class="app-refactor-web-templates-admin-app_audit-html-40">
+                    <tr class="audit-row">
+                        <td class="audit-cell-time">
                             {{ .CreatedAt.Format "02/01/2006 15:04:05" }}
                         </td>
-                        <td class="app-refactor-web-templates-admin-app_audit-html-41">
+                        <td class="audit-cell-action">
                             {{ if eq .Action "INSERT" }}
-                            <span class="app-refactor-web-templates-admin-app_audit-html-42">INSERT</span>
+                            <span class="peak-badge peak-badge-success">INSERT</span>
                             {{ else if eq .Action "UPDATE" }}
-                            <span class="app-refactor-web-templates-admin-app_audit-html-43">UPDATE</span>
+                            <span class="peak-badge peak-badge-brand">UPDATE</span>
                             {{ else if eq .Action "DELETE" }}
-                            <span class="app-refactor-web-templates-admin-app_audit-html-44">DELETE</span>
+                            <span class="peak-badge peak-badge-error">DELETE</span>
                             {{ else }}
-                            <span class="app-refactor-web-templates-admin-app_audit-html-45">{{ .Action }}</span>
+                            <span class="peak-badge peak-badge-secondary">{{ .Action }}</span>
                             {{ end }}
                         </td>
-                        <td class="app-refactor-web-templates-admin-app_audit-html-46">
-                            <div class="app-refactor-web-templates-admin-app_audit-html-47">
-                                <span class="app-refactor-web-templates-admin-app_audit-html-48">{{ .TableLabel }}</span>
-                                <span class="app-refactor-web-templates-admin-app_audit-html-49">Registro #{{ .RecordID }}</span>
+                        <td class="audit-cell-resource">
+                            <div class="audit-resource-stack">
+                                <span class="audit-resource-label">{{ .TableLabel }}</span>
+                                <span class="audit-resource-id">Registro #{{ .RecordID }}</span>
                             </div>
                         </td>
-                        <td class="app-refactor-web-templates-admin-app_audit-html-50">
+                        <td class="audit-cell-summary">
                             {{ if .Description }}
                             <span>{{ .Description }}</span>
                             {{ else }}
-                            <span class="app-refactor-web-templates-admin-app_audit-html-51">—</span>
+                            <span class="audit-empty-dash">—</span>
                             {{ end }}
                         </td>
-                        <td class="app-refactor-web-templates-admin-app_audit-html-52">
-                            <button type="button" class="peak-btn peak-btn-secondary btn-inspect-diff" data-id="{{ .ID }}" class="app-refactor-web-templates-admin-app_audit-html-53">
-                                Ver Cambios
+                        <td class="audit-cell-detail text-right">
+                            <button type="button" class="peak-btn peak-btn-secondary audit-btn-inspect btn-inspect-diff" data-id="{{ .ID }}">
+                                Ver cambios
                             </button>
                         </td>
                     </tr>
                     {{ else }}
                     <tr>
-                        <td colspan="5" class="app-refactor-web-templates-admin-app_audit-html-54">
+                        <td colspan="5" class="audit-empty-row">
                             No se encontraron registros de auditoría que coincidan con los filtros seleccionados.
                         </td>
                     </tr>
@@ -115,18 +115,18 @@
 
         <!-- Paginación -->
         {{ if gt .Audit.TotalPages 1 }}
-        <div class="app-refactor-web-templates-admin-app_audit-html-55">
-            <div class="app-refactor-web-templates-admin-app_audit-html-56">
+        <div class="audit-pagination">
+            <div class="audit-pagination-info">
                 Mostrando página <strong>{{ .Audit.CurrentPage }}</strong> de <strong>{{ .Audit.TotalPages }}</strong> ({{ .Audit.Total }} eventos registrados)
             </div>
-            <div class="app-refactor-web-templates-admin-app_audit-html-57">
+            <div class="audit-pagination-actions">
                 {{ if .Audit.HasPrev }}
-                <a href="/admin/apps/{{ .App.AppID }}/audit?page={{ .Audit.PrevPage }}&table={{ .Filter.TableName }}&action={{ .Filter.Action }}" class="peak-btn peak-btn-secondary app-refactor-web-templates-admin-app_audit-html-58">
+                <a href="/admin/apps/{{ .App.AppID }}/audit?page={{ .Audit.PrevPage }}&table={{ .Filter.TableName }}&action={{ .Filter.Action }}" class="peak-btn peak-btn-secondary audit-pagination-btn">
                     Anterior
                 </a>
                 {{ end }}
                 {{ if .Audit.HasNext }}
-                <a href="/admin/apps/{{ .App.AppID }}/audit?page={{ .Audit.NextPage }}&table={{ .Filter.TableName }}&action={{ .Filter.Action }}" class="peak-btn peak-btn-secondary app-refactor-web-templates-admin-app_audit-html-59">
+                <a href="/admin/apps/{{ .App.AppID }}/audit?page={{ .Audit.NextPage }}&table={{ .Filter.TableName }}&action={{ .Filter.Action }}" class="peak-btn peak-btn-secondary audit-pagination-btn">
                     Siguiente
                 </a>
                 {{ end }}

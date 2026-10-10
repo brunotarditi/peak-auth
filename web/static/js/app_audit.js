@@ -36,18 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatVal(k, v, entities) {
-        if (v === undefined || v === null) return '<span class="app-inline-1">—</span>';
+        if (v === undefined || v === null) return '<span class="audit-empty-dash">—</span>';
         
         // Resolver nombres de entidades (Usuario, Rol, App)
         if (entities) {
             if (k === 'user_id' && entities[`user_${v}`]) {
-                return `<strong>${escapeHtml(entities[`user_${v}`])}</strong> <span class="app-inline-1">(#${escapeHtml(v)})</span>`;
+                return `<strong>${escapeHtml(entities[`user_${v}`])}</strong> <span class="audit-resource-id">(#${escapeHtml(v)})</span>`;
             }
             if (k === 'role_id' && entities[`role_${v}`]) {
-                return `<span class="peak-badge peak-badge-brand app-inline-1">${escapeHtml(entities[`role_${v}`])}</span> <span class="app-inline-1">(#${escapeHtml(v)})</span>`;
+                return `<span class="peak-badge peak-badge-brand">${escapeHtml(entities[`role_${v}`])}</span> <span class="audit-resource-id">(#${escapeHtml(v)})</span>`;
             }
             if (k === 'application_id' && entities[`app_${v}`]) {
-                return `<strong>${escapeHtml(entities[`app_${v}`])}</strong> <span class="app-inline-1">(#${escapeHtml(v)})</span>`;
+                return `<strong>${escapeHtml(entities[`app_${v}`])}</strong> <span class="audit-resource-id">(#${escapeHtml(v)})</span>`;
             }
         }
 
@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof v === 'boolean') {
             if (k === 'is_active') {
                 return v 
-                    ? '<span class="app-inline-1">Activo</span>' 
-                    : '<span class="app-inline-1">Inactivo</span>';
+                    ? '<span class="peak-badge peak-badge-success">Activo</span>' 
+                    : '<span class="peak-badge peak-badge-secondary">Inactivo</span>';
             }
             return v ? 'Sí' : 'No';
         }
@@ -73,17 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const hours = pad(d.getHours());
                     const mins = pad(d.getMinutes());
                     const secs = pad(d.getSeconds());
-                    return `<span class="app-inline-1">${day}/${month}/${year} ${hours}:${mins}:${secs}</span>`;
+                    return `<span class="audit-diff-val-code">${day}/${month}/${year} ${hours}:${mins}:${secs}</span>`;
                 }
             } catch (_) {}
         }
 
         // Objetos JSON anidados
         if (typeof v === 'object') {
-            return `<pre class="app-inline-1">${escapeHtml(JSON.stringify(v, null, 2))}</pre>`;
+            return `<pre class="audit-diff-val-pre">${escapeHtml(JSON.stringify(v, null, 2))}</pre>`;
         }
 
-        return `<span class="app-inline-1">${escapeHtml(String(v))}</span>`;
+        return `<span class="audit-diff-val-code">${escapeHtml(String(v))}</span>`;
     }
 
     document.querySelectorAll('.btn-inspect-diff').forEach(btn => {
@@ -131,13 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (log.action === 'INSERT') {
             diffHtml = `
-                <div class="app-inline-1">
-                    <div class="app-inline-1">Valores Iniciales Creados:</div>
-                    <table class="app-inline-1">
+                <div class="audit-diff-scroll">
+                    <div class="audit-diff-title-insert">Valores iniciales creados:</div>
+                    <table class="audit-diff-table">
                         ${filteredKeys.map(k => `
-                            <tr class="app-inline-1">
-                                <td class="app-inline-1">${escapeHtml(formatLabel(k))}</td>
-                                <td class="app-inline-1">${formatVal(k, newData[k], entities)}</td>
+                            <tr>
+                                <td class="audit-diff-key">${escapeHtml(formatLabel(k))}</td>
+                                <td>${formatVal(k, newData[k], entities)}</td>
                             </tr>
                         `).join('')}
                     </table>
@@ -145,13 +145,13 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         } else if (log.action === 'DELETE') {
             diffHtml = `
-                <div class="app-inline-1">
-                    <div class="app-inline-1">Valores Previos al Borrado:</div>
-                    <table class="app-inline-1">
+                <div class="audit-diff-scroll">
+                    <div class="audit-diff-title-delete">Valores previos al borrado:</div>
+                    <table class="audit-diff-table">
                         ${filteredKeys.map(k => `
-                            <tr class="app-inline-1">
-                                <td class="app-inline-1">${escapeHtml(formatLabel(k))}</td>
-                                <td class="app-inline-1">${formatVal(k, oldData[k], entities)}</td>
+                            <tr>
+                                <td class="audit-diff-key">${escapeHtml(formatLabel(k))}</td>
+                                <td>${formatVal(k, oldData[k], entities)}</td>
                             </tr>
                         `).join('')}
                     </table>
@@ -161,24 +161,24 @@ document.addEventListener('DOMContentLoaded', () => {
             // UPDATE: mostrar comparativa de campos modificados
             const changedKeys = filteredKeys.filter(k => JSON.stringify(oldData[k]) !== JSON.stringify(newData[k]));
             if (changedKeys.length === 0) {
-                diffHtml = '<p class="app-inline-1">No se detectaron cambios en los atributos del registro.</p>';
+                diffHtml = '<p class="audit-diff-empty">No se detectaron cambios en los atributos del registro.</p>';
             } else {
                 diffHtml = `
-                    <div class="app-inline-1">
-                        <table class="app-inline-1">
+                    <div class="audit-diff-scroll">
+                        <table class="audit-diff-table">
                             <thead>
-                                <tr class="app-inline-1">
-                                    <th class="app-inline-1">Campo</th>
-                                    <th class="app-inline-1">Valor Anterior</th>
-                                    <th class="app-inline-1">Valor Nuevo</th>
+                                <tr>
+                                    <th>Campo</th>
+                                    <th>Valor anterior</th>
+                                    <th>Valor nuevo</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${changedKeys.map(k => `
-                                    <tr class="app-inline-1">
-                                        <td class="app-inline-1">${escapeHtml(formatLabel(k))}</td>
-                                        <td class="app-inline-1">${formatVal(k, oldData[k], entities)}</td>
-                                        <td class="app-inline-1">${formatVal(k, newData[k], entities)}</td>
+                                    <tr>
+                                        <td class="audit-diff-key">${escapeHtml(formatLabel(k))}</td>
+                                        <td class="audit-diff-old">${formatVal(k, oldData[k], entities)}</td>
+                                        <td class="audit-diff-new">${formatVal(k, newData[k], entities)}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -194,9 +194,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         PeakModal.fire({
-            title: `Detalle del Evento #${log.id}`,
+            title: `Detalle del evento #${log.id}`,
             html: `
-                <div class="app-inline-1">
+                <div class="audit-diff-header">
                     ${headerSubtitle}
                 </div>
                 ${diffHtml}

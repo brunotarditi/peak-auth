@@ -1741,7 +1741,312 @@
 
 
 
-.app-refactor-web-templates-admin-app_show-html-1 { display: flex; flex-direction: column; gap: 2rem; } .app-refactor-web-templates-admin-app_show-html-2 { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; } .app-refactor-web-templates-admin-app_show-html-3 { font-size: 0.8125rem; } .app-refactor-web-templates-admin-app_show-html-4 { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; } .app-refactor-web-templates-admin-app_show-html-5 { font-size: 0.8125rem; } .app-refactor-web-templates-admin-app_show-html-6 { font-size: 0.8125rem; } .app-refactor-web-templates-admin-app_show-html-7 { width: 1.125rem; height: 1.125rem; } .app-refactor-web-templates-admin-app_show-html-8 { font-size: 0.8125rem; } .app-refactor-web-templates-admin-app_show-html-9 { font-size: 0.8125rem; } .app-refactor-web-templates-admin-app_show-html-10 { width: 1px; height: 1.5rem; background-color: var(--border-color); margin: 0 0.25rem; } .app-refactor-web-templates-admin-app_show-html-11 { margin: 0; display: inline-flex; } .app-refactor-web-templates-admin-app_show-html-12 { font-size: 0.8125rem; } .app-refactor-web-templates-admin-app_show-html-13 { display: flex; flex-direction: column; gap: 2rem; } .app-refactor-web-templates-admin-app_show-html-14 { padding: 2rem; } .app-refactor-web-templates-admin-app_show-html-15 { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; } .app-refactor-web-templates-admin-app_show-html-16 { font-size: 1.875rem; font-weight: 900; color: var(--text-main); letter-spacing: -0.025em; margin-bottom: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-17 { font-weight: 500; color: var(--text-muted); } .app-refactor-web-templates-admin-app_show-html-18 { background-color: var(--danger-50); border-color: var(--danger-200); color: var(--danger-600); } .app-refactor-web-templates-admin-app_show-html-19 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; } .app-refactor-web-templates-admin-app_show-html-20 { display: flex; flex-direction: column; gap: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-21 { font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem; } .app-refactor-web-templates-admin-app_show-html-22 { display: flex; align-items: center; gap: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-23 { flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .app-refactor-web-templates-admin-app_show-html-24 { padding: 0.75rem; } .app-refactor-web-templates-admin-app_show-html-25 { display: flex; flex-direction: column; gap: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-26 { font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem; } .app-refactor-web-templates-admin-app_show-html-27 { display: flex; align-items: center; gap: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-28 { background-color: var(--bg-surface-secondary); color: var(--text-muted); font-size: 0.75rem; border: 1px solid var(--border-color); } .app-refactor-web-templates-admin-app_show-html-29 { flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .app-refactor-web-templates-admin-app_show-html-30 { color:var(--text-muted);font-style:italic; } .app-refactor-web-templates-admin-app_show-html-31 { display: flex; flex-direction: column; gap: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-32 { font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem; } .app-refactor-web-templates-admin-app_show-html-33 { display: flex; align-items: center; gap: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-34 { flex-grow: 1; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-size: 0.75rem; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .app-refactor-web-templates-admin-app_show-html-35 { color:var(--text-muted);font-style:italic; } .app-refactor-web-templates-admin-app_show-html-36 { font-size: 0.75rem; white-space: nowrap; } .app-refactor-web-templates-admin-app_show-html-37 { display: flex; flex-direction: column; gap: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-38 { font-size: 0.625rem; font-weight: 900; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.1em; margin-left: 0.25rem; } .app-refactor-web-templates-admin-app_show-html-39 { display: flex; align-items: center; gap: 0.5rem; } .app-refactor-web-templates-admin-app_show-html-40 { position: relative; flex-grow: 1; } .app-refactor-web-templates-admin-app_show-html-41 { width: 100%; padding: 0.75rem 1rem; background-color: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-xl); font-family: monospace; font-size: 0.75rem; color: var(--slate-400); outline: none; } .app-refactor-web-templates-admin-app_show-html-42 { padding: 0.75rem; } .app-refactor-web-templates-admin-app_show-html-43 { display: flex; flex-direction: column; gap: 1.5rem; } .app-refactor-web-templates-admin-app_show-html-44 { display: flex; flex-direction: column; gap: 0.25rem; } .app-refactor-web-templates-admin-app_show-html-45 { font-size: 1.5rem; font-weight: 900; color: var(--text-main); letter-spacing: -0.025em; } .app-refactor-web-templates-admin-app_show-html-46 { font-size: 0.875rem; font-weight: 500; color: var(--text-muted); } .app-refactor-web-templates-admin-app_show-html-47 { border-bottom: 1px solid var(--border-light); } .app-refactor-web-templates-admin-app_show-html-48 { display: flex; gap: 1.5rem; margin-bottom: -1px; overflow-x: auto; user-select: none; } .app-refactor-web-templates-admin-app_show-html-49 { width: 1rem; height: 1rem; } .app-refactor-web-templates-admin-app_show-html-50 { width: 1em; height: 1em; } .app-refactor-web-templates-admin-app_show-html-51 { width: 1rem; height: 1rem; } .app-refactor-web-templates-admin-app_show-html-52 { width: 1em; height: 1em; } .app-refactor-web-templates-admin-app_show-html-53 { padding: 2rem; min-height: 20rem; } .app-refactor-web-templates-admin-app_show-html-54 { display: none; } .app-refactor-web-templates-admin-app_show-html-55 { position: fixed; inset: 0; z-index: 50; overflow-y: auto; } .app-refactor-web-templates-admin-app_show-html-56 { display: flex; align-items: flex-end; justify-content: center; min-height: 100vh; padding: 1rem 1rem 5rem 1rem; text-align: center; } .app-refactor-web-templates-admin-app_show-html-57 { position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); } .app-refactor-web-templates-admin-app_show-html-58 { position: relative; z-index: 10; display: inline-block; text-align: left; width: 100%; max-width: 32rem; margin-top: 2rem; margin-bottom: 2rem; vertical-align: middle; box-shadow: var(--shadow-xl); } .app-refactor-web-templates-admin-app_show-html-59 { margin-bottom: 1.5rem; } .app-refactor-web-templates-admin-app_show-html-60 { font-size: 1.25rem; font-weight: 800; color: var(--text-main); } .app-refactor-web-templates-admin-app_show-html-61 { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; } .app-refactor-web-templates-admin-app_show-html-62 { display: flex; flex-direction: column; gap: 1.5rem; } .app-refactor-web-templates-admin-app_show-html-63 { margin-bottom: 0; } .app-refactor-web-templates-admin-app_show-html-64 { font-weight: 600; } .app-refactor-web-templates-admin-app_show-html-65 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; } .app-refactor-web-templates-admin-app_show-html-66 { background-color: var(--amber-600); border-color: var(--amber-600); } .app-refactor-web-templates-admin-app_audit-html-1 { display: flex; flex-direction: column; gap: 2rem; } .app-refactor-web-templates-admin-app_audit-html-2 { display: flex; align-items: center; justify-content: space-between; } .app-refactor-web-templates-admin-app_audit-html-3 { font-size: 0.8125rem; } .app-refactor-web-templates-admin-app_audit-html-4 { display: flex; align-items: center; gap: 0.5rem; } .app-refactor-web-templates-admin-app_audit-html-5 { font-size: 0.75rem; background-color: var(--bg-surface-secondary); padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; color: var(--text-muted); } .app-refactor-web-templates-admin-app_audit-html-6 { font-size: 2rem; font-weight: 900; letter-spacing: -0.025em; color: var(--text-main); } .app-refactor-web-templates-admin-app_audit-html-7 { color: var(--text-muted); margin-top: 0.5rem; font-weight: 500; } .app-refactor-web-templates-admin-app_audit-html-8 { padding: 1.25rem 1.5rem; } .app-refactor-web-templates-admin-app_audit-html-9 { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; } .app-refactor-web-templates-admin-app_audit-html-10 { flex: 1; min-width: 200px; } .app-refactor-web-templates-admin-app_audit-html-11 { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; } .app-refactor-web-templates-admin-app_audit-html-12 { width: 100%; } .app-refactor-web-templates-admin-app_audit-html-13 { flex: 1; min-width: 180px; } .app-refactor-web-templates-admin-app_audit-html-14 { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; } .app-refactor-web-templates-admin-app_audit-html-15 { width: 100%; } .app-refactor-web-templates-admin-app_audit-html-16 { display: flex; gap: 0.5rem; } .app-refactor-web-templates-admin-app_audit-html-17 { height: 2.625rem; font-size: 0.8125rem; } .app-refactor-web-templates-admin-app_audit-html-18 { height: 2.625rem; font-size: 0.8125rem; text-decoration: none; display: flex; align-items: center; } .app-refactor-web-templates-admin-app_audit-html-19 { padding: 0; overflow: hidden; } .app-refactor-web-templates-admin-app_audit-html-20 { overflow-x: auto; } .app-refactor-web-templates-admin-app_audit-html-21 { width: 100%; border-collapse: collapse; text-align: left; } .app-refactor-web-templates-admin-app_audit-html-22 { border-bottom: 1px solid var(--border-color); background-color: var(--bg-surface-secondary); } .app-refactor-web-templates-admin-app_audit-html-23 { padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; width: 170px; } .app-refactor-web-templates-admin-app_audit-html-24 { padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; width: 90px; } .app-refactor-web-templates-admin-app_audit-html-25 { padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; width: 200px; } .app-refactor-web-templates-admin-app_audit-html-26 { padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; } .app-refactor-web-templates-admin-app_audit-html-27 { padding: 1rem 1.25rem; font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; text-align: right; width: 120px; } .app-refactor-web-templates-admin-app_audit-html-28 { border-bottom: 1px solid var(--border-light); transition: background-color 0.15s; } .app-refactor-web-templates-admin-app_audit-html-29 { padding: 1rem 1.25rem; font-size: 0.8125rem; color: var(--text-main); font-weight: 600; white-space: nowrap; } .app-refactor-web-templates-admin-app_audit-html-30 { padding: 1rem 1.25rem; white-space: nowrap; } .app-refactor-web-templates-admin-app_audit-html-31 { font-size: 0.6875rem; font-weight: 800; background-color: rgba(16, 185, 129, 0.15); color: var(--emerald-600); padding: 0.25rem 0.625rem; border-radius: 9999px; } .app-refactor-web-templates-admin-app_audit-html-32 { font-size: 0.6875rem; font-weight: 800; background-color: rgba(59, 130, 246, 0.15); color: var(--brand-600); padding: 0.25rem 0.625rem; border-radius: 9999px; } .app-refactor-web-templates-admin-app_audit-html-33 { font-size: 0.6875rem; font-weight: 800; background-color: rgba(239, 68, 68, 0.15); color: var(--rose-600); padding: 0.25rem 0.625rem; border-radius: 9999px; } .app-refactor-web-templates-admin-app_audit-html-34 { font-size: 0.6875rem; font-weight: 800; background-color: var(--bg-surface); color: var(--text-muted); padding: 0.25rem 0.625rem; border-radius: 9999px; } .app-refactor-web-templates-admin-app_audit-html-35 { padding: 1rem 1.25rem; white-space: nowrap; } .app-refactor-web-templates-admin-app_audit-html-36 { display: flex; flex-direction: column; gap: 0.15rem; } .app-refactor-web-templates-admin-app_audit-html-37 { font-size: 0.8125rem; font-weight: 700; color: var(--text-main); } .app-refactor-web-templates-admin-app_audit-html-38 { font-size: 0.6875rem; font-family: monospace; color: var(--text-muted); } .app-refactor-web-templates-admin-app_audit-html-39 { padding: 1rem 1.25rem; font-size: 0.8125rem; color: var(--text-main); font-weight: 500; } .app-refactor-web-templates-admin-app_audit-html-40 { color: var(--text-muted); font-style: italic; } .app-refactor-web-templates-admin-app_audit-html-41 { padding: 1rem 1.25rem; text-align: right; white-space: nowrap; } .app-refactor-web-templates-admin-app_audit-html-42 { font-size: 0.75rem; padding: 0.25rem 0.625rem; } .app-refactor-web-templates-admin-app_audit-html-43 { padding: 3rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.875rem; } .app-refactor-web-templates-admin-app_audit-html-44 { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); background-color: var(--bg-surface-secondary); } .app-refactor-web-templates-admin-app_audit-html-45 { font-size: 0.8125rem; color: var(--text-muted); } .app-refactor-web-templates-admin-app_audit-html-46 { display: flex; gap: 0.5rem; } .app-refactor-web-templates-admin-app_audit-html-47 { font-size: 0.75rem; text-decoration: none; } .app-refactor-web-templates-admin-app_audit-html-48 { font-size: 0.75rem; text-decoration: none; } .app-refactor-web-templates-admin-app_audit-html-49 { color: var(--text-muted); font-style: italic; } .app-refactor-web-templates-admin-app_audit-html-50 { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; } .app-refactor-web-templates-admin-app_audit-html-51 { font-size: 0.75rem; font-weight: 700; } .app-refactor-web-templates-admin-app_audit-html-52 { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; } .app-refactor-web-templates-admin-app_audit-html-53 { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; } .app-refactor-web-templates-admin-app_audit-html-54 { color: var(--emerald-600); font-weight: 700; } .app-refactor-web-templates-admin-app_audit-html-55 { color: var(--rose-600); font-weight: 700; } .app-refactor-web-templates-admin-app_audit-html-56 { font-family: monospace; color: var(--text-main); font-weight: 600; } .app-refactor-web-templates-admin-app_audit-html-57 { margin: 0; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; background: var(--bg-surface-secondary); padding: 0.25rem 0.5rem; border-radius: 0.25rem; } .app-refactor-web-templates-admin-app_audit-html-58 { font-family: monospace; color: var(--text-main); font-weight: 600; } .app-refactor-web-templates-admin-app_audit-html-59 { text-align: left; max-height: 420px; overflow-y: auto; }
+/* --- Audit Page Styles --- */
+.audit-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.audit-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.audit-back-btn {
+    font-size: 0.8125rem;
+}
+
+.audit-app-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.audit-appid-badge {
+    font-size: 0.75rem;
+    background-color: var(--bg-surface-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-family: monospace;
+    color: var(--text-muted);
+}
+
+.audit-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.audit-title {
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    color: var(--text-main);
+}
+
+.audit-subtitle {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.audit-filters-card {
+    padding: 1.25rem 1.5rem;
+}
+
+.audit-filters-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.audit-filter-field-table {
+    flex: 1;
+    min-width: 200px;
+}
+
+.audit-filter-field-action {
+    flex: 1;
+    min-width: 180px;
+}
+
+.audit-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.audit-filter-submit,
+.audit-filter-reset {
+    height: 2.625rem;
+    font-size: 0.8125rem;
+}
+
+.audit-table-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.audit-table-responsive {
+    overflow-x: auto;
+}
+
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.audit-table th {
+    padding: 1rem 1.25rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-surface-secondary);
+}
+
+.audit-th-time {
+    width: 170px;
+}
+
+.audit-th-action {
+    width: 90px;
+}
+
+.audit-th-resource {
+    width: 200px;
+}
+
+.audit-th-detail {
+    width: 120px;
+}
+
+.audit-row {
+    border-bottom: 1px solid var(--border-light);
+    transition: background-color 0.15s;
+}
+
+.audit-cell-time {
+    padding: 1rem 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--text-main);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.audit-cell-action {
+    padding: 1rem 1.25rem;
+    white-space: nowrap;
+}
+
+.audit-cell-resource {
+    padding: 1rem 1.25rem;
+    white-space: nowrap;
+}
+
+.audit-resource-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.audit-resource-label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.audit-resource-id {
+    font-size: 0.6875rem;
+    font-family: monospace;
+    color: var(--text-muted);
+}
+
+.audit-cell-summary {
+    padding: 1rem 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+.audit-empty-dash {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.audit-cell-detail {
+    padding: 1rem 1.25rem;
+    white-space: nowrap;
+}
+
+.audit-btn-inspect {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.625rem;
+}
+
+.audit-empty-row {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.audit-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-surface-secondary);
+}
+
+.audit-pagination-info {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.audit-pagination-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.audit-pagination-btn {
+    font-size: 0.75rem;
+}
+
+/* Modal de inspección de cambios (Diff) */
+.audit-diff-header {
+    margin-bottom: 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    text-align: left;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.audit-diff-scroll {
+    text-align: left;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.audit-diff-title-insert {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--emerald-600);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+}
+
+.audit-diff-title-delete {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--rose-600);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+}
+
+.audit-diff-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.audit-diff-table th {
+    padding: 0.625rem 0.5rem;
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-surface-secondary);
+}
+
+.audit-diff-table td {
+    padding: 0.625rem 0.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.audit-diff-key {
+    font-weight: 700;
+    color: var(--text-main);
+    width: 38%;
+}
+
+.audit-diff-old {
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.audit-diff-new {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.audit-diff-val-code {
+    font-family: monospace;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.audit-diff-val-pre {
+    margin: 0;
+    font-family: monospace;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    background: var(--bg-surface-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+
+.audit-diff-empty {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
 .is-flex { display: flex; }
 .is-block { display: block; }
 .policy-fieldset-editable { opacity: 1; cursor: default; }
