@@ -138,9 +138,7 @@
                             <div class="form-group settings-date-group">
                                 <label class="form-label" for="profile-birth-date-display">Fecha de nacimiento</label>
                                 <div class="peak-datepicker-wrapper">
-                                    <input type="hidden" name="birth_date" id="profile-birth-date"
-                                        value="{{ if not .User.Profile.BirthDate.IsZero }}{{ .User.Profile.BirthDate.UTC.Format "
-                                        2006-01-02" }}{{ end }}">
+                                    <input type="hidden" name="birth_date" id="profile-birth-date" value="{{ if not .User.Profile.BirthDate.IsZero }}{{ .User.Profile.BirthDate.UTC.Format "2006-01-02" }}{{ end }}">
                                     <div class="settings-date-control">
                                         <input type="text" id="profile-birth-date-display" readonly
                                             placeholder="Seleccionar fecha" class="peak-input settings-date-input">
