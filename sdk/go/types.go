@@ -27,6 +27,17 @@ type Config struct {
 	// CacheTTL es el tiempo de cacheo para las claves JWKS en memoria. Por defecto: 1 hora.
 	CacheTTL time.Duration
 
+	// InsecureAllowHTTP permite esquemas HTTP únicamente en entornos de desarrollo local controlado (loopback: localhost, 127.0.0.1, ::1).
+	// Por defecto es false. Los emisores remotos siempre requieren HTTPS sin excepción (incluso si esta opción está en true).
+	InsecureAllowHTTP bool
+
+	// ClockTolerance es el margen de tolerancia temporal (leeway) para validaciones de exp, nbf e iat.
+	// Por defecto: 45 segundos.
+	ClockTolerance time.Duration
+
+	// Logger función opcional para registrar advertencias o fallos internos de autenticación sin filtrarlos al cliente.
+	Logger func(format string, args ...any)
+
 	// HTTPClient personalizado para peticiones salientes (opcional).
 	HTTPClient *http.Client
 }
@@ -98,5 +109,31 @@ type IntrospectionResponse struct {
 	TokenType   string   `json:"token_type,omitempty"`
 	MfaVerified bool     `json:"mfa_verified,omitempty"`
 	Roles       []string `json:"roles,omitempty"`
+}
+
+// ToClaims convierte una respuesta de introspección activa en un objeto *Claims estándar.
+func (ir *IntrospectionResponse) ToClaims() *Claims {
+	if ir == nil {
+		return nil
+	}
+	claims := &Claims{
+		Username:    ir.Username,
+		AppID:       ir.ClientID,
+		Roles:       ir.Roles,
+		MfaVerified: ir.MfaVerified,
+		TokenType:   ir.TokenType,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:  ir.Sub,
+			Audience: jwt.ClaimStrings{ir.Aud},
+			Issuer:   ir.Iss,
+		},
+	}
+	if ir.Exp > 0 {
+		claims.ExpiresAt = jwt.NewNumericDate(time.Unix(ir.Exp, 0))
+	}
+	if ir.Iat > 0 {
+		claims.IssuedAt = jwt.NewNumericDate(time.Unix(ir.Iat, 0))
+	}
+	return claims
 }
 

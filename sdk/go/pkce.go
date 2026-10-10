@@ -3,6 +3,7 @@ package peakauth
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
 )
@@ -32,4 +33,29 @@ func GeneratePKCE(length ...int) (*PKCEPair, error) {
 		CodeVerifier:  verifier,
 		CodeChallenge: challenge,
 	}, nil
+}
+
+// GenerateState genera un valor 'state' criptográficamente seguro para mitigar CSRF en flujos OAuth.
+// El valor debe guardarse en una sesión segura temporal y consumirse de forma única.
+func GenerateState(length ...int) (string, error) {
+	size := 32
+	if len(length) > 0 && length[0] >= 16 && length[0] <= 128 {
+		size = length[0]
+	}
+
+	randomBytes := make([]byte, size)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", fmt.Errorf("error generando state aleatorio: %w", err)
+	}
+
+	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
+}
+
+// ValidateState compara dos estados en tiempo constante para mitigar ataques de temporización (timing attacks).
+// Devuelve true únicamente si coinciden exactamente y no están vacíos.
+func ValidateState(expectedState, actualState string) bool {
+	if expectedState == "" || actualState == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(expectedState), []byte(actualState)) == 1
 }

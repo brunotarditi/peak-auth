@@ -41,3 +41,34 @@ export async function generatePKCE(length: number = 64): Promise<PKCEPair> {
     codeChallenge,
   };
 }
+
+/**
+ * Genera un valor 'state' aleatorio criptográficamente seguro para mitigar CSRF en flujos OAuth 2.0.
+ */
+export function generateState(length: number = 32): string {
+  const cryptoObj = globalThis.crypto;
+  if (!cryptoObj) {
+    throw new Error('Crypto API no disponible en este entorno');
+  }
+  const randomBytes = new Uint8Array(length);
+  cryptoObj.getRandomValues(randomBytes);
+  return toBase64Url(randomBytes);
+}
+
+/**
+ * Compara dos estados en tiempo constante para mitigar ataques de temporización (timing attacks).
+ * Debe combinarse con almacenamiento en sesión segura y consumo único.
+ */
+export function validateState(expectedState: string, actualState: string): boolean {
+  if (!expectedState || !actualState) {
+    return false;
+  }
+  if (expectedState.length !== actualState.length) {
+    return false;
+  }
+  let mismatch = 0;
+  for (let i = 0; i < expectedState.length; i++) {
+    mismatch |= expectedState.charCodeAt(i) ^ actualState.charCodeAt(i);
+  }
+  return mismatch === 0;
+}

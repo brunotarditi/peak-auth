@@ -50,9 +50,10 @@ func (c *Client) HTTPMiddlewareWithOptions(opts HTTPMiddlewareOptions) func(http
 				// Validación online con verificación de revocación
 				introspection, err := c.IntrospectToken(r.Context(), tokenStr)
 				if err != nil {
+					c.Log("error en introspección de token: %v", err)
 					respondJSON(w, http.StatusUnauthorized, map[string]string{
 						"error":   "invalid_token",
-						"message": err.Error(),
+						"message": "Token inválido o expirado",
 					})
 					return
 				}
@@ -64,14 +65,16 @@ func (c *Client) HTTPMiddlewareWithOptions(opts HTTPMiddlewareOptions) func(http
 					return
 				}
 				userRoles = introspection.Roles
-				ctx = context.WithValue(r.Context(), claimsContextKey, introspection)
+				claims := introspection.ToClaims()
+				ctx = context.WithValue(r.Context(), claimsContextKey, claims)
 			} else {
 				// Validación offline tradicional (solo firma y expiración)
-				claims, err := c.VerifyToken(tokenStr)
+				claims, err := c.VerifyTokenWithContext(r.Context(), tokenStr)
 				if err != nil {
+					c.Log("error en verificación offline de token: %v", err)
 					respondJSON(w, http.StatusUnauthorized, map[string]string{
 						"error":   "invalid_token",
-						"message": err.Error(),
+						"message": "Token inválido o expirado",
 					})
 					return
 				}

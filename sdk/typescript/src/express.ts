@@ -106,10 +106,10 @@ export function peakAuthMiddleware(
       req.auth = req.user;
       next();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Token inválido';
+      client.log('Error en peakAuthMiddleware:', err instanceof Error ? err.message : err);
       return res.status(401).json({
         error: 'invalid_token',
-        message,
+        message: 'Token inválido o expirado',
       });
     }
   };

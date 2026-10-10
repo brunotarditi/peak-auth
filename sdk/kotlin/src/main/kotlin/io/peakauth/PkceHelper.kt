@@ -55,4 +55,26 @@ object PkceHelper {
         }
         return Base64.getDecoder().decode(normalized)
     }
+
+    /**
+     * Genera un valor 'state' aleatorio criptográficamente seguro para mitigar CSRF en OAuth 2.0.
+     */
+    fun generateState(length: Int = 32): String {
+        require(length in 16..128) { "La longitud de state debe estar entre 16 y 128 caracteres" }
+        val randomBytes = ByteArray(length)
+        secureRandom.nextBytes(randomBytes)
+        return base64UrlEncode(randomBytes)
+    }
+
+    /**
+     * Compara dos estados en tiempo constante (constant-time) para mitigar ataques de temporización.
+     */
+    fun validateState(expectedState: String?, actualState: String?): Boolean {
+        if (expectedState.isNullOrEmpty() || actualState.isNullOrEmpty()) {
+            return false
+        }
+        val b1 = expectedState.toByteArray(Charsets.UTF_8)
+        val b2 = actualState.toByteArray(Charsets.UTF_8)
+        return MessageDigest.isEqual(b1, b2)
+    }
 }

@@ -6,14 +6,13 @@ import java.io.InputStreamReader
 import java.math.BigInteger
 import java.net.HttpURLConnection
 import java.net.URI
-import java.net.URL
 import java.security.KeyFactory
 import java.security.interfaces.RSAPublicKey
 import java.security.spec.RSAPublicKeySpec
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Proveedor y gestor de claves públicas JWKS (RFC 7517) con cacheo TTL en memoria.
+ * Proveedor y gestor de claves públicas JWKS (RFC 7517) con cacheo TTL en memoria y validación criptográfica estricta.
  */
 open class JwksProvider(
     private val jwksUrl: String,
@@ -41,8 +40,8 @@ open class JwksProvider(
             return keysCache[kid]!!
         }
 
-        // Si no se especificó kid o sólo hay una clave disponible, retornar la primera
-        if (keysCache.size == 1) {
+        // Si no se especificó kid y sólo hay una clave disponible, retornar la primera
+        if (kid == null && keysCache.size == 1) {
             return keysCache.values.first()
         }
 
@@ -81,75 +80,75 @@ open class JwksProvider(
         }
     }
 
+    internal fun hasKey(kid: String): Boolean = keysCache.containsKey(kid)
+
     /**
-     * Parsea el payload JSON de JWKS sin requerir librerías externas pesadas.
+     * Parsea el payload JSON de JWKS validando estrictamente kty, alg, use, tamaño RSA (>= 2048) y exponente.
      */
-    private fun parseJwks(jsonString: String) {
+    internal fun parseJwks(jsonString: String) {
+        val root = SafeJsonParser.parseObject(jsonString)
+        val keyBlocks = SafeJsonParser.getObjectList(root, "keys")
+
         val keyFactory = KeyFactory.getInstance("RSA")
         val newKeys = mutableMapOf<String, RSAPublicKey>()
 
-        // Extracción de cada bloque de clave {"kty":"RSA", ...}
-        val keyBlocks = extractJsonObjects(jsonString)
-
         for (block in keyBlocks) {
-            val kty = extractJsonStringField(block, "kty")
+            val kid = SafeJsonParser.getString(block, "kid")?.trim() ?: ""
+            if (kid.isEmpty()) continue
+
+            val kty = SafeJsonParser.getString(block, "kty")
             if (kty != "RSA") continue
 
-            val kid = extractJsonStringField(block, "kid") ?: ""
-            val nStr = extractJsonStringField(block, "n") ?: continue
-            val eStr = extractJsonStringField(block, "e") ?: continue
+            val alg = SafeJsonParser.getString(block, "alg")
+            if (alg != "RS256") continue
 
-            val modulusBytes = PkceHelper.base64UrlDecode(nStr)
-            val exponentBytes = PkceHelper.base64UrlDecode(eStr)
+            val use = SafeJsonParser.getString(block, "use")
+            if (use != "sig") continue
+
+            val nStr = SafeJsonParser.getString(block, "n")?.trim() ?: continue
+            val eStr = SafeJsonParser.getString(block, "e")?.trim() ?: continue
+            if (nStr.isEmpty() || eStr.isEmpty()) continue
+
+            val modulusBytes = try {
+                PkceHelper.base64UrlDecode(nStr)
+            } catch (ex: Exception) {
+                continue
+            }
+            val exponentBytes = try {
+                PkceHelper.base64UrlDecode(eStr)
+            } catch (ex: Exception) {
+                continue
+            }
+
+            if (exponentBytes.isEmpty() || exponentBytes.size > 4) {
+                continue
+            }
 
             val modulus = BigInteger(1, modulusBytes)
             val exponent = BigInteger(1, exponentBytes)
 
+            // Validación de longitud mínima de clave RSA: >= 2048 bits
+            if (modulus.bitLength() < 2048) {
+                continue
+            }
+
+            // Exponente: entero positivo, impar, >= 3 y sin overflow (<= Int.MAX_VALUE)
+            if (exponent < BigInteger.valueOf(3) ||
+                !exponent.testBit(0) ||
+                exponent > BigInteger.valueOf(Int.MAX_VALUE.toLong())
+            ) {
+                continue
+            }
+
             val spec = RSAPublicKeySpec(modulus, exponent)
             val publicKey = keyFactory.generatePublic(spec) as RSAPublicKey
 
-            if (kid.isNotEmpty()) {
-                newKeys[kid] = publicKey
-            } else {
-                newKeys["default"] = publicKey
-            }
+            newKeys[kid] = publicKey
         }
 
         if (newKeys.isNotEmpty()) {
             keysCache.clear()
             keysCache.putAll(newKeys)
-        }
-    }
-
-    companion object {
-        internal fun extractJsonStringField(json: String, fieldName: String): String? {
-            val pattern = Regex("\"$fieldName\"\\s*:\\s*\"([^\"]*)\"")
-            return pattern.find(json)?.groupValues?.get(1)
-        }
-
-        internal fun extractJsonObjects(json: String): List<String> {
-            val list = mutableListOf<String>()
-            var depth = 0
-            var startIndex = -1
-
-            for (i in json.indices) {
-                when (json[i]) {
-                    '{' -> {
-                        if (depth == 1) { // Dentro del array de keys
-                            startIndex = i
-                        }
-                        depth++
-                    }
-                    '}' -> {
-                        depth--
-                        if (depth == 1 && startIndex != -1) {
-                            list.add(json.substring(startIndex, i + 1))
-                            startIndex = -1
-                        }
-                    }
-                }
-            }
-            return list
         }
     }
 }

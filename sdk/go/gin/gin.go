@@ -47,9 +47,10 @@ func MiddlewareWithOptions(client *peakauth.Client, opts MiddlewareOptions) gin.
 			// Validación online con verificación de revocación
 			introspection, err := client.IntrospectToken(ctx.Request.Context(), tokenStr)
 			if err != nil {
+				client.Log("error en introspección de token: %v", err)
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"error":   "invalid_token",
-					"message": err.Error(),
+					"message": "Token inválido o expirado",
 				})
 				return
 			}
@@ -61,16 +62,19 @@ func MiddlewareWithOptions(client *peakauth.Client, opts MiddlewareOptions) gin.
 				return
 			}
 			userRoles = introspection.Roles
-			// Guardar información de introspección en el contexto
+			claims := introspection.ToClaims()
+			// Guardar claims e introspección en el contexto de Gin
+			ctx.Set("claims", claims)
+			ctx.Set("user", claims)
 			ctx.Set("introspection", introspection)
-			ctx.Set("user", introspection)
 		} else {
 			// Validación offline tradicional (solo firma y expiración)
 			claims, err := client.VerifyTokenWithContext(ctx.Request.Context(), tokenStr)
 			if err != nil {
+				client.Log("error en verificación offline de token: %v", err)
 				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"error":   "invalid_token",
-					"message": err.Error(),
+					"message": "Token inválido o expirado",
 				})
 				return
 			}

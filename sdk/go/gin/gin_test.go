@@ -52,8 +52,9 @@ func TestGinMiddleware(t *testing.T) {
 	defer server.Close()
 
 	client, err := peakauth.New(peakauth.Config{
-		IssuerURL: server.URL,
-		ClientID:  "gin-app",
+		IssuerURL:         server.URL,
+		ClientID:          "gin-app",
+		InsecureAllowHTTP: true,
 	})
 	if err != nil {
 		t.Fatalf("New falló: %v", err)
@@ -121,5 +122,61 @@ func TestGinMiddleware(t *testing.T) {
 	r.ServeHTTP(w3, req3)
 	if w3.Code != http.StatusOK {
 		t.Errorf("se esperaba 200 con admin token, obtenido: %d", w3.Code)
+	}
+}
+
+func TestGinMiddlewareWithIntrospection(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/introspect" {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(peakauth.IntrospectionResponse{
+				Active:      true,
+				Sub:         "user-gin-introspect",
+				Username:    "ginuser@example.com",
+				Aud:         "gin-app",
+				Iss:         "peak-auth",
+				Exp:         time.Now().Add(time.Hour).Unix(),
+				Iat:         time.Now().Unix(),
+				ClientID:    "gin-app",
+				TokenType:   "access",
+				MfaVerified: true,
+				Roles:       []string{"SUPERADMIN"},
+			})
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client, err := peakauth.New(peakauth.Config{
+		IssuerURL:         server.URL,
+		ClientID:          "gin-app",
+		ClientSecret:      "gin-secret",
+		InsecureAllowHTTP: true,
+	})
+	if err != nil {
+		t.Fatalf("New falló: %v", err)
+	}
+
+	r := gin.New()
+	r.GET("/secure", MiddlewareWithOptions(client, MiddlewareOptions{
+		UseIntrospection: true,
+		RequiredRoles:    []string{"SUPERADMIN"},
+	}), func(c *gin.Context) {
+		claims, ok := ClaimsFromContext(c)
+		if !ok || claims == nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"username": claims.Username, "sub": claims.Subject})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/secure", nil)
+	req.Header.Set("Authorization", "Bearer dummy-token")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("se esperaba 200 OK en Gin con introspección, obtenido: %d (body: %s)", w.Code, w.Body.String())
 	}
 }

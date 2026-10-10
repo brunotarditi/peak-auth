@@ -1,5 +1,5 @@
 export { PeakAuthClient } from './client.js';
-export { generatePKCE } from './pkce.js';
+export { generatePKCE, generateState, validateState } from './pkce.js';
 export {
   peakAuthMiddleware,
   type ExpressAuthOptions,

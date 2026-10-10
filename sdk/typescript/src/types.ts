@@ -30,6 +30,23 @@ export interface PeakAuthConfig {
    * Tiempo de vida del cache JWKS en milisegundos. Por defecto: 1 hora
    */
   jwksCacheTtlMs?: number;
+
+  /**
+   * Permite esquemas HTTP únicamente en entornos de desarrollo local controlado (loopback: localhost, 127.0.0.1, ::1).
+   * Por defecto: false. Los emisores remotos siempre requieren HTTPS sin excepción (incluso si esta opción está en true).
+   */
+  insecureAllowHttp?: boolean;
+
+  /**
+   * Margen de tolerancia temporal en segundos (clock skew) para validar exp, nbf e iat.
+   * Por defecto: 45 segundos.
+   */
+  clockToleranceSeconds?: number;
+
+  /**
+   * Función opcional para registrar fallos internos de autenticación de forma segura.
+   */
+  logger?: (message: string, ...args: unknown[]) => void;
 }
 
 export interface PKCEPair {
