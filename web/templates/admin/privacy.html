@@ -6,12 +6,17 @@
             <div>
                 <h4 class="phase8-style-4">Secciones</h4>
                 <ul class="phase8-style-80">
-                    <li><a href="#informacion" class="phase8-style-81 phase8-hover-link">1. Información recopilada</a></li>
-                    <li><a href="#finalidad" class="phase8-style-81 phase8-hover-link">2. Finalidad del tratamiento</a></li>
-                    <li><a href="#criptografia" class="phase8-style-81 phase8-hover-link">3. Criptografía y retención</a></li>
-                    <li><a href="#cookies" class="phase8-style-81 phase8-hover-link">4. Cookies y almacenamiento</a></li>
+                    <li><a href="#informacion" class="phase8-style-81 phase8-hover-link">1. Información recopilada</a>
+                    </li>
+                    <li><a href="#finalidad" class="phase8-style-81 phase8-hover-link">2. Finalidad del tratamiento</a>
+                    </li>
+                    <li><a href="#criptografia" class="phase8-style-81 phase8-hover-link">3. Criptografía y
+                            retención</a></li>
+                    <li><a href="#cookies" class="phase8-style-81 phase8-hover-link">4. Cookies y almacenamiento</a>
+                    </li>
                     <li><a href="#derechos" class="phase8-style-81 phase8-hover-link">5. Derechos del usuario</a></li>
-                    <li><a href="#terceros" class="phase8-style-81 phase8-hover-link">6. Terceros y subprocesadores</a></li>
+                    <li><a href="#terceros" class="phase8-style-81 phase8-hover-link">6. Terceros y subprocesadores</a>
+                    </li>
                     <li><a href="#contacto" class="phase8-style-81 phase8-hover-link">7. Contacto</a></li>
                 </ul>
             </div>
@@ -26,7 +31,9 @@
     </aside>
     <style>
         @media (min-width: 768px) {
-            aside { display: block !important; }
+            aside {
+                display: block !important;
+            }
         }
     </style>
 
@@ -35,20 +42,29 @@
         <div class="phase8-style-84">
             <h1 class="phase8-style-85">Políticas de privacidad</h1>
             <p class="phase8-style-86">
-                Última actualización: <strong>Octubre 2026</strong>. En <strong>Peak Auth</strong> nos tomamos la privacidad y la protección de datos con la máxima seriedad y rigor técnico. A continuación, detallamos cómo recopilamos, procesamos y resguardamos tu información.
+                Última actualización: <strong>Octubre 2026</strong>. En <strong>Peak Auth</strong> nos tomamos la
+                privacidad y la protección de datos con la máxima seriedad y rigor técnico. A continuación, detallamos
+                cómo recopilamos, procesamos y resguardamos tu información.
             </p>
         </div>
 
         <section id="informacion" class="phase8-style-84">
             <h2 class="phase8-style-87">1. Información recopilada</h2>
             <p class="phase8-style-88">
-                Peak Auth opera bajo el principio de <em>minimización de datos</em> (recopilando únicamente lo estrictamente necesario para autenticar y autorizar usuarios):
+                Peak Auth opera bajo el principio de <em>minimización de datos</em> (recopilando únicamente lo
+                estrictamente necesario para autenticar y autorizar usuarios):
             </p>
             <ul class="phase8-style-89">
-                <li><strong class="phase8-style-90">Datos de cuenta:</strong> Correo electrónico y contraseña (hasheada criptográficamente con bcrypt con salt aleatorio).</li>
-                <li><strong class="phase8-style-90">Datos de perfil (opcionales):</strong> Nombre, apellido, fecha de nacimiento y foto de perfil / avatar.</li>
-                <li><strong class="phase8-style-90">Credenciales MFA:</strong> Secretos TOTP (almacenados con cifrado autenticado AES-GCM) y credenciales públicas WebAuthn/Passkeys (FIDO2). <em>Nota: los datos biométricos de tu dispositivo nunca salen de él ni son transmitidos a Peak Auth</em>.</li>
-                <li><strong class="phase8-style-90">Metadatos de sesión y seguridad:</strong> Dirección IP, User-Agent de navegador/dispositivo y sellos de tiempo de última actividad para la gestión y revocación de sesiones activas.</li>
+                <li><strong class="phase8-style-90">Datos de cuenta:</strong> Correo electrónico y contraseña (hasheada
+                    criptográficamente con bcrypt con salt aleatorio).</li>
+                <li><strong class="phase8-style-90">Datos de perfil (opcionales):</strong> Nombre, apellido, fecha de
+                    nacimiento y foto de perfil / avatar.</li>
+                <li><strong class="phase8-style-90">Credenciales MFA:</strong> Secretos TOTP (almacenados con cifrado
+                    autenticado AES-GCM) y credenciales públicas WebAuthn/Passkeys (FIDO2). <em>Nota: los datos
+                        biométricos de tu dispositivo nunca salen de él ni son transmitidos a Peak Auth</em>.</li>
+                <li><strong class="phase8-style-90">Metadatos de sesión y seguridad:</strong> Dirección IP, User-Agent
+                    de navegador/dispositivo y sellos de tiempo de última actividad para la gestión y revocación de
+                    sesiones activas.</li>
             </ul>
         </section>
 
@@ -59,9 +75,12 @@
             </p>
             <ul class="phase8-style-89">
                 <li>Autenticar tu identidad y emitir credenciales seguras (Access Tokens JWT y Refresh Tokens).</li>
-                <li>Validar el segundo factor de autenticación (MFA) cuando sea requerido por ti o por la aplicación cliente.</li>
-                <li>Proteger la plataforma contra accesos no autorizados, ataques de fuerza bruta y abusos mediante rate limiting y detección de anomalías.</li>
-                <li>Enviar correos electrónicos transaccionales críticos: confirmación de registro y restablecimiento de contraseña.</li>
+                <li>Validar el segundo factor de autenticación (MFA) cuando sea requerido por ti o por la aplicación
+                    cliente.</li>
+                <li>Proteger la plataforma contra accesos no autorizados, ataques de fuerza bruta y abusos mediante rate
+                    limiting y detección de anomalías.</li>
+                <li>Enviar correos electrónicos transaccionales críticos: confirmación de registro y restablecimiento de
+                    contraseña.</li>
             </ul>
         </section>
 
@@ -71,22 +90,32 @@
                 Peak Auth implementa estándares criptográficos de grado industrial para garantizar la confidencialidad:
             </p>
             <div class="phase8-style-91">
-                <div><strong class="phase8-style-90">Sin contraseñas en texto claro:</strong> Las contraseñas nunca se registran ni almacenan en texto plano. Se procesan con bcrypt y funciones de hashing lentas y resistentes a aceleración GPU.</div>
-                <div><strong class="phase8-style-90">Tokens rotativos con SHA-256:</strong> Los refresh tokens en la base de datos se almacenan exclusivamente en formato hash SHA-256. Al renovarse un token, el anterior se destruye inmediatamente.</div>
-                <div><strong class="phase8-style-90">Firmas asimétricas RSA-256:</strong> Los tokens emitidos son verificados por los clientes sin necesidad de compartir secretos simétricos con el servidor.</div>
+                <div><strong class="phase8-style-90">Sin contraseñas en texto claro:</strong> Las contraseñas nunca se
+                    registran ni almacenan en texto plano. Se procesan con bcrypt y funciones de hashing lentas y
+                    resistentes a aceleración GPU.</div>
+                <div><strong class="phase8-style-90">Tokens rotativos con SHA-256:</strong> Los refresh tokens en la
+                    base de datos se almacenan exclusivamente en formato hash SHA-256. Al renovarse un token, el
+                    anterior se destruye inmediatamente.</div>
+                <div><strong class="phase8-style-90">Firmas asimétricas RSA-256:</strong> Los tokens emitidos son
+                    verificados por los clientes sin necesidad de compartir secretos simétricos con el servidor.</div>
             </div>
         </section>
 
         <section id="cookies" class="phase8-style-84">
             <h2 class="phase8-style-87">4. Cookies y almacenamiento en el navegador</h2>
             <p class="phase8-style-88">
-                Peak Auth solo utiliza cookies técnicas y estrictamente necesarias para el funcionamiento del servicio (cero rastreadores de publicidad o análisis de terceros invasivos):
+                Peak Auth solo utiliza cookies técnicas y estrictamente necesarias para el funcionamiento del servicio
+                (cero rastreadores de publicidad o análisis de terceros invasivos):
             </p>
             <ul class="phase8-style-89">
-                <li><code class="phase8-style-22">peak_session</code>: Cookie HttpOnly y SameSite utilizada para mantener la sesión central de SSO.</li>
-                <li><code class="phase8-style-22">admin_token</code>: Cookie HttpOnly para la administración de la plataforma.</li>
-                <li><code class="phase8-style-22">csrf_token</code>: Cookie de seguridad contra ataques de falsificación de peticiones en sitios cruzados.</li>
-                <li><code class="phase8-style-22">peak_theme</code>: Almacenamiento local para recordar tu preferencia de interfaz (claro u oscuro).</li>
+                <li><code class="phase8-style-22">peak_session</code>: Cookie HttpOnly y SameSite utilizada para
+                    mantener la sesión central de SSO.</li>
+                <li><code class="phase8-style-22">admin_token</code>: Cookie HttpOnly para la administración de la
+                    plataforma.</li>
+                <li><code class="phase8-style-22">csrf_token</code>: Cookie de seguridad contra ataques de falsificación
+                    de peticiones en sitios cruzados.</li>
+                <li><code class="phase8-style-22">peak_theme</code>: Almacenamiento local para recordar tu preferencia
+                    de interfaz (claro u oscuro).</li>
             </ul>
         </section>
 
@@ -96,29 +125,38 @@
                 Tienes control total sobre tu cuenta y privacidad:
             </p>
             <ul class="phase8-style-89">
-                <li><strong>Acceso y rectificación:</strong> Puedes consultar y actualizar tus datos de perfil en cualquier momento desde los ajustes de cuenta.</li>
-                <li><strong>Revocación de sesiones:</strong> Puedes cerrar sesiones de forma remota en dispositivos específicos o revocar todas las demás sesiones desde la pestaña de sesiones activas.</li>
-                <li><strong>Desconexión de aplicaciones:</strong> Puedes revocar el acceso a cualquier aplicación conectada en OAuth 2.0 de forma inmediata.</li>
-                <li><strong>Eliminación de credenciales MFA:</strong> Puedes gestionar o eliminar llaves de acceso (Passkeys) y restablecer la configuración de doble factor.</li>
+                <li><strong>Acceso y rectificación:</strong> Puedes consultar y actualizar tus datos de perfil en
+                    cualquier momento desde los ajustes de cuenta.</li>
+                <li><strong>Revocación de sesiones:</strong> Puedes cerrar sesiones de forma remota en dispositivos
+                    específicos o revocar todas las demás sesiones desde la pestaña de sesiones activas.</li>
+                <li><strong>Desconexión de aplicaciones:</strong> Puedes revocar el acceso a cualquier aplicación
+                    conectada en OAuth 2.0 de forma inmediata.</li>
+                <li><strong>Eliminación de credenciales MFA:</strong> Puedes gestionar o eliminar llaves de acceso
+                    (Passkeys) y restablecer la configuración de doble factor.</li>
             </ul>
         </section>
 
         <section id="terceros" class="phase8-style-84">
             <h2 class="phase8-style-87">6. Terceros y subprocesadores</h2>
             <p class="phase8-style-88">
-                Peak Auth puede interactuar con proveedores externos seleccionados exclusivamente para infraestructura y entrega de servicios:
+                Peak Auth puede interactuar con proveedores externos seleccionados exclusivamente para infraestructura y
+                entrega de servicios:
             </p>
             <ul class="phase8-style-89">
-                <li><strong class="phase8-style-90">Resend:</strong> Para el envío transaccional de correos de verificación y restablecimiento de contraseña.</li>
-                <li><strong class="phase8-style-90">Cloudflare R2 / AWS S3:</strong> Para el almacenamiento distribuido y seguro de fotos de perfil y avatares (cuando está habilitado el almacenamiento en la nube).</li>
-                <li><strong class="phase8-style-90">Google / GitHub:</strong> Exclusivamente en caso de que vincules tu cuenta mediante Social Login (Identity Brokering).</li>
+                <li><strong class="phase8-style-90">Resend:</strong> Para el envío transaccional de correos de
+                    verificación y restablecimiento de contraseña.</li>
+                <li><strong class="phase8-style-90">Cloudflare R2 / AWS S3:</strong> Para el almacenamiento distribuido
+                    y seguro de fotos de perfil y avatares (cuando está habilitado el almacenamiento en la nube).</li>
+                <li><strong class="phase8-style-90">Google / GitHub:</strong> Exclusivamente en caso de que vincules tu
+                    cuenta mediante Social Login (Identity Brokering).</li>
             </ul>
         </section>
 
         <section id="contacto" class="phase8-style-84">
             <h2 class="phase8-style-87">7. Contacto</h2>
             <p class="phase8-style-92">
-                Si tienes preguntas sobre estas políticas de privacidad o deseas ejercer cualquiera de tus derechos, comunícate con el administrador responsable de la instancia de Peak Auth.
+                Si tienes preguntas sobre estas políticas de privacidad o deseas ejercer cualquiera de tus derechos,
+                comunícate con el administrador responsable de la instancia de Peak Auth.
             </p>
         </section>
     </main>

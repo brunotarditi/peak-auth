@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Autenticación de Setup</title>
-    <script src="{{ js "config.js" }}"></script>
+    <script src="{{ js " config.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
-    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/setup.css" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/setup.css" }}">
 </head>
 
 <body class="bg-pattern layout-auth">
@@ -21,7 +21,7 @@
     <div class="auth-container auth-container-animated">
         <div class="setup-brand setup-brand-large">
             <div class="auth-logo-mark">
-                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth">
+                <img src="{{ asset " /static/img/logo.svg" }}" alt="Peak Auth">
             </div>
             <h1 class="setup-title setup-title-large">Setup Peak <span class="auth-title-accent">Auth</span></h1>
             <p class="setup-step setup-step-large">Autenticación requerida</p>
@@ -30,7 +30,8 @@
         <div class="glass-panel auth-panel">
             <div class="auth-panel-heading">
                 <h2 class="auth-panel-title">Token de Instalación</h2>
-                <p class="auth-panel-copy">Ingrese el token de instalación configurado en SETUP_TOKEN o el token efímero generado en la consola en el primer arranque.</p>
+                <p class="auth-panel-copy">Ingrese el token de instalación configurado en SETUP_TOKEN o el token efímero
+                    generado en la consola en el primer arranque.</p>
             </div>
 
             <form id="authForm" action="/setup/auth" method="POST" class="auth-form">
@@ -38,12 +39,14 @@
 
                 <div class="form-group auth-form-group">
                     <label class="auth-label">Token de Setup</label>
-                    <input type="password" id="token" name="token" required placeholder="••••••••••••••••" class="peak-input auth-token-input">
+                    <input type="password" id="token" name="token" required placeholder="••••••••••••••••"
+                        class="peak-input auth-token-input">
                     <span id="tokenError" class="hidden auth-field-error">Token requerido</span>
                 </div>
 
                 <div class="auth-submit-wrapper">
-                    <button type="submit" id="submitBtn" class="peak-btn peak-btn-primary peak-btn-block auth-form-button auth-form-button-plain">
+                    <button type="submit" id="submitBtn"
+                        class="peak-btn peak-btn-primary peak-btn-block auth-form-button auth-form-button-plain">
                         <span>Continuar</span>
                         {{template "icon-arrow-forward"}}
                     </button>
@@ -53,12 +56,13 @@
 
         <div class="auth-setup-note">
             <p>
-                Si no configuró SETUP_TOKEN en el entorno, revise los logs de la consola del servidor para obtener el token efímero generado.
+                Si no configuró SETUP_TOKEN en el entorno, revise los logs de la consola del servidor para obtener el
+                token efímero generado.
             </p>
         </div>
     </div>
 
-    <script src="{{ js "setup_auth.js" }}"></script>
+    <script src="{{ js " setup_auth.js" }}"></script>
 </body>
 
 </html>

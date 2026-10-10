@@ -8,7 +8,10 @@
                 <ul class="docs-nav-list docs-nav-list-spaced">
                     <li>
                         <a href="/admin/docs" class="docs-nav-link docs-nav-link-active">
-                            <svg class="docs-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <svg class="docs-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
                             Introducción
                         </a>
                     </li>
@@ -16,7 +19,8 @@
                     <li><a href="#sso" class="docs-nav-link docs-nav-link-indented">OAuth 2.0 PKCE & SSO</a></li>
                     <li><a href="#m2m" class="docs-nav-link docs-nav-link-indented">Client credentials (M2M)</a></li>
                     <li><a href="#broker" class="docs-nav-link docs-nav-link-indented">Social login (Brokering)</a></li>
-                    <li><a href="#storage" class="docs-nav-link docs-nav-link-indented">Almacenamiento & perfiles</a></li>
+                    <li><a href="#storage" class="docs-nav-link docs-nav-link-indented">Almacenamiento & perfiles</a>
+                    </li>
                     <li><a href="#sdks" class="docs-nav-link docs-nav-link-indented">SDKs oficiales</a></li>
                 </ul>
             </div>
@@ -25,11 +29,15 @@
                 <ul class="docs-nav-list docs-nav-list-spaced">
                     <li>
                         <a href="/admin/docs/api" class="docs-nav-link docs-nav-link-icon">
-                            <svg class="docs-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                            <svg class="docs-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                            </svg>
                             Referencia de API
                         </a>
                     </li>
-                    <li><a href="/admin/docs/api#validation" class="docs-nav-link docs-nav-link-indented">Validación en cliente</a></li>
+                    <li><a href="/admin/docs/api#validation" class="docs-nav-link docs-nav-link-indented">Validación en
+                            cliente</a></li>
                 </ul>
             </div>
             <div>
@@ -47,55 +55,90 @@
         <div class="docs-section">
             <h1 class="docs-title">Documentación de Peak Auth</h1>
             <p class="docs-lead">
-                Peak Auth es un Proveedor de Identidad (IdP) centralizado y servidor de autorización Single Sign-On (SSO), diseñado para ser seguro, rápido y compatible con estándares modernos mediante <strong class="docs-strong">OAuth 2.0 con PKCE</strong>, <strong class="docs-strong">JWT asimétrico (RSA-256)</strong> y descubrimiento dinámico de claves vía <strong class="docs-strong">JWKS</strong>.
+                Peak Auth es un Proveedor de Identidad (IdP) centralizado y servidor de autorización Single Sign-On
+                (SSO), diseñado para ser seguro, rápido y compatible con estándares modernos mediante <strong
+                    class="docs-strong">OAuth 2.0 con PKCE</strong>, <strong class="docs-strong">JWT asimétrico
+                    (RSA-256)</strong> y descubrimiento dinámico de claves vía <strong
+                    class="docs-strong">JWKS</strong>.
             </p>
         </div>
 
         <section id="jwt" class="docs-section">
             <h2 class="docs-heading">JWT asimétrico (RSA-256) & JWKS</h2>
             <p class="docs-copy">
-                A diferencia de los esquemas tradicionales que comparten un secreto simétrico (HS256) entre todos los servidores, Peak Auth opera con criptografía asimétrica de clave pública y privada, con rotación multi-clave e identificación por <code class="docs-inline-code">kid</code>:
+                A diferencia de los esquemas tradicionales que comparten un secreto simétrico (HS256) entre todos los
+                servidores, Peak Auth opera con criptografía asimétrica de clave pública y privada, con rotación
+                multi-clave e identificación por <code class="docs-inline-code">kid</code>:
             </p>
             <ul class="docs-feature-list">
                 <li class="docs-feature-item">
-                    <svg class="docs-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span><strong class="docs-strong">Clave privada:</strong> Reside exclusivamente en Peak Auth. Se utiliza para firmar los tokens JWT cuando un usuario inicia sesión.</span>
+                    <svg class="docs-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong class="docs-strong">Clave privada:</strong> Reside exclusivamente en Peak Auth. Se
+                        utiliza para firmar los tokens JWT cuando un usuario inicia sesión.</span>
                 </li>
                 <li class="docs-feature-item">
-                    <svg class="docs-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span><strong class="docs-strong">Descubrimiento JWKS (RFC 7517):</strong> Expuesto públicamente en <code class="docs-inline-code">/.well-known/jwks.json</code>. Las aplicaciones satélite no necesitan gestionar archivos PEM manualmente; descargan las claves públicas automáticamente, las cachean en memoria y resuelven la clave adecuada según el <code class="docs-inline-code">kid</code> del encabezado del token.</span>
+                    <svg class="docs-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong class="docs-strong">Descubrimiento JWKS (RFC 7517):</strong> Expuesto públicamente en
+                        <code class="docs-inline-code">/.well-known/jwks.json</code>. Las aplicaciones satélite no
+                        necesitan gestionar archivos PEM manualmente; descargan las claves públicas automáticamente, las
+                        cachean en memoria y resuelven la clave adecuada según el <code
+                            class="docs-inline-code">kid</code> del encabezado del token.</span>
                 </li>
                 <li class="docs-feature-item">
-                    <svg class="docs-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    <span><strong class="docs-strong">Rotación sin tiempo de inactividad (Grace Period):</strong> Soporta múltiples claves previas en verificación. La clave activa firma nuevos tokens, mientras que los tokens emitidos previamente se validan sin interrupción durante la ventana de gracia.</span>
+                    <svg class="docs-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span><strong class="docs-strong">Rotación sin tiempo de inactividad (Grace Period):</strong>
+                        Soporta múltiples claves previas en verificación. La clave activa firma nuevos tokens, mientras
+                        que los tokens emitidos previamente se validan sin interrupción durante la ventana de
+                        gracia.</span>
                 </li>
             </ul>
             <div class="docs-info-callout">
                 <strong class="docs-callout-title">Seguridad y audiencia estricta</strong>
-                Cada JWT emitido contiene el claim <code class="docs-callout-code">aud: [client_id]</code>. Los SDKs y microservicios deben verificar que la audiencia coincida exactamente con el Client ID de la app para evitar la reutilización no autorizada de tokens entre distintos clientes.
+                Cada JWT emitido contiene el claim <code class="docs-callout-code">aud: [client_id]</code>. Los SDKs y
+                microservicios deben verificar que la audiencia coincida exactamente con el Client ID de la app para
+                evitar la reutilización no autorizada de tokens entre distintos clientes.
             </div>
         </section>
 
         <section id="sso" class="docs-section">
             <h2 class="docs-heading">Flujo OAuth 2.0 con PKCE & SSO</h2>
             <p class="docs-copy">
-                El flujo estándar recomendado para aplicaciones web (SPAs), móviles y backends es el Authorization Code Flow con PKCE (Proof Key for Code Exchange):
+                El flujo estándar recomendado para aplicaciones web (SPAs), móviles y backends es el Authorization Code
+                Flow con PKCE (Proof Key for Code Exchange):
             </p>
             <ol class="docs-step-list">
                 <li class="docs-indented-item">
-                    <strong class="docs-strong">Inicio de autorización:</strong> La app cliente redirige al usuario a <code class="docs-inline-code">/oauth/authorize</code> incluyendo <code class="docs-inline-code">client_id</code>, <code class="docs-inline-code">redirect_uri</code>, <code class="docs-inline-code">code_challenge</code> (S256) y <code class="docs-inline-code">state</code>.
+                    <strong class="docs-strong">Inicio de autorización:</strong> La app cliente redirige al usuario a
+                    <code class="docs-inline-code">/oauth/authorize</code> incluyendo <code
+                        class="docs-inline-code">client_id</code>, <code class="docs-inline-code">redirect_uri</code>,
+                    <code class="docs-inline-code">code_challenge</code> (S256) y <code
+                        class="docs-inline-code">state</code>.
                 </li>
                 <li class="docs-indented-item">
-                    <strong class="docs-strong">Sesión SSO o autenticación:</strong> Peak Auth verifica si existe una sesión activa compartida (<code class="docs-inline-code">peak_session</code>). Si no existe, muestra el portal de inicio de sesión con soporte MFA (TOTP / WebAuthn). Si la política de la aplicación exige MFA y el usuario aún no lo configuró, se le guía a completarlo.
+                    <strong class="docs-strong">Sesión SSO o autenticación:</strong> Peak Auth verifica si existe una
+                    sesión activa compartida (<code class="docs-inline-code">peak_session</code>). Si no existe, muestra
+                    el portal de inicio de sesión con soporte MFA (TOTP / WebAuthn). Si la política de la aplicación
+                    exige MFA y el usuario aún no lo configuró, se le guía a completarlo.
                 </li>
                 <li class="docs-indented-item">
-                    <strong class="docs-strong">Redirección con código:</strong> Peak Auth genera un código de autorización temporal de un solo uso (válido por 5 minutos) y redirige de vuelta a la app: <code class="docs-inline-code">https://tu-app.com/callback?code=...&state=...</code>.
+                    <strong class="docs-strong">Redirección con código:</strong> Peak Auth genera un código de
+                    autorización temporal de un solo uso (válido por 5 minutos) y redirige de vuelta a la app: <code
+                        class="docs-inline-code">https://tu-app.com/callback?code=...&state=...</code>.
                 </li>
                 <li class="docs-indented-item">
-                    <strong class="docs-strong">Intercambio de token:</strong> El backend o cliente seguro intercambia el código en <code class="docs-inline-code">POST /oauth/token</code> enviando el <code class="docs-inline-code">code_verifier</code> original.
+                    <strong class="docs-strong">Intercambio de token:</strong> El backend o cliente seguro intercambia
+                    el código en <code class="docs-inline-code">POST /oauth/token</code> enviando el <code
+                        class="docs-inline-code">code_verifier</code> original.
                 </li>
                 <li class="docs-indented-item">
-                    <strong class="docs-strong">Emisión de tokens:</strong> Peak Auth responde con el Access Token firmado (RS256) y un Refresh Token rotativo.
+                    <strong class="docs-strong">Emisión de tokens:</strong> Peak Auth responde con el Access Token
+                    firmado (RS256) y un Refresh Token rotativo.
                 </li>
             </ol>
         </section>
@@ -104,10 +147,14 @@
         <section id="m2m" class="docs-section">
             <h2 class="docs-heading">OAuth 2.0 Client Credentials Grant (M2M)</h2>
             <p class="docs-copy">
-                Diseñado para comunicación <strong>Machine-to-Machine (M2M)</strong> entre microservicios, daemons, workers y servicios backend que operan sin intervención humana directa (RFC 6749).
+                Diseñado para comunicación <strong>Machine-to-Machine (M2M)</strong> entre microservicios, daemons,
+                workers y servicios backend que operan sin intervención humana directa (RFC 6749).
             </p>
             <p class="docs-copy">
-                El microservicio se autentica contra <code class="docs-inline-code">POST /oauth/token</code> enviando su <code class="docs-mono">client_id</code> y <code class="docs-mono">client_secret</code> (vía cabecera HTTP Basic Auth o cuerpo JSON) con <code class="docs-mono">grant_type: "client_credentials"</code>. Peak Auth emite un Access Token JWT (RS256) sin refresh token, garantizando credenciales efímeras y seguras.
+                El microservicio se autentica contra <code class="docs-inline-code">POST /oauth/token</code> enviando su
+                <code class="docs-mono">client_id</code> y <code class="docs-mono">client_secret</code> (vía cabecera
+                HTTP Basic Auth o cuerpo JSON) con <code class="docs-mono">grant_type: "client_credentials"</code>. Peak
+                Auth emite un Access Token JWT (RS256) sin refresh token, garantizando credenciales efímeras y seguras.
             </p>
         </section>
 
@@ -119,8 +166,11 @@
             </p>
             <ul class="docs-bullet-list docs-bullet-list-spaced">
                 <li><strong>Proveedores soportados:</strong> Google y GitHub.</li>
-                <li><strong>Vinculación automática:</strong> Si el usuario ya posee una cuenta local con el mismo correo verificado, se asocia su identidad federada de forma segura mediante <code class="docs-mono">UserIdentity</code>.</li>
-                <li><strong>Flujo sin fricción:</strong> Los usuarios pueden iniciar sesión con un clic desde el portal central o desde el flujo SSO de cualquier aplicación cliente.</li>
+                <li><strong>Vinculación automática:</strong> Si el usuario ya posee una cuenta local con el mismo correo
+                    verificado, se asocia su identidad federada de forma segura mediante <code
+                        class="docs-mono">UserIdentity</code>.</li>
+                <li><strong>Flujo sin fricción:</strong> Los usuarios pueden iniciar sesión con un clic desde el portal
+                    central o desde el flujo SSO de cualquier aplicación cliente.</li>
             </ul>
         </section>
 
@@ -128,18 +178,28 @@
         <section id="storage" class="docs-section">
             <h2 class="docs-heading">Almacenamiento de archivos y perfiles</h2>
             <p class="docs-copy">
-                Peak Auth incluye un subsistema de almacenamiento desacoplado mediante la interfaz <code class="docs-mono">StorageService</code>:
+                Peak Auth incluye un subsistema de almacenamiento desacoplado mediante la interfaz <code
+                    class="docs-mono">StorageService</code>:
             </p>
             <ul class="docs-bullet-list">
-                <li><strong class="docs-strong">Disco local (<code class="docs-mono">STORAGE_DRIVER=local</code>):</strong> Almacena avatares y archivos subidos en el sistema de archivos local (<code class="docs-mono">web/static/uploads/</code>), ideal para entornos locales o despliegues ligeros.</li>
-                <li><strong class="docs-strong">Cloudflare R2 / AWS S3 (<code class="docs-mono">STORAGE_DRIVER=s3</code>):</strong> Compatible con buckets S3 y Cloudflare R2 sin costo de egreso, configurables mediante variables de entorno (<code class="docs-mono">R2_ACCOUNT_ID</code>, <code class="docs-mono">R2_BUCKET</code>, <code class="docs-mono">R2_ACCESS_KEY_ID</code>, <code class="docs-mono">R2_SECRET_ACCESS_KEY</code>, <code class="docs-mono">R2_PUBLIC_URL</code>).</li>
+                <li><strong class="docs-strong">Disco local (<code
+                            class="docs-mono">STORAGE_DRIVER=local</code>):</strong> Almacena avatares y archivos
+                    subidos en el sistema de archivos local (<code class="docs-mono">web/static/uploads/</code>), ideal
+                    para entornos locales o despliegues ligeros.</li>
+                <li><strong class="docs-strong">Cloudflare R2 / AWS S3 (<code
+                            class="docs-mono">STORAGE_DRIVER=s3</code>):</strong> Compatible con buckets S3 y Cloudflare
+                    R2 sin costo de egreso, configurables mediante variables de entorno (<code
+                        class="docs-mono">R2_ACCOUNT_ID</code>, <code class="docs-mono">R2_BUCKET</code>, <code
+                        class="docs-mono">R2_ACCESS_KEY_ID</code>, <code class="docs-mono">R2_SECRET_ACCESS_KEY</code>,
+                    <code class="docs-mono">R2_PUBLIC_URL</code>).</li>
             </ul>
         </section>
 
         <section id="sdks" class="docs-section">
             <h2 class="docs-heading">SDKs oficiales</h2>
             <p class="docs-copy">
-                Peak Auth provee librerías oficiales livianas con verificación offline, auto-descubrimiento JWKS con caching en memoria y middlewares listos para producción:
+                Peak Auth provee librerías oficiales livianas con verificación offline, auto-descubrimiento JWKS con
+                caching en memoria y middlewares listos para producción:
             </p>
             <div class="docs-sdk-grid">
                 <div class="docs-sdk-card">
@@ -154,7 +214,8 @@
                 <div class="docs-sdk-card">
                     <h3 class="docs-sdk-title">Go (Golang)</h3>
                     <p class="docs-sdk-copy">
-                        Librería nativa con soporte para <code class="docs-mono">net/http</code> y subpaquete para <code class="docs-mono">gin</code>.
+                        Librería nativa con soporte para <code class="docs-mono">net/http</code> y subpaquete para <code
+                            class="docs-mono">gin</code>.
                     </p>
                     <code class="docs-install-code">
                         go get github.com/brunotarditi/peak-auth/sdk/go
@@ -163,7 +224,8 @@
                 <div class="docs-sdk-card">
                     <h3 class="docs-sdk-title">Kotlin / Android / JVM</h3>
                     <p class="docs-sdk-copy">
-                        Librería nativa en Kotlin con corrutinas para aplicaciones Android y servidores backend JVM (Ktor, Spring).
+                        Librería nativa en Kotlin con corrutinas para aplicaciones Android y servidores backend JVM
+                        (Ktor, Spring).
                     </p>
                     <code class="docs-install-code">
                         implementation("io.peakauth:peak-auth-kotlin:0.1.0")

@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Configuración de MFA</title>
-    <script src="{{ js "config.js" }}"></script>
-    <script src="{{ js "common.js" }}"></script>
-    <script src="{{ js "modal.js" }}"></script>
+    <script src="{{ js " config.js" }}"></script>
+    <script src="{{ js " common.js" }}"></script>
+    <script src="{{ js " modal.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
-    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/setup.css" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/setup.css" }}">
 </head>
 
 <body class="bg-pattern layout-auth">
@@ -23,31 +23,32 @@
     <div class="auth-container setup-shell">
         <div class="setup-brand">
             <div class="auth-logo-mark">
-                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" >
+                <img src="{{ asset " /static/img/logo.svg" }}" alt="Peak Auth">
             </div>
             <h1 class="setup-title">Configuración inicial <span class="auth-title-accent">Auth</span></h1>
             <p class="setup-step">Paso 2 de 2: Autenticación de dos factores (MFA)</p>
         </div>
 
         <div class="glass-panel setup-panel">
-            
+
             <!-- Etapa 1: Escaneo y Verificación del Código -->
             <div id="mfaSetupStep">
                 <div class="mfa-heading">
-                    <h2 >Vinculá tu aplicación autenticadora</h2>
-                    <p class="mfa-recovery-copy">Escanea el código QR con Google Authenticator, Authy o tu gestor de contraseñas preferido.</p>
+                    <h2>Vinculá tu aplicación autenticadora</h2>
+                    <p class="mfa-recovery-copy">Escanea el código QR con Google Authenticator, Authy o tu gestor de
+                        contraseñas preferido.</p>
                 </div>
 
                 <div class="mfa-qr">
                     <div class="mfa-qr-frame">
-                        <img src="{{ .QRCode }}" alt="Código QR TOTP" >
+                        <img src="{{ .QRCode }}" alt="Código QR TOTP">
                     </div>
                 </div>
 
                 <div class="setup-brand">
                     <span class="mfa-secret-label">¿No puedes escanear el código? Ingresa esta clave secreta:</span>
-                    <div >
-                        <code >{{ .Secret }}</code>
+                    <div>
+                        <code>{{ .Secret }}</code>
                     </div>
                 </div>
 
@@ -56,11 +57,13 @@
                 <form id="formVerifySetupMfa" class="mfa-form">
                     <div class="form-group">
                         <label for="totpCodeInput" class="auth-label mfa-code-label">Código de 6 dígitos</label>
-                        <input type="text" id="totpCodeInput" name="code" required maxlength="6" inputmode="numeric" placeholder="123456" class="peak-input mfa-code-input" autocomplete="one-time-code">
+                        <input type="text" id="totpCodeInput" name="code" required maxlength="6" inputmode="numeric"
+                            placeholder="123456" class="peak-input mfa-code-input" autocomplete="one-time-code">
                     </div>
 
                     <div class="auth-submit-wrapper">
-                        <button type="submit" id="btnSubmitMfa" class="peak-btn peak-btn-primary peak-btn-block auth-form-button-plain">
+                        <button type="submit" id="btnSubmitMfa"
+                            class="peak-btn peak-btn-primary peak-btn-block auth-form-button-plain">
                             <span>Verificar y finalizar instalación</span>
                             {{template "icon-check"}}
                         </button>
@@ -72,20 +75,24 @@
             <div id="mfaRecoveryStep" class="hidden">
                 <div class="mfa-heading">
                     <div class="mfa-success-icon">
-                        <svg  fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M5 13l4 4L19 7" />
+                        </svg>
                     </div>
-                    <h2 >¡Instalación completada!</h2>
-                    <p class="mfa-recovery-copy">Guarda estos códigos de recuperación en un lugar seguro. Te permitirán acceder a la cuenta de Root en caso de perder tu dispositivo móvil.</p>
+                    <h2>¡Instalación completada!</h2>
+                    <p class="mfa-recovery-copy">Guarda estos códigos de recuperación en un lugar seguro. Te permitirán
+                        acceder a la cuenta de Root en caso de perder tu dispositivo móvil.</p>
                 </div>
 
                 <div id="recoveryCodesContainer" class="recovery-codes">
                 </div>
 
                 <div class="mfa-recovery-actions">
-                    <button type="button" id="btnCopyCodes" class="peak-btn peak-btn-secondary" >
+                    <button type="button" id="btnCopyCodes" class="peak-btn peak-btn-secondary">
                         Copiar códigos
                     </button>
-                    <button type="button" id="btnDownloadCodes" class="peak-btn peak-btn-secondary" >
+                    <button type="button" id="btnDownloadCodes" class="peak-btn peak-btn-secondary">
                         Descargar (.txt)
                     </button>
                 </div>
@@ -99,13 +106,13 @@
         </div>
 
         <div class="setup-step-indicator">
-            <div ></div>
-            <p >Paso 2 de 2</p>
-            <div ></div>
+            <div></div>
+            <p>Paso 2 de 2</p>
+            <div></div>
         </div>
     </div>
 
-<script src="{{ js "setup_mfa.js" }}"></script>
+    <script src="{{ js " setup_mfa.js" }}"></script>
 </body>
 
 </html>

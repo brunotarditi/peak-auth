@@ -5,12 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Verificación MFA</title>
-    <script src="{{ js "config.js" }}"></script>
+    <script src="{{ js " config.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
-    <script src="{{ js "modal.js" }}"></script>
-    <script src="{{ js "common.js" }}"></script>
-    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/main.css" }}">
+    <script src="{{ js " modal.js" }}"></script>
+    <script src="{{ js " common.js" }}"></script>
+    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
 </head>
 
 <body class="bg-pattern layout-auth">
@@ -21,7 +21,7 @@
 
     <div class="auth-container auth-container-animated">
         <div class="auth-brand">
-            <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" class="auth-logo">
+            <img src="{{ asset " /static/img/logo.svg" }}" alt="Peak Auth" class="auth-logo">
             <h1 class="auth-title">Peak <span class="auth-title-accent">Auth</span></h1>
             <p class="auth-subtitle">Verificación de dos pasos (MFA)</p>
         </div>
@@ -29,13 +29,15 @@
         <div class="glass-panel auth-panel">
             <h2 class="auth-panel-title">Seguridad de la cuenta</h2>
             <p class="auth-panel-copy">
-                Su cuenta está protegida con verificación de doble factor. Ingrese el código de su aplicación authenticator o un código de recuperación.
+                Su cuenta está protegida con verificación de doble factor. Ingrese el código de su aplicación
+                authenticator o un código de recuperación.
             </p>
 
             {{ if .Error }}
             <div class="auth-error">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <span>{{ .Error }}</span>
             </div>
@@ -43,13 +45,15 @@
 
             <form action="/admin/login/mfa" method="POST" class="auth-form">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                
+
                 <div class="form-group auth-form-group">
                     <label class="auth-label">Código de seguridad</label>
-                    <input type="text" name="code" required autocomplete="one-time-code" placeholder="000000 o XXXX-XXXX" autofocus class="peak-input auth-code-input">
+                    <input type="text" name="code" required autocomplete="one-time-code"
+                        placeholder="000000 o XXXX-XXXX" autofocus class="peak-input auth-code-input">
                 </div>
 
-                <button type="submit" class="peak-btn peak-btn-primary peak-btn-block auth-form-button auth-form-button-plain">
+                <button type="submit"
+                    class="peak-btn peak-btn-primary peak-btn-block auth-form-button auth-form-button-plain">
                     <span>Verificar y entrar</span>
                     {{template "icon-arrow-forward"}}
                 </button>
@@ -57,21 +61,26 @@
 
             {{ if .HasWebAuthn }}
             <div class="auth-divider">
-                <div class="auth-divider-line"><div></div></div>
-                <div class="auth-divider-label">
-                        <span>o utiliza</span>
-                    </div>
+                <div class="auth-divider-line">
+                    <div></div>
                 </div>
-
-                <button type="button" id="btn-webauthn" class="peak-btn peak-btn-secondary peak-btn-block auth-icon-button">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
-                    <span>Llave de Seguridad (Passkey)</span>
-                </button>
+                <div class="auth-divider-label">
+                    <span>o utiliza</span>
+                </div>
             </div>
-            {{ end }}
+
+            <button type="button" id="btn-webauthn" class="peak-btn peak-btn-secondary peak-btn-block auth-icon-button">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                </svg>
+                <span>Llave de Seguridad (Passkey)</span>
+            </button>
         </div>
+        {{ end }}
     </div>
-<script src="{{ js "login_mfa.js" }}"></script>
+    </div>
+    <script src="{{ js " login_mfa.js" }}"></script>
 </body>
 
 </html>

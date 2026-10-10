@@ -8,7 +8,7 @@
     <title>Autorizar {{ if .ClientName }}{{ .ClientName }}{{ else }}Aplicación{{ end }} - Peak Auth</title>
     <link rel="icon" type="image/png" href="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}{{ asset "/static/img/favicon.png" }}{{ end }}">
     <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="{{ asset "/static/css/oauth.css" }}">
+    <link rel="stylesheet" href="/static/css/oauth.css">
     {{ if .ThemeColors }}
     <style>
         :root {
@@ -36,7 +36,7 @@
             <div class="navbar-logo-wrapper oauth-style-2">
                 <img src="{{ if .AppLogo }}{{ .AppLogo }}{{ else }}/static/img/logo.svg{{ end }}" alt="{{ if .ClientName }}{{ .ClientName }}{{ else }}Peak Auth{{ end }}" class="oauth-style-3">
             </div>
-            <h1 class="peak-card-title oauth-style-4">Autorizar Aplicación</h1>
+            <h1 class="peak-card-title oauth-style-4">Autorizar aplicación</h1>
             <p class="peak-card-subtitle oauth-style-5">Revisa los permisos solicitados por {{ if .ClientName }}{{ .ClientName }}{{ else }}la aplicación{{ end }}</p>
         </div>
 
@@ -48,7 +48,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     <div>
-                        <h3 class="oauth-style-9">{{ .ClientName }}</h3>
+                        <h2 class="oauth-style-9">{{ .ClientName }}</h2>
                         {{ if .ClientDescription }}
                         <p class="oauth-style-10">{{ .ClientDescription }}</p>
                         {{ end }}
@@ -60,7 +60,7 @@
             </div>
 
             <div class="oauth-style-6">
-                <h4 class="oauth-style-12">Permisos solicitados:</h4>
+                <h3 class="oauth-style-12">Permisos solicitados:</h3>
                 <ul class="oauth-style-13">
                     <li class="oauth-style-14">
                         <svg class="oauth-style-15" fill="currentColor" viewBox="0 0 20 20">
@@ -103,7 +103,7 @@
                     <input type="hidden" name="code_challenge" value="{{ .CodeChallenge }}">
                     <input type="hidden" name="code_challenge_method" value="{{ .CodeChallengeMethod }}">
                     <button type="submit" class="peak-btn peak-btn-primary peak-btn-block">
-                        Autorizar y Continuar
+                        Autorizar y continuar
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                     </button>
                 </form>

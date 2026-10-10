@@ -1,390 +1,465 @@
 {{ define "content" }}
 <div id="settings-root" data-csrf-token="{{ .CSRFToken }}" class="settings-page">
-<div class="settings-page-header">
-    <h2>Ajustes de cuenta</h2>
-    <p>Administra tu seguridad, métodos de autenticación multi-factor, sesiones activas y aplicaciones autorizadas.</p>
-</div>
+    <div class="settings-page-header">
+        <h2>Ajustes de cuenta</h2>
+        <p>Administra tu seguridad, métodos de autenticación multi-factor, sesiones activas y aplicaciones autorizadas.
+        </p>
+    </div>
 
-<div class="settings-layout">
-    <!-- Sidebar de Navegación Estilo GitHub -->
-    <aside class="peak-card settings-sidebar">
-        <div class="settings-sidebar-user">
-            <div id="sidebar-avatar-container" class="settings-avatar">
-                {{ if .User.Profile.AvatarURL }}
-                <img id="sidebar-avatar-img" src="{{ .User.Profile.AvatarURL }}" alt="Avatar">
-                {{ else }}
-                <span id="sidebar-avatar-fallback" class="settings-avatar-fallback">
-                    {{ if .User.Profile.FirstName }}{{ safe_slice .User.Profile.FirstName 0 1 }}{{ else }}U{{ end }}
-                </span>
-                {{ end }}
-            </div>
-            <div class="settings-sidebar-name-wrapper">
-                <div id="sidebar-user-name" class="settings-sidebar-name">
-                    {{ if or .User.Profile.FirstName .User.Profile.LastName }}{{ .User.Profile.FirstName }} {{ .User.Profile.LastName }}{{ else }}Tu cuenta personal{{ end }}
+    <div class="settings-layout">
+        <!-- Sidebar de Navegación Estilo GitHub -->
+        <aside class="peak-card settings-sidebar">
+            <div class="settings-sidebar-user">
+                <div id="sidebar-avatar-container" class="settings-avatar">
+                    {{ if .User.Profile.AvatarURL }}
+                    <img id="sidebar-avatar-img" src="{{ .User.Profile.AvatarURL }}" alt="Avatar">
+                    {{ else }}
+                    <span id="sidebar-avatar-fallback" class="settings-avatar-fallback">
+                        {{ if .User.Profile.FirstName }}{{ safe_slice .User.Profile.FirstName 0 1 }}{{ else }}U{{ end }}
+                    </span>
+                    {{ end }}
                 </div>
-                <div class="settings-sidebar-email">
-                    {{ .User.Email }}
+                <div class="settings-sidebar-name-wrapper">
+                    <div id="sidebar-user-name" class="settings-sidebar-name">
+                        {{ if or .User.Profile.FirstName .User.Profile.LastName }}{{ .User.Profile.FirstName }} {{
+                        .User.Profile.LastName }}{{ else }}Tu cuenta personal{{ end }}
+                    </div>
+                    <div class="settings-sidebar-email">
+                        {{ .User.Email }}
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="settings-divider"></div>
-
-        <nav class="settings-nav">
-            <button type="button" class="settings-tab-btn active" data-tab="profile">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                Perfil de usuario
-            </button>
-
-            <div class="settings-nav-section">
-                <span>Acceso y seguridad</span>
             </div>
 
-            <button type="button" class="settings-tab-btn" data-tab="security">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                Contraseña y autenticación
-            </button>
-            <button type="button" class="settings-tab-btn" data-tab="sessions">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                Sesiones activas
-            </button>
-            <button type="button" class="settings-tab-btn" data-tab="applications">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                Apps autorizadas
-            </button>
-        </nav>
-    </aside>
+            <div class="settings-divider"></div>
 
-    <!-- Contenido Principal Dinámico -->
-    <div class="settings-main">
+            <nav class="settings-nav">
+                <button type="button" class="settings-tab-btn active" data-tab="profile">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Perfil de usuario
+                </button>
 
-        <!-- PANEL: PERFIL DE USUARIO -->
-        <section id="panel-profile" class="settings-panel">
-            <!-- Card 1: Información Personal -->
-            <div class="peak-card settings-card-spaced">
-                <div class="peak-card-header settings-panel-header">
-                    <h3 class="peak-card-title">Información personal</h3>
-                    <p class="peak-card-subtitle">Administra tus datos personales y cómo te identificas en las aplicaciones autorizadas.</p>
+                <div class="settings-nav-section">
+                    <span>Acceso y seguridad</span>
                 </div>
 
-                <div id="profile-feedback" class="settings-feedback"></div>
+                <button type="button" class="settings-tab-btn" data-tab="security">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    Contraseña y autenticación
+                </button>
+                <button type="button" class="settings-tab-btn" data-tab="sessions">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Sesiones activas
+                </button>
+                <button type="button" class="settings-tab-btn" data-tab="applications">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    Apps autorizadas
+                </button>
+            </nav>
+        </aside>
 
-                <form id="form-profile" class="settings-form">
-                    <div class="settings-profile-summary">
-                        <div id="profile-avatar-container" class="settings-profile-avatar">
-                            {{ if .User.Profile.AvatarURL }}
-                            <img id="profile-avatar-preview" src="{{ .User.Profile.AvatarURL }}" alt="Avatar">
-                            {{ else }}
-                            <span id="profile-avatar-fallback" class="settings-profile-fallback">
-                                {{ if .User.Profile.FirstName }}{{ safe_slice .User.Profile.FirstName 0 1 }}{{ else }}U{{ end }}
-                            </span>
-                            {{ end }}
-                        </div>
-                        <div class="settings-profile-details">
-                            <div id="profile-name-display" class="settings-profile-name">
-                                {{ if or .User.Profile.FirstName .User.Profile.LastName }}{{ .User.Profile.FirstName }} {{ .User.Profile.LastName }}{{ else }}{{ .User.Email }}{{ end }}
-                            </div>
-                            <div class="settings-profile-meta">
-                                <span class="settings-profile-email">{{ .User.Email }}</span>
-                                {{ if .User.IsVerified }}
-                                <span class="settings-status-badge is-verified">Verificado</span>
+        <!-- Contenido Principal Dinámico -->
+        <div class="settings-main">
+
+            <!-- PANEL: PERFIL DE USUARIO -->
+            <section id="panel-profile" class="settings-panel">
+                <!-- Card 1: Información Personal -->
+                <div class="peak-card settings-card-spaced">
+                    <div class="peak-card-header settings-panel-header">
+                        <h3 class="peak-card-title">Información personal</h3>
+                        <p class="peak-card-subtitle">Administra tus datos personales y cómo te identificas en las
+                            aplicaciones autorizadas.</p>
+                    </div>
+
+                    <div id="profile-feedback" class="settings-feedback"></div>
+
+                    <form id="form-profile" class="settings-form">
+                        <div class="settings-profile-summary">
+                            <div id="profile-avatar-container" class="settings-profile-avatar">
+                                {{ if .User.Profile.AvatarURL }}
+                                <img id="profile-avatar-preview" src="{{ .User.Profile.AvatarURL }}" alt="Avatar">
                                 {{ else }}
-                                <span class="settings-status-badge is-unverified">No verificado</span>
+                                <span id="profile-avatar-fallback" class="settings-profile-fallback">
+                                    {{ if .User.Profile.FirstName }}{{ safe_slice .User.Profile.FirstName 0 1 }}{{ else
+                                    }}U{{ end }}
+                                </span>
                                 {{ end }}
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="settings-section-divider"></div>
-
-                    <div class="settings-form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Nombre</label>
-                            <input type="text" name="first_name" id="profile-first-name" value="{{ .User.Profile.FirstName }}" placeholder="Tu nombre" class="peak-input" required maxlength="50">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Apellido</label>
-                            <input type="text" name="last_name" id="profile-last-name" value="{{ .User.Profile.LastName }}" placeholder="Tu apellido" class="peak-input" required maxlength="50">
-                        </div>
-                    </div>
-
-                    <div class="settings-form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Correo electrónico (no modificable)</label>
-                            <input type="email" value="{{ .User.Email }}" disabled class="peak-input settings-disabled-input">
-                        </div>
-                        <div class="form-group settings-date-group">
-                            <label class="form-label" for="profile-birth-date-display">Fecha de nacimiento</label>
-                            <div class="peak-datepicker-wrapper">
-                                <input type="hidden" name="birth_date" id="profile-birth-date" value="{{ if not .User.Profile.BirthDate.IsZero }}{{ .User.Profile.BirthDate.UTC.Format "2006-01-02" }}{{ end }}">
-                                <div class="settings-date-control">
-                                    <input type="text" id="profile-birth-date-display" readonly placeholder="Seleccionar fecha" class="peak-input settings-date-input">
-                                    <button type="button" id="btn-open-datepicker" class="settings-date-button" title="Seleccionar fecha" aria-label="Seleccionar fecha">
-                                        <svg class="settings-icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    </button>
+                            <div class="settings-profile-details">
+                                <div id="profile-name-display" class="settings-profile-name">
+                                    {{ if or .User.Profile.FirstName .User.Profile.LastName }}{{ .User.Profile.FirstName
+                                    }} {{ .User.Profile.LastName }}{{ else }}{{ .User.Email }}{{ end }}
                                 </div>
-                                <div id="peak-datepicker-popup" class="peak-datepicker-popover hidden"></div>
+                                <div class="settings-profile-meta">
+                                    <span class="settings-profile-email">{{ .User.Email }}</span>
+                                    {{ if .User.IsVerified }}
+                                    <span class="settings-status-badge is-verified">Verificado</span>
+                                    {{ else }}
+                                    <span class="settings-status-badge is-unverified">No verificado</span>
+                                    {{ end }}
+                                </div>
                             </div>
                         </div>
+
+                        <div class="settings-section-divider"></div>
+
+                        <div class="settings-form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" name="first_name" id="profile-first-name"
+                                    value="{{ .User.Profile.FirstName }}" placeholder="Tu nombre" class="peak-input"
+                                    required maxlength="50">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Apellido</label>
+                                <input type="text" name="last_name" id="profile-last-name"
+                                    value="{{ .User.Profile.LastName }}" placeholder="Tu apellido" class="peak-input"
+                                    required maxlength="50">
+                            </div>
+                        </div>
+
+                        <div class="settings-form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Correo electrónico (no modificable)</label>
+                                <input type="email" value="{{ .User.Email }}" disabled
+                                    class="peak-input settings-disabled-input">
+                            </div>
+                            <div class="form-group settings-date-group">
+                                <label class="form-label" for="profile-birth-date-display">Fecha de nacimiento</label>
+                                <div class="peak-datepicker-wrapper">
+                                    <input type="hidden" name="birth_date" id="profile-birth-date"
+                                        value="{{ if not .User.Profile.BirthDate.IsZero }}{{ .User.Profile.BirthDate.UTC.Format "
+                                        2006-01-02" }}{{ end }}">
+                                    <div class="settings-date-control">
+                                        <input type="text" id="profile-birth-date-display" readonly
+                                            placeholder="Seleccionar fecha" class="peak-input settings-date-input">
+                                        <button type="button" id="btn-open-datepicker" class="settings-date-button"
+                                            title="Seleccionar fecha" aria-label="Seleccionar fecha">
+                                            <svg class="settings-icon-md" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div id="peak-datepicker-popup" class="peak-datepicker-popover hidden"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-form-grid settings-form-grid-start">
+                            <div class="form-group">
+                                <label class="form-label">Subir foto de perfil (máx. 5 MB)</label>
+                                <input type="file" name="avatar_file" id="profile-avatar-file"
+                                    accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
+                                <div class="settings-avatar-upload">
+                                    <button type="button" id="btn-select-avatar"
+                                        class="peak-btn peak-btn-secondary settings-avatar-button">
+                                        <svg class="settings-icon-upload" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        <span>Elegir archivo</span>
+                                    </button>
+                                    <span id="avatar-file-name" class="settings-file-name">
+                                        Ningún archivo seleccionado
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">O URL del avatar</label>
+                                <input type="url" name="avatar_url" id="profile-avatar-url"
+                                    value="{{ .User.Profile.AvatarURL }}" placeholder="https://ejemplo.com/avatar.png"
+                                    class="peak-input">
+                            </div>
+                        </div>
+
+                        <div class="settings-actions settings-actions-end">
+                            <button type="submit" id="btn-save-profile" class="peak-btn peak-btn-primary">
+                                Guardar perfil
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- PANEL: SEGURIDAD & 2FA -->
+            <section id="panel-security" class="settings-panel hidden">
+
+                <!-- TARJETA 1: CAMBIAR CONTRASEÑA -->
+                <div class="peak-card settings-card-spaced">
+                    <div class="peak-card-header settings-panel-header">
+                        <h3 class="peak-card-title">Cambiar contraseña</h3>
+                        <p class="peak-card-subtitle">Actualiza tu contraseña periódicamente para mantener tu cuenta
+                            protegida.</p>
                     </div>
 
-                    <div class="settings-form-grid settings-form-grid-start">
+                    <div id="password-feedback" class="settings-feedback"></div>
+
+                    <form id="form-password" class="settings-form settings-password-form">
                         <div class="form-group">
-                            <label class="form-label">Subir foto de perfil (máx. 5 MB)</label>
-                            <input type="file" name="avatar_file" id="profile-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
-                            <div class="settings-avatar-upload">
-                                <button type="button" id="btn-select-avatar" class="peak-btn peak-btn-secondary settings-avatar-button">
-                                    <svg class="settings-icon-upload" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                    <span>Elegir archivo</span>
-                                </button>
-                                <span id="avatar-file-name" class="settings-file-name">
-                                    Ningún archivo seleccionado
-                                </span>
-                            </div>
+                            <label class="form-label" for="pwd-current">Contraseña actual</label>
+                            <input type="password" name="current_password" id="pwd-current" required
+                                placeholder="••••••••" class="peak-input" autocomplete="current-password">
                         </div>
+
                         <div class="form-group">
-                            <label class="form-label">O URL del avatar</label>
-                            <input type="url" name="avatar_url" id="profile-avatar-url" value="{{ .User.Profile.AvatarURL }}" placeholder="https://ejemplo.com/avatar.png" class="peak-input">
+                            <label class="form-label" for="pwd-new">Nueva contraseña</label>
+                            <input type="password" name="new_password" id="pwd-new" required placeholder="••••••••"
+                                class="peak-input" autocomplete="new-password">
+                            <span class="settings-help-text settings-help-block">Mínimo 8 caracteres, al menos 1
+                                mayúscula, 1 número y 1 símbolo.</span>
                         </div>
-                    </div>
 
-                    <div class="settings-actions settings-actions-end">
-                        <button type="submit" id="btn-save-profile" class="peak-btn peak-btn-primary">
-                            Guardar perfil
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </section>
-        
-        <!-- PANEL: SEGURIDAD & 2FA -->
-        <section id="panel-security" class="settings-panel hidden">
-            
-            <!-- TARJETA 1: CAMBIAR CONTRASEÑA -->
-            <div class="peak-card settings-card-spaced">
-                <div class="peak-card-header settings-panel-header">
-                    <h3 class="peak-card-title">Cambiar contraseña</h3>
-                    <p class="peak-card-subtitle">Actualiza tu contraseña periódicamente para mantener tu cuenta protegida.</p>
+                        <div class="form-group">
+                            <label class="form-label" for="pwd-confirm">Confirmar nueva contraseña</label>
+                            <input type="password" name="confirm_password" id="pwd-confirm" required
+                                placeholder="••••••••" class="peak-input" autocomplete="new-password">
+                        </div>
+
+                        <div class="settings-actions">
+                            <button type="submit" id="btn-save-password" class="peak-btn peak-btn-primary">
+                                Actualizar contraseña
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
-                <div id="password-feedback" class="settings-feedback"></div>
-
-                <form id="form-password" class="settings-form settings-password-form">
-                    <div class="form-group">
-                        <label class="form-label" for="pwd-current">Contraseña actual</label>
-                        <input type="password" name="current_password" id="pwd-current" required placeholder="••••••••" class="peak-input" autocomplete="current-password">
+                <!-- TARJETA 2: AUTENTICACIÓN DE DOS FACTORES -->
+                <div class="peak-card settings-mfa-card">
+                    <div class="settings-mfa-header">
+                        <h3>Autenticación de dos factores (2FA)</h3>
+                        <p class="settings-mfa-description">
+                            Añade una capa adicional de seguridad a tu cuenta requiriendo un segundo factor de
+                            autenticación al iniciar sesión.
+                        </p>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="pwd-new">Nueva contraseña</label>
-                        <input type="password" name="new_password" id="pwd-new" required placeholder="••••••••" class="peak-input" autocomplete="new-password">
-                        <span class="settings-help-text settings-help-block">Mínimo 8 caracteres, al menos 1 mayúscula, 1 número y 1 símbolo.</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="pwd-confirm">Confirmar nueva contraseña</label>
-                        <input type="password" name="confirm_password" id="pwd-confirm" required placeholder="••••••••" class="peak-input" autocomplete="new-password">
-                    </div>
-
-                    <div class="settings-actions">
-                        <button type="submit" id="btn-save-password" class="peak-btn peak-btn-primary">
-                            Actualizar contraseña
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- TARJETA 2: AUTENTICACIÓN DE DOS FACTORES -->
-            <div class="peak-card settings-mfa-card">
-                <div class="settings-mfa-header">
-                    <h3 >Autenticación de dos factores (2FA)</h3>
-                    <p class="settings-mfa-description">
-                        Añade una capa adicional de seguridad a tu cuenta requiriendo un segundo factor de autenticación al iniciar sesión.
-                    </p>
-                </div>
-
-                <!-- 1. Authenticator app (TOTP) -->
-                <div class="settings-method-row">
-                    <div class="settings-method-content">
-                        <div class="settings-method-icon">
-                            <svg class="settings-icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                        </div>
-                        <div>
-                            <div class="settings-method-title">
-                                <span >Aplicación de autenticación (TOTP)</span>
-                                <span id="totp-badge" class="peak-badge peak-badge-secondary settings-badge">
-                                    <span class="peak-badge-indicator"></span> Verificando...
-                                </span>
-                            </div>
-                            <div class="settings-method-description">
-                                Genera códigos temporales de un solo uso en tu teléfono móvil (Google Authenticator, Authy, etc.).
-                            </div>
-                        </div>
-                    </div>
-                    <div class="settings-method-title">
-                        <button type="button" id="btn-config-totp" class="peak-btn peak-btn-secondary settings-method-button">
-                            Configurar
-                        </button>
-                        <button type="button" id="btn-disable-totp" class="peak-btn peak-btn-danger settings-method-button hidden">
-                            Desactivar
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 2. Security keys / Passkeys (WebAuthn) -->
-                <div>
+                    <!-- 1. Authenticator app (TOTP) -->
                     <div class="settings-method-row">
                         <div class="settings-method-content">
                             <div class="settings-method-icon">
-                                <svg class="settings-icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                <svg class="settings-icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
                             </div>
                             <div>
                                 <div class="settings-method-title">
-                                    <span >Llaves de acceso y seguridad (Passkeys)</span>
-                                    <span id="keys-badge" class="peak-badge peak-badge-secondary settings-badge">
-                                        <span class="peak-badge-indicator"></span> 0 configuradas
+                                    <span>Aplicación de autenticación (TOTP)</span>
+                                    <span id="totp-badge" class="peak-badge peak-badge-secondary settings-badge">
+                                        <span class="peak-badge-indicator"></span> Verificando...
                                     </span>
-                                    <button type="button" id="btn-toggle-passkeys-list" class="settings-passkeys-toggle hidden">
-                                        (ver lista)
-                                    </button>
                                 </div>
                                 <div class="settings-method-description">
-                                    Dispositivos biométricos (Touch ID, Face ID, Windows Hello) o llaves de hardware FIDO2 (YubiKey).
+                                    Genera códigos temporales de un solo uso en tu teléfono móvil (Google Authenticator,
+                                    Authy, etc.).
                                 </div>
                             </div>
                         </div>
-                        <button type="button" id="btn-add-passkey-quick" class="peak-btn peak-btn-secondary settings-method-button">
-                            Agregar llave
-                        </button>
-                    </div>
-
-                    <!-- Lista desplegable de passkeys -->
-                    <div id="passkeys-inline-list-container" class="settings-method-list">
-                        <div id="passkeys-inline-list" class="settings-method-list-items"></div>
-                    </div>
-                </div>
-
-                <!-- 3. Recovery codes -->
-                <div class="settings-method-row settings-method-row-last">
-                    <div class="settings-method-content">
-                        <div class="settings-method-icon">
-                            <svg class="settings-icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                        </div>
-                        <div>
-                            <div class="settings-method-title">
-                                <span >Códigos de recuperación</span>
-                                <span id="recovery-badge" class="peak-badge peak-badge-success settings-badge">
-                                    <span class="peak-badge-indicator"></span> Configurados
-                                </span>
-                            </div>
-                            <div class="settings-method-description">
-                                Permiten recuperar el acceso a tu cuenta si pierdes tu dispositivo de autenticación de dos factores.
-                            </div>
+                        <div class="settings-method-title">
+                            <button type="button" id="btn-config-totp"
+                                class="peak-btn peak-btn-secondary settings-method-button">
+                                Configurar
+                            </button>
+                            <button type="button" id="btn-disable-totp"
+                                class="peak-btn peak-btn-danger settings-method-button hidden">
+                                Desactivar
+                            </button>
                         </div>
                     </div>
-                    <button type="button" id="btn-manage-recovery" class="peak-btn peak-btn-secondary settings-method-button">
-                        Gestionar códigos
-                    </button>
-                </div>
 
-            </div>
-        </section>
-
-        <!-- PANEL: SESIONES ACTIVAS -->
-        <section id="panel-sessions" class="settings-panel hidden">
-            <div class="peak-card">
-                <div class="peak-card-header settings-panel-header settings-panel-header-between">
+                    <!-- 2. Security keys / Passkeys (WebAuthn) -->
                     <div>
-                        <h3 class="peak-card-title">Sesiones activas</h3>
-                        <p class="peak-card-subtitle">Dispositivos y clientes donde actualmente tienes una sesión iniciada.</p>
-                    </div>
-                    <button type="button" id="btn-revoke-others" class="peak-btn peak-btn-danger settings-resource-action" {{ if not .HasOtherSessions }}disabled title="No hay otras sesiones activas"{{ end }}>
-                        Cerrar todas las demás sesiones
-                    </button>
-                </div>
+                        <div class="settings-method-row">
+                            <div class="settings-method-content">
+                                <div class="settings-method-icon">
+                                    <svg class="settings-icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="settings-method-title">
+                                        <span>Llaves de acceso y seguridad (Passkeys)</span>
+                                        <span id="keys-badge" class="peak-badge peak-badge-secondary settings-badge">
+                                            <span class="peak-badge-indicator"></span> 0 configuradas
+                                        </span>
+                                        <button type="button" id="btn-toggle-passkeys-list"
+                                            class="settings-passkeys-toggle hidden">
+                                            (ver lista)
+                                        </button>
+                                    </div>
+                                    <div class="settings-method-description">
+                                        Dispositivos biométricos (Touch ID, Face ID, Windows Hello) o llaves de hardware
+                                        FIDO2 (YubiKey).
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" id="btn-add-passkey-quick"
+                                class="peak-btn peak-btn-secondary settings-method-button">
+                                Agregar llave
+                            </button>
+                        </div>
 
-                <div id="sessions-container" class="settings-sessions-list">
-                    {{ range .Sessions }}
-                    <div class="peak-card session-card settings-resource-card" data-id="{{ .ID }}" data-is-current="{{ .IsCurrent }}">
-                        <div class="settings-resource-content">
-                            <div class="settings-resource-icon">
-                                {{ if or (contains .DeviceType "Móvil") (contains .DeviceType "iOS") (contains .DeviceType "Android") }}📱{{ else if or (contains .DeviceType "Tablet") (contains .DeviceType "iPad") }}📟{{ else if contains .DeviceType "API" }}⚡{{ else }}🖥️{{ end }}
+                        <!-- Lista desplegable de passkeys -->
+                        <div id="passkeys-inline-list-container" class="settings-method-list">
+                            <div id="passkeys-inline-list" class="settings-method-list-items"></div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Recovery codes -->
+                    <div class="settings-method-row settings-method-row-last">
+                        <div class="settings-method-content">
+                            <div class="settings-method-icon">
+                                <svg class="settings-icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
                             </div>
                             <div>
                                 <div class="settings-method-title">
-                                    <span >{{ if .AppName }}{{ .AppName }}{{ else }}Peak Auth{{ end }}</span>
-                                    <span class="settings-resource-label">{{ .DeviceType }}</span>
-                                    {{ if .IsCurrent }}
-                                    <span class="settings-status-badge is-verified">Sesión actual</span>
-                                    {{ end }}
+                                    <span>Códigos de recuperación</span>
+                                    <span id="recovery-badge" class="peak-badge peak-badge-success settings-badge">
+                                        <span class="peak-badge-indicator"></span> Configurados
+                                    </span>
                                 </div>
-                                <div class="settings-resource-details">
-                                    IP: <code>{{ if .IPAddress }}{{ .IPAddress }}{{ else }}Desconocida{{ end }}</code> • Última actividad: {{ .LastUsedAt.Format "02/01/2006 15:04" }}
+                                <div class="settings-method-description">
+                                    Permiten recuperar el acceso a tu cuenta si pierdes tu dispositivo de autenticación
+                                    de dos factores.
                                 </div>
                             </div>
                         </div>
-
-                        {{ if not .IsCurrent }}
-                        <button type="button" class="peak-btn peak-btn-secondary btn-revoke-session settings-resource-action" data-id="{{ .ID }}">
-                            Cerrar sesión
+                        <button type="button" id="btn-manage-recovery"
+                            class="peak-btn peak-btn-secondary settings-method-button">
+                            Gestionar códigos
                         </button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PANEL: SESIONES ACTIVAS -->
+            <section id="panel-sessions" class="settings-panel hidden">
+                <div class="peak-card">
+                    <div class="peak-card-header settings-panel-header settings-panel-header-between">
+                        <div>
+                            <h3 class="peak-card-title">Sesiones activas</h3>
+                            <p class="peak-card-subtitle">Dispositivos y clientes donde actualmente tienes una sesión
+                                iniciada.</p>
+                        </div>
+                        <button type="button" id="btn-revoke-others"
+                            class="peak-btn peak-btn-danger settings-resource-action" {{ if not .HasOtherSessions
+                            }}disabled title="No hay otras sesiones activas" {{ end }}>
+                            Cerrar todas las demás sesiones
+                        </button>
+                    </div>
+
+                    <div id="sessions-container" class="settings-sessions-list">
+                        {{ range .Sessions }}
+                        <div class="peak-card session-card settings-resource-card" data-id="{{ .ID }}"
+                            data-is-current="{{ .IsCurrent }}">
+                            <div class="settings-resource-content">
+                                <div class="settings-resource-icon">
+                                    {{ if or (contains .DeviceType "Móvil") (contains .DeviceType "iOS") (contains
+                                    .DeviceType "Android") }}📱{{ else if or (contains .DeviceType "Tablet") (contains
+                                    .DeviceType "iPad") }}📟{{ else if contains .DeviceType "API" }}⚡{{ else }}🖥️{{ end
+                                    }}
+                                </div>
+                                <div>
+                                    <div class="settings-method-title">
+                                        <span>{{ if .AppName }}{{ .AppName }}{{ else }}Peak Auth{{ end }}</span>
+                                        <span class="settings-resource-label">{{ .DeviceType }}</span>
+                                        {{ if .IsCurrent }}
+                                        <span class="settings-status-badge is-verified">Sesión actual</span>
+                                        {{ end }}
+                                    </div>
+                                    <div class="settings-resource-details">
+                                        IP:
+                                        <code>{{ if .IPAddress }}{{ .IPAddress }}{{ else }}Desconocida{{ end }}</code> •
+                                        Última actividad: {{ .LastUsedAt.Format "02/01/2006 15:04" }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{ if not .IsCurrent }}
+                            <button type="button"
+                                class="peak-btn peak-btn-secondary btn-revoke-session settings-resource-action"
+                                data-id="{{ .ID }}">
+                                Cerrar sesión
+                            </button>
+                            {{ end }}
+                        </div>
+                        {{ else }}
+                        <div class="settings-empty">
+                            <p>No se encontraron sesiones activas registradas.</p>
+                        </div>
                         {{ end }}
                     </div>
-                    {{ else }}
-                    <div class="settings-empty">
-                        <p>No se encontraron sesiones activas registradas.</p>
+                </div>
+            </section>
+
+            <!-- PANEL: APPS AUTORIZADAS -->
+            <section id="panel-applications" class="settings-panel hidden">
+                <div class="peak-card">
+                    <div class="peak-card-header settings-panel-header">
+                        <h3 class="peak-card-title">Aplicaciones conectadas (OAuth 2.0)</h3>
+                        <p class="peak-card-subtitle">Aplicaciones de terceros o clientes web a los que has otorgado
+                            consentimiento de acceso a tu identidad.</p>
                     </div>
-                    {{ end }}
-                </div>
-            </div>
-        </section>
 
-        <!-- PANEL: APPS AUTORIZADAS -->
-        <section id="panel-applications" class="settings-panel hidden">
-            <div class="peak-card">
-                <div class="peak-card-header settings-panel-header">
-                    <h3 class="peak-card-title">Aplicaciones conectadas (OAuth 2.0)</h3>
-                    <p class="peak-card-subtitle">Aplicaciones de terceros o clientes web a los que has otorgado consentimiento de acceso a tu identidad.</p>
-                </div>
-
-                <div id="applications-container" class="settings-sessions-list">
-                    {{ range .Applications }}
-                    <div class="peak-card settings-resource-card">
-                        <div class="settings-resource-content">
-                            <div class="settings-resource-icon settings-app-icon">
-                                {{ safe_slice .AppName 0 1 }}
-                            </div>
-                            <div>
-                                <div class="settings-method-title">
-                                    <span >{{ .AppName }}</span>
-                                    <code class="settings-resource-label">{{ .ClientID }}</code>
+                    <div id="applications-container" class="settings-sessions-list">
+                        {{ range .Applications }}
+                        <div class="peak-card settings-resource-card">
+                            <div class="settings-resource-content">
+                                <div class="settings-resource-icon settings-app-icon">
+                                    {{ safe_slice .AppName 0 1 }}
                                 </div>
-                                <div class="settings-resource-details">
-                                    Autorizado el: {{ .GrantedAt.Format "02/01/2006 15:04" }}
+                                <div>
+                                    <div class="settings-method-title">
+                                        <span>{{ .AppName }}</span>
+                                        <code class="settings-resource-label">{{ .ClientID }}</code>
+                                    </div>
+                                    <div class="settings-resource-details">
+                                        Autorizado el: {{ .GrantedAt.Format "02/01/2006 15:04" }}
+                                    </div>
                                 </div>
                             </div>
+
+                            <button type="button"
+                                class="peak-btn peak-btn-danger btn-revoke-app settings-resource-action"
+                                data-client-id="{{ .ClientID }}">
+                                Revocar acceso
+                            </button>
                         </div>
-
-                        <button type="button" class="peak-btn peak-btn-danger btn-revoke-app settings-resource-action" data-client-id="{{ .ClientID }}">
-                            Revocar acceso
-                        </button>
+                        {{ else }}
+                        <div class="settings-empty">
+                            <p>No tienes aplicaciones autorizadas actualmente.</p>
+                        </div>
+                        {{ end }}
                     </div>
-                    {{ else }}
-                    <div class="settings-empty">
-                        <p>No tienes aplicaciones autorizadas actualmente.</p>
-                    </div>
-                    {{ end }}
                 </div>
-            </div>
-        </section>
+            </section>
 
+        </div>
     </div>
-</div>
 </div>
 {{ end }}
 
 {{ define "scripts" }}
-<script src="{{ js "settings.js" }}"></script>
+<script src="{{ js " settings.js" }}"></script>
 {{ end }}
 
 {{ template "base_admin" . }}

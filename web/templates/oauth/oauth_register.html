@@ -8,7 +8,7 @@
     <title>Crear cuenta{{ if .AppName }} - {{ .AppName }}{{ else }} con Peak Auth{{ end }}</title>
     <link rel="icon" type="image/png" href="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}{{ asset "/static/img/favicon.png" }}{{ end }}">
     <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="{{ asset "/static/css/oauth.css" }}">
+    <link rel="stylesheet" href="/static/css/oauth.css">
     {{ if .ThemeColors }}
     <style>
         :root {
@@ -47,7 +47,7 @@
                 <div class="oauth-style-65">
                     <svg class="oauth-style-66" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                 </div>
-                <h3 class="oauth-style-67">¡Cuenta creada con éxito!</h3>
+                <h2 class="oauth-style-67">¡Cuenta creada con éxito!</h2>
                 {{ if .RequireVerification }}
                 <p class="oauth-style-68">
                     Hemos enviado un enlace de confirmación a <strong>{{ .Email }}</strong>.<br>
@@ -81,28 +81,28 @@
 
                 <div class="oauth-style-70">
                     <div class="form-group">
-                        <label class="form-label">Nombre</label>
-                        <input type="text" name="first_name" required value="{{ .FirstName }}" placeholder="Nombre" class="peak-input">
+                        <label for="reg-first-name" class="form-label">Nombre</label>
+                        <input type="text" id="reg-first-name" name="first_name" required value="{{ .FirstName }}" placeholder="Nombre" class="peak-input" autocomplete="given-name">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Apellido</label>
-                        <input type="text" name="last_name" required value="{{ .LastName }}" placeholder="Apellido" class="peak-input">
+                        <label for="reg-last-name" class="form-label">Apellido</label>
+                        <input type="text" id="reg-last-name" name="last_name" required value="{{ .LastName }}" placeholder="Apellido" class="peak-input" autocomplete="family-name">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Correo electrónico</label>
-                    <input type="email" name="email" required value="{{ .Email }}" placeholder="tu@correo.com" class="peak-input">
+                    <label for="reg-email" class="form-label">Correo electrónico</label>
+                    <input type="email" id="reg-email" name="email" required value="{{ .Email }}" placeholder="tu@correo.com" class="peak-input" autocomplete="email">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Contraseña</label>
-                    <input type="password" name="password" required placeholder="••••••••" class="peak-input" autocomplete="new-password">
+                    <label for="reg-password" class="form-label">Contraseña</label>
+                    <input type="password" id="reg-password" name="password" required placeholder="••••••••" class="peak-input" autocomplete="new-password">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Confirmar contraseña</label>
-                    <input type="password" name="confirm_password" required placeholder="••••••••" class="peak-input" autocomplete="new-password">
+                    <label for="reg-confirm-password" class="form-label">Confirmar contraseña</label>
+                    <input type="password" id="reg-confirm-password" name="confirm_password" required placeholder="••••••••" class="peak-input" autocomplete="new-password">
                 </div>
 
                 <button type="submit" class="peak-btn peak-btn-primary peak-btn-block">

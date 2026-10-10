@@ -2,7 +2,8 @@
 <div class="app-form-shell">
     <div class="peak-card">
         <div class="app-form-header">
-            <a href="/admin" class="icon-btn app-back-button" title="Volver a aplicaciones" aria-label="Volver a aplicaciones">
+            <a href="/admin" class="icon-btn app-back-button" title="Volver a aplicaciones"
+                aria-label="Volver a aplicaciones">
                 {{ template "icon-arrow-back" }}
             </a>
             <h2 class="app-form-title">{{ .Title }}</h2>
@@ -12,8 +13,8 @@
             <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
             <div class="form-group">
                 <label class="form-label" for="app_name">Nombre de la aplicación</label>
-                <input type="text" id="app_name" name="name" value="{{ .NameValue }}" placeholder="Ej: Mi nueva app" required {{
-                    if .NameReadonly }}readonly{{ end }} {{ if .NameDisabled }}disabled{{ end }}
+                <input type="text" id="app_name" name="name" value="{{ .NameValue }}" placeholder="Ej: Mi nueva app"
+                    required {{ if .NameReadonly }}readonly{{ end }} {{ if .NameDisabled }}disabled{{ end }}
                     class="peak-input {{ .NameClass }}">
                 {{ if .Error }}
                 <p class="app-form-message app-form-message-error">
@@ -30,7 +31,8 @@
 
             <div class="form-group">
                 <label class="form-label" for="app_description">Descripción</label>
-                <textarea id="app_description" name="description" rows="4" placeholder="Describe brevemente tu aplicación..."
+                <textarea id="app_description" name="description" rows="4"
+                    placeholder="Describe brevemente tu aplicación..."
                     class="peak-input app-description-input">{{ if .App }}{{ .App.Description }}{{ else }}{{ .DescriptionValue }}{{ end }}</textarea>
             </div>
 
@@ -40,13 +42,16 @@
                 <label class="form-label">URL de redirección (OAuth 2.0 callback)</label>
                 <p class="app-form-note">
                     <span class="app-form-info-icon">{{ template "icon-info" }}</span>
-                    No aplica para la aplicación principal (Peak Auth Raíz). Actúa exclusivamente como el Identity Provider central.
+                    No aplica para la aplicación principal (Peak Auth Raíz). Actúa exclusivamente como el Identity
+                    Provider central.
                 </p>
             </div>
             {{ else }}
             <div class="form-group">
                 <label class="form-label" for="redirect_url">URL de redirección (OAuth 2.0 callback)</label>
-                <input type="text" id="redirect_url" name="redirect_url" value="{{ if .App }}{{ .App.RedirectURL }}{{ else }}{{ .RedirectURLValue }}{{ end }}" placeholder="Ej: http://localhost:4200/auth/callback" required class="peak-input">
+                <input type="text" id="redirect_url" name="redirect_url"
+                    value="{{ if .App }}{{ .App.RedirectURL }}{{ else }}{{ .RedirectURLValue }}{{ end }}"
+                    placeholder="Ej: http://localhost:4200/auth/callback" required class="peak-input">
                 {{ if .RedirectError }}
                 <p class="app-form-message app-form-message-error">
                     {{ template "icon-warning" }}
@@ -63,7 +68,8 @@
 
             <div class="app-status-card">
                 <div class="app-status-control">
-                    <input type="checkbox" name="is_active" id="is_active" {{ if .IsActive }}checked{{ end }} data-locked="{{ .IsLocked }}" class="peak-checkbox">
+                    <input type="checkbox" name="is_active" id="is_active" {{ if .IsActive }}checked{{ end }}
+                        data-locked="{{ .IsLocked }}" class="peak-checkbox">
                     <label for="is_active" class="app-status-label">
                         {{ .StatusApp }}
                     </label>
@@ -91,7 +97,7 @@
 
 {{ define "scripts" }}
 
-<script src="{{ js "app.js" }}"></script>
+<script src="{{ js " app.js" }}"></script>
 
 {{ end }}
 

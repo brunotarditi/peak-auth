@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="{{ asset "/static/css/oauth.css" }}">
+    <link rel="stylesheet" href="/static/css/oauth.css">
     <script src="{{ js "config.js" }}"></script>
     <script src="/static/js/modal.js"></script>
     <script src="/static/js/common.js"></script>
@@ -26,13 +26,13 @@
             <div class="oauth-style-38">
                 <img src="/static/img/logo.svg" alt="Peak Auth" class="oauth-style-51">
             </div>
-            <h1 class="oauth-style-39">Acceso Restringido</h1>
+            <h1 class="oauth-style-39">Acceso restringido</h1>
             <p class="oauth-style-40">Por política de seguridad, debes configurar el Segundo Factor (MFA) obligatoriamente antes de continuar.</p>
         </div>
 
         <div class="glass-panel oauth-style-41">
             <div id="totp-setup-container" class="oauth-style-52">
-                <h3 class="oauth-style-53">1. App de Autenticación</h3>
+                <h2 class="oauth-style-53">1. App de autenticación</h2>
                 <p class="oauth-style-54">Escanea el código QR con Google Authenticator o Authy.</p>
                 <div id="qr-code-box" class="oauth-style-55">
                     <div class="oauth-style-35">Cargando QR...</div>
@@ -40,10 +40,11 @@
                 
                 <input type="text" id="totp-code" name="code" required
                     class="peak-input oauth-style-56"
-                    placeholder="••••••" autocomplete="off" maxlength="6">
+                    placeholder="••••••" autocomplete="off" maxlength="6"
+                    aria-label="Código de verificación TOTP de 6 dígitos" inputmode="numeric" pattern="[0-9]*">
 
                 <button type="button" data-action="verify-totp" class="peak-btn peak-btn-primary peak-btn-block oauth-mfa-submit">
-                    <span>Verificar y Continuar</span>
+                    <span>Verificar y continuar</span>
                 </button>
             </div>
 
@@ -56,11 +57,11 @@
                 </div>
             </div>
             
-            <h3 class="oauth-style-57">2. Llave de Seguridad FÍSICA</h3>
+            <h2 class="oauth-style-57">2. Llave de seguridad física (Passkey)</h2>
             <p class="oauth-style-58">Usa Windows Hello, TouchID, FaceID o YubiKey.</p>
             <button type="button" data-action="register-webauthn" class="peak-btn peak-btn-secondary peak-btn-block oauth-webauthn-button">
                 <svg class="oauth-style-49" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                <span>Vincular Passkey</span>
+                <span>Vincular passkey</span>
             </button>
         </div>
     </div>
@@ -68,16 +69,16 @@
     <!-- Modal de Códigos de Recuperación -->
     <div id="recovery-modal" class="oauth-style-59">
         <div class="oauth-style-60">
-            <h2 class="oauth-style-61">¡MFA Configurado!</h2>
+            <h2 class="oauth-style-61">¡MFA configurado!</h2>
             <p class="oauth-style-62">Guarda estos códigos de recuperación en un lugar seguro. Solo se mostrarán una vez.</p>
             <div id="recovery-codes-list" class="oauth-style-63">
             </div>
             
             <button type="button" data-action="download-recovery-codes" class="peak-btn peak-btn-secondary peak-btn-block oauth-recovery-download">
-                📥 Descargar Códigos (.txt)
+                📥 Descargar códigos (.txt)
             </button>
             <button type="button" data-action="continue-oauth" class="peak-btn peak-btn-primary peak-btn-block oauth-recovery-continue">
-                Ya los guardé. Continuar.
+                Ya los guardé. Continuar
             </button>
         </div>
     </div>

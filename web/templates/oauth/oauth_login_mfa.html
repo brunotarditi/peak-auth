@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}{{ asset "/static/img/favicon.png" }}{{ end }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="{{ asset "/static/css/oauth.css" }}">
+    <link rel="stylesheet" href="/static/css/oauth.css">
     {{ if .ThemeColors }}
     <style>
         :root {
@@ -44,13 +44,14 @@
 
         <div class="glass-panel oauth-style-41">
             <div id="totp-container">
-                <h3 class="oauth-style-42">Ingresa el código de tu Authenticator</h3>
+                <h2 class="oauth-style-42">Ingresa el código de tu Authenticator</h2>
                 <input type="text" id="totp-code"
                     class="peak-input oauth-style-43"
-                    placeholder="••••••" maxlength="6" autocomplete="one-time-code" autofocus>
+                    placeholder="••••••" maxlength="6" autocomplete="one-time-code" autofocus
+                    aria-label="Código de verificación TOTP de 6 dígitos" inputmode="numeric" pattern="[0-9]*">
 
                 <button type="button" data-action="verify-totp" id="totp-btn" class="peak-btn peak-btn-primary peak-btn-block oauth-mfa-submit">
-                    <span>Verificar Código</span>
+                    <span>Verificar código</span>
                 </button>
             </div>
 
@@ -65,7 +66,7 @@
 
             <button type="button" data-action="login-webauthn" class="peak-btn peak-btn-secondary peak-btn-block oauth-webauthn-button">
                 <svg class="oauth-style-49" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                <span>Llave de Seguridad (Passkey)</span>
+                <span>Llave de seguridad (Passkey)</span>
             </button>
         </div>
     </div>

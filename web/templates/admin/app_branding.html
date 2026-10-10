@@ -10,8 +10,12 @@
         <div class="branding-toolbar-actions">
             <form id="resetThemeForm" action="/admin/apps/{{.App.AppID}}/branding/reset" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                <button type="button" id="btnResetTheme" class="peak-btn peak-btn-secondary branding-reset-button" title="Restablecer tema a valores por defecto de Peak Auth">
-                    <svg class="branding-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                <button type="button" id="btnResetTheme" class="peak-btn peak-btn-secondary branding-reset-button"
+                    title="Restablecer tema a valores por defecto de Peak Auth">
+                    <svg class="branding-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
                     Restablecer valores por defecto
                 </button>
             </form>
@@ -20,7 +24,10 @@
 
     {{ if .Saved }}
     <div class="alert-success branding-success">
-        <svg class="branding-success-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <svg class="branding-success-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
         <span class="branding-success-text">Configuración de personalización y tema guardada exitosamente.</span>
     </div>
     {{ end }}
@@ -37,10 +44,11 @@
 
     <!-- Split Grid: Form + Live Preview -->
     <div class="branding-layout">
-        
+
         <!-- Columna Izquierda: Formulario de Branding -->
         <div class="peak-card branding-form-card">
-            <form id="brandingForm" class="branding-form" action="/admin/apps/{{.App.AppID}}/branding" method="POST" enctype="multipart/form-data">
+            <form id="brandingForm" class="branding-form" action="/admin/apps/{{.App.AppID}}/branding" method="POST"
+                enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
 
                 <!-- Color Primario de la Marca -->
@@ -51,14 +59,16 @@
                     <p class="branding-help-text">
                         Se utiliza para generar los botones, halos de foco y acentos en el flujo OAuth.
                     </p>
-                    
+
                     <!-- Color Picker Controls: Swatch Button + Hex Input -->
                     <div class="branding-color-controls">
                         <!-- Hidden native color input, opened programmatically -->
-                        <input type="color" id="primaryColorPicker" class="branding-color-input" value="{{ .PrimaryColor }}">
+                        <input type="color" id="primaryColorPicker" class="branding-color-input"
+                            value="{{ .PrimaryColor }}">
 
                         <!-- Modern interactive button with live swatch -->
-                        <button type="button" id="btnOpenColorPicker" class="peak-btn peak-btn-secondary branding-color-button">
+                        <button type="button" id="btnOpenColorPicker"
+                            class="peak-btn peak-btn-secondary branding-color-button">
                             <span id="colorSwatchIndicator" class="branding-color-swatch"></span>
                             {{ template "icon-palette" }}
                             <span>Elegir color</span>
@@ -66,7 +76,8 @@
 
                         <div class="branding-hex-group">
                             <span class="branding-hex-label">HEX</span>
-                            <input type="text" id="primaryColorInput" name="primary_color" value="{{ .PrimaryColor }}" maxlength="7" placeholder="#2563EB" class="peak-input branding-hex-input">
+                            <input type="text" id="primaryColorInput" name="primary_color" value="{{ .PrimaryColor }}"
+                                maxlength="7" placeholder="#2563EB" class="peak-input branding-hex-input">
                         </div>
                     </div>
 
@@ -76,22 +87,28 @@
                             Colores sugeridos:
                         </span>
                         <div class="branding-preset-list">
-                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset" data-color="#2563eb">
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset"
+                                data-color="#2563eb">
                                 <span class="branding-preset-swatch"></span> Peak Blue
                             </button>
-                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset" data-color="#059669">
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset"
+                                data-color="#059669">
                                 <span class="branding-preset-swatch"></span> Emerald
                             </button>
-                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset" data-color="#7c3aed">
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset"
+                                data-color="#7c3aed">
                                 <span class="branding-preset-swatch"></span> Violet
                             </button>
-                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset" data-color="#e11d48">
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset"
+                                data-color="#e11d48">
                                 <span class="branding-preset-swatch"></span> Rose
                             </button>
-                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset" data-color="#d97706">
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset"
+                                data-color="#d97706">
                                 <span class="branding-preset-swatch"></span> Amber
                             </button>
-                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset" data-color="#1e293b">
+                            <button type="button" class="color-preset-btn peak-btn peak-btn-secondary branding-preset"
+                                data-color="#1e293b">
                                 <span class="branding-preset-swatch"></span> Slate
                             </button>
                         </div>
@@ -106,16 +123,19 @@
                     <p class="branding-help-text">
                         Formatos permitidos: PNG, JPG, WebP o SVG (máx. 5 MB).
                     </p>
-                    
+
                     <div class="branding-upload-row">
                         <div id="logoPreviewThumb" class="branding-upload-thumb branding-logo-thumb">
-                            <img src="{{ if .LogoURL }}{{ .LogoURL }}{{ else }}/static/img/logo.svg{{ end }}" id="logoThumbImg" alt="Logo preview">
+                            <img src="{{ if .LogoURL }}{{ .LogoURL }}{{ else }}/static/img/logo.svg{{ end }}"
+                                id="logoThumbImg" alt="Logo preview">
                         </div>
                         <div class="branding-upload-details">
                             <!-- Hidden native file input -->
-                            <input type="file" id="logoFileInput" class="branding-file-input" name="logo_file" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+                            <input type="file" id="logoFileInput" class="branding-file-input" name="logo_file"
+                                accept="image/png,image/jpeg,image/webp,image/svg+xml">
                             <div class="branding-upload-actions">
-                                <button type="button" id="btnSelectLogo" class="peak-btn peak-btn-secondary branding-upload-button">
+                                <button type="button" id="btnSelectLogo"
+                                    class="peak-btn peak-btn-secondary branding-upload-button">
                                     {{ template "icon-upload" }}
                                     Subir imagen de logo...
                                 </button>
@@ -127,7 +147,9 @@
 
                     <div class="branding-upload-field">
                         <label class="branding-url-label">O ingresa una URL directa de imagen:</label>
-                        <input type="text" id="logoUrlInput" name="logo_url" value="{{ .LogoURL }}" placeholder="https://cdn.tu-dominio.com/logo.png o /static/uploads/..." class="peak-input branding-standard-input">
+                        <input type="text" id="logoUrlInput" name="logo_url" value="{{ .LogoURL }}"
+                            placeholder="https://cdn.tu-dominio.com/logo.png o /static/uploads/..."
+                            class="peak-input branding-standard-input">
                     </div>
                 </div>
 
@@ -141,13 +163,16 @@
                     </p>
                     <div class="branding-upload-row">
                         <div id="faviconPreviewThumb" class="branding-upload-thumb branding-favicon-thumb">
-                            <img src="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}/static/img/favicon.png{{ end }}" id="faviconThumbImg" alt="Favicon preview">
+                            <img src="{{ if .FaviconURL }}{{ .FaviconURL }}{{ else }}/static/img/favicon.png{{ end }}"
+                                id="faviconThumbImg" alt="Favicon preview">
                         </div>
                         <div class="branding-upload-details">
                             <!-- Hidden native file input -->
-                            <input type="file" id="faviconFileInput" class="branding-file-input" name="favicon_file" accept="image/x-icon,image/png,image/svg+xml">
+                            <input type="file" id="faviconFileInput" class="branding-file-input" name="favicon_file"
+                                accept="image/x-icon,image/png,image/svg+xml">
                             <div class="branding-upload-actions">
-                                <button type="button" id="btnSelectFavicon" class="peak-btn peak-btn-secondary branding-upload-button">
+                                <button type="button" id="btnSelectFavicon"
+                                    class="peak-btn peak-btn-secondary branding-upload-button">
                                     {{ template "icon-upload" }}
                                     Subir favicon...
                                 </button>
@@ -158,7 +183,9 @@
                     </div>
                     <div class="branding-upload-field">
                         <label class="branding-url-label">O ingresa una URL directa de favicon:</label>
-                        <input type="text" id="faviconUrlInput" name="favicon_url" value="{{ .FaviconURL }}" placeholder="https://cdn.tu-dominio.com/favicon.ico o /static/uploads/..." class="peak-input branding-standard-input">
+                        <input type="text" id="faviconUrlInput" name="favicon_url" value="{{ .FaviconURL }}"
+                            placeholder="https://cdn.tu-dominio.com/favicon.ico o /static/uploads/..."
+                            class="peak-input branding-standard-input">
                     </div>
                 </div>
 
@@ -167,7 +194,8 @@
                     <label class="form-label branding-section-label">
                         Título de la Pantalla de Login
                     </label>
-                    <input type="text" id="customTitleInput" name="custom_title" value="{{ .CustomTitle }}" placeholder="Ej: Iniciar sesión en tu app" maxlength="100" class="peak-input">
+                    <input type="text" id="customTitleInput" name="custom_title" value="{{ .CustomTitle }}"
+                        placeholder="Ej: Iniciar sesión en tu app" maxlength="100" class="peak-input">
                     <p class="branding-help-text">Por defecto: "Iniciar sesión"</p>
                 </div>
 
@@ -175,7 +203,8 @@
                     <label class="form-label branding-section-label">
                         Subtítulo descriptivo
                     </label>
-                    <input type="text" id="customSubtitleInput" name="custom_subtitle" value="{{ .CustomSubtitle }}" placeholder="Ej: Ingresa con tus credenciales de tu app" maxlength="255" class="peak-input">
+                    <input type="text" id="customSubtitleInput" name="custom_subtitle" value="{{ .CustomSubtitle }}"
+                        placeholder="Ej: Ingresa con tus credenciales de tu app" maxlength="255" class="peak-input">
                     <p class="branding-help-text">Por defecto: "Continuar hacia tu app"</p>
                 </div>
 
@@ -184,11 +213,15 @@
                     <h3 class="branding-legal-title">Enlaces Legales (Opcional)</h3>
                     <div class="form-group">
                         <label class="form-label">URL Términos de Servicio</label>
-                        <input type="text" id="termsUrlInput" name="terms_url" value="{{ .TermsURL }}" placeholder="https://tu-dominio.com/terminos o /terminos" class="peak-input branding-standard-input">
+                        <input type="text" id="termsUrlInput" name="terms_url" value="{{ .TermsURL }}"
+                            placeholder="https://tu-dominio.com/terminos o /terminos"
+                            class="peak-input branding-standard-input">
                     </div>
                     <div class="form-group">
                         <label class="form-label">URL Política de Privacidad</label>
-                        <input type="text" id="privacyUrlInput" name="privacy_url" value="{{ .PrivacyURL }}" placeholder="https://tu-dominio.com/privacidad o /privacidad" class="peak-input branding-standard-input">
+                        <input type="text" id="privacyUrlInput" name="privacy_url" value="{{ .PrivacyURL }}"
+                            placeholder="https://tu-dominio.com/privacidad o /privacidad"
+                            class="peak-input branding-standard-input">
                     </div>
                 </div>
 
@@ -214,17 +247,21 @@
                     {{ if .AllowRegistration }}
                     <!-- Segmented Control: Login vs. Registro (Solo disponible cuando el registro público está activo) -->
                     <div class="branding-mode-switch">
-                        <button type="button" id="previewModeLogin" class="branding-mode-button branding-mode-button-active">
+                        <button type="button" id="previewModeLogin"
+                            class="branding-mode-button branding-mode-button-active">
                             Iniciar sesión
                         </button>
-                        <button type="button" id="previewModeRegister" class="branding-mode-button branding-mode-button-inactive">
+                        <button type="button" id="previewModeRegister"
+                            class="branding-mode-button branding-mode-button-inactive">
                             Registro
                         </button>
                     </div>
                     {{ end }}
 
                     <!-- Preview Theme Mode Toggle Button -->
-                    <button type="button" id="previewThemeToggle" class="peak-btn peak-btn-secondary branding-theme-toggle" title="Alternar tema claro / oscuro en la vista previa">
+                    <button type="button" id="previewThemeToggle"
+                        class="peak-btn peak-btn-secondary branding-theme-toggle"
+                        title="Alternar tema claro / oscuro en la vista previa">
                         <span id="previewThemeIcon">☀️</span>
                         <span id="previewThemeLabel">Probar modo claro</span>
                     </button>
@@ -233,7 +270,7 @@
 
             <!-- Preview Frame Container -->
             <div id="previewContainer" class="preview-theme-dark branding-preview-container">
-                
+
                 <!-- Auth Ambient Shapes Background -->
                 <div class="auth-bg-shapes">
                     <div class="auth-blob-1"></div>
@@ -242,11 +279,13 @@
 
                 <!-- Mock OAuth Card (Glass Panel) -->
                 <div class="glass-panel branding-preview-card" id="previewCard">
-                    
+
                     <!-- Header -->
                     <div class="branding-preview-header">
                         <div id="previewLogoImgBox" class="branding-preview-logo-box">
-                            <img id="previewLogoImg" src="{{ if .LogoURL }}{{ .LogoURL }}{{ else }}/static/img/logo.svg{{ end }}" alt="Logo Preview" class="branding-preview-logo">
+                            <img id="previewLogoImg"
+                                src="{{ if .LogoURL }}{{ .LogoURL }}{{ else }}/static/img/logo.svg{{ end }}"
+                                alt="Logo Preview" class="branding-preview-logo">
                         </div>
                         <h3 id="previewTitleText" class="branding-preview-heading">
                             {{ if .CustomTitle }}{{ .CustomTitle }}{{ else }}Iniciar sesión{{ end }}
@@ -259,19 +298,26 @@
                     <!-- Mock Login Form -->
                     <div id="previewMockLoginForm" class="branding-preview-form">
                         <div class="form-group branding-preview-field">
-                            <label class="form-label preview-field-label branding-preview-label">Correo electrónico</label>
-                            <input type="email" disabled placeholder="usuario@ejemplo.com" class="peak-input preview-field-input branding-preview-input">
+                            <label class="form-label preview-field-label branding-preview-label">Correo
+                                electrónico</label>
+                            <input type="email" disabled placeholder="usuario@ejemplo.com"
+                                class="peak-input preview-field-input branding-preview-input">
                         </div>
 
                         <div class="form-group branding-preview-field">
                             <label class="form-label preview-field-label branding-preview-label">Contraseña</label>
-                            <input type="password" disabled placeholder="••••••••" class="peak-input preview-field-input branding-preview-input">
+                            <input type="password" disabled placeholder="••••••••"
+                                class="peak-input preview-field-input branding-preview-input">
                         </div>
 
                         <!-- Brand Styled Action Button -->
-                        <button type="button" id="previewActionBtn" class="peak-btn peak-btn-primary peak-btn-block branding-preview-action">
+                        <button type="button" id="previewActionBtn"
+                            class="peak-btn peak-btn-primary peak-btn-block branding-preview-action">
                             Entrar de forma segura
-                            <svg class="branding-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                            <svg class="branding-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
                         </button>
                     </div>
 
@@ -279,42 +325,59 @@
                     <div id="previewMockRegisterForm" class="branding-preview-register-form">
                         <div class="branding-preview-row">
                             <div class="form-group branding-preview-field">
-                                <label class="form-label preview-field-label branding-preview-label-small">Nombre</label>
-                                <input type="text" disabled placeholder="Juan" class="peak-input preview-field-input branding-preview-input-small">
+                                <label
+                                    class="form-label preview-field-label branding-preview-label-small">Nombre</label>
+                                <input type="text" disabled placeholder="Juan"
+                                    class="peak-input preview-field-input branding-preview-input-small">
                             </div>
                             <div class="form-group branding-preview-field">
-                                <label class="form-label preview-field-label branding-preview-label-small">Apellido</label>
-                                <input type="text" disabled placeholder="Pérez" class="peak-input preview-field-input branding-preview-input-small">
+                                <label
+                                    class="form-label preview-field-label branding-preview-label-small">Apellido</label>
+                                <input type="text" disabled placeholder="Pérez"
+                                    class="peak-input preview-field-input branding-preview-input-small">
                             </div>
                         </div>
 
                         <div class="form-group branding-preview-field">
-                            <label class="form-label preview-field-label branding-preview-label-small">Correo electrónico</label>
-                            <input type="email" disabled placeholder="juan@ejemplo.com" class="peak-input preview-field-input branding-preview-input-small">
+                            <label class="form-label preview-field-label branding-preview-label-small">Correo
+                                electrónico</label>
+                            <input type="email" disabled placeholder="juan@ejemplo.com"
+                                class="peak-input preview-field-input branding-preview-input-small">
                         </div>
 
                         <div class="form-group branding-preview-field">
-                            <label class="form-label preview-field-label branding-preview-label-small">Contraseña</label>
-                            <input type="password" disabled placeholder="••••••••" class="peak-input preview-field-input branding-preview-input-small">
+                            <label
+                                class="form-label preview-field-label branding-preview-label-small">Contraseña</label>
+                            <input type="password" disabled placeholder="••••••••"
+                                class="peak-input preview-field-input branding-preview-input-small">
                         </div>
 
                         <div class="form-group branding-preview-field">
-                            <label class="form-label preview-field-label branding-preview-label-small">Confirmar contraseña</label>
-                            <input type="password" disabled placeholder="••••••••" class="peak-input preview-field-input branding-preview-input-small">
+                            <label class="form-label preview-field-label branding-preview-label-small">Confirmar
+                                contraseña</label>
+                            <input type="password" disabled placeholder="••••••••"
+                                class="peak-input preview-field-input branding-preview-input-small">
                         </div>
 
                         <!-- Brand Styled Register Action Button -->
-                        <button type="button" id="previewRegisterActionBtn" class="peak-btn peak-btn-primary peak-btn-block branding-preview-action branding-preview-register-action">
+                        <button type="button" id="previewRegisterActionBtn"
+                            class="peak-btn peak-btn-primary peak-btn-block branding-preview-action branding-preview-register-action">
                             Crear cuenta
-                            <svg class="branding-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                            <svg class="branding-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
                         </button>
                     </div>
 
                     <!-- Mock Legal Footer -->
                     <div id="previewLegalLinks" class="branding-preview-legal">
-                        <a href="#" id="previewTermsLink" class="branding-preview-legal-link {{ if not .TermsURL }}hidden{{ end }}">Términos</a>
-                        <span id="previewLegalDot" class="{{ if or (not .TermsURL) (not .PrivacyURL) }}hidden{{ end }}">•</span>
-                        <a href="#" id="previewPrivacyLink" class="branding-preview-legal-link {{ if not .PrivacyURL }}hidden{{ end }}">Privacidad</a>
+                        <a href="#" id="previewTermsLink"
+                            class="branding-preview-legal-link {{ if not .TermsURL }}hidden{{ end }}">Términos</a>
+                        <span id="previewLegalDot"
+                            class="{{ if or (not .TermsURL) (not .PrivacyURL) }}hidden{{ end }}">•</span>
+                        <a href="#" id="previewPrivacyLink"
+                            class="branding-preview-legal-link {{ if not .PrivacyURL }}hidden{{ end }}">Privacidad</a>
                     </div>
 
                     <p id="previewFooterText" class="branding-preview-footer">

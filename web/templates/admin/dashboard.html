@@ -1,75 +1,91 @@
 {{ define "content" }}
-<div class="phase8-style-44">
+<div class="app-grid-header">
     <div>
-        <h2 class="phase8-style-45">Tus aplicaciones</h2>
-        <p class="phase8-style-46">Gestiona la identidad y accesos de tus proyectos desde un solo lugar</p>
+        <h2 class="app-grid-title">Tus aplicaciones</h2>
+        <p class="app-grid-subtitle">Gestiona la identidad, clientes OAuth y políticas de acceso de tus proyectos</p>
     </div>
 
     {{ if .IsPlatform }}
-    <a href="/admin/apps/new" class="peak-btn peak-btn-primary phase8-style-47 phase8-hover-link">
+    <a href="/admin/apps/new" class="peak-btn peak-btn-primary">
         {{ template "icon-plus" }}
         Nueva aplicación
     </a>
     {{ end }}
 </div>
 
-<div class="phase8-style-48">
+<div class="app-cards-grid">
     {{ range .Applications }}
-    <div class="peak-card phase8-style-49">
-        <a href="/admin/apps/{{ .AppID }}/edit" class="icon-btn phase8-style-50 phase8-hover-link">
-            {{ template "icon-edit" }}
-        </a>
-
-        <div class="phase8-style-51">
-            <div class="phase8-style-52">
-                <span class="phase8-style-53">{{ safe_slice .Name 0 1 }}</span>
+    <div class="peak-card app-card-item">
+        <div class="app-card-body">
+            <div class="app-card-top-row">
+                <div class="app-card-monogram">
+                    <span>{{ if .Name }}{{ safe_slice .Name 0 1 }}{{ else }}A{{ end }}</span>
+                </div>
+                <a href="/admin/apps/{{ .AppID }}/edit" class="icon-btn app-card-edit-btn" aria-label="Editar datos básicos de {{ .Name }}" title="Editar aplicación">
+                    {{ template "icon-edit" }}
+                </a>
             </div>
 
-            <div class="phase8-style-54">
-                <h3 class="phase8-style-55">{{ .Name }}</h3>
-                {{ if not .IsActive }}
-                <span class="phase8-style-56">Inactiva</span>
+            <div class="app-card-title-row">
+                <h3 class="app-card-name">{{ .Name }}</h3>
+                {{ if .IsActive }}
+                <span class="peak-badge peak-badge-success">
+                    <span class="peak-badge-indicator"></span>
+                    Activa
+                </span>
+                {{ else }}
+                <span class="peak-badge peak-badge-error">
+                    <span class="peak-badge-indicator"></span>
+                    Inactiva
+                </span>
                 {{ end }}
             </div>
-            <div class="phase8-style-57">
-                <code class="phase8-style-58">{{ .AppID }}</code>
-                <button data-action="copy-text" data-text="{{ .AppID }}" class="icon-btn phase8-style-59">
+
+            <div class="app-id-pill-wrapper">
+                <code class="app-id-code">{{ .AppID }}</code>
+                <button data-action="copy-text" data-text="{{ .AppID }}" class="app-id-copy-btn" aria-label="Copiar identificador de {{ .Name }}" title="Copiar identificador">
                     {{ template "icon-copy" }}
                 </button>
             </div>
 
-            <p class="phase8-style-60">{{ .Description }}</p>
+            {{ if .Description }}
+            <p class="app-card-desc">{{ .Description }}</p>
+            {{ else }}
+            <p class="app-card-desc app-card-desc-empty">Sin descripción registrada.</p>
+            {{ end }}
         </div>
 
-        <div class="phase8-style-61">
-            <a href="/admin/apps/{{ .AppID }}" class="phase8-style-62 phase8-hover-link">
+        <div class="app-card-footer">
+            <a href="/admin/apps/{{ .AppID }}" class="app-card-action-link" title="Configuración de {{ .Name }}" aria-label="Configuración de {{ .Name }}">
                 {{ template "icon-settings" }}
                 Configuración
             </a>
 
-            <div class="phase8-style-63"></div>
+            <div class="app-card-footer-divider"></div>
 
-            <a href="/admin/apps/{{ .AppID }}/users" class="phase8-style-62 phase8-hover-link">
-                <div class="phase8-style-64">
+            <a href="/admin/apps/{{ .AppID }}/users" class="app-card-action-link" title="Usuarios de {{ .Name }}" aria-label="Usuarios de {{ .Name }} ({{ .UserCount }})">
+                <div class="app-card-users-badge-wrapper">
                     {{ template "icon-users" }}
-                    <span class="phase8-style-65">{{ .UserCount }}</span>
+                    <span class="app-card-user-badge">{{ .UserCount }}</span>
                 </div>
                 Usuarios
             </a>
         </div>
     </div>
     {{ else }}
-    <div class="phase8-style-66">
-        <div class="phase8-style-67">
+    <div class="app-empty-state">
+        <div class="app-empty-icon">
             {{ template "icon-app-empty" }}
         </div>
-        <h3 class="phase8-style-68">No hay aplicaciones</h3>
-        <p class="phase8-style-69">Aún no has registrado ninguna aplicación. Crea tu primera app para empezar a gestionar usuarios y accesos.</p>
+        <h3 class="app-empty-title">No hay aplicaciones registradas</h3>
         {{ if .IsPlatform }}
-        <a href="/admin/apps/new" class="peak-btn peak-btn-primary phase8-style-47 phase8-hover-link">
+        <p class="app-empty-text">Aún no has registrado ninguna aplicación. Crea tu primera app para empezar a gestionar clientes OAuth, usuarios y políticas de acceso.</p>
+        <a href="/admin/apps/new" class="peak-btn peak-btn-primary">
             {{ template "icon-plus" }}
             Crear primera aplicación
         </a>
+        {{ else }}
+        <p class="app-empty-text">No tienes aplicaciones asignadas ni permisos de creación de tenants. Contacta a un administrador de plataforma para solicitar acceso.</p>
         {{ end }}
     </div>
     {{ end }}

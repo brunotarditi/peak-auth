@@ -5,12 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Setup Inicial</title>
-    <script src="{{ js "config.js" }}"></script>
-    <script src="{{ js "common.js" }}"></script>
+    <script src="{{ js " config.js" }}"></script>
+    <script src="{{ js " common.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
-    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
-    <link rel="stylesheet" href="{{ asset "/static/css/setup.css" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
+    <link rel="stylesheet" href="{{ asset " /static/css/setup.css" }}">
 </head>
 
 <body class="bg-pattern layout-auth">
@@ -22,7 +22,7 @@
     <div class="auth-container setup-shell">
         <div class="setup-brand">
             <div class="auth-logo-mark">
-                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth">
+                <img src="{{ asset " /static/img/logo.svg" }}" alt="Peak Auth">
             </div>
             <h1 class="setup-title">Setup Peak <span class="auth-title-accent">Auth</span></h1>
             <p class="setup-step">Paso 1 de 2: Credenciales maestras</p>
@@ -33,7 +33,8 @@
                 <h2>Usuario maestro (ROOT)</h2>
                 <p>Crea la cuenta de administrador con control total sobre todos los recursos.</p>
                 <div class="setup-warning-banner setup-warning-compact">
-                    ⚠️ <strong>Aviso de seguridad:</strong> Esta cuenta posee control absoluto del sistema. Se recomienda reservarla únicamente para tareas de instalación y recuperación de emergencia.
+                    ⚠️ <strong>Aviso de seguridad:</strong> Esta cuenta posee control absoluto del sistema. Se
+                    recomienda reservarla únicamente para tareas de instalación y recuperación de emergencia.
                 </div>
             </div>
 
@@ -42,15 +43,18 @@
 
                 <div class="form-group">
                     <label class="auth-label setup-field-label">Email del Root</label>
-                    <input type="email" id="email" name="email" required placeholder="admin@proyectopeak.com" class="peak-input setup-input">
+                    <input type="email" id="email" name="email" required placeholder="admin@proyectopeak.com"
+                        class="peak-input setup-input">
                     <span id="emailError" class="hidden auth-field-error">Introduzca un email válido</span>
                 </div>
 
                 <div class="form-group">
                     <label class="auth-label setup-field-label">Contraseña maestra</label>
                     <div class="password-toggle-wrapper">
-                        <input type="password" id="password" name="password" required placeholder="••••••••" class="peak-input setup-password-input">
-                        <button type="button" class="password-toggle-btn" data-action="toggle-password" data-target="password" aria-label="Mostrar u ocultar contraseña">
+                        <input type="password" id="password" name="password" required placeholder="••••••••"
+                            class="peak-input setup-password-input">
+                        <button type="button" class="password-toggle-btn" data-action="toggle-password"
+                            data-target="password" aria-label="Mostrar u ocultar contraseña">
                             <span class="icon-eye-open">{{template "icon-eye"}}</span>
                             <span class="icon-eye-closed hidden">{{template "icon-eye-off"}}</span>
                         </button>
@@ -63,11 +67,15 @@
                         <!-- Requisito Largo -->
                         <div id="req-length" class="checklist-item">
                             <div class="status-icon">
-                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
+                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                                        d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
+                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                                        d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
                             <span>Mínimo 8 caracteres</span>
@@ -76,11 +84,15 @@
                         <!-- Requisito Mayúscula -->
                         <div id="req-upper" class="checklist-item">
                             <div class="status-icon">
-                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
+                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                                        d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
+                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                                        d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
                             <span>Al menos una MAYÚSCULA</span>
@@ -89,11 +101,15 @@
                         <!-- Requisito Número -->
                         <div id="req-number" class="checklist-item">
                             <div class="status-icon">
-                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
+                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                                        d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
+                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                                        d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
                             <span>Al menos un número (0-9)</span>
@@ -102,11 +118,15 @@
                         <!-- Requisito Símbolo -->
                         <div id="req-symbol" class="checklist-item">
                             <div class="status-icon">
-                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path>
+                                <svg class="check-icon hidden setup-check-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                                        d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M6 18L18 6M6 6l12 12"></path>
+                                <svg class="error-icon hidden setup-error-icon" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                                        d="M6 18L18 6M6 6l12 12"></path>
                                 </svg>
                             </div>
                             <span>Un símbolo (@$!%*?&#)</span>
@@ -115,7 +135,8 @@
                 </div>
 
                 <div class="auth-submit-wrapper">
-                    <button type="submit" id="submitBtn" class="peak-btn peak-btn-primary peak-btn-block auth-form-button auth-form-button-plain">
+                    <button type="submit" id="submitBtn"
+                        class="peak-btn peak-btn-primary peak-btn-block auth-form-button auth-form-button-plain">
                         <span>Continuar a configuración de MFA</span>
                         {{template "icon-arrow-right"}}
                     </button>
@@ -130,7 +151,7 @@
         </div>
     </div>
 
-    <script src="{{ js "setup.js" }}"></script>
+    <script src="{{ js " setup.js" }}"></script>
 </body>
 
 </html>
