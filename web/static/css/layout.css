@@ -10,6 +10,13 @@
     padding-right: 2rem;
 }
 
+@media (max-width: 640px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
 /* Base Body Layout */
 .bg-pattern {
     background-image: radial-gradient(var(--border-color) 0.5px, transparent 0.5px);

@@ -690,6 +690,29 @@
     margin-bottom: 2rem;
 }
 
+.app-grid-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.app-grid-count-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--brand-600);
+    background-color: var(--brand-50);
+    border: 1px solid var(--brand-200);
+    padding: 0.2rem 0.625rem;
+    border-radius: var(--radius-full);
+    letter-spacing: -0.01em;
+}
+
+.dark .app-grid-count-badge {
+    color: var(--brand-300);
+    background-color: rgba(37, 99, 235, 0.15);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
 .app-grid-title {
     font-size: 1.75rem;
     font-weight: 800;
@@ -710,26 +733,108 @@
     gap: 1.5rem;
 }
 
+/* --- Halo Sentinel: Animated Perimeter Border Glow --- */
+@keyframes sentinelHaloRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
 .app-card-item {
     position: relative;
     display: flex;
     flex-direction: column;
     padding: 0;
-    overflow: hidden;
+    border-radius: var(--radius-2xl);
     background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-sm);
-    transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    isolation: isolate;
+    overflow: hidden;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+/* Subtle rotating halo pseudo-element */
+.app-card-item::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(37, 99, 235, 0.25) 60deg,
+        rgba(96, 165, 250, 0.45) 90deg,
+        rgba(37, 99, 235, 0.25) 120deg,
+        transparent 180deg,
+        rgba(37, 99, 235, 0.2) 240deg,
+        rgba(96, 165, 250, 0.35) 270deg,
+        rgba(37, 99, 235, 0.2) 300deg,
+        transparent 360deg
+    );
+    opacity: 0.45;
+    z-index: -2;
+    animation: sentinelHaloRotate 14s linear infinite;
+    pointer-events: none;
+    will-change: transform;
+}
+
+/* Interior mask layer preserving surface background */
+.app-card-item::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    background-color: var(--bg-surface);
+    border-radius: calc(var(--radius-2xl) - 1px);
+    z-index: -1;
+    pointer-events: none;
+    transition: background-color 0.3s;
+}
+
+.dark .app-card-item::before {
+    opacity: 0.55;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(37, 99, 235, 0.4) 60deg,
+        rgba(96, 165, 250, 0.7) 90deg,
+        rgba(37, 99, 235, 0.4) 120deg,
+        transparent 180deg,
+        rgba(37, 99, 235, 0.35) 240deg,
+        rgba(96, 165, 250, 0.6) 270deg,
+        rgba(37, 99, 235, 0.35) 300deg,
+        transparent 360deg
+    );
 }
 
 .app-card-item:hover {
-    border-color: var(--slate-300);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: rgba(37, 99, 235, 0.35);
+    box-shadow: 0 12px 28px -6px rgba(37, 99, 235, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
 }
 
 .dark .app-card-item:hover {
-    border-color: var(--slate-700);
+    border-color: rgba(96, 165, 250, 0.4);
+    box-shadow: 0 14px 32px -6px rgba(0, 0, 0, 0.6), 0 0 20px -2px rgba(37, 99, 235, 0.2);
+}
+
+/* Accessibility: Disable animation for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .app-card-item::before {
+        animation: none;
+        display: none;
+    }
+    .app-card-item {
+        transition: none;
+    }
+    .app-card-item:hover {
+        transform: none;
+    }
 }
 
 .app-card-monogram {
@@ -846,23 +951,28 @@
 }
 
 .app-card-action-link {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: 0.8125rem;
+    font-weight: 600;
     color: var(--text-muted);
     text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    transition: color 0.2s;
-    min-height: 36px;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-md);
+    letter-spacing: -0.01em;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    min-height: 40px;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-lg);
 }
 
 .app-card-action-link:hover {
     color: var(--brand-600);
+    background-color: var(--brand-50);
+}
+
+.dark .app-card-action-link:hover {
+    color: var(--brand-400);
+    background-color: rgba(37, 99, 235, 0.15);
 }
 
 .app-empty-state {

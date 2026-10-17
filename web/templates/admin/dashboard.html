@@ -1,7 +1,14 @@
 {{ define "content" }}
 <div class="app-grid-header">
     <div>
-        <h2 class="app-grid-title">Tus aplicaciones</h2>
+        <div class="app-grid-title-wrapper">
+            <h2 class="app-grid-title">Tus aplicaciones</h2>
+            {{ if .Applications }}
+            <span class="app-grid-count-badge">
+                {{ len .Applications }} {{ if eq (len .Applications) 1 }}aplicación{{ else }}aplicaciones{{ end }}
+            </span>
+            {{ end }}
+        </div>
         <p class="app-grid-subtitle">Gestiona la identidad, clientes OAuth y políticas de acceso de tus proyectos</p>
     </div>
 
@@ -58,7 +65,7 @@
         <div class="app-card-footer">
             <a href="/admin/apps/{{ .AppID }}" class="app-card-action-link" title="Configuración de {{ .Name }}" aria-label="Configuración de {{ .Name }}">
                 {{ template "icon-settings" }}
-                Configuración
+                <span>Configuración</span>
             </a>
 
             <div class="app-card-footer-divider"></div>
@@ -68,7 +75,7 @@
                     {{ template "icon-users" }}
                     <span class="app-card-user-badge">{{ .UserCount }}</span>
                 </div>
-                Usuarios
+                <span>Usuarios</span>
             </a>
         </div>
     </div>

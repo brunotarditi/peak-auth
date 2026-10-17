@@ -36,7 +36,7 @@ jwt_private.pem
 jwt_public.pem
 
 #agents
-AGENTS.md
+.agents/
 
 node_modules
 /web/static/css/output.css
