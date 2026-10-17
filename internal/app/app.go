@@ -79,7 +79,7 @@ func NewApp(db *gorm.DB, jwtManager *auth.JWTManager) *App {
 
 	emailService := service.NewEmailService()
 	appService := service.NewApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo, refreshRepo, themeRepo)
-	mfaService := service.NewMfaService(mfaRepo, userRepo)
+	mfaService := service.NewMfaService(mfaRepo, userRepo, txManager)
 	userService := service.NewUserService(userRepo, roleRepo, uarRepo, appRepo, ruleService, jwtManager, emailRepo, passRepo, emailService, refreshRepo, txManager)
 	setupService := service.NewSetupService(setupRepo, setupToken, txManager)
 	roleService := service.NewRoleService(roleRepo, ruleRepo)

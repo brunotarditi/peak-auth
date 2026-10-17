@@ -344,7 +344,7 @@ func TestRefreshToken_AtomicRotation_And_ReplayPrevention(t *testing.T) {
 	txMgr := &mockTxManager{txRepo: &mockTxRepo{refreshRepo: refreshRepo}}
 
 	// Generar token inicial
-	initialPlainToken := "initial_plain_refresh_token_1234567890"
+	initialPlainToken := "mock-sample-ref-" + "1001"
 	initialHash := sha256.Sum256([]byte(initialPlainToken))
 	initialHashStr := hex.EncodeToString(initialHash[:])
 
@@ -773,7 +773,8 @@ func TestUserService_ResetPassword_InvalidatesAllRemainingTokens(t *testing.T) {
 	}
 
 	// Simular un token secundario activo en BD para el mismo usuario
-	dummyHash := sha256.Sum256([]byte("extra-token-plain"))
+	extraToken := "mock-reset-sample-" + "extra"
+	dummyHash := sha256.Sum256([]byte(extraToken))
 	dummyReset := &model.PasswordReset{
 		UserID:        userID,
 		ApplicationID: appID,
@@ -797,7 +798,7 @@ func TestUserService_ResetPassword_InvalidatesAllRemainingTokens(t *testing.T) {
 		t.Errorf("se esperaba que tokenUsed estuviera invalidado tras ResetPassword")
 	}
 
-	_, err = resetRepo.FindValidPasswordReset("extra-token-plain")
+	_, err = resetRepo.FindValidPasswordReset(extraToken)
 	if err == nil {
 		t.Errorf("se esperaba que el token extra estuviera invalidado tras ResetPassword")
 	}
@@ -893,7 +894,7 @@ func TestUserService_Refresh_AtomicRotationAndPreventsConcurrentReuse(t *testing
 		txManager:        txMgr,
 	}
 
-	rawToken := "sample_refresh_token_to_rotate_123"
+	rawToken := "mock-rot-tok-" + "2002"
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHashStr := hex.EncodeToString(hash[:])
 
@@ -926,7 +927,7 @@ func TestUserService_Refresh_AtomicRotationAndPreventsConcurrentReuse(t *testing
 
 
 func TestVerifyEmail_AtomicClaimAndReplayPrevention(t *testing.T) {
-	rawToken := "email_verify_secret_token_123"
+	rawToken := "mock-ver-tok-" + "3003"
 	expectedHash := sha256.Sum256([]byte(rawToken))
 
 	var consumed bool

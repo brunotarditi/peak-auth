@@ -5,6 +5,7 @@ import (
 	"peak-auth/internal/api/request"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/auth"
+	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
 	"strconv"
 	"strings"
@@ -36,6 +37,17 @@ func (ctrl *IntrospectController) Introspect(c *gin.Context) {
 	claims, err := ctrl.TokenManager.VerifyToken(req.Token)
 	if err != nil {
 		// Token inválido, expirado o con firma incorrecta
+		c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
+		return
+	}
+
+	appValue, exists := c.Get("app")
+	if !exists {
+		c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
+		return
+	}
+	authenticatedApp, ok := appValue.(model.Application)
+	if !ok || claims.AppID == "" || claims.AppID != authenticatedApp.AppID {
 		c.JSON(http.StatusOK, response.IntrospectResponse{Active: false})
 		return
 	}

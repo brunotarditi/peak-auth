@@ -66,7 +66,7 @@ function initSettingsPage() {
         if (!container) return;
         let img = document.getElementById('profile-avatar-preview');
         if (!img) {
-            container.innerHTML = '';
+            container.replaceChildren();
             img = document.createElement('img');
             img.id = 'profile-avatar-preview';
             img.alt = 'Avatar';
@@ -154,7 +154,13 @@ function initSettingsPage() {
                         updateAvatarPreview(data.avatar_url);
                         const sidebarAvatarContainer = document.getElementById('sidebar-avatar-container');
                         if (sidebarAvatarContainer) {
-                            sidebarAvatarContainer.innerHTML = `<img id="sidebar-avatar-img" src="${data.avatar_url}" alt="Avatar" class="settings-avatar-image">`;
+                            sidebarAvatarContainer.replaceChildren();
+                            const sideImg = document.createElement('img');
+                            sideImg.id = 'sidebar-avatar-img';
+                            sideImg.src = data.avatar_url;
+                            sideImg.alt = 'Avatar';
+                            sideImg.className = 'settings-avatar-image';
+                            sidebarAvatarContainer.appendChild(sideImg);
                         }
                         if (avatarFileInput) avatarFileInput.value = '';
                         if (avatarFileName) {
@@ -267,6 +273,8 @@ function initSettingsPage() {
         let viewMonth = selectedDate ? selectedDate.getMonth() : 0;
 
         function renderCalendar() {
+            popup.replaceChildren();
+
             const firstDayOfMonth = new Date(viewYear, viewMonth, 1);
             let startDay = firstDayOfMonth.getDay() - 1;
             if (startDay === -1) startDay = 6;
@@ -274,67 +282,205 @@ function initSettingsPage() {
             const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
             const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
 
-            let html = `
-                <div class="peak-datepicker-header">
-                    <button type="button" class="peak-datepicker-nav-btn" id="dp-prev-month" title="Mes anterior" aria-label="Mes anterior">
-                        <svg class="settings-icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                    </button>
-                    <div class="peak-datepicker-selects">
-                        <select class="peak-datepicker-select" id="dp-select-month" aria-label="Seleccionar mes">
-                            ${monthNames.map((m, idx) => `<option value="${idx}" ${idx === viewMonth ? 'selected' : ''}>${m}</option>`).join('')}
-                        </select>
-                        <select class="peak-datepicker-select" id="dp-select-year" aria-label="Seleccionar año">
-                            ${Array.from({ length: currentYear - 1919 }, (_, i) => currentYear - i).map(y => `<option value="${y}" ${y === viewYear ? 'selected' : ''}>${y}</option>`).join('')}
-                        </select>
-                    </div>
-                    <button type="button" class="peak-datepicker-nav-btn" id="dp-next-month" title="Mes siguiente" aria-label="Mes siguiente">
-                        <svg class="settings-icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                </div>
-                <div class="peak-datepicker-weekdays">
-                    ${weekdayNames.map(w => `<div class="peak-datepicker-weekday">${w}</div>`).join('')}
-                </div>
-                <div class="peak-datepicker-grid">
-            `;
+            // Header
+            const header = document.createElement('div');
+            header.className = 'peak-datepicker-header';
 
-            // Días del mes previo
-            for (let i = startDay - 1; i >= 0; i--) {
-                const dayNum = daysInPrevMonth - i;
-                html += `<div class="peak-datepicker-day other-month">${dayNum}</div>`;
+            const prevBtn = document.createElement('button');
+            prevBtn.type = 'button';
+            prevBtn.className = 'peak-datepicker-nav-btn';
+            prevBtn.id = 'dp-prev-month';
+            prevBtn.title = 'Mes anterior';
+            prevBtn.setAttribute('aria-label', 'Mes anterior');
+            const prevSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            prevSvg.setAttribute('class', 'settings-icon-sm');
+            prevSvg.setAttribute('fill', 'none');
+            prevSvg.setAttribute('stroke', 'currentColor');
+            prevSvg.setAttribute('viewBox', '0 0 24 24');
+            const prevPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            prevPath.setAttribute('stroke-linecap', 'round');
+            prevPath.setAttribute('stroke-linejoin', 'round');
+            prevPath.setAttribute('stroke-width', '2');
+            prevPath.setAttribute('d', 'M15 19l-7-7 7-7');
+            prevSvg.appendChild(prevPath);
+            prevBtn.appendChild(prevSvg);
+
+            const selectsDiv = document.createElement('div');
+            selectsDiv.className = 'peak-datepicker-selects';
+
+            const monthSelect = document.createElement('select');
+            monthSelect.className = 'peak-datepicker-select';
+            monthSelect.id = 'dp-select-month';
+            monthSelect.setAttribute('aria-label', 'Seleccionar mes');
+            monthNames.forEach((m, idx) => {
+                const opt = document.createElement('option');
+                opt.value = String(idx);
+                opt.textContent = m;
+                if (idx === viewMonth) opt.selected = true;
+                monthSelect.appendChild(opt);
+            });
+
+            const yearSelect = document.createElement('select');
+            yearSelect.className = 'peak-datepicker-select';
+            yearSelect.id = 'dp-select-year';
+            yearSelect.setAttribute('aria-label', 'Seleccionar año');
+            for (let y = currentYear; y >= 1920; y--) {
+                const opt = document.createElement('option');
+                opt.value = String(y);
+                opt.textContent = String(y);
+                if (y === viewYear) opt.selected = true;
+                yearSelect.appendChild(opt);
             }
 
-            // Días del mes actual
+            selectsDiv.appendChild(monthSelect);
+            selectsDiv.appendChild(yearSelect);
+
+            const nextBtn = document.createElement('button');
+            nextBtn.type = 'button';
+            nextBtn.className = 'peak-datepicker-nav-btn';
+            nextBtn.id = 'dp-next-month';
+            nextBtn.title = 'Mes siguiente';
+            nextBtn.setAttribute('aria-label', 'Mes siguiente');
+            const nextSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            nextSvg.setAttribute('class', 'settings-icon-sm');
+            nextSvg.setAttribute('fill', 'none');
+            nextSvg.setAttribute('stroke', 'currentColor');
+            nextSvg.setAttribute('viewBox', '0 0 24 24');
+            const nextPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            nextPath.setAttribute('stroke-linecap', 'round');
+            nextPath.setAttribute('stroke-linejoin', 'round');
+            nextPath.setAttribute('stroke-width', '2');
+            nextPath.setAttribute('d', 'M9 5l7 7-7 7');
+            nextSvg.appendChild(nextPath);
+            nextBtn.appendChild(nextSvg);
+
+            header.appendChild(prevBtn);
+            header.appendChild(selectsDiv);
+            header.appendChild(nextBtn);
+            popup.appendChild(header);
+
+            // Weekdays
+            const weekdaysDiv = document.createElement('div');
+            weekdaysDiv.className = 'peak-datepicker-weekdays';
+            weekdayNames.forEach(w => {
+                const wDiv = document.createElement('div');
+                wDiv.className = 'peak-datepicker-weekday';
+                wDiv.textContent = w;
+                weekdaysDiv.appendChild(wDiv);
+            });
+            popup.appendChild(weekdaysDiv);
+
+            // Days grid
+            const grid = document.createElement('div');
+            grid.className = 'peak-datepicker-grid';
+
+            for (let i = startDay - 1; i >= 0; i--) {
+                const dayNum = daysInPrevMonth - i;
+                const dBtn = document.createElement('button');
+                dBtn.type = 'button';
+                dBtn.className = 'peak-datepicker-day other-month';
+                dBtn.textContent = String(dayNum);
+                dBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    viewMonth--;
+                    if (viewMonth < 0) {
+                        viewMonth = 11;
+                        viewYear--;
+                    }
+                    selectedDate = new Date(viewYear, viewMonth, dayNum);
+                    hiddenInput.value = toISODate(selectedDate);
+                    displayInput.value = formatDisplay(selectedDate);
+                    closePopup();
+                });
+                grid.appendChild(dBtn);
+            }
+
             for (let day = 1; day <= daysInMonth; day++) {
                 const isToday = (viewYear === today.getFullYear() && viewMonth === today.getMonth() && day === today.getDate());
                 const isSelected = selectedDate && (viewYear === selectedDate.getFullYear() && viewMonth === selectedDate.getMonth() && day === selectedDate.getDate());
+                const btn = document.createElement('button');
+                btn.type = 'button';
                 let classes = 'peak-datepicker-day';
                 if (isSelected) classes += ' selected';
                 if (isToday) classes += ' today';
-                html += `<button type="button" class="${classes}" data-day="${day}">${day}</button>`;
+                btn.className = classes;
+                btn.textContent = String(day);
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectedDate = new Date(viewYear, viewMonth, day);
+                    hiddenInput.value = toISODate(selectedDate);
+                    displayInput.value = formatDisplay(selectedDate);
+                    closePopup();
+                });
+                grid.appendChild(btn);
             }
 
-            // Días del mes siguiente
             const totalRendered = startDay + daysInMonth;
             const remaining = (totalRendered % 7 === 0) ? 0 : 7 - (totalRendered % 7);
             for (let i = 1; i <= remaining; i++) {
-                html += `<div class="peak-datepicker-day other-month">${i}</div>`;
+                const dayNum = i;
+                const dBtn = document.createElement('button');
+                dBtn.type = 'button';
+                dBtn.className = 'peak-datepicker-day other-month';
+                dBtn.textContent = String(dayNum);
+                dBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    viewMonth++;
+                    if (viewMonth > 11) {
+                        viewMonth = 0;
+                        viewYear++;
+                    }
+                    selectedDate = new Date(viewYear, viewMonth, dayNum);
+                    hiddenInput.value = toISODate(selectedDate);
+                    displayInput.value = formatDisplay(selectedDate);
+                    closePopup();
+                });
+                grid.appendChild(dBtn);
             }
+            popup.appendChild(grid);
 
-            html += `
-                </div>
-                <div class="peak-datepicker-footer">
-                    <button type="button" id="dp-btn-clear" class="peak-btn peak-btn-secondary settings-date-action">
-                        Borrar
-                    </button>
-                    <button type="button" id="dp-btn-today" class="peak-btn peak-btn-secondary settings-date-action">
-                        Hoy
-                    </button>
-                </div>
-            `;
+            // Footer
+            const footer = document.createElement('div');
+            footer.className = 'peak-datepicker-footer';
 
-            popup.innerHTML = html;
+            const clearBtn = document.createElement('button');
+            clearBtn.type = 'button';
+            clearBtn.id = 'dp-btn-clear';
+            clearBtn.className = 'peak-btn peak-btn-secondary settings-date-action';
+            clearBtn.textContent = 'Borrar';
+            clearBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectedDate = null;
+                hiddenInput.value = '';
+                displayInput.value = '';
+                closePopup();
+            });
 
-            popup.querySelector('#dp-prev-month').addEventListener('click', (e) => {
+            const todayBtn = document.createElement('button');
+            todayBtn.type = 'button';
+            todayBtn.id = 'dp-btn-today';
+            todayBtn.className = 'peak-btn peak-btn-secondary settings-date-action';
+            todayBtn.textContent = 'Hoy';
+            todayBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                viewYear = today.getFullYear();
+                viewMonth = today.getMonth();
+                hiddenInput.value = toISODate(selectedDate);
+                displayInput.value = formatDisplay(selectedDate);
+                closePopup();
+            });
+
+            footer.appendChild(clearBtn);
+            footer.appendChild(todayBtn);
+            popup.appendChild(footer);
+
+            prevBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 viewMonth--;
                 if (viewMonth < 0) {
@@ -344,7 +490,7 @@ function initSettingsPage() {
                 renderCalendar();
             });
 
-            popup.querySelector('#dp-next-month').addEventListener('click', (e) => {
+            nextBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 viewMonth++;
                 if (viewMonth > 11) {
@@ -354,74 +500,16 @@ function initSettingsPage() {
                 renderCalendar();
             });
 
-            popup.querySelector('#dp-select-month').addEventListener('change', (e) => {
+            monthSelect.addEventListener('change', (e) => {
                 e.stopPropagation();
                 viewMonth = parseInt(e.target.value, 10);
                 renderCalendar();
             });
 
-            popup.querySelector('#dp-select-year').addEventListener('change', (e) => {
+            yearSelect.addEventListener('change', (e) => {
                 e.stopPropagation();
                 viewYear = parseInt(e.target.value, 10);
                 renderCalendar();
-            });
-
-            popup.querySelectorAll('.peak-datepicker-day:not(.other-month)').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const day = parseInt(btn.getAttribute('data-day'), 10);
-                    selectedDate = new Date(viewYear, viewMonth, day);
-                    hiddenInput.value = toISODate(selectedDate);
-                    displayInput.value = formatDisplay(selectedDate);
-                    closePopup();
-                });
-            });
-
-            popup.querySelectorAll('.peak-datepicker-day.other-month').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const day = parseInt(btn.getAttribute('data-day'), 10);
-                    const action = btn.getAttribute('data-action');
-                    if (action === 'prev-month-day') {
-                        viewMonth--;
-                        if (viewMonth < 0) {
-                            viewMonth = 11;
-                            viewYear--;
-                        }
-                    } else {
-                        viewMonth++;
-                        if (viewMonth > 11) {
-                            viewMonth = 0;
-                            viewYear++;
-                        }
-                    }
-                    selectedDate = new Date(viewYear, viewMonth, day);
-                    hiddenInput.value = toISODate(selectedDate);
-                    displayInput.value = formatDisplay(selectedDate);
-                    closePopup();
-                });
-            });
-
-            popup.querySelector('#dp-btn-clear').addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                selectedDate = null;
-                hiddenInput.value = '';
-                displayInput.value = '';
-                closePopup();
-            });
-
-            popup.querySelector('#dp-btn-today').addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                viewYear = today.getFullYear();
-                viewMonth = today.getMonth();
-                hiddenInput.value = toISODate(selectedDate);
-                displayInput.value = formatDisplay(selectedDate);
-                closePopup();
             });
         }
 
@@ -661,26 +749,50 @@ function initSettingsPage() {
 
             const passkeysInlineList = document.getElementById('passkeys-inline-list');
             if (passkeysInlineList) {
-                passkeysInlineList.innerHTML = '';
+                passkeysInlineList.replaceChildren();
                 keys.forEach(k => {
                     const item = document.createElement('div');
                     item.className = 'settings-passkey-item';
                     
                     const leftCol = document.createElement('div');
                     leftCol.className = 'settings-passkey-content';
-                    leftCol.innerHTML = `
-                        <span class="settings-passkey-icon">🔑</span>
-                        <div>
-                            <div class="settings-passkey-name">${escapeHtml(k.name || 'Llave de acceso')}</div>
-                            <div class="settings-passkey-date">Registrada el ${new Date(k.created_at).toLocaleDateString()}</div>
-                        </div>
-                    `;
+
+                    const iconSpan = document.createElement('span');
+                    iconSpan.className = 'settings-passkey-icon';
+                    iconSpan.textContent = '🔑';
+
+                    const detailsDiv = document.createElement('div');
+                    const nameDiv = document.createElement('div');
+                    nameDiv.className = 'settings-passkey-name';
+                    nameDiv.textContent = k.name || 'Llave de acceso';
+
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'settings-passkey-date';
+                    dateDiv.textContent = 'Registrada el ' + new Date(k.created_at).toLocaleDateString();
+
+                    detailsDiv.appendChild(nameDiv);
+                    detailsDiv.appendChild(dateDiv);
+                    leftCol.appendChild(iconSpan);
+                    leftCol.appendChild(detailsDiv);
 
                     const delBtn = document.createElement('button');
-                    delBtn.className = 'icon-btn icon-btn-danger';
+                    delBtn.className = 'icon-btn icon-btn-danger settings-passkey-delete';
                     delBtn.title = 'Eliminar llave de acceso';
-                    delBtn.classList.add('settings-passkey-delete');
-                    delBtn.innerHTML = `<svg class="settings-icon-delete" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>`;
+                    delBtn.setAttribute('aria-label', 'Eliminar llave de acceso');
+
+                    const delSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    delSvg.setAttribute('class', 'settings-icon-delete');
+                    delSvg.setAttribute('fill', 'none');
+                    delSvg.setAttribute('stroke', 'currentColor');
+                    delSvg.setAttribute('viewBox', '0 0 24 24');
+                    const delPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    delPath.setAttribute('stroke-linecap', 'round');
+                    delPath.setAttribute('stroke-linejoin', 'round');
+                    delPath.setAttribute('stroke-width', '2');
+                    delPath.setAttribute('d', 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16');
+                    delSvg.appendChild(delPath);
+                    delBtn.appendChild(delSvg);
+
                     delBtn.addEventListener('click', async () => {
                         const confirm = await PeakModal.fire({
                             title: '¿Eliminar llave de acceso?',
@@ -710,12 +822,18 @@ function initSettingsPage() {
             // Authenticator app status & buttons
             const totpBadge = document.getElementById('totp-badge');
             if (totpBadge) {
+                totpBadge.replaceChildren();
+                const indicator = document.createElement('span');
                 if (data.totp_configured) {
                     totpBadge.className = 'peak-badge peak-badge-success';
-                    totpBadge.innerHTML = '<span class="peak-badge-indicator"></span> Configurada';
+                    indicator.className = 'peak-badge-indicator';
+                    totpBadge.appendChild(indicator);
+                    totpBadge.appendChild(document.createTextNode(' Configurada'));
                 } else {
                     totpBadge.className = 'peak-badge peak-badge-secondary';
-                    totpBadge.innerHTML = '<span class="peak-badge-indicator is-muted"></span> No configurada';
+                    indicator.className = 'peak-badge-indicator is-muted';
+                    totpBadge.appendChild(indicator);
+                    totpBadge.appendChild(document.createTextNode(' No configurada'));
                 }
             }
             if (btnConfigTotp) {
@@ -729,24 +847,36 @@ function initSettingsPage() {
             // Security keys status badge
             const keysBadge = document.getElementById('keys-badge');
             if (keysBadge) {
+                keysBadge.replaceChildren();
+                const indicator = document.createElement('span');
                 if (keys.length > 0) {
                     keysBadge.className = 'peak-badge peak-badge-success';
-                    keysBadge.innerHTML = `<span class="peak-badge-indicator"></span> ${keys.length} configurada${keys.length > 1 ? 's' : ''}`;
+                    indicator.className = 'peak-badge-indicator';
+                    keysBadge.appendChild(indicator);
+                    keysBadge.appendChild(document.createTextNode(` ${keys.length} configurada${keys.length > 1 ? 's' : ''}`));
                 } else {
                     keysBadge.className = 'peak-badge peak-badge-secondary';
-                    keysBadge.innerHTML = '<span class="peak-badge-indicator is-muted"></span> 0 configuradas';
+                    indicator.className = 'peak-badge-indicator is-muted';
+                    keysBadge.appendChild(indicator);
+                    keysBadge.appendChild(document.createTextNode(' 0 configuradas'));
                 }
             }
 
             // Recovery codes badge
             const recoveryBadge = document.getElementById('recovery-badge');
             if (recoveryBadge) {
+                recoveryBadge.replaceChildren();
+                const indicator = document.createElement('span');
                 if (currentRecoveryCodesLeft > 0) {
                     recoveryBadge.className = 'peak-badge peak-badge-success';
-                    recoveryBadge.innerHTML = `<span class="peak-badge-indicator"></span> ${currentRecoveryCodesLeft} restantes`;
+                    indicator.className = 'peak-badge-indicator';
+                    recoveryBadge.appendChild(indicator);
+                    recoveryBadge.appendChild(document.createTextNode(` ${currentRecoveryCodesLeft} restantes`));
                 } else {
                     recoveryBadge.className = 'peak-badge peak-badge-warning';
-                    recoveryBadge.innerHTML = '<span class="peak-badge-indicator"></span> No generados';
+                    indicator.className = 'peak-badge-indicator';
+                    recoveryBadge.appendChild(indicator);
+                    recoveryBadge.appendChild(document.createTextNode(' No generados'));
                 }
             }
 

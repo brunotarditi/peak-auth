@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"peak-auth/internal/api/middleware"
 	"peak-auth/internal/api/response"
@@ -33,7 +32,11 @@ func (ctrl *DashboardController) Dashboard(c *gin.Context) {
 	if scope.IsRoot || scope.IsPlatformAdmin {
 		stats, err = ctrl.AppService.GetDashboardStats()
 	} else {
-		userID := c.MustGet("user_id").(uint)
+		userID, ok := authenticatedUserID(c)
+		if !ok {
+			ctrl.renderError(c, http.StatusUnauthorized, "No autenticado", "La sesión de usuario no es válida.")
+			return
+		}
 		stats, err = ctrl.AppService.GetDashboardStatsForUser(userID)
 	}
 
@@ -53,9 +56,11 @@ func (ctrl *DashboardController) Dashboard(c *gin.Context) {
 // PostResendVerification reenvía el email de activación
 func (ctrl *DashboardController) PostResendVerification(c *gin.Context) {
 	appID := c.Param("id")
-	userIDStr := c.Param("user_id")
-	var userID uint
-	fmt.Sscanf(userIDStr, "%d", &userID)
+	userID, err := parsePathUint(c, "user_id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
 
 	// Verificar que la aplicación existe
 	app, err := ctrl.AppService.GetAppDetails(appID)
@@ -81,9 +86,11 @@ func (ctrl *DashboardController) PostResendVerification(c *gin.Context) {
 
 // PostSendResetPassword envía un email de recuperación manualmente
 func (ctrl *DashboardController) PostSendResetPassword(c *gin.Context) {
-	userIDStr := c.Param("user_id")
-	var userID uint
-	fmt.Sscanf(userIDStr, "%d", &userID)
+	userID, err := parsePathUint(c, "user_id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
 
 	user, err := ctrl.UserService.FindVerifiedUserByID(userID)
 	if err != nil {

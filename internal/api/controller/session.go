@@ -2,8 +2,8 @@ package controller
 
 import (
 	"errors"
-	"net/http"
 	"fmt"
+	"net/http"
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/store/model"
@@ -48,12 +48,11 @@ func NewSessionController(sessionService service.SessionService, userService ser
 
 // ListSessions devuelve la lista de sesiones activas del usuario autenticado.
 func (c *SessionController) ListSessions(ctx *gin.Context) {
-	val, exists := ctx.Get("user_id")
-	if !exists {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
 
 	currentToken := ctx.GetHeader("X-Refresh-Token")
 	if currentToken == "" {
@@ -76,12 +75,11 @@ func (c *SessionController) ListSessions(ctx *gin.Context) {
 
 // RevokeSession revoca una sesión específica del usuario autenticado.
 func (c *SessionController) RevokeSession(ctx *gin.Context) {
-	val, exists := ctx.Get("user_id")
-	if !exists {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
 
 	idParam := ctx.Param("id")
 	sessionID, err := strconv.ParseUint(idParam, 10, 32)
@@ -112,12 +110,11 @@ type RevokeOthersRequest struct {
 
 // RevokeOtherSessions revoca todas las sesiones activas excepto la sesión actual.
 func (c *SessionController) RevokeOtherSessions(ctx *gin.Context) {
-	val, exists := ctx.Get("user_id")
-	if !exists {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
 
 	var req RevokeOthersRequest
 	_ = ctx.ShouldBindJSON(&req)
@@ -140,12 +137,11 @@ func (c *SessionController) RevokeOtherSessions(ctx *gin.Context) {
 
 // ListAuthorizedApps devuelve la lista de aplicaciones OAuth consentidas por el usuario.
 func (c *SessionController) ListAuthorizedApps(ctx *gin.Context) {
-	val, exists := ctx.Get("user_id")
-	if !exists {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
 
 	apps, err := c.SessionService.ListAuthorizedApps(userID)
 	if err != nil {
@@ -160,12 +156,11 @@ func (c *SessionController) ListAuthorizedApps(ctx *gin.Context) {
 
 // RevokeAuthorizedApp revoca el consentimiento y acceso de una aplicación OAuth.
 func (c *SessionController) RevokeAuthorizedApp(ctx *gin.Context) {
-	val, exists := ctx.Get("user_id")
-	if !exists {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
 
 	clientID := strings.TrimSpace(ctx.Param("client_id"))
 	if clientID == "" {
@@ -186,18 +181,25 @@ func (c *SessionController) RevokeAuthorizedApp(ctx *gin.Context) {
 
 // GetSettingsPage renderiza la página completa de ajustes (Perfil, Seguridad/MFA, Sesiones y Apps).
 func (c *SessionController) GetSettingsPage(ctx *gin.Context) {
-	val, exists := ctx.Get("user_id")
-	if !exists {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
 		ctx.Redirect(http.StatusSeeOther, "/admin/login")
 		return
 	}
-	userID := val.(uint)
 
-	sessions, _ := c.SessionService.ListSessions(userID, "", service.SessionDeviceContext{
+	sessions, err := c.SessionService.ListSessions(userID, "", service.SessionDeviceContext{
 		IPAddress: ctx.ClientIP(),
 		UserAgent: ctx.GetHeader("User-Agent"),
 	})
-	apps, _ := c.SessionService.ListAuthorizedApps(userID)
+	if err != nil {
+		c.internalErrorHTML(ctx, "GetSettingsPage.ListSessions", err, "No se pudieron cargar tus sesiones.")
+		return
+	}
+	apps, err := c.SessionService.ListAuthorizedApps(userID)
+	if err != nil {
+		c.internalErrorHTML(ctx, "GetSettingsPage.ListAuthorizedApps", err, "No se pudieron cargar tus aplicaciones autorizadas.")
+		return
+	}
 
 	hasOtherSessions := false
 	for _, s := range sessions {
@@ -209,14 +211,22 @@ func (c *SessionController) GetSettingsPage(ctx *gin.Context) {
 
 	var user model.User
 	if c.UserRepo != nil {
-		user, _ = c.UserRepo.FindById(userID)
+		user, err = c.UserRepo.FindById(userID)
+		if err != nil {
+			c.internalErrorHTML(ctx, "GetSettingsPage.FindUser", err, "No se pudo cargar tu perfil.")
+			return
+		}
 	}
 
 	var identities []model.UserIdentity
 	hasGoogle := false
 	hasGithub := false
 	if c.IdentityRepo != nil {
-		identities, _ = c.IdentityRepo.FindByUserID(userID)
+		identities, err = c.IdentityRepo.FindByUserID(userID)
+		if err != nil {
+			c.internalErrorHTML(ctx, "GetSettingsPage.FindIdentities", err, "No se pudieron cargar tus identidades vinculadas.")
+			return
+		}
 		for _, idn := range identities {
 			if strings.EqualFold(idn.Provider, "google") {
 				hasGoogle = true
@@ -243,12 +253,11 @@ func (c *SessionController) GetSettingsPage(ctx *gin.Context) {
 
 // PostUpdateProfile actualiza los datos informativos del perfil del usuario (nombre, apellido, fecha, avatar).
 func (c *SessionController) PostUpdateProfile(ctx *gin.Context) {
-	val, exists := ctx.Get("user_id")
-	if !exists {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
 
 	firstName := strings.TrimSpace(ctx.PostForm("first_name"))
 	lastName := strings.TrimSpace(ctx.PostForm("last_name"))
@@ -292,12 +301,11 @@ func (c *SessionController) PostUpdateProfile(ctx *gin.Context) {
 
 // PostUpdatePassword actualiza la contraseña del usuario tras validar la actual.
 func (c *SessionController) PostUpdatePassword(ctx *gin.Context) {
-	val, exists := ctx.Get("user_id")
-	if !exists {
+	userID, ok := authenticatedUserID(ctx)
+	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
 
 	currentPassword := ctx.PostForm("current_password")
 	newPassword := ctx.PostForm("new_password")
@@ -331,5 +339,3 @@ func (c *SessionController) PostUpdatePassword(ctx *gin.Context) {
 	audit.Event(ctx, "user.password_change", fmt.Sprintf("user_id=%d", userID))
 	ctx.JSON(http.StatusOK, gin.H{"message": "Contraseña actualizada exitosamente"})
 }
-
-

@@ -127,11 +127,12 @@ func (ctrl *UserController) RevokeUserAccess(c *gin.Context) {
 		return
 	}
 
-	var userID uint
-	if _, err := fmt.Sscanf(userIDParam, "%d", &userID); err != nil {
+	parsedUserID, err := strconv.ParseUint(strings.TrimSpace(userIDParam), 10, 32)
+	if err != nil || parsedUserID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
 		return
 	}
+	userID := uint(parsedUserID)
 
 	currentUserIDVal, exists := c.Get("user_id")
 	if exists {
@@ -264,8 +265,12 @@ func (ctrl *UserController) GetAppUsers(c *gin.Context) {
 func (ctrl *UserController) PostUnlockUser(c *gin.Context) {
 	appIDParam := c.Param("id")
 	userIDStr := c.Param("user_id")
-	var userID uint
-	fmt.Sscanf(userIDStr, "%d", &userID)
+	parsedUserID, err := strconv.ParseUint(strings.TrimSpace(userIDStr), 10, 32)
+	if err != nil || parsedUserID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+	userID := uint(parsedUserID)
 
 	// Verificar que la aplicación existe
 	app, err := ctrl.AppService.GetAppDetails(appIDParam)
@@ -293,11 +298,12 @@ func (ctrl *UserController) PostUnlockUser(c *gin.Context) {
 func (ctrl *UserController) PostUpdateAccessTime(c *gin.Context) {
 	appIDParam := c.Param("id")
 	userIDStr := c.Param("user_id")
-	var userID uint
-	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil || userID == 0 {
+	parsedUserID, err := strconv.ParseUint(strings.TrimSpace(userIDStr), 10, 32)
+	if err != nil || parsedUserID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
 		return
 	}
+	userID := uint(parsedUserID)
 
 	app, err := ctrl.AppService.GetAppDetails(appIDParam)
 	if err != nil {
@@ -345,16 +351,15 @@ func (ctrl *UserController) PostUpdateAccessTime(c *gin.Context) {
 
 // SetupTOTP inicia el enrolamiento de TOTP para el usuario autenticado
 func (ctrl *UserController) SetupTOTP(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	// Obtener email del usuario desde el contexto
-	emailVal, _ := c.Get("user_email")
-	email := emailVal.(string)
+	email := principal.Email
 
 	resp, err := ctrl.MfaService.SetupTOTP(userID, email)
 	if err != nil {
@@ -367,12 +372,12 @@ func (ctrl *UserController) SetupTOTP(c *gin.Context) {
 
 // VerifyTOTP valida el código TOTP enviado para activar el factor
 func (ctrl *UserController) VerifyTOTP(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	var req struct {
 		Code string `json:"code" binding:"required"`
@@ -396,12 +401,12 @@ func (ctrl *UserController) VerifyTOTP(c *gin.Context) {
 
 // DisableMFA desactiva el segundo factor para el usuario autenticado exigiendo confirmación de doble factor (contraseña + código MFA)
 func (ctrl *UserController) DisableMFA(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	var req struct {
 		Password string `json:"password"`
@@ -449,14 +454,13 @@ func (ctrl *UserController) DisableMFA(c *gin.Context) {
 
 // BeginWebAuthnRegistration inicia el registro de una Passkey
 func (ctrl *UserController) BeginWebAuthnRegistration(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
-	emailVal, _ := c.Get("user_email")
-	email := emailVal.(string)
+	userID := principal.UserID
+	email := principal.Email
 
 	options, sessionData, err := ctrl.MfaService.BeginWebAuthnRegistration(userID, email)
 	if err != nil {
@@ -474,12 +478,12 @@ func (ctrl *UserController) BeginWebAuthnRegistration(c *gin.Context) {
 
 // FinishWebAuthnRegistration finaliza el registro de una Passkey
 func (ctrl *UserController) FinishWebAuthnRegistration(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	sessionKey := fmt.Sprintf("wa_reg_%d", userID)
 	// Atomically retrieve and delete the session to prevent replay attacks
@@ -517,12 +521,12 @@ func (ctrl *UserController) FinishWebAuthnRegistration(c *gin.Context) {
 
 // GetMfaStatus retorna el estado de MFA para el usuario autenticado
 func (ctrl *UserController) GetMfaStatus(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	status, err := ctrl.MfaService.GetMfaStatus(userID)
 	if err != nil {
@@ -535,12 +539,12 @@ func (ctrl *UserController) GetMfaStatus(c *gin.Context) {
 
 // ListWebAuthnKeys devuelve el listado de llaves físicas o passkeys registradas por el usuario.
 func (ctrl *UserController) ListWebAuthnKeys(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	keys, err := ctrl.MfaService.ListWebAuthnCredentials(userID)
 	if err != nil {
@@ -553,12 +557,12 @@ func (ctrl *UserController) ListWebAuthnKeys(c *gin.Context) {
 
 // DeleteWebAuthnKey elimina una llave WebAuthn por su ID.
 func (ctrl *UserController) DeleteWebAuthnKey(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	keyIDStr := c.Param("id")
 	keyID, err := strconv.ParseUint(keyIDStr, 10, 32)
@@ -579,12 +583,12 @@ func (ctrl *UserController) DeleteWebAuthnKey(c *gin.Context) {
 
 // RegenerateRecoveryCodes genera un nuevo conjunto de 10 códigos de recuperación invalidando los previos
 func (ctrl *UserController) RegenerateRecoveryCodes(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	// Validar que el usuario tenga MFA activo
 	status, err := ctrl.MfaService.GetMfaStatus(userID)
@@ -609,12 +613,12 @@ func (ctrl *UserController) RegenerateRecoveryCodes(c *gin.Context) {
 
 // PostUploadAvatar procesa la subida de un avatar de perfil para el usuario autenticado.
 func (ctrl *UserController) PostUploadAvatar(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	file, header, err := c.Request.FormFile("avatar")
 	if err != nil {
@@ -649,12 +653,12 @@ func (ctrl *UserController) PostUploadAvatar(c *gin.Context) {
 
 // DeleteAvatar elimina el avatar del usuario autenticado.
 func (ctrl *UserController) DeleteAvatar(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	if err := ctrl.UserService.UpdateAvatar(userID, ""); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo eliminar el avatar"})
@@ -671,12 +675,12 @@ func (ctrl *UserController) DeleteAvatar(c *gin.Context) {
 
 // GetProfile obtiene los datos del perfil del usuario autenticado.
 func (ctrl *UserController) GetProfile(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	if ctrl.UserService == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Servicio de usuario no disponible"})
@@ -708,12 +712,12 @@ func (ctrl *UserController) GetProfile(c *gin.Context) {
 
 // PatchProfile actualiza los campos permitidos del perfil del usuario autenticado vía API REST.
 func (ctrl *UserController) PatchProfile(c *gin.Context) {
-	val, exists := c.Get("user_id")
-	if !exists {
+	principal, ok := authenticatedPrincipal(c)
+	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "No autenticado"})
 		return
 	}
-	userID := val.(uint)
+	userID := principal.UserID
 
 	var req struct {
 		FirstName string `json:"first_name" form:"first_name"`

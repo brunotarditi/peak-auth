@@ -102,6 +102,16 @@ func GetTemplateFuncMap() template.FuncMap {
 		"asset": func(path string) string {
 			return Asset(path)
 		},
+		"safe_url": func(u interface{}) template.URL {
+			switch val := u.(type) {
+			case template.URL:
+				return val
+			case string:
+				return template.URL(val)
+			default:
+				return ""
+			}
+		},
 		"js": func(name string) string {
 			return JS(name)
 		},

@@ -31,12 +31,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             submitBtn.disabled = true;
 
+            const csrfToken = document.querySelector('input[name="csrf_token"]')?.value ||
+                (document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/)?.[1] || '');
+
             try {
                 const res = await fetch('/setup/mfa/verify', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-Token': '{{ .CSRFToken }}'
+                        'X-CSRF-Token': csrfToken
                     },
                     body: JSON.stringify({ code })
                 });
@@ -44,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 if (res.ok && data.success) {
                     generatedCodes = data.recovery_codes || [];
-                    recoveryCodesContainer.innerHTML = '';
+                    recoveryCodesContainer.replaceChildren();
                     generatedCodes.forEach(c => {
                         const codeEl = document.createElement('div');
                         codeEl.textContent = c;

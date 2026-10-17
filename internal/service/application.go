@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"peak-auth/internal/api/response"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/store/repo"
@@ -39,7 +41,8 @@ type applicationService struct {
 	emailService     *EmailService
 	passRepo         repo.PasswordResetRepository
 	refreshTokenRepo repo.RefreshTokenRepository
-	themeRepo        repo.ApplicationThemeRepository
+	themeService     *applicationThemeService
+	eventPublisher   EventPublisher
 }
 
 func NewApplicationService(appRepo repo.ApplicationRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, txManager repo.TransactionManager, emailService *EmailService, passRepo repo.PasswordResetRepository, refreshTokenRepo repo.RefreshTokenRepository, themeRepo ...repo.ApplicationThemeRepository) ApplicationService {
@@ -47,7 +50,18 @@ func NewApplicationService(appRepo repo.ApplicationRepository, userRepo repo.Use
 	if len(themeRepo) > 0 {
 		tr = themeRepo[0]
 	}
-	return &applicationService{repo: appRepo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo, refreshTokenRepo: refreshTokenRepo, themeRepo: tr}
+	return newApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo, refreshTokenRepo, tr, NewEmailEventPublisher(emailService))
+}
+
+func NewApplicationServiceWithEvents(appRepo repo.ApplicationRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, txManager repo.TransactionManager, emailService *EmailService, passRepo repo.PasswordResetRepository, refreshTokenRepo repo.RefreshTokenRepository, themeRepo repo.ApplicationThemeRepository, eventPublisher EventPublisher) ApplicationService {
+	return newApplicationService(appRepo, userRepo, roleRepo, uarRepo, txManager, emailService, passRepo, refreshTokenRepo, themeRepo, eventPublisher)
+}
+
+func newApplicationService(appRepo repo.ApplicationRepository, userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, txManager repo.TransactionManager, emailService *EmailService, passRepo repo.PasswordResetRepository, refreshTokenRepo repo.RefreshTokenRepository, themeRepo repo.ApplicationThemeRepository, eventPublisher EventPublisher) ApplicationService {
+	if eventPublisher == nil {
+		eventPublisher = NewNoopEventPublisher()
+	}
+	return &applicationService{repo: appRepo, userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, txManager: txManager, emailService: emailService, passRepo: passRepo, refreshTokenRepo: refreshTokenRepo, themeService: newApplicationThemeService(appRepo, themeRepo), eventPublisher: eventPublisher}
 }
 
 func (s *applicationService) GetAppDetails(publicAppID string) (model.Application, error) {
@@ -107,19 +121,39 @@ func (s *applicationService) CreateApp(name, description, redirectURL string, is
 		OwnerID:     creatorID,
 	}
 
-	err = s.repo.Create(&app)
-	if err != nil {
-		return model.Application{}, "", err
+	create := func(appRepo repo.ApplicationRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, ruleRepo repo.ApplicationRuleRepository) error {
+		if err := appRepo.Create(&app); err != nil {
+			return err
+		}
+		if creatorID != nil && roleRepo != nil && uarRepo != nil {
+			ownerRole, err := roleRepo.FindGlobalByName("OWNER")
+			if err == nil {
+				if err := uarRepo.AssignRole(*creatorID, app.ID, ownerRole.ID); err != nil {
+					return err
+				}
+			}
+			adminRole, err := roleRepo.FindGlobalByName("ADMIN")
+			if err == nil {
+				if err := uarRepo.AssignRole(*creatorID, app.ID, adminRole.ID); err != nil {
+					return err
+				}
+			}
+		}
+		if ruleRepo != nil {
+			return ruleRepo.CreateDefaultRules(app.ID)
+		}
+		return nil
 	}
 
-	// Si se especificó un creador/propietario, asignarle el rol OWNER y ADMIN dentro de la aplicación
-	if creatorID != nil && s.roleRepo != nil && s.uarRepo != nil {
-		if ownerRole, err := s.roleRepo.FindGlobalByName("OWNER"); err == nil {
-			_ = s.uarRepo.AssignRole(*creatorID, app.ID, ownerRole.ID)
-		}
-		if adminRole, err := s.roleRepo.FindGlobalByName("ADMIN"); err == nil {
-			_ = s.uarRepo.AssignRole(*creatorID, app.ID, adminRole.ID)
-		}
+	if s.txManager != nil {
+		err = s.txManager.WithinTransaction(func(tx repo.TxRepository) error {
+			return create(tx.Apps(), tx.Roles(), tx.UAR(), tx.Rules())
+		})
+	} else {
+		err = create(s.repo, s.roleRepo, s.uarRepo, nil)
+	}
+	if err != nil {
+		return model.Application{}, "", err
 	}
 
 	return app, plainSecret, nil
@@ -154,7 +188,9 @@ func (s *applicationService) UpdateApp(appID string, description, redirectURL st
 
 	// Si la aplicación fue desactivada, revocar todos los refresh tokens pendientes
 	if wasActive && !isActive && s.refreshTokenRepo != nil {
-		_ = s.refreshTokenRepo.DeleteByApp(app.ID)
+		if err := s.refreshTokenRepo.DeleteByApp(app.ID); err != nil {
+			return fmt.Errorf("aplicación actualizada, pero no se pudieron revocar sus refresh tokens: %w", err)
+		}
 	}
 
 	return nil
@@ -242,7 +278,7 @@ func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *
 		return fmt.Errorf("no se puede asignar el rol ROOT")
 	}
 	if strings.EqualFold(roleName, "OWNER") {
-		return fmt.Errorf("no se puede asignar el rol OWNER directamente; utilice la transferencia de propiedad")
+		return domainError(ErrCodeAuthorization, "register user in app", fmt.Errorf("no se puede asignar el rol OWNER directamente; utilice la transferencia de propiedad"))
 	}
 
 	// Resolver el rol con alcance de la app: primero rol propio, luego global.
@@ -262,8 +298,14 @@ func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *
 			// Generamos un password aleatorio temporal.
 			// Útil para que la fila en DB sea válida y la cuenta esté 'cerrada'
 			// hasta que el usuario use el link de activación (reset password).
-			placeholderPass, _, _ := util.GenerateToken(16)
-			hashedPass, _ := util.HashPassword(placeholderPass)
+			placeholderPass, _, err := util.GenerateToken(16)
+			if err != nil {
+				return domainError(ErrCodeInternal, "generate temporary credential", err)
+			}
+			hashedPass, err := util.HashPassword(placeholderPass)
+			if err != nil {
+				return domainError(ErrCodeInternal, "hash temporary credential", err)
+			}
 
 			user = model.User{
 				Email:      userEmail,
@@ -289,7 +331,10 @@ func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *
 
 		// ACTIVACIÓN: Enviamos email de verificación estándar.
 		if isNewUser || !user.IsVerified {
-			plainToken, hashedToken, _ := util.GenerateToken(32)
+			plainToken, hashedToken, err := util.GenerateToken(32)
+			if err != nil {
+				return domainError(ErrCodeInternal, "generate verification token", err)
+			}
 			verification := model.EmailVerification{
 				UserID:        user.ID,
 				ApplicationID: app.ID,
@@ -300,7 +345,22 @@ func (s *applicationService) RegisterUserInApp(userEmail, roleName string, app *
 				return err
 			}
 			// Envío asíncrono
-			go s.emailService.SendVerificationEmail(user.Email, plainToken, app.Name)
+			if s.eventPublisher == nil {
+				return domainError(ErrCodeConfiguration, "publish verification event", fmt.Errorf("publisher de eventos no disponible"))
+			}
+			event := Event{
+				Name:    "user.verification.requested",
+				UserID:  user.ID,
+				AppID:   app.ID,
+				Email:   user.Email,
+				AppName: app.Name,
+				Token:   plainToken,
+			}
+			go func() {
+				if err := s.eventPublisher.Publish(context.Background(), event); err != nil {
+					log.Printf("[error] publish verification event for user %d: %v", event.UserID, err)
+				}
+			}()
 		}
 
 		return nil
@@ -388,20 +448,32 @@ func (s *applicationService) TransferOwnership(appID string, currentUserID, newO
 
 		if app.OwnerID != nil {
 			oldOwnerID := *app.OwnerID
-			_ = tx.UAR().RevokeRole(oldOwnerID, app.ID, ownerRole.ID)
-			_ = tx.UAR().AssignRole(oldOwnerID, app.ID, adminRole.ID)
+			if err := tx.UAR().RevokeRole(oldOwnerID, app.ID, ownerRole.ID); err != nil {
+				return err
+			}
+			if err := tx.UAR().AssignRole(oldOwnerID, app.ID, adminRole.ID); err != nil {
+				return err
+			}
 
 			oldUser, err := tx.Users().FindById(oldOwnerID)
-			if err == nil {
-				_ = tx.Users().UpdateColumn("authz_version", oldUser.AuthzVersion+1, oldOwnerID)
+			if err != nil {
+				return err
+			}
+			if err := tx.Users().UpdateColumn("authz_version", oldUser.AuthzVersion+1, oldOwnerID); err != nil {
+				return err
 			}
 		}
 
-		_ = tx.UAR().AssignRole(newOwnerID, app.ID, ownerRole.ID)
+		if err := tx.UAR().AssignRole(newOwnerID, app.ID, ownerRole.ID); err != nil {
+			return err
+		}
 
 		newUser, err := tx.Users().FindById(newOwnerID)
-		if err == nil {
-			_ = tx.Users().UpdateColumn("authz_version", newUser.AuthzVersion+1, newOwnerID)
+		if err != nil {
+			return err
+		}
+		if err := tx.Users().UpdateColumn("authz_version", newUser.AuthzVersion+1, newOwnerID); err != nil {
+			return err
 		}
 
 		return nil
@@ -421,8 +493,11 @@ func (s *applicationService) UpdateUserAccessTime(appID string, targetUserID uin
 	// Invalida tokens previos del usuario para refrescar claims de acceso
 	if s.userRepo != nil {
 		user, err := s.userRepo.FindById(targetUserID)
-		if err == nil {
-			_ = s.userRepo.UpdateColumn("authz_version", user.AuthzVersion+1, targetUserID)
+		if err != nil {
+			return err
+		}
+		if err := s.userRepo.UpdateColumn("authz_version", user.AuthzVersion+1, targetUserID); err != nil {
+			return err
 		}
 	}
 
@@ -430,42 +505,13 @@ func (s *applicationService) UpdateUserAccessTime(appID string, targetUserID uin
 }
 
 func (s *applicationService) GetAppTheme(publicAppID string) (*model.ApplicationTheme, error) {
-	app, err := s.repo.FindByAppID(publicAppID)
-	if err != nil {
-		return nil, err
-	}
-	if s.themeRepo == nil {
-		return nil, nil
-	}
-	return s.themeRepo.FindByAppID(app.ID)
+	return s.themeService.get(publicAppID)
 }
 
 func (s *applicationService) UpdateAppTheme(publicAppID string, theme *model.ApplicationTheme) error {
-	app, err := s.repo.FindByAppID(publicAppID)
-	if err != nil {
-		return err
-	}
-	if theme == nil {
-		return fmt.Errorf("tema inválido")
-	}
-	theme.ApplicationID = app.ID
-	if theme.PrimaryColor != "" {
-		theme.PrimaryColor = util.SanitizeHexColor(theme.PrimaryColor)
-	}
-	if s.themeRepo == nil {
-		return fmt.Errorf("repositorio de temas no disponible")
-	}
-	return s.themeRepo.Upsert(theme)
+	return s.themeService.update(publicAppID, theme)
 }
 
 func (s *applicationService) ResetAppTheme(publicAppID string) error {
-	app, err := s.repo.FindByAppID(publicAppID)
-	if err != nil {
-		return err
-	}
-	if s.themeRepo == nil {
-		return nil
-	}
-	return s.themeRepo.DeleteByAppID(app.ID)
+	return s.themeService.reset(publicAppID)
 }
-

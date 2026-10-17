@@ -18,10 +18,22 @@
     </div>
 
     <div class="phase8-style-76">
+        {{ if .BackURL }}
+        <a href="{{ .BackURL }}" class="peak-btn peak-btn-primary phase8-style-77">
+            {{template "icon-arrow-back"}}
+            <span>{{ if .BackLabel }}{{ .BackLabel }}{{ else }}Volver{{ end }}</span>
+        </a>
+        {{ else if .IsSetup }}
+        <a href="/setup" class="peak-btn peak-btn-primary phase8-style-77">
+            {{template "icon-arrow-back"}}
+            <span>Volver a la instalación</span>
+        </a>
+        {{ else }}
         <a href="/admin" class="peak-btn peak-btn-primary phase8-style-77">
             {{template "icon-arrow-back"}}
             <span>Volver a aplicaciones</span>
         </a>
+        {{ end }}
         <button data-action="reload-page" class="peak-btn peak-btn-secondary phase8-style-78">
             <span>Reintentar</span>
         </button>

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"peak-auth/internal/store/model"
@@ -37,6 +38,7 @@ func NewSetupService(setupRepo repo.SetupRepository, setupToken string, txManage
 
 func (s *setupService) CreateRootUser(email, password, token string) (model.User, error) {
 	var user model.User
+	token = strings.TrimSpace(token)
 
 	// Prevent setup after it's been completed
 	if s.setupCompleted {
@@ -150,6 +152,7 @@ func (s *setupService) InitializeSystem(port string) {
 }
 
 func (s *setupService) ValidateSetupToken(token string) error {
+	token = strings.TrimSpace(token)
 	// Prevent reuse after setup is completed
 	if s.setupCompleted {
 		return errors.New("el sistema ya ha sido configurado")

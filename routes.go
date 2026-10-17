@@ -49,11 +49,17 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 		RoleService:    app.RoleService,
 		StorageService: app.StorageService,
 	}
+	brandingCtrl := controller.NewApplicationBrandingController(
+		app.AppService,
+		app.RuleService,
+		app.StorageService,
+	)
 
 	loginCtrl := &controller.LoginController{
 		UserService:  app.UserService,
 		MfaService:   app.MfaService,
 		TokenManager: app.TokenManager,
+		SetupService: app.SetupService,
 	}
 
 	registerCtrl := &controller.RegisterController{
@@ -345,11 +351,11 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 			apps.GET("/audit/:log_id", auditCtrl.GetAppAuditDetail)
 
 			// Personalización y Temas (Branding)
-			apps.GET("/branding", appCtrl.GetAppBranding)
-			apps.POST("/branding", middleware.RequestBodyLimitMiddleware(8*1024*1024), appCtrl.PostAppBranding)
-			apps.POST("/branding/reset", appCtrl.PostAppThemeReset)
-			apps.POST("/branding/upload-logo", middleware.RequestBodyLimitMiddleware(6*1024*1024), appCtrl.PostAppUploadLogo)
-			apps.POST("/branding/upload-favicon", middleware.RequestBodyLimitMiddleware(3*1024*1024), appCtrl.PostAppUploadFavicon)
+			apps.GET("/branding", brandingCtrl.GetAppBranding)
+			apps.POST("/branding", middleware.RequestBodyLimitMiddleware(8*1024*1024), brandingCtrl.PostAppBranding)
+			apps.POST("/branding/reset", brandingCtrl.PostAppThemeReset)
+			apps.POST("/branding/upload-logo", middleware.RequestBodyLimitMiddleware(6*1024*1024), brandingCtrl.PostAppUploadLogo)
+			apps.POST("/branding/upload-favicon", middleware.RequestBodyLimitMiddleware(3*1024*1024), brandingCtrl.PostAppUploadFavicon)
 		}
 	}
 

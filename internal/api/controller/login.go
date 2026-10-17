@@ -20,6 +20,7 @@ type LoginController struct {
 	UserService  service.UserService
 	MfaService   service.MfaService
 	TokenManager *auth.JWTManager
+	SetupService service.SetupService
 }
 
 // Login maneja el endpoint de login. Espera el header X-App-Id con el AppID público.
@@ -54,6 +55,13 @@ func (c *LoginController) Login(ctx *gin.Context) {
 
 // GetLoginForm renderiza el formulario de login
 func (ctrl *LoginController) GetLoginForm(c *gin.Context) {
+	if ctrl.SetupService != nil {
+		if first, err := ctrl.SetupService.IsFirstRun(); err == nil && first {
+			c.Redirect(http.StatusSeeOther, "/setup")
+			return
+		}
+	}
+
 	csrf, _ := c.Get("csrf_token")
 	c.HTML(http.StatusOK, "login.html", gin.H{
 		"Error":     c.Query("error"),
@@ -63,6 +71,13 @@ func (ctrl *LoginController) GetLoginForm(c *gin.Context) {
 
 // PostLoginForm procesa el login
 func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
+	if ctrl.SetupService != nil {
+		if first, err := ctrl.SetupService.IsFirstRun(); err == nil && first {
+			c.Redirect(http.StatusSeeOther, "/setup")
+			return
+		}
+	}
+
 	email := c.PostForm("email")
 	password := c.PostForm("password")
 

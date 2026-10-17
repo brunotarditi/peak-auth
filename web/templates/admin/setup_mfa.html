@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Peak Auth - Configuración de MFA</title>
-    <script src="{{ js " config.js" }}"></script>
-    <script src="{{ js " common.js" }}"></script>
-    <script src="{{ js " modal.js" }}"></script>
+    <script src="{{ js "config.js" }}"></script>
+    <script src="{{ js "common.js" }}"></script>
+    <script src="{{ js "modal.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset " /static/css/main.css" }}">
-    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
-    <link rel="stylesheet" href="{{ asset " /static/css/setup.css" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/setup.css" }}">
 </head>
 
 <body class="bg-pattern layout-auth">
@@ -41,7 +41,7 @@
 
                 <div class="mfa-qr">
                     <div class="mfa-qr-frame">
-                        <img src="{{ .QRCode }}" alt="Código QR TOTP">
+                        <img src="{{ safe_url .QRCode }}" alt="Código QR TOTP">
                     </div>
                 </div>
 
@@ -55,6 +55,7 @@
                 <div id="setupMfaFeedback" class="mfa-feedback"></div>
 
                 <form id="formVerifySetupMfa" class="mfa-form">
+                    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                     <div class="form-group">
                         <label for="totpCodeInput" class="auth-label mfa-code-label">Código de 6 dígitos</label>
                         <input type="text" id="totpCodeInput" name="code" required maxlength="6" inputmode="numeric"
@@ -99,7 +100,7 @@
 
                 <a href="/admin" id="btnEnterAdmin" class="peak-btn peak-btn-primary peak-btn-block mfa-enter-admin">
                     <span>Entrar al panel de administración</span>
-                    {{template "icon-arrow-right"}}
+                    {{template "icon-arrow-forward"}}
                 </a>
             </div>
 
@@ -112,7 +113,7 @@
         </div>
     </div>
 
-    <script src="{{ js " setup_mfa.js" }}"></script>
+    <script src="{{ js "setup_mfa.js" }}"></script>
 </body>
 
 </html>

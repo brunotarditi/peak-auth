@@ -229,6 +229,68 @@ func TestRenderer_ErrorHTML_RendersBaseAdmin(t *testing.T) {
 	}
 }
 
+func TestRenderer_SetupHTML_RendersFullForm(t *testing.T) {
+	renderer, err := NewRenderer("../../web/templates", GetTemplateFuncMap())
+	if err != nil {
+		t.Fatalf("error initializing template renderer: %v", err)
+	}
+
+	r := renderer.Instance("setup.html", map[string]any{
+		"CSRFToken": "mock-test-csrf-token",
+	})
+
+	w := httptest.NewRecorder()
+	if err := r.Render(w); err != nil {
+		t.Fatalf("error rendering setup.html: %v", err)
+	}
+
+	body := w.Body.String()
+	if len(body) < 1000 {
+		t.Fatalf("setup.html rendered too short content (len=%d): %q", len(body), body)
+	}
+	if !strings.Contains(body, "Usuario maestro (ROOT)") {
+		t.Errorf("setup.html no contiene el encabezado: %s", body)
+	}
+	if !strings.Contains(body, "Continuar a configuración de MFA") {
+		t.Errorf("setup.html no contiene el botón de submit: %s", body)
+	}
+	if !strings.Contains(body, "mock-test-csrf-token") {
+		t.Errorf("setup.html no contiene el CSRFToken: %s", body)
+	}
+}
+
+func TestRenderer_SetupMFA_RendersFullForm(t *testing.T) {
+	renderer, err := NewRenderer("../../web/templates", GetTemplateFuncMap())
+	if err != nil {
+		t.Fatalf("error initializing template renderer: %v", err)
+	}
+
+	r := renderer.Instance("setup_mfa.html", map[string]any{
+		"CSRFToken": "mock-test-csrf-token",
+		"Secret":    "ABCD1234EFGH5678",
+		"QRCode":    "data:image/png;base64,mock",
+	})
+
+	w := httptest.NewRecorder()
+	if err := r.Render(w); err != nil {
+		t.Fatalf("error rendering setup_mfa.html: %v", err)
+	}
+
+	body := w.Body.String()
+	if len(body) < 1000 {
+		t.Fatalf("setup_mfa.html rendered too short content (len=%d): %q", len(body), body)
+	}
+	if !strings.Contains(body, "Entrar al panel de administración") {
+		t.Errorf("setup_mfa.html no contiene el botón final: %s", body)
+	}
+	if strings.Contains(body, "#ZgotmplZ") {
+		t.Errorf("setup_mfa.html contiene #ZgotmplZ: la URL del QR fue bloqueada por sanitización: %s", body)
+	}
+	if !strings.Contains(body, `src="data:image/png;base64,mock"`) {
+		t.Errorf("setup_mfa.html no contiene el src válido del QR: %s", body)
+	}
+}
+
 func TestIsPasswordExpired(t *testing.T) {
 	// Rule with 30 days expiration
 	rule30d := []byte(`{"expiration_days": 30}`)

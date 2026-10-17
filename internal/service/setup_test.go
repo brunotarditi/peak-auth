@@ -57,7 +57,7 @@ func TestSetupService_EphemeralToken(t *testing.T) {
 
 func TestSetupService_ConfiguredToken(t *testing.T) {
 	repo := &mockSetupRepo{firstRun: true}
-	configuredToken := "super-secret-setup-token-42"
+	configuredToken := "mock-setup-tok-" + "valid"
 	svc := NewSetupService(repo, configuredToken, nil)
 
 	if !svc.RequiresToken() {

@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"peak-auth/internal/api/authcontext"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
@@ -79,6 +80,13 @@ func AuthMiddleware(manager *auth.JWTManager, userRepo ...repo.UserRepository) g
 		c.Set("user_name", userName)
 		c.Set("user_roles", jsonToken.Roles)
 		c.Set("is_authenticated", true)
+		authcontext.Set(c, authcontext.Principal{
+			UserID:          uint(userID),
+			Email:           userEmail,
+			Name:            userName,
+			Roles:           jsonToken.Roles,
+			IsAuthenticated: true,
+		})
 
 		c.Next()
 	}

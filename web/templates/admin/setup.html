@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peak Auth - Setup Inicial</title>
-    <script src="{{ js " config.js" }}"></script>
-    <script src="{{ js " common.js" }}"></script>
+    <title>Peak Auth - Setup inicial</title>
+    <script src="{{ js "config.js" }}"></script>
+    <script src="{{ js "common.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset " /static/css/main.css" }}">
-    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
-    <link rel="stylesheet" href="{{ asset " /static/css/setup.css" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/setup.css" }}">
 </head>
 
 <body class="bg-pattern layout-auth">
@@ -22,7 +22,7 @@
     <div class="auth-container setup-shell">
         <div class="setup-brand">
             <div class="auth-logo-mark">
-                <img src="{{ asset " /static/img/logo.svg" }}" alt="Peak Auth">
+                <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth">
             </div>
             <h1 class="setup-title">Setup Peak <span class="auth-title-accent">Auth</span></h1>
             <p class="setup-step">Paso 1 de 2: Credenciales maestras</p>
@@ -138,7 +138,7 @@
                     <button type="submit" id="submitBtn"
                         class="peak-btn peak-btn-primary peak-btn-block auth-form-button auth-form-button-plain">
                         <span>Continuar a configuración de MFA</span>
-                        {{template "icon-arrow-right"}}
+                        {{template "icon-arrow-forward"}}
                     </button>
                 </div>
             </form>
@@ -151,7 +151,7 @@
         </div>
     </div>
 
-    <script src="{{ js " setup.js" }}"></script>
+    <script src="{{ js "setup.js" }}"></script>
 </body>
 
 </html>

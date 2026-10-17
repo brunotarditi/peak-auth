@@ -260,7 +260,9 @@ func (s *brokerService) resolveOrCreateUser(profile *broker.BrokerProfile, app *
 	// A. Buscar identidad social existente
 	identity, err := s.identityRepo.FindByProviderAndUID(profile.Provider, profile.ProviderUserID)
 	if err == nil && identity != nil {
-		_ = s.identityRepo.UpdateLastLogin(identity.ID)
+		if err := s.identityRepo.UpdateLastLogin(identity.ID); err != nil {
+			return nil, fmt.Errorf("error actualizando último acceso de identidad: %w", err)
+		}
 		user, uerr := s.userRepo.FindById(identity.UserID)
 		if uerr != nil {
 			return nil, fmt.Errorf("error cargando usuario asociado: %w", uerr)
@@ -296,7 +298,9 @@ func (s *brokerService) resolveOrCreateUser(profile *broker.BrokerProfile, app *
 		}
 
 		if !existingUser.IsVerified {
-			_ = s.userRepo.UpdateColumn("is_verified", true, existingUser.ID)
+			if err := s.userRepo.UpdateColumn("is_verified", true, existingUser.ID); err != nil {
+				return nil, fmt.Errorf("error verificando usuario vinculado: %w", err)
+			}
 			existingUser.IsVerified = true
 		}
 
@@ -413,7 +417,9 @@ func (s *brokerService) resolveOrCreateUser(profile *broker.BrokerProfile, app *
 			role, err = s.roleRepo.FindGlobalByName("USER")
 		}
 		if err == nil {
-			_ = s.uarRepo.AssignRole(newUser.ID, app.ID, role.ID)
+			if err := s.uarRepo.AssignRole(newUser.ID, app.ID, role.ID); err != nil {
+				return nil, fmt.Errorf("error asignando rol inicial: %w", err)
+			}
 		}
 	}
 

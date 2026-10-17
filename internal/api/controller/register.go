@@ -5,7 +5,6 @@ import (
 	"peak-auth/internal/api/request"
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
-	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
 	"time"
 
@@ -19,7 +18,11 @@ type RegisterController struct {
 
 // Register maneja el endpoint de registro.
 func (c *RegisterController) Register(ctx *gin.Context) {
-	app := ctx.MustGet("app").(model.Application)
+	app, ok := applicationFromContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Aplicación no disponible"})
+		return
+	}
 	var req request.RegisterRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -161,4 +164,3 @@ func (c *RegisterController) PostVerifyEmail(ctx *gin.Context) {
 		"NeedsPassword": needsPassword,
 	})
 }
-

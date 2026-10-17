@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peak Auth - Autenticación de Setup</title>
-    <script src="{{ js " config.js" }}"></script>
+    <title>Peak Auth - Autenticación de setup</title>
+    <script src="{{ js "config.js" }}"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset " /static/css/main.css" }}">
-    <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
-    <link rel="stylesheet" href="{{ asset " /static/css/setup.css" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/main.css" }}">
+    <link rel="icon" type="image/png" href="{{ asset "/static/img/favicon.png" }}">
+    <link rel="stylesheet" href="{{ asset "/static/css/setup.css" }}">
 </head>
 
 <body class="bg-pattern layout-auth">
@@ -29,10 +29,17 @@
 
         <div class="glass-panel auth-panel">
             <div class="auth-panel-heading">
-                <h2 class="auth-panel-title">Token de Instalación</h2>
+                <h2 class="auth-panel-title">Token de instalación</h2>
                 <p class="auth-panel-copy">Ingrese el token de instalación configurado en SETUP_TOKEN o el token efímero
                     generado en la consola en el primer arranque.</p>
             </div>
+
+            {{ if .ErrorMessage }}
+            <div class="alert-error">
+                <svg style="width: 1.25rem; height: 1.25rem; flex-shrink: 0;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+                <span>{{ .ErrorMessage }}</span>
+            </div>
+            {{ end }}
 
             <form id="authForm" action="/setup/auth" method="POST" class="auth-form">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
@@ -62,7 +69,7 @@
         </div>
     </div>
 
-    <script src="{{ js " setup_auth.js" }}"></script>
+    <script src="{{ js "setup_auth.js" }}"></script>
 </body>
 
 </html>

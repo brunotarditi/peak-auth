@@ -55,6 +55,19 @@ type userService struct {
 	txManager             repo.TransactionManager
 }
 
+type adminLoginCommand struct {
+	email    string
+	password string
+}
+
+type adminLoginResult struct {
+	token            string
+	expiresInMinutes int
+	mfaRequired      bool
+	mfaSetupRequired bool
+	mfaToken         string
+}
+
 // NewUserService crea una instancia de UserService con las dependencias necesarias.
 func NewUserService(userRepo repo.UserRepository, roleRepo repo.RoleRepository, uarRepo repo.UserApplicationRoleRepository, appRepo repo.ApplicationRepository, ruleService ApplicationRuleService, tokenManager *auth.JWTManager, emailVerificationRepo repo.EmailVerificationRepository, passwordResetRepo repo.PasswordResetRepository, emailService *EmailService, refreshTokenRepo repo.RefreshTokenRepository, txManager repo.TransactionManager) UserService {
 	return &userService{userRepo: userRepo, roleRepo: roleRepo, uarRepo: uarRepo, appRepo: appRepo, ruleService: ruleService, tokenManager: tokenManager, emailVerificationRepo: emailVerificationRepo, passwordResetRepo: passwordResetRepo, emailService: emailService, refreshTokenRepo: refreshTokenRepo, txManager: txManager}
@@ -197,25 +210,9 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	}
 
 	// 3.5 Obtener roles para el JWT
-	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
-	roles := make([]string, 0, len(roleModels)+2)
-	hasOwner := false
-	hasAdmin := false
-	for _, r := range roleModels {
-		roles = append(roles, r.Name)
-		if r.Name == "OWNER" {
-			hasOwner = true
-		}
-		if r.Name == "ADMIN" {
-			hasAdmin = true
-		}
-	}
-	if app.OwnerID != nil && *app.OwnerID == user.ID && !hasOwner {
-		roles = append(roles, "OWNER")
-		hasOwner = true
-	}
-	if hasOwner && !hasAdmin {
-		roles = append(roles, "ADMIN")
+	roles, err := s.rolesForToken(user.ID, app)
+	if err != nil {
+		return response.TokenResponse{}, err
 	}
 
 	// 4. Generar Token JWT con claims OIDC de perfil
@@ -262,10 +259,32 @@ func (s *userService) Login(req request.LoginRequest, publicAppID string) (respo
 	}, nil
 }
 
+func (s *userService) AdminLogin(email, password string) (string, int, bool, bool, string, error) {
+	result, err := s.adminLogin(adminLoginCommand{email: email, password: password})
+	if err != nil {
+		return "", 0, false, false, "", err
+	}
+	return result.token, result.expiresInMinutes, result.mfaRequired, result.mfaSetupRequired, result.mfaToken, nil
+}
+
+func (s *userService) adminLogin(command adminLoginCommand) (adminLoginResult, error) {
+	token, expiresInMinutes, mfaRequired, mfaSetupRequired, mfaToken, err := s.adminLoginLegacy(command.email, command.password)
+	if err != nil {
+		return adminLoginResult{}, err
+	}
+	return adminLoginResult{
+		token:            token,
+		expiresInMinutes: expiresInMinutes,
+		mfaRequired:      mfaRequired,
+		mfaSetupRequired: mfaSetupRequired,
+		mfaToken:         mfaToken,
+	}, nil
+}
+
 // AdminLogin valida credenciales y permisos para acceder al panel administrativo.
 // To prevent account enumeration, this function always performs password verification
 // before checking account state, and returns a generic error message for all failures.
-func (s *userService) AdminLogin(email, password string) (string, int, bool, bool, string, error) {
+func (s *userService) adminLoginLegacy(email, password string) (string, int, bool, bool, string, error) {
 	// Generic error message used for all authentication failures to prevent enumeration
 	genericError := fmt.Errorf("las credenciales de administrador son inválidas")
 
@@ -496,28 +515,12 @@ func (s *userService) CompleteLoginWithMfa(userID uint, publicAppID string, mfaC
 	}
 
 	// 3. Obtener roles para el JWT
-	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
-	if len(roleModels) == 0 && (app.OwnerID == nil || *app.OwnerID != user.ID) {
+	roles, err := s.rolesForToken(user.ID, app)
+	if err != nil {
+		return response.TokenResponse{}, err
+	}
+	if len(roles) == 0 {
 		return response.TokenResponse{}, fmt.Errorf("el usuario no tiene acceso a esta aplicación")
-	}
-	roles := make([]string, 0, len(roleModels)+2)
-	hasOwner := false
-	hasAdmin := false
-	for _, r := range roleModels {
-		roles = append(roles, r.Name)
-		if r.Name == "OWNER" {
-			hasOwner = true
-		}
-		if r.Name == "ADMIN" {
-			hasAdmin = true
-		}
-	}
-	if app.OwnerID != nil && *app.OwnerID == user.ID && !hasOwner {
-		roles = append(roles, "OWNER")
-		hasOwner = true
-	}
-	if hasOwner && !hasAdmin {
-		roles = append(roles, "ADMIN")
 	}
 
 	// 4. Generar Token JWT con claims OIDC de perfil
@@ -1094,14 +1097,14 @@ func (s *userService) Refresh(refreshToken string, clientInfo ...string) (respon
 	}
 
 	// 1.5 Obtener roles para el JWT
-	roleModels, _ := s.uarRepo.FindRolesByUserAndApp(user.ID, app.ID)
-	if len(roleModels) == 0 {
+	roles, err := s.rolesForToken(user.ID, app)
+	if err != nil {
+		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
+		return response.TokenResponse{}, err
+	}
+	if len(roles) == 0 {
 		_ = s.refreshTokenRepo.DeleteByToken(tokenHashStr)
 		return response.TokenResponse{}, fmt.Errorf("el usuario no tiene acceso a esta aplicación")
-	}
-	roles := make([]string, len(roleModels))
-	for i, r := range roleModels {
-		roles[i] = r.Name
 	}
 
 	// 2. Generar nuevo Access Token preservando el aseguramiento de MFA original y claims OIDC
@@ -1266,4 +1269,32 @@ func (s *userService) ChangePassword(userID uint, currentPassword, newPassword s
 	return nil
 }
 
+func (s *userService) rolesForToken(userID uint, app model.Application) ([]string, error) {
+	roleModels, err := s.uarRepo.FindRolesByUserAndApp(userID, app.ID)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudieron obtener los roles del usuario")
+	}
 
+	roles := make([]string, 0, len(roleModels)+2)
+	hasOwner := false
+	hasAdmin := false
+	for _, role := range roleModels {
+		roles = append(roles, role.Name)
+		if strings.EqualFold(role.Name, "OWNER") {
+			hasOwner = true
+		}
+		if strings.EqualFold(role.Name, "ADMIN") {
+			hasAdmin = true
+		}
+	}
+
+	if app.OwnerID != nil && *app.OwnerID == userID && !hasOwner {
+		roles = append(roles, "OWNER")
+		hasOwner = true
+	}
+	if hasOwner && !hasAdmin {
+		roles = append(roles, "ADMIN")
+	}
+
+	return roles, nil
+}

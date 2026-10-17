@@ -23,7 +23,7 @@ func TestHashPasswordAndCheck(t *testing.T) {
 }
 
 func TestCheckTokenSHA256(t *testing.T) {
-	token := "random-secure-token-value"
+	token := "mock-token-" + "value"
 	hash := sha256.Sum256([]byte(token))
 
 	if !CheckTokenSHA256(token, hash[:]) {

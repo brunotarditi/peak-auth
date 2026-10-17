@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"peak-auth/internal/api/authcontext"
 	"peak-auth/internal/service"
+	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
 	"strconv"
 	"strings"
@@ -18,6 +20,51 @@ func parseUserIDFromSubject(sub string) (uint, error) {
 		return 0, fmt.Errorf("identificador de usuario inválido en token")
 	}
 	return uint(val), nil
+}
+
+func parsePathUint(c *gin.Context, name string) (uint, error) {
+	raw := strings.TrimSpace(c.Param(name))
+	if raw == "" {
+		return 0, fmt.Errorf("parámetro %s requerido", name)
+	}
+	value, err := strconv.ParseUint(raw, 10, 32)
+	if err != nil || value == 0 {
+		return 0, fmt.Errorf("parámetro %s inválido", name)
+	}
+	return uint(value), nil
+}
+
+func authenticatedUserID(c *gin.Context) (uint, bool) {
+	if principal, ok := authcontext.Get(c); ok {
+		return principal.UserID, true
+	}
+	value, exists := c.Get("user_id")
+	if !exists {
+		return 0, false
+	}
+	userID, ok := value.(uint)
+	return userID, ok && userID > 0
+}
+
+func authenticatedPrincipal(c *gin.Context) (authcontext.Principal, bool) {
+	if principal, ok := authcontext.Get(c); ok {
+		return principal, true
+	}
+
+	userID, ok := authenticatedUserID(c)
+	if !ok {
+		return authcontext.Principal{}, false
+	}
+	return authcontext.Principal{UserID: userID, IsAuthenticated: true}, true
+}
+
+func applicationFromContext(c *gin.Context) (model.Application, bool) {
+	value, exists := c.Get("app")
+	if !exists {
+		return model.Application{}, false
+	}
+	app, ok := value.(model.Application)
+	return app, ok
 }
 
 // mfaChallengeKey genera una clave única para rastrear intentos y consumo de MFA por token,
@@ -148,12 +195,13 @@ func (ctrl *BaseController) renderAdmin(c *gin.Context, templateName string, dat
 	if data == nil {
 		data = gin.H{}
 	}
-	if email, exists := c.Get("user_email"); exists {
-		data["UserEmail"] = email
+	if principal, ok := authenticatedPrincipal(c); ok {
+		data["UserEmail"] = principal.Email
+		if principal.Name != "" {
+			data["UserName"] = principal.Name
+		}
 	}
-	if name, exists := c.Get("user_name"); exists && name != "" {
-		data["UserName"] = name
-	} else if data["UserName"] == nil {
+	if data["UserName"] == nil {
 		data["UserName"] = data["UserEmail"]
 	}
 	if token, exists := c.Get("csrf_token"); exists {
@@ -161,10 +209,8 @@ func (ctrl *BaseController) renderAdmin(c *gin.Context, templateName string, dat
 	}
 
 	userRole := "Administrador"
-	if isRoot, exists := c.Get("is_root"); exists {
-		if b, ok := isRoot.(bool); ok && b {
-			userRole = "Root"
-		}
+	if principal, ok := authenticatedPrincipal(c); ok && principal.IsRoot {
+		userRole = "Root"
 	}
 	if userRole != "Root" {
 		if roles, exists := c.Get("user_roles"); exists {
@@ -204,6 +250,15 @@ func (ctrl *BaseController) renderError(c *gin.Context, status int, title, messa
 	}
 	if token, exists := c.Get("csrf_token"); exists {
 		data["CSRFToken"] = token
+	}
+	if backURL, exists := c.Get("error_back_url"); exists {
+		data["BackURL"] = backURL
+	}
+	if backLabel, exists := c.Get("error_back_label"); exists {
+		data["BackLabel"] = backLabel
+	}
+	if isSetup, exists := c.Get("is_setup"); exists {
+		data["IsSetup"] = isSetup
 	}
 	c.HTML(status, "error.html", data)
 }

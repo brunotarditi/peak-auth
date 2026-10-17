@@ -49,12 +49,23 @@ type MfaService interface {
 }
 
 type mfaService struct {
-	mfaRepo  repo.MfaRepository
-	userRepo repo.UserRepository
+	mfaRepo   repo.MfaRepository
+	userRepo  repo.UserRepository
+	txManager repo.TransactionManager
+	lifecycle *mfaLifecycleService
 }
 
-func NewMfaService(mfaRepo repo.MfaRepository, userRepo repo.UserRepository) MfaService {
-	return &mfaService{mfaRepo: mfaRepo, userRepo: userRepo}
+func NewMfaService(mfaRepo repo.MfaRepository, userRepo repo.UserRepository, txManager ...repo.TransactionManager) MfaService {
+	var manager repo.TransactionManager
+	if len(txManager) > 0 {
+		manager = txManager[0]
+	}
+	return &mfaService{
+		mfaRepo:   mfaRepo,
+		userRepo:  userRepo,
+		txManager: manager,
+		lifecycle: newMfaLifecycleService(mfaRepo, userRepo, manager),
+	}
 }
 
 // SetupTOTP genera un nuevo secreto TOTP para el usuario.
@@ -145,7 +156,9 @@ func (s *mfaService) VerifyAndActivateTOTP(userID uint, code string) ([]string, 
 	}
 
 	// Activar MFA en el usuario
-	s.userRepo.UpdateColumn("mfa_enabled", true, userID)
+	if err := s.userRepo.UpdateColumn("mfa_enabled", true, userID); err != nil {
+		return nil, fmt.Errorf("error activando MFA en el usuario")
+	}
 
 	// Generar códigos de recuperación
 	recoveryCodes, err := s.generateAndSaveRecoveryCodes(userID)
@@ -495,9 +508,16 @@ func (s *mfaService) DeleteWebAuthnCredential(userID uint, credID uint) error {
 	}
 
 	remaining, err := s.mfaRepo.CountActiveCredentials(userID)
-	if err == nil && remaining == 0 {
-		_ = s.userRepo.UpdateColumn("mfa_enabled", false, userID)
-		_ = s.mfaRepo.DeleteRecoveryCodesByUser(userID)
+	if err != nil {
+		return fmt.Errorf("error verificando credenciales MFA restantes: %w", err)
+	}
+	if remaining == 0 {
+		if err := s.userRepo.UpdateColumn("mfa_enabled", false, userID); err != nil {
+			return fmt.Errorf("error desactivando MFA en el usuario: %w", err)
+		}
+		if err := s.mfaRepo.DeleteRecoveryCodesByUser(userID); err != nil {
+			return fmt.Errorf("error eliminando códigos de recuperación: %w", err)
+		}
 	}
 
 	return nil
@@ -508,14 +528,10 @@ func (s *mfaService) DisableMFA(userID uint) error {
 	if !s.IsMfaEnabled(userID) {
 		return fmt.Errorf("MFA no está habilitado")
 	}
-	if err := s.mfaRepo.DeleteCredentialsByUser(userID); err != nil {
-		return fmt.Errorf("error eliminando credenciales MFA")
+	if s.lifecycle == nil {
+		s.lifecycle = newMfaLifecycleService(s.mfaRepo, s.userRepo, s.txManager)
 	}
-	if err := s.mfaRepo.DeleteRecoveryCodesByUser(userID); err != nil {
-		return fmt.Errorf("error eliminando códigos de recuperación")
-	}
-	s.userRepo.UpdateColumn("mfa_enabled", false, userID)
-	return nil
+	return s.lifecycle.disable(userID)
 }
 
 // IsMfaEnabled verifica si el usuario tiene MFA activado.

@@ -62,7 +62,11 @@ func (ctrl *AuditController) GetAppAuditPage(c *gin.Context) {
 		return
 	}
 
-	tables, actions, _ := ctrl.AuditService.GetAuditFilterOptions(app.ID)
+	tables, actions, err := ctrl.AuditService.GetAuditFilterOptions(app.ID)
+	if err != nil {
+		ctrl.renderError(c, http.StatusInternalServerError, "Error de auditoría", "No se pudieron obtener las opciones de filtrado.")
+		return
+	}
 
 	ctrl.renderAdmin(c, "app_audit.html", gin.H{
 		"Title":            "Auditoría — " + app.Name,
@@ -104,10 +108,16 @@ func (ctrl *AuditController) GetAppAuditDetail(c *gin.Context) {
 
 	var oldMap, newMap map[string]interface{}
 	if detail.Log.OldData != "" {
-		_ = json.Unmarshal([]byte(detail.Log.OldData), &oldMap)
+		if err := json.Unmarshal([]byte(detail.Log.OldData), &oldMap); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Los datos históricos del log son inválidos"})
+			return
+		}
 	}
 	if detail.Log.NewData != "" {
-		_ = json.Unmarshal([]byte(detail.Log.NewData), &newMap)
+		if err := json.Unmarshal([]byte(detail.Log.NewData), &newMap); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Los datos históricos del log son inválidos"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

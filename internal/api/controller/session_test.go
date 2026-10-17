@@ -152,7 +152,7 @@ func TestSessionController_RevokeOtherSessions(t *testing.T) {
 	}
 	router := setupSessionTestRouter(svc, 1)
 
-	payload := `{"current_refresh_token": "valid-token"}`
+	payload := `{"current_refresh_token": "` + "mock-curr-tok-123" + `"}`
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/api/v1/user/sessions/revoke-others", strings.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")

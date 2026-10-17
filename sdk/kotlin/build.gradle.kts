@@ -10,6 +10,10 @@ repositories {
     mavenCentral()
 }
 
+dependencyLocking {
+    lockAllConfigurations()
+}
+
 dependencies {
     // Tests
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.3")

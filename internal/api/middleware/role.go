@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"peak-auth/internal/api/authcontext"
 	"peak-auth/internal/store/repo"
 	"peak-auth/internal/util"
 
@@ -115,6 +116,7 @@ func PlatformAdminMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo
 
 		c.Set("is_root", scope.IsRoot)
 		c.Set("is_platform_admin", true)
+		authcontext.UpdateScope(c, scope.IsRoot, true)
 		c.Next()
 	}
 }
@@ -137,6 +139,7 @@ func RootOnlyMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo repo
 
 		c.Set("is_root", true)
 		c.Set("is_platform_admin", true)
+		authcontext.UpdateScope(c, true, true)
 		c.Next()
 	}
 }
@@ -155,6 +158,7 @@ func PlatformScopeMiddleware(uarRepo repo.UserApplicationRoleRepository, appRepo
 		c.Set("is_root", scope.IsRoot)
 		c.Set("is_platform_admin", scope.IsPlatformAdmin)
 		c.Set("platform_scope", scope)
+		authcontext.UpdateScope(c, scope.IsRoot, scope.IsPlatformAdmin)
 
 		c.Next()
 	}

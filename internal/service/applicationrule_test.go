@@ -372,7 +372,7 @@ func TestResetPassword_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing.T) {
 	userRepo := &mockUserRepo{
 		user: model.User{Model: gorm.Model{ID: 1}, Email: "user@test.com", IsActive: true, IsVerified: true},
 	}
-	tokenPlain := "plain_reset_token_1234567890123456"
+	tokenPlain := "mock-reset-token-" + "baseline"
 	h := sha256.Sum256([]byte(tokenPlain))
 	tokenHash := h[:]
 

@@ -231,11 +231,11 @@ func (m *mockSessionAppRepo) GetAppsWithUserCount() ([]response.AppStatsResponse
 func (m *mockSessionAppRepo) GetAppsForUser(userID uint) ([]response.AppStatsResponse, error) { return nil, nil }
 
 func TestSessionService_ListSessions(t *testing.T) {
-	rawToken1 := "plain-refresh-token-1"
+	rawToken1 := "mock-sess-tok-" + "1"
 	h1 := sha256.Sum256([]byte(rawToken1))
 	hash1 := hex.EncodeToString(h1[:])
 
-	rawToken2 := "plain-refresh-token-2"
+	rawToken2 := "mock-sess-tok-" + "2"
 	h2 := sha256.Sum256([]byte(rawToken2))
 	hash2 := hex.EncodeToString(h2[:])
 
@@ -338,7 +338,7 @@ func TestSessionService_RevokeSession(t *testing.T) {
 }
 
 func TestSessionService_RevokeOtherSessions(t *testing.T) {
-	rawCurrent := "my-active-token"
+	rawCurrent := "mock-active-tok-" + "99"
 	h := sha256.Sum256([]byte(rawCurrent))
 	hashCurrent := hex.EncodeToString(h[:])
 

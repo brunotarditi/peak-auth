@@ -1,10 +1,12 @@
 package controller
 
 import (
+	"html/template"
 	"net/http"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
 	"peak-auth/internal/util"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +27,7 @@ func (ctrl *SetupController) AuthenticateSetup(c *gin.Context) {
 		return
 	}
 
-	token := c.PostForm("token")
+	token := strings.TrimSpace(c.PostForm("token"))
 	if token == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Token requerido"})
 		return
@@ -47,42 +49,80 @@ func (ctrl *SetupController) AuthenticateSetup(c *gin.Context) {
 func (ctrl *SetupController) ShowSetup(c *gin.Context) {
 	first, _ := ctrl.SetupService.IsFirstRun()
 	if !first {
-		c.Redirect(303, "/admin/login")
+		c.Redirect(http.StatusSeeOther, "/admin/login")
 		return
 	}
 
-	// Only accept token from cookie (never from query string to prevent URL logging)
-	token := ""
-	if cookie, err := c.Cookie("setup_token"); err == nil {
-		token = cookie
-	}
+	// 1. Si el token viene por query param (ej: copiado o clickeado desde la consola):
+	queryToken := strings.TrimSpace(c.Query("token"))
+	if queryToken != "" {
+		if err := ctrl.SetupService.ValidateSetupToken(queryToken); err == nil {
+			c.SetSameSite(http.SameSiteLaxMode)
+			c.SetCookie("setup_token", queryToken, 7200, "/", "", util.IsProduction(), true)
+			// Redirigir a /setup limpio para no dejar el token sensible en la URL ni en el historial
+			c.Redirect(http.StatusSeeOther, "/setup")
+			return
+		}
 
-	// If SETUP_TOKEN is required but not provided, show auth page
-	if ctrl.SetupService.RequiresToken() && token == "" {
-		// Apply no-store cache control
+		// Si el token provisto en query es inválido, limpiar cookie y mostrar formulario de auth con error
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("setup_token", "", -1, "/", "", util.IsProduction(), true)
+
 		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 		c.Header("Pragma", "no-cache")
 		c.Header("Expires", "0")
 
 		csrf, _ := c.Get("csrf_token")
-		c.HTML(200, "setup_auth.html", gin.H{"CSRFToken": csrf})
+		c.HTML(http.StatusOK, "setup_auth.html", gin.H{
+			"CSRFToken":    csrf,
+			"ErrorMessage": "El token de instalación proporcionado en la URL es inválido o ha expirado.",
+		})
 		return
 	}
 
-	// Validate token but don't pass it to the template
+	// 2. Extraer token de cookie
+	token := ""
+	if cookie, err := c.Cookie("setup_token"); err == nil {
+		token = strings.TrimSpace(cookie)
+	}
+
+	// 3. Si se requiere token y no hay cookie, mostrar página de autenticación
+	if ctrl.SetupService.RequiresToken() && token == "" {
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Header("Pragma", "no-cache")
+		c.Header("Expires", "0")
+
+		csrf, _ := c.Get("csrf_token")
+		c.HTML(http.StatusOK, "setup_auth.html", gin.H{"CSRFToken": csrf})
+		return
+	}
+
+	// 4. Si hay token en la cookie, validar su vigencia
 	if err := ctrl.SetupService.ValidateSetupToken(token); err != nil {
-		ctrl.renderError(c, http.StatusForbidden, "Acceso Denegado", "El token de inicialización (setup) es inválido o el sistema ya ha sido configurado.")
+		// La cookie contenía un token viejo, inválido o expirado.
+		// Borrar inmediatamente la cookie para no atrapar al usuario en un bucle 403.
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("setup_token", "", -1, "/", "", util.IsProduction(), true)
+
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		c.Header("Pragma", "no-cache")
+		c.Header("Expires", "0")
+
+		csrf, _ := c.Get("csrf_token")
+		c.HTML(http.StatusOK, "setup_auth.html", gin.H{
+			"CSRFToken":    csrf,
+			"ErrorMessage": "El token de instalación anterior ha expirado o no es válido. Ingrese el token actual.",
+		})
 		return
 	}
 
-	// Apply no-store cache control to prevent caching of setup page
+	// 5. Token válido: mostrar formulario de configuración de ROOT
 	c.Header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 	c.Header("Pragma", "no-cache")
 	c.Header("Expires", "0")
 
 	csrf, _ := c.Get("csrf_token")
-	// Do NOT pass SetupToken to template - validation is server-side only
-	c.HTML(200, "setup.html", gin.H{"CSRFToken": csrf})
+	c.HTML(http.StatusOK, "setup.html", gin.H{"CSRFToken": csrf})
 }
 
 func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
@@ -92,23 +132,27 @@ func (ctrl *SetupController) ProcessSetup(c *gin.Context) {
 		return
 	}
 
-	email := c.PostForm("email")
+	email := strings.TrimSpace(c.PostForm("email"))
 	password := c.PostForm("password")
 
 	// Only accept token from cookie (never from POST form to prevent logging)
 	token := ""
 	if cookie, err := c.Cookie("setup_token"); err == nil {
-		token = cookie
+		token = strings.TrimSpace(cookie)
 	}
 
+	c.Set("is_setup", true)
+	c.Set("error_back_url", "/setup")
+	c.Set("error_back_label", "Volver a la instalación")
+
 	if email == "" || password == "" {
-		ctrl.renderError(c, http.StatusBadRequest, "Datos Incompletos", "Email y contraseña son requeridos para completar la configuración inicial.")
+		ctrl.renderError(c, http.StatusBadRequest, "Datos incompletos", "Email y contraseña son requeridos para completar la configuración inicial.")
 		return
 	}
 
 	user, err := ctrl.SetupService.CreateRootUser(email, password, token)
 	if err != nil {
-		ctrl.renderError(c, http.StatusBadRequest, "Error de Configuración", "No se pudo crear el usuario administrador inicial. Verifique los datos ingresados.")
+		ctrl.renderError(c, http.StatusBadRequest, "Error de configuración", "No se pudo crear el usuario administrador inicial. Verifique los datos ingresados: "+err.Error())
 		return
 	}
 
@@ -168,14 +212,16 @@ func (ctrl *SetupController) ShowSetupMFA(c *gin.Context) {
 
 	totpResp, err := ctrl.MfaService.SetupTOTP(userID, claims.Username)
 	if err != nil {
-		// Si ya está activo o hubo error, verificar si ya tiene mfa o mostrar error
-		ctrl.renderError(c, http.StatusBadRequest, "Error MFA", "No se pudo iniciar la configuración de MFA: "+err.Error())
+		c.Set("is_setup", true)
+		c.Set("error_back_url", "/setup")
+		c.Set("error_back_label", "Volver a la instalación")
+		ctrl.renderError(c, http.StatusBadRequest, "Error de MFA", "No se pudo iniciar la configuración de MFA: "+err.Error())
 		return
 	}
 
 	csrf, _ := c.Get("csrf_token")
 	c.HTML(http.StatusOK, "setup_mfa.html", gin.H{
-		"QRCode":    totpResp.QRCode,
+		"QRCode":    template.URL(totpResp.QRCode),
 		"Secret":    totpResp.Secret,
 		"CSRFToken": csrf,
 	})
