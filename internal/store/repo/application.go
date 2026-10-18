@@ -91,27 +91,38 @@ func (r *applicationRepository) Delete(id uint) error {
 	return r.db.Model(&model.Application{}).Where("id = ?", id).Update("deleted_at", time.Now()).Error
 }
 
-// GetAppsWithUserCount devuelve estadísticas de uso por aplicación.
-// Agrupamos por aplicación y contamos usuarios únicos en UserApplicationRole
+// GetAppsWithUserCount devuelve estadísticas de uso por aplicación con branding y modo MFA.
 func (r *applicationRepository) GetAppsWithUserCount() ([]response.AppStatsResponse, error) {
 	var stats []response.AppStatsResponse
 	err := r.db.Table("applications").
-		Select("applications.id, applications.name, applications.app_id, applications.description, applications.is_active, COUNT(DISTINCT uar.user_id) as user_count").
+		Select(`applications.id, applications.name, applications.app_id, applications.description, applications.is_active, 
+			COUNT(DISTINCT uar.user_id) as user_count,
+			COALESCE(at.logo_url, '') as logo_url,
+			COALESCE(at.primary_color, '') as primary_color,
+			COALESCE(ar.value->>'mode', 'OPTIONAL') as mfa_mode`).
 		Joins("LEFT JOIN user_application_roles uar ON uar.application_id = applications.id AND uar.deleted_at IS NULL").
+		Joins("LEFT JOIN application_themes at ON at.application_id = applications.id AND at.deleted_at IS NULL").
+		Joins("LEFT JOIN application_rules ar ON ar.application_id = applications.id AND ar.code = 'MFA_POLICY' AND ar.deleted_at IS NULL AND ar.is_active = true").
 		Where("applications.deleted_at IS NULL").
-		Group("applications.id, applications.name, applications.app_id, applications.description, applications.is_active").
+		Group("applications.id, applications.name, applications.app_id, applications.description, applications.is_active, at.logo_url, at.primary_color, ar.value").
 		Scan(&stats).Error
 	return stats, err
 }
 
-// GetAppsForUser devuelve solo las apps donde el usuario tiene roles asignados.
+// GetAppsForUser devuelve solo las apps donde el usuario tiene roles asignados con branding y modo MFA.
 func (r *applicationRepository) GetAppsForUser(userID uint) ([]response.AppStatsResponse, error) {
 	var stats []response.AppStatsResponse
 	err := r.db.Table("applications").
-		Select("applications.id, applications.name, applications.app_id, applications.description, applications.is_active, (SELECT COUNT(DISTINCT u2.user_id) FROM user_application_roles u2 WHERE u2.application_id = applications.id AND u2.deleted_at IS NULL) as user_count").
+		Select(`applications.id, applications.name, applications.app_id, applications.description, applications.is_active, 
+			(SELECT COUNT(DISTINCT u2.user_id) FROM user_application_roles u2 WHERE u2.application_id = applications.id AND u2.deleted_at IS NULL) as user_count,
+			COALESCE(at.logo_url, '') as logo_url,
+			COALESCE(at.primary_color, '') as primary_color,
+			COALESCE(ar.value->>'mode', 'OPTIONAL') as mfa_mode`).
 		Joins("JOIN user_application_roles uar ON uar.application_id = applications.id AND uar.deleted_at IS NULL").
+		Joins("LEFT JOIN application_themes at ON at.application_id = applications.id AND at.deleted_at IS NULL").
+		Joins("LEFT JOIN application_rules ar ON ar.application_id = applications.id AND ar.code = 'MFA_POLICY' AND ar.deleted_at IS NULL AND ar.is_active = true").
 		Where("uar.user_id = ? AND applications.deleted_at IS NULL", userID).
-		Group("applications.id, applications.name, applications.app_id, applications.description, applications.is_active").
+		Group("applications.id, applications.name, applications.app_id, applications.description, applications.is_active, at.logo_url, at.primary_color, ar.value").
 		Scan(&stats).Error
 	return stats, err
 }

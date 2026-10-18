@@ -195,7 +195,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/admin/apps/"+id)
+	c.Redirect(http.StatusSeeOther, "/admin/")
 }
 
 // PostDeleteApp maneja la eliminación real (lógica) de una aplicación

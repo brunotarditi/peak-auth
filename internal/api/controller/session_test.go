@@ -204,24 +204,50 @@ type mockUserServiceForSession struct {
 	changePasswordErr    error
 }
 
-func (m *mockUserServiceForSession) Login(req request.LoginRequest, publicAppID string) (response.TokenResponse, error) { return response.TokenResponse{}, nil }
-func (m *mockUserServiceForSession) AdminLogin(email, password string) (string, int, bool, bool, string, error) { return "", 0, false, false, "", nil }
-func (m *mockUserServiceForSession) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool, clientInfo ...string) (response.TokenResponse, error) { return response.TokenResponse{}, nil }
-func (m *mockUserServiceForSession) CompleteAdminLoginWithMfa(userID uint) (string, int, error) { return "", 0, nil }
-func (m *mockUserServiceForSession) Register(req request.RegisterRequest) (model.User, error) { return model.User{}, nil }
+func (m *mockUserServiceForSession) Login(req request.LoginRequest, publicAppID string) (response.TokenResponse, error) {
+	return response.TokenResponse{}, nil
+}
+func (m *mockUserServiceForSession) AdminLogin(email, password string) (string, int, bool, bool, string, error) {
+	return "", 0, false, false, "", nil
+}
+func (m *mockUserServiceForSession) CompleteLoginWithMfa(userID uint, publicAppID string, mfaCompleted bool, clientInfo ...string) (response.TokenResponse, error) {
+	return response.TokenResponse{}, nil
+}
+func (m *mockUserServiceForSession) CompleteAdminLoginWithMfa(userID uint) (string, int, error) {
+	return "", 0, nil
+}
+func (m *mockUserServiceForSession) Register(req request.RegisterRequest) (model.User, error) {
+	return model.User{}, nil
+}
 func (m *mockUserServiceForSession) FindAll() ([]model.User, error) { return nil, nil }
-func (m *mockUserServiceForSession) FindVerifiedUser(email string) (*model.User, error) { return nil, nil }
-func (m *mockUserServiceForSession) FindVerifiedUserByID(id uint) (*model.User, error) { return nil, nil }
-func (m *mockUserServiceForSession) FindUserByAppID(appID string) ([]response.UserAppRow, error) { return nil, nil }
-func (m *mockUserServiceForSession) FindUserByAppIDPaginated(appID model.Application, page, limit int) ([]response.UserAppRow, int64, error) { return nil, 0, nil }
-func (m *mockUserServiceForSession) GenerateResetToken(userID, appID uint) (string, []byte, error) { return "", nil, nil }
-func (m *mockUserServiceForSession) VerifyEmail(token string) (uint, uint, error) { return 0, 0, nil }
+func (m *mockUserServiceForSession) FindVerifiedUser(email string) (*model.User, error) {
+	return nil, nil
+}
+func (m *mockUserServiceForSession) FindVerifiedUserByID(id uint) (*model.User, error) {
+	return nil, nil
+}
+func (m *mockUserServiceForSession) FindUserByAppID(appID string) ([]response.UserAppRow, error) {
+	return nil, nil
+}
+func (m *mockUserServiceForSession) FindUserByAppIDPaginated(appID model.Application, page, limit int) ([]response.UserAppRow, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockUserServiceForSession) GenerateResetToken(userID, appID uint) (string, []byte, error) {
+	return "", nil, nil
+}
+func (m *mockUserServiceForSession) VerifyEmail(token string) (uint, uint, error)      { return 0, 0, nil }
 func (m *mockUserServiceForSession) SendResetEmail(user *model.User, appID uint) error { return nil }
-func (m *mockUserServiceForSession) ResendVerification(userID uint, appID string) error { return nil }
+func (m *mockUserServiceForSession) SendVerification(userID uint, app *model.Application) error {
+	return nil
+}
 func (m *mockUserServiceForSession) ResetPassword(token, newPassword string) error { return nil }
-func (m *mockUserServiceForSession) CanRequestPasswordReset(userID uint) (bool, error) { return true, nil }
-func (m *mockUserServiceForSession) Refresh(token string, clientInfo ...string) (response.TokenResponse, error) { return response.TokenResponse{}, nil }
-func (m *mockUserServiceForSession) UnlockUser(userID uint) error { return nil }
+func (m *mockUserServiceForSession) CanRequestPasswordReset(userID uint) (bool, error) {
+	return true, nil
+}
+func (m *mockUserServiceForSession) Refresh(token string, clientInfo ...string) (response.TokenResponse, error) {
+	return response.TokenResponse{}, nil
+}
+func (m *mockUserServiceForSession) UnlockUser(userID uint) error                     { return nil }
 func (m *mockUserServiceForSession) UpdateAvatar(userID uint, avatarURL string) error { return nil }
 func (m *mockUserServiceForSession) UpdateProfile(userID uint, firstName, lastName string, birthDate time.Time, avatarURL string) error {
 	m.updateProfileCalled = true
@@ -368,4 +394,3 @@ func TestSessionController_PostUpdatePassword(t *testing.T) {
 		t.Errorf("se esperaba mensaje sanitizado de error, obtenido: %s", w3.Body.String())
 	}
 }
-

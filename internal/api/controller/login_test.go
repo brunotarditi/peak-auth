@@ -187,7 +187,7 @@ func (m *mockUserServiceForLogin) VerifyEmail(token string) (uint, uint, error) 
 func (m *mockUserServiceForLogin) SendResetEmail(user *model.User, appID uint) error {
 	return nil
 }
-func (m *mockUserServiceForLogin) ResendVerification(userID uint, appID string) error {
+func (m *mockUserServiceForLogin) SendVerification(userID uint, app *model.Application) error {
 	return nil
 }
 func (m *mockUserServiceForLogin) ResetPassword(token, newPassword string) error {
@@ -267,4 +267,3 @@ func TestPostLoginForm_PasswordExpiredRedirectsToReset(t *testing.T) {
 		t.Errorf("no se encontró cookie reset_token en la respuesta")
 	}
 }
-

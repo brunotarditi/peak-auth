@@ -108,6 +108,8 @@ func (ctrl *ApplicationBrandingController) PostAppBranding(c *gin.Context) {
 		return
 	}
 
+	currentTheme, _ := ctrl.AppService.GetAppTheme(id)
+
 	request := newApplicationBrandingRequest(c)
 	logoURL := request.LogoURL
 	if uploadedURL, provided, err := uploadApplicationAsset(c, ctrl.StorageService, "logo_file", storage.FolderLogos); provided {
@@ -125,6 +127,15 @@ func (ctrl *ApplicationBrandingController) PostAppBranding(c *gin.Context) {
 			return
 		}
 		faviconURL = uploadedURL
+	}
+
+	if currentTheme != nil && ctrl.StorageService != nil {
+		if currentTheme.LogoURL != "" && currentTheme.LogoURL != logoURL {
+			_ = ctrl.StorageService.Delete(c.Request.Context(), currentTheme.LogoURL)
+		}
+		if currentTheme.FaviconURL != "" && currentTheme.FaviconURL != faviconURL {
+			_ = ctrl.StorageService.Delete(c.Request.Context(), currentTheme.FaviconURL)
+		}
 	}
 
 	theme := model.ApplicationTheme{
@@ -150,6 +161,15 @@ func (ctrl *ApplicationBrandingController) PostAppThemeReset(c *gin.Context) {
 	id := c.Param("id")
 	if _, ok := ctrl.loadEditableApp(c, id); !ok {
 		return
+	}
+
+	if currentTheme, err := ctrl.AppService.GetAppTheme(id); err == nil && currentTheme != nil && ctrl.StorageService != nil {
+		if currentTheme.LogoURL != "" {
+			_ = ctrl.StorageService.Delete(c.Request.Context(), currentTheme.LogoURL)
+		}
+		if currentTheme.FaviconURL != "" {
+			_ = ctrl.StorageService.Delete(c.Request.Context(), currentTheme.FaviconURL)
+		}
 	}
 
 	if err := ctrl.AppService.ResetAppTheme(id); err != nil {
@@ -219,6 +239,8 @@ func (ctrl *ApplicationBrandingController) upload(c *gin.Context, field, folder,
 		return
 	}
 
+	currentTheme, _ := ctrl.AppService.GetAppTheme(id)
+
 	url, provided, err := uploadApplicationAsset(c, ctrl.StorageService, field, folder)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -227,6 +249,14 @@ func (ctrl *ApplicationBrandingController) upload(c *gin.Context, field, folder,
 	if !provided {
 		c.JSON(http.StatusBadRequest, gin.H{"error": missingMessage})
 		return
+	}
+
+	if currentTheme != nil && ctrl.StorageService != nil {
+		if field == "logo" && currentTheme.LogoURL != "" && currentTheme.LogoURL != url {
+			_ = ctrl.StorageService.Delete(c.Request.Context(), currentTheme.LogoURL)
+		} else if field == "favicon" && currentTheme.FaviconURL != "" && currentTheme.FaviconURL != url {
+			_ = ctrl.StorageService.Delete(c.Request.Context(), currentTheme.FaviconURL)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

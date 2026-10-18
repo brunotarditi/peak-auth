@@ -31,7 +31,7 @@ type UserService interface {
 	GenerateResetToken(userID, appID uint) (string, []byte, error)
 	VerifyEmail(token string) (uint, uint, error)
 	SendResetEmail(user *model.User, appID uint) error
-	ResendVerification(userID uint, appID string) error
+	SendVerification(userID uint, app *model.Application) error
 	ResetPassword(token, newPassword string) error
 	CanRequestPasswordReset(userID uint) (bool, error)
 	Refresh(token string, clientInfo ...string) (response.TokenResponse, error)
@@ -900,15 +900,10 @@ func (s *userService) SendResetEmail(user *model.User, appID uint) error {
 }
 
 // ResendVerification genera un nuevo token y envía el email de verificación
-func (s *userService) ResendVerification(userID uint, appID string) error {
+func (s *userService) SendVerification(userID uint, app *model.Application) error {
 	user, err := s.userRepo.FindById(userID)
 	if err != nil {
 		return fmt.Errorf("usuario no encontrado")
-	}
-
-	app, err := s.appRepo.FindByAppID(appID)
-	if err != nil {
-		return fmt.Errorf("aplicación no encontrada")
 	}
 
 	if user.IsVerified {

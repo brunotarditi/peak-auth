@@ -3,12 +3,15 @@ package response
 import "time"
 
 type AppStatsResponse struct {
-	ID          uint   `json:"id"`
-	Name        string `json:"name"`
-	AppID       string `json:"app_id"`
-	Description string `json:"description"`
-	IsActive    bool   `json:"is_active"`
-	UserCount   int64  `json:"user_count"`
+	ID           uint   `json:"id"`
+	Name         string `json:"name"`
+	AppID        string `json:"app_id"`
+	Description  string `json:"description"`
+	IsActive     bool   `json:"is_active"`
+	UserCount    int64  `json:"user_count"`
+	LogoURL      string `json:"logo_url"`
+	PrimaryColor string `json:"primary_color"`
+	MfaMode      string `json:"mfa_mode"` // "REQUIRED", "OPTIONAL", "NONE"
 }
 
 type TokenResponse struct {

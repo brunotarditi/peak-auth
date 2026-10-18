@@ -54,7 +54,7 @@ func (ctrl *DashboardController) Dashboard(c *gin.Context) {
 }
 
 // PostResendVerification reenvía el email de activación
-func (ctrl *DashboardController) PostResendVerification(c *gin.Context) {
+func (ctrl *DashboardController) PostSendVerification(c *gin.Context) {
 	appID := c.Param("id")
 	userID, err := parsePathUint(c, "user_id")
 	if err != nil {
@@ -76,7 +76,7 @@ func (ctrl *DashboardController) PostResendVerification(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.UserService.ResendVerification(userID, appID); err != nil {
+	if err := ctrl.UserService.SendVerification(userID, &app); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No se pudo reenviar el email de verificación"})
 		return
 	}

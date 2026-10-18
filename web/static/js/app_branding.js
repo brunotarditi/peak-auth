@@ -251,6 +251,9 @@
                 logoUploadStatus.style.color = 'var(--brand-500)';
             }
 
+            const submitBtn = document.querySelector('#brandingForm button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
             try {
                 const res = await fetch(`/admin/apps/${encodeURIComponent(appId)}/branding/upload-logo`, {
                     method: 'POST',
@@ -268,6 +271,8 @@
                         logoUploadStatus.textContent = '✓ Logo subido y guardado';
                         logoUploadStatus.style.color = 'var(--emerald-600)';
                     }
+                    // Limpiar el input de archivo para evitar que el form submit vuelva a subirlo a R2/S3
+                    logoFileInput.value = '';
                 } else {
                     throw new Error(data.error || 'Error al subir logo');
                 }
@@ -276,6 +281,8 @@
                     logoUploadStatus.textContent = `✕ Error: ${err.message}`;
                     logoUploadStatus.style.color = 'var(--rose-600)';
                 }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
     }
@@ -309,6 +316,9 @@
                 faviconUploadStatus.style.color = 'var(--brand-500)';
             }
 
+            const submitBtn = document.querySelector('#brandingForm button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
             try {
                 const res = await fetch(`/admin/apps/${encodeURIComponent(appId)}/branding/upload-favicon`, {
                     method: 'POST',
@@ -325,6 +335,8 @@
                         faviconUploadStatus.textContent = '✓ Favicon subido y guardado';
                         faviconUploadStatus.style.color = 'var(--emerald-600)';
                     }
+                    // Limpiar el input de archivo para evitar que el form submit vuelva a subirlo a R2/S3
+                    faviconFileInput.value = '';
                 } else {
                     throw new Error(data.error || 'Error al subir favicon');
                 }
@@ -333,6 +345,8 @@
                     faviconUploadStatus.textContent = `✕ Error: ${err.message}`;
                     faviconUploadStatus.style.color = 'var(--rose-600)';
                 }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
     }

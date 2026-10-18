@@ -281,7 +281,12 @@ async function unlockUser(appID, userID) {
 }
 
 // Reenviar email de verificación
-async function resendVerification(appID, userID) {
+async function resendVerification(appID, userID, buttonEl) {
+    if (buttonEl) {
+        buttonEl.disabled = true;
+        buttonEl.style.opacity = '0.6';
+        buttonEl.style.pointerEvents = 'none';
+    }
     try {
         const response = await fetch(`/admin/apps/${appID}/users/${userID}/resend-verification`, {
             method: 'POST'
@@ -295,11 +300,22 @@ async function resendVerification(appID, userID) {
         }
     } catch (err) {
         peakAlert('Error', 'Error de conexión', 'error');
+    } finally {
+        if (buttonEl) {
+            buttonEl.disabled = false;
+            buttonEl.style.opacity = '';
+            buttonEl.style.pointerEvents = '';
+        }
     }
 }
 
 // Enviar email de reset de password manualmente
-async function sendResetPassword(appID, userID) {
+async function sendResetPassword(appID, userID, buttonEl) {
+    if (buttonEl) {
+        buttonEl.disabled = true;
+        buttonEl.style.opacity = '0.6';
+        buttonEl.style.pointerEvents = 'none';
+    }
     try {
         const response = await fetch(`/admin/apps/${appID}/users/${userID}/send-reset`, {
             method: 'POST'
@@ -313,6 +329,12 @@ async function sendResetPassword(appID, userID) {
         }
     } catch (err) {
         peakAlert('Error', 'Error de conexión', 'error');
+    } finally {
+        if (buttonEl) {
+            buttonEl.disabled = false;
+            buttonEl.style.opacity = '';
+            buttonEl.style.pointerEvents = '';
+        }
     }
 }
 
@@ -535,10 +557,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 openAccessModal(appId, userId, email, expiresAt, temporary === 'true');
                 break;
             case 'resend-verification':
-                resendVerification(appId, userId);
+                resendVerification(appId, userId, action);
                 break;
             case 'send-reset-password':
-                sendResetPassword(appId, userId);
+                sendResetPassword(appId, userId, action);
                 break;
             case 'revoke-access':
                 revokeAccess(appId, userId);

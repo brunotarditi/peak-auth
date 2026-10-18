@@ -25,9 +25,19 @@
     <div class="peak-card app-card-item">
         <div class="app-card-body">
             <div class="app-card-top-row">
-                <div class="app-card-monogram">
-                    <span>{{ if .Name }}{{ safe_slice .Name 0 1 }}{{ else }}A{{ end }}</span>
-                </div>
+                    {{ if .LogoURL }}
+                    <div class="app-card-logo-container" {{ if .PrimaryColor }}style="border-color: {{ .PrimaryColor }};"{{ end }}>
+                        <img src="{{ .LogoURL }}" alt="{{ .Name }}" class="app-card-logo-img">
+                    </div>
+                    {{ else if eq .AppID "peak-auth" }}
+                    <div class="app-card-logo-container">
+                        <img src="{{ asset "/static/img/logo.svg" }}" alt="Peak Auth" class="app-card-logo-img">
+                    </div>
+                    {{ else }}
+                    <div class="app-card-monogram" {{ if .PrimaryColor }}style="--brand-custom: {{ .PrimaryColor }}; background: {{ .PrimaryColor }}; border-color: {{ .PrimaryColor }};"{{ end }}>
+                        <span class="app-card-initials">{{ if .Name }}{{ safe_slice .Name 0 1 }}{{ else }}A{{ end }}</span>
+                    </div>
+                    {{ end }}
                 <a href="/admin/apps/{{ .AppID }}/edit" class="icon-btn app-card-edit-btn" aria-label="Editar datos básicos de {{ .Name }}" title="Editar aplicación">
                     {{ template "icon-edit" }}
                 </a>
@@ -55,10 +65,31 @@
                 </button>
             </div>
 
+            <div class="app-card-metrics-row">
+                <span class="app-card-metric-pill">
+                    {{ template "icon-users" }}
+                    {{ .UserCount }} {{ if eq .UserCount 1 }}usuario{{ else }}usuarios{{ end }}
+                </span>
+                <span class="app-card-metric-divider">&bull;</span>
+                {{ if eq .MfaMode "REQUIRED" }}
+                <span class="app-card-metric-pill app-card-metric-mfa" title="Política de aplicación: MFA obligatorio para todos los usuarios. El acceso requiere TOTP o WebAuthn activo sin excepción.">
+                    MFA obligatorio
+                </span>
+                {{ else if eq .MfaMode "NONE" }}
+                <span class="app-card-metric-pill" title="Política de aplicación: MFA desactivado a nivel de aplicación.">
+                    Sin MFA
+                </span>
+                {{ else }}
+                <span class="app-card-metric-pill" title="Política de aplicación: MFA opcional. Cada usuario puede activar libremente autenticación por TOTP o WebAuthn.">
+                    MFA opcional
+                </span>
+                {{ end }}
+            </div>
+
             {{ if .Description }}
             <p class="app-card-desc">{{ .Description }}</p>
             {{ else }}
-            <p class="app-card-desc app-card-desc-empty">Sin descripción registrada.</p>
+            <p class="app-card-desc app-card-desc-empty">Añade una descripción para identificar el propósito de esta aplicación.</p>
             {{ end }}
         </div>
 
@@ -71,10 +102,7 @@
             <div class="app-card-footer-divider"></div>
 
             <a href="/admin/apps/{{ .AppID }}/users" class="app-card-action-link" title="Usuarios de {{ .Name }}" aria-label="Usuarios de {{ .Name }} ({{ .UserCount }})">
-                <div class="app-card-users-badge-wrapper">
-                    {{ template "icon-users" }}
-                    <span class="app-card-user-badge">{{ .UserCount }}</span>
-                </div>
+                {{ template "icon-users" }}
                 <span>Usuarios</span>
             </a>
         </div>
