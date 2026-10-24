@@ -63,4 +63,17 @@ func TestUserRepository_CRUD(t *testing.T) {
 	if !updated.MfaEnabled {
 		t.Errorf("expected MfaEnabled true")
 	}
+
+	// 5. UpdateColumn with illegal column rejected
+	if err := repo.UpdateColumn("arbitrary_col", "val", user.ID); err == nil {
+		t.Errorf("expected UpdateColumn on arbitrary column to fail, but it succeeded")
+	}
+}
+
+func TestUserRepository_UpdateColumn_Validation(t *testing.T) {
+	repo := NewUserRepository(nil)
+	err := repo.UpdateColumn("dangerous_injection_attempt", "val", 1)
+	if err == nil {
+		t.Errorf("expected error for unallowed column, got nil")
+	}
 }

@@ -79,15 +79,7 @@ func (c *UserController) PostResetPassword(ctx *gin.Context) {
 
 	// Limpiar la cookie reset_token tras completar el restablecimiento con éxito
 	ctx.SetSameSite(http.SameSiteStrictMode)
-	ctx.SetCookie(
-		"reset_token",
-		"",
-		-1,
-		"/reset-password",
-		"",
-		util.IsProduction(),
-		true,
-	)
+	ctx.SetCookie("reset_token", "", -1, "/reset-password", "", util.IsProduction(), true)
 
 	ctx.String(http.StatusOK, "Contraseña actualizada. Ya puedes iniciar sesión en tu aplicación.")
 }

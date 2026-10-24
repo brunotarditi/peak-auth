@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"peak-auth/internal/api/request"
 	"peak-auth/internal/audit"
 	"peak-auth/internal/service"
 	"peak-auth/internal/storage"
@@ -20,23 +21,21 @@ type ApplicationBrandingController struct {
 	StorageService storage.StorageService
 }
 
-type applicationBrandingRequest struct {
-	PrimaryColor   string
-	CustomTitle    string
-	CustomSubtitle string
-	TermsURL       string
-	PrivacyURL     string
-	LogoURL        string
-	FaviconURL     string
+func NewApplicationBrandingController(appService service.ApplicationService, ruleService service.ApplicationRuleService, storageService storage.StorageService) *ApplicationBrandingController {
+	return &ApplicationBrandingController{
+		AppService:     appService,
+		RuleService:    ruleService,
+		StorageService: storageService,
+	}
 }
 
-func newApplicationBrandingRequest(c *gin.Context) applicationBrandingRequest {
+func newApplicationBrandingRequest(c *gin.Context) request.ApplicationBrandingRequest {
 	primaryColor := util.SanitizeHexColor(c.PostForm("primary_color"))
 	if primaryColor == "" {
 		primaryColor = "#2563eb"
 	}
 
-	return applicationBrandingRequest{
+	return request.ApplicationBrandingRequest{
 		PrimaryColor:   primaryColor,
 		CustomTitle:    strings.TrimSpace(c.PostForm("custom_title")),
 		CustomSubtitle: strings.TrimSpace(c.PostForm("custom_subtitle")),
@@ -44,18 +43,6 @@ func newApplicationBrandingRequest(c *gin.Context) applicationBrandingRequest {
 		PrivacyURL:     strings.TrimSpace(c.PostForm("privacy_url")),
 		LogoURL:        strings.TrimSpace(c.PostForm("logo_url")),
 		FaviconURL:     strings.TrimSpace(c.PostForm("favicon_url")),
-	}
-}
-
-func NewApplicationBrandingController(
-	appService service.ApplicationService,
-	ruleService service.ApplicationRuleService,
-	storageService storage.StorageService,
-) *ApplicationBrandingController {
-	return &ApplicationBrandingController{
-		AppService:     appService,
-		RuleService:    ruleService,
-		StorageService: storageService,
 	}
 }
 

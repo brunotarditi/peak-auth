@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -92,53 +93,100 @@ func getFolderLimit(folder string) (int64, error) {
 	}
 }
 
-// Upload valida el archivo, verifica sus magic bytes y lo guarda en disco de manera segura.
-func (s *LocalStorageService) Upload(ctx context.Context, r io.Reader, originalFilename string, folder string) (string, error) {
+// ValidatedUpload contiene los datos y metadatos de un archivo validado y listo para persistir.
+type ValidatedUpload struct {
+	Data     []byte
+	MIMEType string
+	Filename string
+}
+
+// isDangerousSVG inspecciona el contenido de un SVG para prevenir Stored XSS.
+func isDangerousSVG(data []byte) bool {
+	lower := strings.ToLower(string(data))
+	dangerousPatterns := []string{
+		"<script",
+		"javascript:",
+		"onload",
+		"onerror",
+		"onclick",
+		"onmouseover",
+		"onfocus",
+		"<foreignobject",
+		"<iframe",
+		"<embed",
+		"<object",
+	}
+	for _, pattern := range dangerousPatterns {
+		if strings.Contains(lower, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidateAndPrepareUpload valida carpetas, límites de tamaño, tipos MIME y contenido malicioso,
+// generando un nombre de archivo único con entropía criptográfica para prevenir path traversal y colisiones.
+func ValidateAndPrepareUpload(r io.Reader, originalFilename, folder string) (*ValidatedUpload, error) {
 	if folder != FolderLogos && folder != FolderAvatars && folder != FolderFavicon {
-		return "", ErrInvalidFolder
+		return nil, ErrInvalidFolder
 	}
 
 	maxLimit, limitErr := getFolderLimit(folder)
 
-	// Leer hasta maxLimit + 1 byte para detectar si excede el límite
 	limitedReader := io.LimitReader(r, maxLimit+1)
 	data, err := io.ReadAll(limitedReader)
 	if err != nil {
-		return "", fmt.Errorf("error al leer el archivo: %w", err)
+		return nil, fmt.Errorf("error al leer el archivo: %w", err)
 	}
 
 	if len(data) == 0 {
-		return "", ErrEmptyFile
+		return nil, ErrEmptyFile
 	}
 	if int64(len(data)) > maxLimit {
-		return "", limitErr
+		return nil, limitErr
 	}
 
-	// Detectar tipo MIME a través de los primeros 512 bytes
 	mimeType := detectMIMEType(data, originalFilename)
 	ext, ok := AllowedMIMETypes[mimeType]
 	if !ok {
-		return "", ErrInvalidFileType
+		return nil, ErrInvalidFileType
 	}
 
-	// Generar nombre de archivo criptográficamente único para evitar colisiones y path traversal
+	if mimeType == "image/svg+xml" && isDangerousSVG(data) {
+		return nil, ErrInvalidFileType
+	}
+
 	randomBytes := make([]byte, 16)
 	if _, err := rand.Read(randomBytes); err != nil {
-		return "", fmt.Errorf("error al generar nombre seguro para el archivo: %w", err)
+		return nil, fmt.Errorf("error al generar nombre seguro para el archivo: %w", err)
 	}
 	filename := hex.EncodeToString(randomBytes) + ext
 
-	targetPath := filepath.Join(s.baseDir, folder, filename)
+	return &ValidatedUpload{
+		Data:     data,
+		MIMEType: mimeType,
+		Filename: filename,
+	}, nil
+}
+
+// Upload valida el archivo, verifica sus magic bytes y lo guarda en disco de manera segura.
+func (s *LocalStorageService) Upload(ctx context.Context, r io.Reader, originalFilename string, folder string) (string, error) {
+	upload, err := ValidateAndPrepareUpload(r, originalFilename, folder)
+	if err != nil {
+		return "", err
+	}
+
+	targetPath := filepath.Join(s.baseDir, folder, upload.Filename)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if err := os.WriteFile(targetPath, data, 0644); err != nil {
+	if err := os.WriteFile(targetPath, upload.Data, 0644); err != nil {
 		return "", fmt.Errorf("error al guardar archivo en disco: %w", err)
 	}
 
 	// Retorna la ruta web pública
-	publicURL := fmt.Sprintf("/static/uploads/%s/%s", folder, filename)
+	publicURL := fmt.Sprintf("/static/uploads/%s/%s", folder, upload.Filename)
 	return publicURL, nil
 }
 
@@ -216,6 +264,7 @@ func NewStorageService() (StorageService, error) {
 		if accountID != "" && accessKey != "" && secretKey != "" && bucket != "" {
 			return NewR2StorageService(accountID, accessKey, secretKey, bucket, publicURL)
 		}
+		log.Printf("⚠️ STORAGE_DRIVER configurado como %q pero faltan credenciales requeridas de R2/S3. Usando almacenamiento local por defecto.", driver)
 		return NewLocalStorageService(uploadsDir)
 	default:
 		return NewLocalStorageService(uploadsDir)

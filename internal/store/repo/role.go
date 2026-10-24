@@ -24,8 +24,14 @@ type roleRepository struct {
 	db *gorm.DB
 }
 
-func NewRoleRepositoryRepository(db *gorm.DB) RoleRepository {
+// NewRoleRepository construye el repositorio de roles.
+func NewRoleRepository(db *gorm.DB) RoleRepository {
 	return &roleRepository{db: db}
+}
+
+// Deprecated: usar NewRoleRepository
+func NewRoleRepositoryRepository(db *gorm.DB) RoleRepository {
+	return NewRoleRepository(db)
 }
 
 // FindAll devuelve únicamente los roles GLOBALES del sistema (application_id IS NULL).

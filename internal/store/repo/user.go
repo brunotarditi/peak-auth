@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"fmt"
 	"peak-auth/internal/store/model"
 	"time"
 
@@ -25,8 +26,14 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-func NewUserRepositoryRepository(db *gorm.DB) UserRepository {
+// NewUserRepository construye el repositorio de usuarios.
+func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
+}
+
+// Deprecated: usar NewUserRepository
+func NewUserRepositoryRepository(db *gorm.DB) UserRepository {
+	return NewUserRepository(db)
 }
 
 // FindAll devuelve todas los usuarios con sus perfiles.
@@ -50,8 +57,22 @@ func (r *userRepository) FindById(id uint) (model.User, error) {
 	return user, err
 }
 
-// UpdateColumn actualiza una columna de un usuario en BD.
+var allowedUserColumns = map[string]struct{}{
+	"authz_version":       {},
+	"is_verified":         {},
+	"mfa_enabled":         {},
+	"failed_logins":       {},
+	"last_login":          {},
+	"password":            {},
+	"password_changed_at": {},
+	"is_active":           {},
+}
+
+// UpdateColumn actualiza una columna de un usuario en BD previa validación de lista blanca.
 func (r *userRepository) UpdateColumn(column string, value interface{}, id uint) error {
+	if _, ok := allowedUserColumns[column]; !ok {
+		return fmt.Errorf("columna no permitida para actualización directa: %s", column)
+	}
 	return r.db.Model(&model.User{}).Where("id = ? AND is_active = ?", id, true).Update(column, value).Error
 }
 
@@ -185,4 +206,3 @@ func (r *userRepository) UpdateProfile(userID uint, firstName, lastName string, 
 	}
 	return r.db.Model(&model.Profile{}).Where("user_id = ?", userID).Updates(updates).Error
 }
-

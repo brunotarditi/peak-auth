@@ -3,8 +3,6 @@ package storage
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"strings"
@@ -57,43 +55,18 @@ func NewR2StorageService(accountID, accessKeyID, secretAccessKey, bucket, public
 
 // Upload valida el archivo, verifica sus magic bytes y lo sube al bucket de R2.
 func (s *R2StorageService) Upload(ctx context.Context, r io.Reader, originalFilename string, folder string) (string, error) {
-	if folder != FolderLogos && folder != FolderAvatars && folder != FolderFavicon {
-		return "", ErrInvalidFolder
-	}
-
-	maxLimit, limitErr := getFolderLimit(folder)
-
-	limitedReader := io.LimitReader(r, maxLimit+1)
-	data, err := io.ReadAll(limitedReader)
+	upload, err := ValidateAndPrepareUpload(r, originalFilename, folder)
 	if err != nil {
-		return "", fmt.Errorf("error al leer el archivo: %w", err)
+		return "", err
 	}
 
-	if len(data) == 0 {
-		return "", ErrEmptyFile
-	}
-	if int64(len(data)) > maxLimit {
-		return "", limitErr
-	}
-
-	mimeType := detectMIMEType(data, originalFilename)
-	ext, ok := AllowedMIMETypes[mimeType]
-	if !ok {
-		return "", ErrInvalidFileType
-	}
-
-	randomBytes := make([]byte, 16)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", fmt.Errorf("error al generar nombre seguro para el archivo: %w", err)
-	}
-	filename := hex.EncodeToString(randomBytes) + ext
-	key := fmt.Sprintf("%s/%s", folder, filename)
+	key := fmt.Sprintf("%s/%s", folder, upload.Filename)
 
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
-		Body:        bytes.NewReader(data),
-		ContentType: aws.String(mimeType),
+		Body:        bytes.NewReader(upload.Data),
+		ContentType: aws.String(upload.MIMEType),
 	})
 	if err != nil {
 		return "", fmt.Errorf("error al subir archivo a Cloudflare R2: %w", err)

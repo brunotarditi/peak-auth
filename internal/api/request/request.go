@@ -53,3 +53,13 @@ type UserRequest struct {
 type IntrospectRequest struct {
 	Token string `json:"token" binding:"required"`
 }
+
+type ApplicationBrandingRequest struct {
+	PrimaryColor   string `json:"primary_color" `
+	CustomTitle    string `json:"custom_title"`
+	CustomSubtitle string `json:"custom_subtitle"`
+	TermsURL       string `json:"terms_url"`
+	PrivacyURL     string `json:"privacy_url"`
+	LogoURL        string `json:"logo_url"`
+	FaviconURL     string `json:"favicon_url"`
+}

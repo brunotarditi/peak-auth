@@ -29,7 +29,7 @@ type unitOfWork struct {
 }
 
 func (u *unitOfWork) Users() UserRepository {
-	return NewUserRepositoryRepository(u.db)
+	return NewUserRepository(u.db)
 }
 
 func (u *unitOfWork) Apps() ApplicationRepository {
@@ -37,7 +37,7 @@ func (u *unitOfWork) Apps() ApplicationRepository {
 }
 
 func (u *unitOfWork) Roles() RoleRepository {
-	return NewRoleRepositoryRepository(u.db)
+	return NewRoleRepository(u.db)
 }
 
 func (u *unitOfWork) UAR() UserApplicationRoleRepository {
@@ -53,7 +53,7 @@ func (u *unitOfWork) Rules() ApplicationRuleRepository {
 }
 
 func (u *unitOfWork) EmailVerifications() EmailVerificationRepository {
-	return NewEmailVerificationRepositoryRepository(u.db)
+	return NewEmailVerificationRepository(u.db)
 }
 
 func (u *unitOfWork) RefreshTokens() RefreshTokenRepository {

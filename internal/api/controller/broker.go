@@ -21,12 +21,7 @@ type BrokerController struct {
 	RuleService   service.ApplicationRuleService
 }
 
-func NewBrokerController(
-	brokerService service.BrokerService,
-	tokenManager *auth.JWTManager,
-	appService service.ApplicationService,
-	ruleService service.ApplicationRuleService,
-) *BrokerController {
+func NewBrokerController(brokerService service.BrokerService, tokenManager *auth.JWTManager, appService service.ApplicationService, ruleService service.ApplicationRuleService) *BrokerController {
 	return &BrokerController{
 		BrokerService: brokerService,
 		TokenManager:  tokenManager,

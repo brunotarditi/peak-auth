@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+var (
+	reUpper  = regexp.MustCompile(`[A-Z]`)
+	reLower  = regexp.MustCompile(`[a-z]`)
+	reNumber = regexp.MustCompile(`[0-9]`)
+	reSymbol = regexp.MustCompile(`[^A-Za-z0-9]`)
+)
+
 type RegistrationPolicy struct {
 	Mode                     string `json:"mode"`
 	RequireEmailVerification bool   `json:"require_email_verification"`
@@ -78,23 +85,14 @@ func ValidatePasswordPolicy(raw []byte, password string) error {
 	if r.MinLength > 0 && len(password) < r.MinLength {
 		return fmt.Errorf("la contraseña debe tener al menos %d caracteres", r.MinLength)
 	}
-	if r.RequireUppercase {
-		matched, _ := regexp.MatchString("[A-Z]", password)
-		if !matched {
-			return fmt.Errorf("la contraseña debe contener al menos una letra mayúscula")
-		}
+	if r.RequireUppercase && !reUpper.MatchString(password) {
+		return fmt.Errorf("la contraseña debe contener al menos una letra mayúscula")
 	}
-	if r.RequireNumbers {
-		matched, _ := regexp.MatchString("[0-9]", password)
-		if !matched {
-			return fmt.Errorf("la contraseña debe contener al menos un dígito")
-		}
+	if r.RequireNumbers && !reNumber.MatchString(password) {
+		return fmt.Errorf("la contraseña debe contener al menos un dígito")
 	}
-	if r.RequireSymbols {
-		matched, _ := regexp.MatchString("[^A-Za-z0-9]", password)
-		if !matched {
-			return fmt.Errorf("la contraseña debe contener al menos un símbolo")
-		}
+	if r.RequireSymbols && !reSymbol.MatchString(password) {
+		return fmt.Errorf("la contraseña debe contener al menos un símbolo")
 	}
 	return nil
 }
@@ -164,11 +162,10 @@ func ValidatePasswordStrength(password string) bool {
 	if len(password) < 8 || len(password) > BcryptMaxPasswordBytes {
 		return false
 	}
-	hasUpper, _ := regexp.MatchString("[A-Z]", password)
-	hasLower, _ := regexp.MatchString("[a-z]", password)
-	hasNumber, _ := regexp.MatchString("[0-9]", password)
-	hasSymbol, _ := regexp.MatchString("[^A-Za-z0-9]", password)
-	return hasUpper && hasLower && hasNumber && hasSymbol
+	return reUpper.MatchString(password) &&
+		reLower.MatchString(password) &&
+		reNumber.MatchString(password) &&
+		reSymbol.MatchString(password)
 }
 
 // ValidateMinimumPasswordPolicy enforces a baseline password policy when no active PWD_POLICY exists.
@@ -187,18 +184,15 @@ func ValidateMinimumPasswordPolicy(password string) error {
 		return fmt.Errorf("la contraseña debe tener al menos 8 caracteres")
 	}
 
-	matched, _ := regexp.MatchString("[A-Z]", password)
-	if !matched {
+	if !reUpper.MatchString(password) {
 		return fmt.Errorf("la contraseña debe contener al menos una letra mayúscula")
 	}
 
-	matched, _ = regexp.MatchString("[0-9]", password)
-	if !matched {
+	if !reNumber.MatchString(password) {
 		return fmt.Errorf("la contraseña debe contener al menos un dígito")
 	}
 
-	matched, _ = regexp.MatchString("[^A-Za-z0-9]", password)
-	if !matched {
+	if !reSymbol.MatchString(password) {
 		return fmt.Errorf("la contraseña debe contener al menos un símbolo")
 	}
 

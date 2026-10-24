@@ -100,6 +100,22 @@ func TestLocalStorageService_UploadAndValidation(t *testing.T) {
 		}
 	})
 
+	t.Run("Upload malicious SVG with script fails", func(t *testing.T) {
+		maliciousSVG := []byte(`<svg xmlns="http://www.w3.org/2000/svg"><script>alert('xss')</script></svg>`)
+		_, err := svc.Upload(ctx, bytes.NewReader(maliciousSVG), "attack.svg", FolderLogos)
+		if err != ErrInvalidFileType {
+			t.Errorf("expected ErrInvalidFileType for malicious SVG with script, got: %v", err)
+		}
+	})
+
+	t.Run("Upload malicious SVG with onload handler fails", func(t *testing.T) {
+		maliciousSVG := []byte(`<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"></svg>`)
+		_, err := svc.Upload(ctx, bytes.NewReader(maliciousSVG), "attack2.svg", FolderLogos)
+		if err != ErrInvalidFileType {
+			t.Errorf("expected ErrInvalidFileType for malicious SVG with onload, got: %v", err)
+		}
+	})
+
 	t.Run("Upload to invalid folder fails", func(t *testing.T) {
 		_, err := svc.Upload(ctx, bytes.NewReader(pngHeader), "logo.png", "sensitive_folder")
 		if err != ErrInvalidFolder {

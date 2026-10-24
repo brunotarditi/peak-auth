@@ -18,8 +18,14 @@ type emailVerification struct {
 	db *gorm.DB
 }
 
-func NewEmailVerificationRepositoryRepository(db *gorm.DB) EmailVerificationRepository {
+// NewEmailVerificationRepository construye el repositorio de verificaciones de email.
+func NewEmailVerificationRepository(db *gorm.DB) EmailVerificationRepository {
 	return &emailVerification{db: db}
+}
+
+// Deprecated: usar NewEmailVerificationRepository
+func NewEmailVerificationRepositoryRepository(db *gorm.DB) EmailVerificationRepository {
+	return NewEmailVerificationRepository(db)
 }
 
 func (r *emailVerification) CreateEmailVerification(verification *model.EmailVerification) error {
