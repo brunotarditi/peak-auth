@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"html/template"
+
 	"net/http"
 	"peak-auth/internal/auth"
 	"peak-auth/internal/service"
@@ -221,7 +221,7 @@ func (ctrl *SetupController) ShowSetupMFA(c *gin.Context) {
 
 	csrf, _ := c.Get("csrf_token")
 	c.HTML(http.StatusOK, "setup_mfa.html", gin.H{
-		"QRCode":    template.URL(totpResp.QRCode),
+		"QRCode":    totpResp.QRCode,
 		"Secret":    totpResp.Secret,
 		"CSRFToken": csrf,
 	})

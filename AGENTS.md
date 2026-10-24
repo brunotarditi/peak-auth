@@ -33,7 +33,7 @@
 
 | Componente         | Tecnología                    | Versión   |
 | ------------------ | ----------------------------- | --------- |
-| **Lenguaje**       | Go                            | 1.27.0 (toolchain `go1.27.0`) |
+| **Lenguaje**       | Go                            | 1.27.3 (toolchain `go1.27.3`) |
 | **Web Framework**  | Gin Web Framework             | v1.12.0   |
 | **ORM**            | GORM                          | v1.31.2   |
 | **Base de Datos**  | PostgreSQL (pgx driver)       | 16-alpine |
@@ -51,7 +51,7 @@
 peak-auth/
 ├── main.go                       # Punto de entrada principal
 ├── routes.go                     # Definición y registro de rutas HTTP
-├── go.mod                        # Dependencias del proyecto (Go 1.27.0 + toolchain)
+├── go.mod                        # Dependencias del proyecto (Go 1.27.3 + toolchain)
 ├── Dockerfile                    # Configuración Docker multi-stage
 ├── jwt_private.pem               # Clave privada RSA para firmar JWTs
 ├── jwt_public.pem                # Clave pública RSA para verificar JWTs

@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.1.0"
     `maven-publish`
 }
 
@@ -15,6 +15,8 @@ dependencyLocking {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.1.0")
+
     // Tests
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

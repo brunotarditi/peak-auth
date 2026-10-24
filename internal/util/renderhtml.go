@@ -36,6 +36,26 @@ func RenderVerificationEmail(path string, data any) (string, error) {
 	return buf.String(), nil
 }
 
+// SanitizeSafeURL valida que una URL pertenezca a un esquema permitido antes de convertirla
+// a template.URL, previniendo inyecciones de esquemas peligrosos como javascript: o vbscript:.
+func SanitizeSafeURL(raw string) template.URL {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	if strings.HasPrefix(trimmed, "/") && !strings.HasPrefix(trimmed, "//") {
+		return template.URL(trimmed)
+	}
+	lower := strings.ToLower(trimmed)
+	if strings.HasPrefix(lower, "https://") ||
+		strings.HasPrefix(lower, "http://") ||
+		strings.HasPrefix(lower, "data:image/") ||
+		strings.HasPrefix(lower, "mailto:") {
+		return template.URL(trimmed)
+	}
+	return "#"
+}
+
 // GetTemplateFuncMap retorna el mapa global de funciones para templates
 func GetTemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
@@ -105,9 +125,9 @@ func GetTemplateFuncMap() template.FuncMap {
 		"safe_url": func(u interface{}) template.URL {
 			switch val := u.(type) {
 			case template.URL:
-				return val
+				return SanitizeSafeURL(string(val))
 			case string:
-				return template.URL(val)
+				return SanitizeSafeURL(val)
 			default:
 				return ""
 			}
