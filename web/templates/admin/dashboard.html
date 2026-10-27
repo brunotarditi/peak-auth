@@ -27,7 +27,7 @@
             <div class="app-card-top-row">
                     {{ if .LogoURL }}
                     <div class="app-card-logo-container" {{ if .PrimaryColor }}style="border-color: {{ .PrimaryColor }};"{{ end }}>
-                        <img src="{{ .LogoURL }}" alt="{{ .Name }}" class="app-card-logo-img">
+                        <img src="{{ .LogoURL }}" alt="{{ .Name }}" class="app-card-logo-img" loading="lazy" decoding="async">
                     </div>
                     {{ else if eq .AppID "peak-auth" }}
                     <div class="app-card-logo-container">

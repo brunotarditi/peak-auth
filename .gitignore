@@ -53,3 +53,6 @@ build/
 
 #Impeccable
 .impeccable/
+
+#Infisical
+.infisical.yaml

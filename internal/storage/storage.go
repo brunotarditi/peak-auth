@@ -3,7 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -156,11 +156,10 @@ func ValidateAndPrepareUpload(r io.Reader, originalFilename, folder string) (*Va
 		return nil, ErrInvalidFileType
 	}
 
-	randomBytes := make([]byte, 16)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return nil, fmt.Errorf("error al generar nombre seguro para el archivo: %w", err)
-	}
-	filename := hex.EncodeToString(randomBytes) + ext
+	// Genera un nombre determinístico basado en el hash del contenido (Content-Addressable Storage).
+	// Esto previene duplicados en disco y en R2 cuando se sube la misma imagen múltiples veces.
+	hash := sha256.Sum256(data)
+	filename := hex.EncodeToString(hash[:16]) + ext
 
 	return &ValidatedUpload{
 		Data:     data,

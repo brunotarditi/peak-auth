@@ -191,21 +191,29 @@
         });
     }
 
-    // Real-time logo URL input updates
+    // Real-time logo URL input updates with debounce
+    let logoDebounceTimer = null;
     if (logoUrlInput && previewLogoImg) {
         logoUrlInput.addEventListener('input', function () {
-            const url = logoUrlInput.value.trim();
-            const targetUrl = url || '/static/img/logo.svg';
-            previewLogoImg.src = targetUrl;
-            if (logoThumbImg) logoThumbImg.src = targetUrl;
+            clearTimeout(logoDebounceTimer);
+            logoDebounceTimer = setTimeout(() => {
+                const url = logoUrlInput.value.trim();
+                const targetUrl = url || '/static/img/logo.svg';
+                previewLogoImg.src = targetUrl;
+                if (logoThumbImg) logoThumbImg.src = targetUrl;
+            }, 300);
         });
     }
 
-    // Real-time favicon URL input updates
+    // Real-time favicon URL input updates with debounce
+    let faviconDebounceTimer = null;
     if (faviconUrlInput && faviconThumbImg) {
         faviconUrlInput.addEventListener('input', function () {
-            const url = faviconUrlInput.value.trim();
-            faviconThumbImg.src = url || '/static/img/favicon.png';
+            clearTimeout(faviconDebounceTimer);
+            faviconDebounceTimer = setTimeout(() => {
+                const url = faviconUrlInput.value.trim();
+                faviconThumbImg.src = url || '/static/img/favicon.png';
+            }, 300);
         });
     }
 

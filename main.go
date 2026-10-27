@@ -26,6 +26,9 @@ func main() {
 		}
 	}
 
+	// 1.1) Sincronizar secretos desde Infisical si están configuradas las credenciales de Machine Identity
+	util.LoadSecretsFromInfisical()
+
 	// Modo de Gin: release en producción para no exponer logs de debug.
 	if util.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)

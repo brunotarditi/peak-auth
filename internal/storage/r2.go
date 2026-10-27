@@ -63,10 +63,11 @@ func (s *R2StorageService) Upload(ctx context.Context, r io.Reader, originalFile
 	key := fmt.Sprintf("%s/%s", folder, upload.Filename)
 
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
-		Key:         aws.String(key),
-		Body:        bytes.NewReader(upload.Data),
-		ContentType: aws.String(upload.MIMEType),
+		Bucket:       aws.String(s.bucket),
+		Key:          aws.String(key),
+		Body:         bytes.NewReader(upload.Data),
+		ContentType:  aws.String(upload.MIMEType),
+		CacheControl: aws.String("public, max-age=31536000, immutable"),
 	})
 	if err != nil {
 		return "", fmt.Errorf("error al subir archivo a Cloudflare R2: %w", err)
