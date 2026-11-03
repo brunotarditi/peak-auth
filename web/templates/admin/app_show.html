@@ -1,1 +1,218 @@
-{{ define "content" }}<div id="appDetailsContainer" data-app-id="{{ .App.AppID }}" class="safe-refactor-1">    <!-- Top Bar -->    <div class="safe-refactor-2">        <a href="/admin" class="peak-btn peak-btn-secondary safe-refactor-3">            {{ template "icon-arrow-back" }}            Volver a aplicaciones        </a>        <div class="safe-refactor-4">            <a href="/admin/apps/{{.App.AppID}}/users" title="Gestionar usuarios de la aplicación" class="peak-btn peak-btn-secondary safe-refactor-3">                {{ template "icon-users" }}                Usuarios ({{.UserCount}})            </a>            <a href="/admin/apps/{{.App.AppID}}/audit" title="Registro de auditoría de la aplicación" class="peak-btn peak-btn-secondary safe-refactor-3">                <svg class="safe-refactor-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>                Auditoría            </a>            {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}            <a href="/admin/apps/{{.App.AppID}}/branding" title="Personalizar diseño y tema de autenticación" class="peak-btn peak-btn-secondary safe-refactor-3">                {{ template "icon-palette" }}                Personalización            </a>            {{ end }}            <a href="/admin/apps/{{.App.AppID}}/edit" title="Editar configuración de la aplicación" class="peak-btn peak-btn-secondary safe-refactor-3">                {{ template "icon-edit" }}                Editar            </a>            {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}            <div class="safe-refactor-6"></div>            <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" class="safe-refactor-7">                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">                <button type="button" data-action="delete-app" title="Eliminar aplicación" class="peak-btn peak-btn-danger safe-refactor-3">                    {{template "icon-delete"}}                    Eliminar                </button>            </form>            {{ end }}        </div>    </div>        <!-- Main Content -->    <div class="safe-refactor-1">        <div class="peak-card safe-refactor-8">            <div class="safe-refactor-9">                <div>                    <h2 class="safe-refactor-10">{{ .App.Name }}</h2>                    <p class="safe-refactor-11">{{ .App.Description }}</p>                </div>                {{ if .App.IsActive }}                <span class="peak-badge peak-badge-success">Activa</span>                {{ else }}                <span class="peak-badge safe-refactor-12">Inactiva</span>                {{ end }}            </div>            <div class="safe-refactor-13">                <div class="safe-refactor-14">                    <label class="safe-refactor-15">Application ID</label>                    <div class="safe-refactor-16">                        <code class="safe-refactor-17">{{ .App.AppID }}</code>                        <button data-action="copy-text" data-text="{{ .App.AppID }}" class="icon-btn safe-refactor-18" title="Copiar App ID" aria-label="Copiar Application ID">                            {{template "icon-copy"}}                        </button>                    </div>                </div>                <div class="safe-refactor-14">                    <label class="safe-refactor-15">Redirect URL</label>                    <div class="safe-refactor-16">                        {{ if eq .App.AppID "peak-auth" }}                        <span class="peak-badge safe-refactor-19">No aplica (App Raíz / IdP del Sistema)</span>                        {{ else }}                        <code class="safe-refactor-17">{{ if .App.RedirectURL }}{{ .App.RedirectURL }}{{ else }}<span class="safe-refactor-20">No configurada</span>{{ end }}</code>                        {{ end }}                    </div>                </div>                <div class="safe-refactor-14">                    <label class="safe-refactor-15">Propietario (Owner)</label>                    <div class="safe-refactor-16">                        <span class="safe-refactor-21">                            {{ if .App.Owner }}{{ .App.Owner.Email }}{{ else }}<span class="safe-refactor-20">Sin propietario</span>{{ end }}                        </span>                        {{ if and (ne .App.AppID "peak-auth") .IsOwner }}                        <button type="button" id="btnOpenTransferModal" class="peak-btn peak-btn-secondary safe-refactor-22" title="Transferir propiedad de la aplicación">                            Transferir                        </button>                        {{ end }}                    </div>                </div>                {{ if ne .App.AppID "peak-auth" }}                <div class="safe-refactor-14">                    <label class="safe-refactor-15">Client Secret</label>                    <div class="safe-refactor-16">                        <div class="safe-refactor-23">                            <input type="password" readonly value="********************************" autocomplete="new-password" data-bwignore data-1p-ignore class="safe-refactor-24">                        </div>                        <button type="button" data-action="revoke-secret" class="icon-btn icon-btn-danger safe-refactor-18" title="Revocar secreto" aria-label="Revocar secreto">                            {{template "icon-reload"}}                        </button>                    </div>                </div>                {{ end }}            </div>        </div>        <div class="safe-refactor-25">            <div class="safe-refactor-26">                <h2 class="safe-refactor-27">Políticas de seguridad</h2>                <p class="safe-refactor-28">Configuración actual de seguridad y del motor de reglas</p>            </div>            <!-- Tabs Navigation -->            <div class="safe-refactor-29">                <nav class="safe-refactor-30" aria-label="Tabs">                    <button type="button" data-tab="registro" id="tab_registro" class="settings-tab-btn active-tab">                        {{ template "icon-user-add" }}                        Registro                    </button>                    <button type="button" data-tab="accesos" id="tab_accesos" class="settings-tab-btn">                        {{ template "icon-lock" }}                        Accesos                    </button>                    <button type="button" data-tab="sesiones" id="tab_sesiones" class="settings-tab-btn">                        <svg class="safe-refactor-31" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="safe-refactor-32"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>                        Sesiones                    </button>                    <button type="button" data-tab="autorizacion" id="tab_autorizacion" class="settings-tab-btn">                        {{ template "icon-shield" }}                        Autorización                    </button>                    <button type="button" data-tab="mfa" id="tab_mfa" class="settings-tab-btn">                        <svg class="safe-refactor-31" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="safe-refactor-32"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>                        MFA                    </button>                </nav>            </div>            <!-- Unified Settings Card -->            <div class="peak-card safe-refactor-33">                {{ template "components/policy_registro" . }}                {{ template "components/policy_accesos" . }}                {{ template "components/policy_sesiones" . }}                {{ template "components/policy_autorizacion" . }}                {{ template "components/policy_mfa" . }}            </div>        </div>    </div></div><!-- Formulario para regenerar secreto (disparado vía peakConfirm en openRevokeModal) --><form id="revokeSecretForm" action="/admin/apps/{{.App.AppID}}/secret" method="POST" class="safe-refactor-34">    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}"></form>{{ if and (ne .App.AppID "peak-auth") .IsOwner }}<!-- Modal de Transferencia de Propiedad --><div id="transferModal" class="hidden safe-refactor-35" aria-labelledby="transfer-modal-title" role="dialog" aria-modal="true">    <div class="safe-refactor-36">        <div class="safe-refactor-37" id="transferModalBackdrop"></div>                <div class="peak-card safe-refactor-38">            <div class="safe-refactor-39">                <h3 class="safe-refactor-40" id="transfer-modal-title">Transferir propiedad</h3>                <p class="safe-refactor-41">Transfiere la propiedad de <strong>{{ .App.Name }}</strong> a otro usuario del sistema. Tu rol pasará a ser ADMIN.</p>            </div>            <form id="transferForm" action="/admin/apps/{{.App.AppID}}/transfer-ownership" method="POST" class="safe-refactor-25">                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">                <div class="safe-refactor-42 form-group">                    <label class="form-label">Seleccionar nuevo propietario</label>                    <select name="new_owner_id" required class="peak-input safe-refactor-43">                        <option value="" disabled selected>-- Selecciona un usuario --</option>                        {{ range .Users }}                            {{ if or (not $.App.Owner) (ne .ID $.App.Owner.ID) }}                            <option value="{{ .ID }}">{{ .Email }} ({{ .RoleName }})</option>                            {{ end }}                        {{ end }}                    </select>                </div>                <div class="safe-refactor-44">                    <button type="button" id="closeTransferModalBtn" class="peak-btn peak-btn-secondary peak-btn-block">                        Cancelar                    </button>                    <button type="submit" id="submitTransferBtn" class="peak-btn peak-btn-primary peak-btn-block safe-refactor-45">                        Confirmar transferencia                    </button>                </div>            </form>        </div>    </div></div>{{ end }}{{ end }}{{ define "scripts" }}<script src="{{ js "app.js" }}"></script><script src="{{ js "app_show.js" }}"></script>{{ end }}{{ template "base_admin" . }}
+{{ define "content" }}
+<div id="appDetailsContainer" data-app-id="{{ .App.AppID }}" class="app-details-page">
+
+    <!-- Enlace Volver -->
+    <div class="app-back-wrapper">
+        <a href="/admin" class="app-back-link">
+            {{ template "icon-arrow-back" }}
+            <span>Volver a aplicaciones</span>
+        </a>
+    </div>
+
+    <!-- NIVEL 1 — Identidad y Navegación -->
+    <header class="app-identity-header">
+        <div class="app-identity-info">
+            <div class="app-identity-title-row">
+                <h1 class="app-identity-title">{{ .App.Name }}</h1>
+                {{ if .App.IsActive }}
+                <span class="peak-badge peak-badge-success">Activa</span>
+                {{ else }}
+                <span class="peak-badge app-badge-inactive">Inactiva</span>
+                {{ end }}
+            </div>
+            {{ if .App.Description }}
+            <p class="app-identity-desc">{{ .App.Description }}</p>
+            {{ end }}
+        </div>
+    </header>
+
+    <!-- NIVEL 2 — Acciones Administrativas -->
+    <nav class="app-actions-bar" aria-label="Acciones de la aplicación">
+        <div class="app-actions-group">
+            <a href="/admin/apps/{{.App.AppID}}/users" title="Gestionar usuarios de la aplicación" class="app-action-btn app-action-btn-primary">
+                {{ template "icon-users" }}
+                <span>Usuarios</span>
+                <span class="app-action-badge">{{.UserCount}}</span>
+            </a>
+            <a href="/admin/apps/{{.App.AppID}}/audit" title="Registro de auditoría de la aplicación" class="app-action-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                <span>Auditoría</span>
+            </a>
+            {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
+            <a href="/admin/apps/{{.App.AppID}}/branding" title="Personalizar diseño y tema de autenticación" class="app-action-btn">
+                {{ template "icon-palette" }}
+                <span>Personalización</span>
+            </a>
+            {{ end }}
+            <a href="/admin/apps/{{.App.AppID}}/edit" title="Editar configuración de la aplicación" class="app-action-btn">
+                {{ template "icon-edit" }}
+                <span>Editar</span>
+            </a>
+        </div>
+
+        {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
+        <div class="app-actions-danger">
+            <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" class="app-delete-form">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                <button type="button" data-action="delete-app" title="Eliminar aplicación" class="app-action-btn-danger">
+                    {{ template "icon-delete" }}
+                    <span>Eliminar</span>
+                </button>
+            </form>
+        </div>
+        {{ end }}
+    </nav>
+
+    <!-- NIVEL 3 — Información Técnica (Ficha Técnica: Una Sola Superficie) -->
+    <section class="peak-card app-tech-card" aria-label="Información técnica">
+        <div class="app-tech-grid">
+            <!-- Application ID -->
+            <div class="app-meta-item">
+                <span class="app-meta-label">Application ID</span>
+                <div class="app-meta-value-row">
+                    <code class="app-meta-code">{{ .App.AppID }}</code>
+                    <button type="button" data-action="copy-text" data-text="{{ .App.AppID }}" class="icon-btn app-meta-btn" title="Copiar App ID" aria-label="Copiar Application ID">
+                        {{ template "icon-copy" }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Redirect URL -->
+            <div class="app-meta-item">
+                <span class="app-meta-label">Redirect URL</span>
+                <div class="app-meta-value-row">
+                    {{ if eq .App.AppID "peak-auth" }}
+                    <span class="app-meta-badge">No aplica (App Raíz / IdP del Sistema)</span>
+                    {{ else }}
+                    <code class="app-meta-code">{{ if .App.RedirectURL }}{{ .App.RedirectURL }}{{ else }}<span class="app-meta-empty">No configurada</span>{{ end }}</code>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- Propietario (Owner) -->
+            <div class="app-meta-item">
+                <span class="app-meta-label">Propietario</span>
+                <div class="app-meta-value-row">
+                    <span class="app-meta-text">
+                        {{ if .App.Owner }}{{ .App.Owner.Email }}{{ else }}<span class="app-meta-empty">Sin propietario</span>{{ end }}
+                    </span>
+                    {{ if and (ne .App.AppID "peak-auth") .IsOwner }}
+                    <button type="button" id="btnOpenTransferModal" class="peak-btn peak-btn-secondary app-transfer-btn" title="Transferir propiedad de la aplicación">
+                        Transferir
+                    </button>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- Client Secret -->
+            {{ if ne .App.AppID "peak-auth" }}
+            <div class="app-meta-item">
+                <span class="app-meta-label">Client Secret</span>
+                <div class="app-meta-value-row">
+                    <div class="app-secret-wrapper">
+                        <input type="password" readonly value="********************************" autocomplete="new-password" data-bwignore data-1p-ignore class="app-meta-code app-secret-input" aria-label="Client secret oculto">
+                    </div>
+                    <button type="button" data-action="revoke-secret" class="icon-btn icon-btn-danger app-meta-btn" title="Revocar secreto" aria-label="Revocar secreto">
+                        {{ template "icon-reload" }}
+                    </button>
+                </div>
+            </div>
+            {{ end }}
+        </div>
+    </section>
+
+    <!-- SECCIÓN POLÍTICAS DE SEGURIDAD (Navegación Lateral Estilo Cloudflare) -->
+    <section class="app-policies-section" aria-labelledby="policies-section-title">
+        <div class="app-policies-header">
+            <h2 id="policies-section-title" class="app-policies-title">Políticas de seguridad</h2>
+            <p class="app-policies-desc">Configuración actual de seguridad y del motor de reglas</p>
+        </div>
+
+        <div class="app-policies-layout">
+            <!-- Sidebar Lateral Izquierdo -->
+            <nav class="app-policies-sidebar" role="tablist" aria-label="Categorías de políticas de seguridad">
+                <button type="button" role="tab" aria-selected="true" data-tab="registro" id="tab_registro" class="settings-tab-btn policy-nav-btn active-tab active">
+                    {{ template "icon-user-add" }}
+                    <span>Registro</span>
+                </button>
+                <button type="button" role="tab" aria-selected="false" data-tab="accesos" id="tab_accesos" class="settings-tab-btn policy-nav-btn">
+                    {{ template "icon-lock" }}
+                    <span>Accesos</span>
+                </button>
+                <button type="button" role="tab" aria-selected="false" data-tab="sesiones" id="tab_sesiones" class="settings-tab-btn policy-nav-btn">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Sesiones</span>
+                </button>
+                <button type="button" role="tab" aria-selected="false" data-tab="autorizacion" id="tab_autorizacion" class="settings-tab-btn policy-nav-btn">
+                    {{ template "icon-shield" }}
+                    <span>Autorización</span>
+                </button>
+                <button type="button" role="tab" aria-selected="false" data-tab="mfa" id="tab_mfa" class="settings-tab-btn policy-nav-btn">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    <span>MFA</span>
+                </button>
+            </nav>
+
+            <!-- Panel de Contenido Derecho -->
+            <div class="peak-card app-policy-panel">
+                {{ template "components/policy_registro" . }}
+                {{ template "components/policy_accesos" . }}
+                {{ template "components/policy_sesiones" . }}
+                {{ template "components/policy_autorizacion" . }}
+                {{ template "components/policy_mfa" . }}
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Formulario para regenerar secreto (disparado vía peakConfirm en openRevokeModal) -->
+<form id="revokeSecretForm" action="/admin/apps/{{.App.AppID}}/secret" method="POST" class="hidden">
+    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+</form>
+
+{{ if and (ne .App.AppID "peak-auth") .IsOwner }}
+<!-- Modal de Transferencia de Propiedad -->
+<div id="transferModal" class="hidden safe-refactor-35" aria-labelledby="transfer-modal-title" role="dialog" aria-modal="true">
+    <div class="safe-refactor-36">
+        <div class="safe-refactor-37" id="transferModalBackdrop"></div>
+        <div class="peak-card safe-refactor-38">
+            <div class="safe-refactor-39">
+                <h3 class="safe-refactor-40" id="transfer-modal-title">Transferir propiedad</h3>
+                <p class="safe-refactor-41">Transfiere la propiedad de <strong>{{ .App.Name }}</strong> a otro usuario del sistema. Tu rol pasará a ser ADMIN.</p>
+            </div>
+            <form id="transferForm" action="/admin/apps/{{.App.AppID}}/transfer-ownership" method="POST" class="safe-refactor-25">
+                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+                <div class="safe-refactor-42 form-group">
+                    <label class="form-label">Seleccionar nuevo propietario</label>
+                    <select name="new_owner_id" required class="peak-input safe-refactor-43">
+                        <option value="" disabled selected>-- Selecciona un usuario --</option>
+                        {{ range .Users }}
+                            {{ if or (not $.App.Owner) (ne .ID $.App.Owner.ID) }}
+                            <option value="{{ .ID }}">{{ .Email }} ({{ .RoleName }})</option>
+                            {{ end }}
+                        {{ end }}
+                    </select>
+                </div>
+                <div class="safe-refactor-44">
+                    <button type="button" id="closeTransferModalBtn" class="peak-btn peak-btn-secondary peak-btn-block">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="submitTransferBtn" class="peak-btn peak-btn-primary peak-btn-block safe-refactor-45">
+                        Confirmar transferencia
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ end }}
+
+{{ define "scripts" }}
+<script src="{{ js "app.js" }}"></script>
+<script src="{{ js "app_show.js" }}"></script>
+{{ end }}
+
+{{ template "base_admin" . }}

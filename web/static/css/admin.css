@@ -2097,3 +2097,507 @@
 .safe-refactor-2 { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
 .safe-refactor-13 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
 .safe-refactor-37 { position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); }
+
+/* --- Application Details & Policies Refactor (UX/UI Evolution) --- */
+.app-details-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Enlace Volver */
+.app-back-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.app-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--radius-md);
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.app-back-link:hover {
+    color: var(--text-main);
+    background-color: var(--bg-surface-secondary);
+}
+
+.app-back-link svg {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+/* Nivel 1 — Identidad y Estado */
+.app-identity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.app-identity-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.app-identity-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.app-identity-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.app-identity-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.app-badge-inactive {
+    background-color: var(--rose-50);
+    border: 1px solid var(--rose-200);
+    color: var(--rose-600);
+}
+
+html.dark .app-badge-inactive,
+:root.dark .app-badge-inactive {
+    background-color: rgba(244, 63, 94, 0.15);
+    border-color: rgba(244, 63, 94, 0.3);
+    color: var(--rose-300);
+}
+
+/* Nivel 2 — Barra de Acciones Administrativas */
+.app-actions-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.25rem;
+}
+
+.app-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.app-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4375rem 0.8125rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: var(--shadow-sm);
+    line-height: 1.25;
+}
+
+.app-action-btn:hover {
+    background: var(--bg-surface-hover);
+    border-color: var(--slate-300);
+    color: var(--text-main);
+}
+
+.app-action-btn:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+}
+
+.app-action-btn svg {
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+}
+
+.app-action-btn:hover svg {
+    color: var(--text-main);
+}
+
+.app-action-btn-primary {
+    font-weight: 600;
+}
+
+.app-action-badge {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-full);
+    background: var(--bg-surface-secondary);
+    color: var(--text-muted);
+    border: 1px solid var(--border-light);
+    line-height: 1;
+}
+
+.app-actions-danger {
+    margin-left: auto;
+}
+
+.app-delete-form {
+    margin: 0;
+    display: inline-flex;
+}
+
+.app-action-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4375rem 0.8125rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--rose-600);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.25;
+}
+
+.app-action-btn-danger:hover {
+    background: var(--rose-50);
+    border-color: var(--rose-300);
+    color: var(--rose-700);
+}
+
+.app-action-btn-danger:focus-visible {
+    outline: 2px solid var(--rose-500);
+    outline-offset: 2px;
+}
+
+.app-action-btn-danger svg {
+    width: 0.9375rem;
+    height: 0.9375rem;
+    flex-shrink: 0;
+}
+
+html.dark .app-action-btn-danger,
+:root.dark .app-action-btn-danger {
+    color: var(--rose-400);
+}
+
+html.dark .app-action-btn-danger:hover,
+:root.dark .app-action-btn-danger:hover {
+    background: rgba(244, 63, 94, 0.12);
+    border-color: var(--rose-800);
+    color: var(--rose-300);
+}
+
+/* Nivel 3 — Ficha Técnica Compacta (Una Sola Superficie) */
+.app-tech-card {
+    padding: 1.25rem 1.5rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.app-tech-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .app-tech-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .app-tech-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+.app-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 0;
+}
+
+.app-meta-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-left: 0.125rem;
+}
+
+.app-meta-value-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.app-meta-code {
+    flex-grow: 1;
+    min-width: 0;
+    padding: 0.5625rem 0.75rem;
+    background-color: var(--bg-surface-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-meta-text {
+    flex-grow: 1;
+    min-width: 0;
+    padding: 0.5625rem 0.75rem;
+    background-color: var(--bg-surface-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-size: 0.75rem;
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-meta-empty {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.app-meta-badge {
+    display: inline-block;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bg-surface-secondary);
+    color: var(--text-muted);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-meta-btn {
+    padding: 0.5625rem;
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+}
+
+.app-transfer-btn {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-radius: var(--radius-lg);
+}
+
+.app-secret-wrapper {
+    position: relative;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.app-secret-input {
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    font-family: monospace;
+    outline: none;
+    cursor: default;
+}
+
+/* Políticas de Seguridad — Layout & Sidebar */
+.app-policies-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.app-policies-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.app-policies-title {
+    font-size: 1.375rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.app-policies-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.app-policies-layout {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+@media (max-width: 860px) {
+    .app-policies-layout {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+.app-policies-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+@media (max-width: 860px) {
+    .app-policies-sidebar {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        gap: 0.5rem;
+    }
+}
+
+.policy-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6875rem 0.875rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid transparent;
+    border-left: 3px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+}
+
+.policy-nav-btn svg {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: color 0.15s ease;
+}
+
+.policy-nav-btn:hover {
+    color: var(--text-main);
+    background-color: var(--bg-surface-secondary);
+}
+
+.policy-nav-btn:hover svg {
+    color: var(--text-main);
+}
+
+.policy-nav-btn:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+}
+
+/* Estado Activo: Accesible con Borde Indicador, Fondo y Contraste */
+.policy-nav-btn.active,
+.policy-nav-btn.active-tab,
+.policy-nav-btn[aria-selected="true"] {
+    background-color: var(--brand-50);
+    color: var(--brand-700);
+    font-weight: 700;
+    border-color: var(--brand-200);
+    border-left: 3px solid var(--brand-600);
+}
+
+.policy-nav-btn.active svg,
+.policy-nav-btn.active-tab svg,
+.policy-nav-btn[aria-selected="true"] svg {
+    color: var(--brand-600);
+}
+
+html.dark .policy-nav-btn.active,
+html.dark .policy-nav-btn.active-tab,
+html.dark .policy-nav-btn[aria-selected="true"],
+:root.dark .policy-nav-btn.active,
+:root.dark .policy-nav-btn.active-tab,
+:root.dark .policy-nav-btn[aria-selected="true"] {
+    background-color: rgba(37, 99, 235, 0.16);
+    color: var(--white);
+    font-weight: 700;
+    border-color: rgba(96, 165, 250, 0.25);
+    border-left: 3px solid var(--brand-400);
+}
+
+html.dark .policy-nav-btn.active svg,
+html.dark .policy-nav-btn.active-tab svg,
+html.dark .policy-nav-btn[aria-selected="true"] svg,
+:root.dark .policy-nav-btn.active svg,
+:root.dark .policy-nav-btn.active-tab svg,
+:root.dark .policy-nav-btn[aria-selected="true"] svg {
+    color: var(--brand-400);
+}
+
+@media (max-width: 860px) {
+    .policy-nav-btn {
+        border-left: 1px solid transparent;
+        padding: 0.5rem 0.75rem;
+    }
+    .policy-nav-btn.active,
+    .policy-nav-btn.active-tab,
+    .policy-nav-btn[aria-selected="true"] {
+        border-left: 1px solid var(--brand-500);
+    }
+}
+
+.app-policy-panel {
+    padding: 1.75rem;
+    min-height: 22rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}

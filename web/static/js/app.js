@@ -221,6 +221,8 @@
         // Quitar clases activas de todos los botones de pestaña
         document.querySelectorAll('.settings-tab-btn').forEach(el => {
             el.classList.remove('active-tab');
+            el.classList.remove('active');
+            el.setAttribute('aria-selected', 'false');
         });
         
         // Mostrar contenido de pestaña actual
@@ -232,6 +234,8 @@
         const btn = document.getElementById('tab_' + tabName);
         if (btn) {
             btn.classList.add('active-tab');
+            btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
         }
     }
 
