@@ -176,37 +176,35 @@
 
 {{ if and (ne .App.AppID "peak-auth") .IsOwner }}
 <!-- Modal de Transferencia de Propiedad -->
-<div id="transferModal" class="hidden safe-refactor-35" aria-labelledby="transfer-modal-title" role="dialog" aria-modal="true">
-    <div class="safe-refactor-36">
-        <div class="safe-refactor-37" id="transferModalBackdrop"></div>
-        <div class="peak-card safe-refactor-38">
-            <div class="safe-refactor-39">
-                <h3 class="safe-refactor-40" id="transfer-modal-title">Transferir propiedad</h3>
-                <p class="safe-refactor-41">Transfiere la propiedad de <strong>{{ .App.Name }}</strong> a otro usuario del sistema. Tu rol pasará a ser ADMIN.</p>
-            </div>
-            <form id="transferForm" action="/admin/apps/{{.App.AppID}}/transfer-ownership" method="POST" class="safe-refactor-25">
-                <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-                <div class="safe-refactor-42 form-group">
-                    <label class="form-label">Seleccionar nuevo propietario</label>
-                    <select name="new_owner_id" required class="peak-input safe-refactor-43">
-                        <option value="" disabled selected>-- Selecciona un usuario --</option>
-                        {{ range .Users }}
-                            {{ if or (not $.App.Owner) (ne .ID $.App.Owner.ID) }}
-                            <option value="{{ .ID }}">{{ .Email }} ({{ .RoleName }})</option>
-                            {{ end }}
-                        {{ end }}
-                    </select>
-                </div>
-                <div class="safe-refactor-44">
-                    <button type="button" id="closeTransferModalBtn" class="peak-btn peak-btn-secondary peak-btn-block">
-                        Cancelar
-                    </button>
-                    <button type="submit" id="submitTransferBtn" class="peak-btn peak-btn-primary peak-btn-block safe-refactor-45">
-                        Confirmar transferencia
-                    </button>
-                </div>
-            </form>
+<div id="transferModal" class="hidden transfer-modal-overlay" aria-labelledby="transfer-modal-title" role="dialog" aria-modal="true">
+    <div class="transfer-modal-backdrop" id="transferModalBackdrop"></div>
+    <div class="peak-card transfer-modal-card">
+        <div class="transfer-modal-header">
+            <h3 class="transfer-modal-title" id="transfer-modal-title">Transferir propiedad</h3>
+            <p class="transfer-modal-desc">Transfiere la propiedad de <strong>{{ .App.Name }}</strong> a otro usuario del sistema. Tu rol pasará a ser ADMIN.</p>
         </div>
+        <form id="transferForm" action="/admin/apps/{{.App.AppID}}/transfer-ownership" method="POST" class="transfer-modal-form">
+            <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+            <div class="form-group transfer-modal-field">
+                <label class="form-label">Seleccionar nuevo propietario</label>
+                <select name="new_owner_id" required class="peak-input">
+                    <option value="" disabled selected>-- Selecciona un usuario --</option>
+                    {{ range .Users }}
+                        {{ if or (not $.App.Owner) (ne .ID $.App.Owner.ID) }}
+                        <option value="{{ .ID }}">{{ .Email }} ({{ .RoleName }})</option>
+                        {{ end }}
+                    {{ end }}
+                </select>
+            </div>
+            <div class="transfer-modal-actions">
+                <button type="button" id="closeTransferModalBtn" class="peak-btn peak-btn-secondary peak-btn-block">
+                    Cancelar
+                </button>
+                <button type="submit" id="submitTransferBtn" class="peak-btn peak-btn-primary peak-btn-block transfer-submit-btn">
+                    Confirmar transferencia
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {{ end }}

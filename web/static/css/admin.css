@@ -2548,3 +2548,84 @@ html.dark .policy-nav-btn[aria-selected="true"],
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
 }
+
+/* Modal de Transferencia de Propiedad */
+.transfer-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.transfer-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.transfer-modal-card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 28rem;
+    box-sizing: border-box;
+    padding: 2rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    margin: auto;
+    text-align: left;
+}
+
+.transfer-modal-header {
+    margin-bottom: 1.5rem;
+}
+
+.transfer-modal-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.transfer-modal-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.375rem;
+    line-height: 1.5;
+}
+
+.transfer-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.transfer-modal-field {
+    margin-bottom: 0;
+}
+
+.transfer-modal-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.transfer-submit-btn {
+    background-color: var(--amber-600);
+    border-color: var(--amber-600);
+    color: var(--white);
+}
+
+.transfer-submit-btn:hover {
+    background-color: var(--amber-700);
+    border-color: var(--amber-700);
+}
