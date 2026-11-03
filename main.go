@@ -19,7 +19,7 @@ import (
 
 func main() {
 
-	// 1) Cargar variables de entorno desde el archivo .env (solo fuera de producción)
+	// 1) Cargar variables de entorno desde el archivo .env (desarrollo local)
 	if !util.IsProduction() {
 		if err := godotenv.Load(); err != nil {
 			log.Println("No se pudo cargar el archivo .env")
