@@ -29,23 +29,18 @@
     <!-- NIVEL 2 — Acciones Administrativas -->
     <nav class="app-actions-bar" aria-label="Acciones de la aplicación">
         <div class="app-actions-group">
-            <a href="/admin/apps/{{.App.AppID}}/users" title="Gestionar usuarios de la aplicación" class="app-action-btn app-action-btn-primary">
-                {{ template "icon-users" }}
+            <a href="/admin/apps/{{.App.AppID}}/users" title="Gestionar usuarios de la aplicación" class="app-action-btn">
                 <span>Usuarios</span>
-                <span class="app-action-badge">{{.UserCount}}</span>
             </a>
             <a href="/admin/apps/{{.App.AppID}}/audit" title="Registro de auditoría de la aplicación" class="app-action-btn">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                 <span>Auditoría</span>
             </a>
             {{ if and (ne .App.AppID "peak-auth") (or .IsRoot .IsOwner) }}
             <a href="/admin/apps/{{.App.AppID}}/branding" title="Personalizar diseño y tema de autenticación" class="app-action-btn">
-                {{ template "icon-palette" }}
                 <span>Personalización</span>
             </a>
             {{ end }}
             <a href="/admin/apps/{{.App.AppID}}/edit" title="Editar configuración de la aplicación" class="app-action-btn">
-                {{ template "icon-edit" }}
                 <span>Editar</span>
             </a>
         </div>
@@ -55,7 +50,6 @@
             <form id="deleteAppForm" action="/admin/apps/{{.App.AppID}}/delete" method="POST" class="app-delete-form">
                 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                 <button type="button" data-action="delete-app" title="Eliminar aplicación" class="app-action-btn-danger">
-                    {{ template "icon-delete" }}
                     <span>Eliminar</span>
                 </button>
             </form>
@@ -63,37 +57,51 @@
         {{ end }}
     </nav>
 
-    <!-- NIVEL 3 — Información Técnica (Ficha Técnica: Una Sola Superficie) -->
+    <!-- NIVEL 3 — Información Técnica (Ficha Técnica: Superficie Unificada) -->
     <section class="peak-card app-tech-card" aria-label="Información técnica">
-        <div class="app-tech-grid">
-            <!-- Application ID -->
-            <div class="app-meta-item">
-                <span class="app-meta-label">Application ID</span>
-                <div class="app-meta-value-row">
-                    <code class="app-meta-code">{{ .App.AppID }}</code>
-                    <button type="button" data-action="copy-text" data-text="{{ .App.AppID }}" class="icon-btn app-meta-btn" title="Copiar App ID" aria-label="Copiar Application ID">
+        <!-- Row 1: Application ID -->
+        <div class="app-meta-row">
+            <div class="app-meta-field">
+                <span class="app-meta-label">APPLICATION ID</span>
+                <div class="app-meta-value-wrapper">
+                    <span class="app-meta-value">{{ .App.AppID }}</span>
+                    <button type="button" data-action="copy-text" data-text="{{ .App.AppID }}" class="app-meta-icon-btn" title="Copiar Application ID" aria-label="Copiar Application ID">
                         {{ template "icon-copy" }}
                     </button>
                 </div>
             </div>
+        </div>
 
-            <!-- Redirect URL -->
-            <div class="app-meta-item">
-                <span class="app-meta-label">Redirect URL</span>
-                <div class="app-meta-value-row">
+        <div class="app-tech-divider"></div>
+
+        <!-- Row 2: Redirect URL -->
+        <div class="app-meta-row">
+            <div class="app-meta-field">
+                <span class="app-meta-label">REDIRECT URL</span>
+                <div class="app-meta-value-wrapper">
                     {{ if eq .App.AppID "peak-auth" }}
                     <span class="app-meta-badge">No aplica (App Raíz / IdP del Sistema)</span>
+                    {{ else if .App.RedirectURL }}
+                    <a href="{{ .App.RedirectURL }}" target="_blank" rel="noopener noreferrer" class="app-meta-link">
+                        <span>{{ .App.RedirectURL }}</span>
+                        <svg class="app-meta-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    </a>
                     {{ else }}
-                    <code class="app-meta-code">{{ if .App.RedirectURL }}{{ .App.RedirectURL }}{{ else }}<span class="app-meta-empty">No configurada</span>{{ end }}</code>
+                    <span class="app-meta-empty">No configurada</span>
                     {{ end }}
                 </div>
             </div>
+        </div>
 
-            <!-- Propietario (Owner) -->
-            <div class="app-meta-item">
-                <span class="app-meta-label">Propietario</span>
-                <div class="app-meta-value-row">
-                    <span class="app-meta-text">
+        <div class="app-tech-divider"></div>
+
+        <!-- Row 3: Propietario & Client Secret (2 Columnas) -->
+        <div class="app-meta-columns">
+            <!-- Propietario -->
+            <div class="app-meta-field">
+                <span class="app-meta-label">PROPIETARIO</span>
+                <div class="app-meta-value-wrapper">
+                    <span class="app-meta-value">
                         {{ if .App.Owner }}{{ .App.Owner.Email }}{{ else }}<span class="app-meta-empty">Sin propietario</span>{{ end }}
                     </span>
                     {{ if and (ne .App.AppID "peak-auth") .IsOwner }}
@@ -106,13 +114,11 @@
 
             <!-- Client Secret -->
             {{ if ne .App.AppID "peak-auth" }}
-            <div class="app-meta-item">
-                <span class="app-meta-label">Client Secret</span>
-                <div class="app-meta-value-row">
-                    <div class="app-secret-wrapper">
-                        <input type="password" readonly value="********************************" autocomplete="new-password" data-bwignore data-1p-ignore class="app-meta-code app-secret-input" aria-label="Client secret oculto">
-                    </div>
-                    <button type="button" data-action="revoke-secret" class="icon-btn icon-btn-danger app-meta-btn" title="Revocar secreto" aria-label="Revocar secreto">
+            <div class="app-meta-field">
+                <span class="app-meta-label">CLIENT SECRET</span>
+                <div class="app-meta-value-wrapper">
+                    <span class="app-meta-secret">••••••••••••••••</span>
+                    <button type="button" data-action="revoke-secret" class="app-meta-icon-btn app-meta-icon-danger" title="Revocar secreto" aria-label="Revocar secreto">
                         {{ template "icon-reload" }}
                     </button>
                 </div>
@@ -121,7 +127,7 @@
         </div>
     </section>
 
-    <!-- SECCIÓN POLÍTICAS DE SEGURIDAD (Navegación Lateral Estilo Cloudflare) -->
+    <!-- SECCIÓN POLÍTICAS DE SEGURIDAD -->
     <section class="app-policies-section" aria-labelledby="policies-section-title">
         <div class="app-policies-header">
             <h2 id="policies-section-title" class="app-policies-title">Políticas de seguridad</h2>
@@ -130,28 +136,25 @@
 
         <div class="app-policies-layout">
             <!-- Sidebar Lateral Izquierdo -->
-            <nav class="app-policies-sidebar" role="tablist" aria-label="Categorías de políticas de seguridad">
-                <button type="button" role="tab" aria-selected="true" data-tab="registro" id="tab_registro" class="settings-tab-btn policy-nav-btn active-tab active">
-                    {{ template "icon-user-add" }}
-                    <span>Registro</span>
-                </button>
-                <button type="button" role="tab" aria-selected="false" data-tab="accesos" id="tab_accesos" class="settings-tab-btn policy-nav-btn">
-                    {{ template "icon-lock" }}
-                    <span>Accesos</span>
-                </button>
-                <button type="button" role="tab" aria-selected="false" data-tab="sesiones" id="tab_sesiones" class="settings-tab-btn policy-nav-btn">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Sesiones</span>
-                </button>
-                <button type="button" role="tab" aria-selected="false" data-tab="autorizacion" id="tab_autorizacion" class="settings-tab-btn policy-nav-btn">
-                    {{ template "icon-shield" }}
-                    <span>Autorización</span>
-                </button>
-                <button type="button" role="tab" aria-selected="false" data-tab="mfa" id="tab_mfa" class="settings-tab-btn policy-nav-btn">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                    <span>MFA</span>
-                </button>
-            </nav>
+            <aside class="app-policies-sidebar-card">
+                <nav class="app-policies-sidebar" role="tablist" aria-label="Categorías de políticas de seguridad">
+                    <button type="button" role="tab" aria-selected="true" data-tab="registro" id="tab_registro" class="settings-tab-btn policy-nav-btn active-tab active">
+                        Registro
+                    </button>
+                    <button type="button" role="tab" aria-selected="false" data-tab="accesos" id="tab_accesos" class="settings-tab-btn policy-nav-btn">
+                        Accesos
+                    </button>
+                    <button type="button" role="tab" aria-selected="false" data-tab="sesiones" id="tab_sesiones" class="settings-tab-btn policy-nav-btn">
+                        Sesiones
+                    </button>
+                    <button type="button" role="tab" aria-selected="false" data-tab="autorizacion" id="tab_autorizacion" class="settings-tab-btn policy-nav-btn">
+                        Autorización
+                    </button>
+                    <button type="button" role="tab" aria-selected="false" data-tab="mfa" id="tab_mfa" class="settings-tab-btn policy-nav-btn">
+                        MFA
+                    </button>
+                </nav>
+            </aside>
 
             <!-- Panel de Contenido Derecho -->
             <div class="peak-card app-policy-panel">
