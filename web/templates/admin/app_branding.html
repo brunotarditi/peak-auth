@@ -3,9 +3,9 @@
 <div id="appBrandingContainer" class="branding-page" data-app-id="{{ .App.AppID }}">
     <!-- Top Bar -->
     <div class="branding-toolbar">
-        <a href="/admin/apps/{{.App.AppID}}" class="peak-btn peak-btn-secondary branding-back-link">
+        <a href="/admin/apps/{{.App.AppID}}" class="app-back-link">
             {{ template "icon-arrow-back" }}
-            Volver a {{ .App.Name }}
+            <span>Volver a {{ .App.Name }}</span>
         </a>
         <div class="branding-toolbar-actions">
             <form id="resetThemeForm" action="/admin/apps/{{.App.AppID}}/branding/reset" method="POST">

@@ -2109,6 +2109,7 @@
 .app-back-wrapper {
     display: flex;
     align-items: center;
+    margin-bottom: 1.25rem;
 }
 
 .app-back-link {

@@ -1,11 +1,14 @@
 {{ define "content" }}
 <div class="app-form-shell">
+    <div class="app-back-wrapper">
+        <a href="/admin" class="app-back-link" title="Volver a aplicaciones" aria-label="Volver a aplicaciones">
+            {{ template "icon-arrow-back" }}
+            <span>Volver a aplicaciones</span>
+        </a>
+    </div>
+
     <div class="peak-card">
         <div class="app-form-header">
-            <a href="/admin" class="icon-btn app-back-button" title="Volver a aplicaciones"
-                aria-label="Volver a aplicaciones">
-                {{ template "icon-arrow-back" }}
-            </a>
             <h2 class="app-form-title">{{ .Title }}</h2>
         </div>
 
@@ -31,47 +34,50 @@
 
             <div class="form-group">
                 <label class="form-label" for="app_description">Descripción</label>
-                <textarea id="app_description" name="description" rows="4"
+                <textarea id="app_description" name="description" rows="3"
                     placeholder="Describe brevemente tu aplicación..."
-                    class="peak-input app-description-input">{{ if .App }}{{ .App.Description }}{{ else }}{{ .DescriptionValue }}{{ end }}</textarea>
+                    class="peak-input peak-textarea">{{ .DescValue }}</textarea>
             </div>
 
-            {{ if and .App (eq .App.AppID "peak-auth") }}
-            <input type="hidden" name="redirect_url" value="">
             <div class="form-group">
-                <label class="form-label">URL de redirección (OAuth 2.0 callback)</label>
-                <p class="app-form-note">
-                    <span class="app-form-info-icon">{{ template "icon-info" }}</span>
-                    No aplica para la aplicación principal (Peak Auth Raíz). Actúa exclusivamente como el Identity
-                    Provider central.
-                </p>
-            </div>
-            {{ else }}
-            <div class="form-group">
-                <label class="form-label" for="redirect_url">URL de redirección (OAuth 2.0 callback)</label>
-                <input type="text" id="redirect_url" name="redirect_url"
-                    value="{{ if .App }}{{ .App.RedirectURL }}{{ else }}{{ .RedirectURLValue }}{{ end }}"
-                    placeholder="Ej: http://localhost:4200/auth/callback" required class="peak-input">
-                {{ if .RedirectError }}
-                <p class="app-form-message app-form-message-error">
-                    {{ template "icon-warning" }}
-                    {{ .RedirectError }}
-                </p>
-                {{ else }}
+                <label class="form-label" for="app_redirect_uri">URL de redirección (OAuth 2.0 Callback)</label>
+                <input type="url" id="app_redirect_uri" name="redirect_uri" value="{{ .RedirectValue }}"
+                    placeholder="https://tudominio.com/callback" required {{ if .RedirectDisabled }}disabled{{ end }}
+                    class="peak-input {{ .RedirectClass }}">
                 <p class="app-form-message app-form-message-help">
                     <span class="app-form-info-icon">{{ template "icon-info" }}</span>
                     Obligatorio para que la redirección tras iniciar sesión funcione (prevención Open Redirect).
                 </p>
-                {{ end }}
             </div>
-            {{ end }}
 
-            <div class="app-status-card">
-                <div class="app-status-control">
-                    <input type="checkbox" name="is_active" id="is_active" {{ if .IsActive }}checked{{ end }}
-                        data-locked="{{ .IsLocked }}" class="peak-checkbox">
-                    <label for="is_active" class="app-status-label">
-                        {{ .StatusApp }}
+            <div class="form-group">
+                <label class="form-label" for="app_terms_url">URL de términos y condiciones (Opcional)</label>
+                <input type="url" id="app_terms_url" name="terms_url" value="{{ .TermsValue }}"
+                    placeholder="https://tudominio.com/terms"
+                    class="peak-input">
+                <p class="app-form-message app-form-message-help">
+                    <span class="app-form-info-icon">{{ template "icon-info" }}</span>
+                    Enlace legal que se mostrará a los usuarios durante el consentimiento y registro.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="app_privacy_url">URL de políticas de privacidad (Opcional)</label>
+                <input type="url" id="app_privacy_url" name="privacy_url" value="{{ .PrivacyValue }}"
+                    placeholder="https://tudominio.com/privacy"
+                    class="peak-input">
+                <p class="app-form-message app-form-message-help">
+                    <span class="app-form-info-icon">{{ template "icon-info" }}</span>
+                    Enlace legal de privacidad visible en los flujos de inicio de sesión de esta app.
+                </p>
+            </div>
+
+            <div class="app-form-card-toggle">
+                <div class="app-form-toggle-label">
+                    <label class="peak-checkbox-label" for="app_is_active">
+                        <input type="checkbox" id="app_is_active" name="is_active" {{ if .IsActiveChecked }}checked{{
+                            end }} class="peak-checkbox">
+                        <span class="app-form-checkbox-text">Estado de la Aplicación (Activa)</span>
                     </label>
                 </div>
                 <div class="app-form-info-icon">
@@ -97,7 +103,7 @@
 
 {{ define "scripts" }}
 
-<script src="{{ js " app.js" }}"></script>
+<script src="{{ js "app.js" }}"></script>
 
 {{ end }}
 
