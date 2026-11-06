@@ -153,6 +153,9 @@
                     <button type="button" role="tab" aria-selected="false" data-tab="mfa" id="tab_mfa" class="settings-tab-btn policy-nav-btn">
                         MFA
                     </button>
+                    <button type="button" role="tab" aria-selected="false" data-tab="cors" id="tab_cors" class="settings-tab-btn policy-nav-btn">
+                        CORS
+                    </button>
                 </nav>
             </aside>
 
@@ -163,6 +166,7 @@
                 {{ template "components/policy_sesiones" . }}
                 {{ template "components/policy_autorizacion" . }}
                 {{ template "components/policy_mfa" . }}
+                {{ template "components/policy_cors" . }}
             </div>
         </div>
     </section>

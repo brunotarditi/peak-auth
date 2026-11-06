@@ -1,0 +1,80 @@
+{{ define "components/policy_cors" }}
+{{ if .CorsPolicy }}
+<div id="content_cors" class="tab-content hidden phase8-style-97">
+    <div class="phase8-style-98">
+        <div>
+            <h3 class="phase8-style-99">Políticas de CORS (Allowed Origins)</h3>
+            <p class="phase8-style-100">Controla qué dominios web externos tienen permitido comunicarse con esta aplicación.</p>
+        </div>
+        {{ if ne .App.AppID "peak-auth" }}
+        <button type="button" data-action="toggle-edit" data-section="cors" id="btn_edit_cors" class="peak-btn peak-btn-secondary phase8-style-101">
+            <span>Editar</span>
+            <svg class="phase8-style-102" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+        </button>
+        {{ end }}
+    </div>
+
+    <fieldset id="fs_cors" disabled class="phase8-style-103">
+        <div class="phase8-style-104">
+            <!-- Orígenes Permitidos -->
+            <div class="phase8-style-105" style="align-items: flex-start;">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Orígenes web permitidos (Allowed Web Origins)</span>
+                    <span class="phase8-style-108">URLs autorizadas para peticiones del navegador (ej: <code>https://mariela.pages.dev, http://localhost:4200</code>). Admite <code>*</code> para modo público sin credenciales. Separa múltiples orígenes con comas.</span>
+                </div>
+                <div class="phase8-style-109" style="flex: 1; max-width: 420px;">
+                    <textarea id="cors_allowed_origins" data-policy="cors" rows="3"
+                        placeholder="https://tudominio.com, http://localhost:4200"
+                        class="peak-input peak-textarea" style="width: 100%; font-family: monospace; font-size: 0.8125rem;">{{ range $i, $origin := .CorsPolicy.AllowedOrigins }}{{ if $i }}, {{ end }}{{ $origin }}{{ end }}</textarea>
+                </div>
+            </div>
+
+            <!-- Métodos HTTP Permitidos -->
+            <div class="phase8-style-105">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Métodos HTTP autorizados</span>
+                    <span class="phase8-style-108">Verbos HTTP habilitados durante la negociación CORS de solicitudes cruzadas.</span>
+                </div>
+                <div class="phase8-style-112">
+                    {{ $methods := .CorsPolicy.AllowedMethods }}
+                    <label class="peak-checkbox-label" style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem;">
+                        <input type="checkbox" name="cors_method" value="GET" data-policy="cors" checked class="peak-checkbox">
+                        <span>GET</span>
+                    </label>
+                    <label class="peak-checkbox-label" style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem;">
+                        <input type="checkbox" name="cors_method" value="POST" data-policy="cors" checked class="peak-checkbox">
+                        <span>POST</span>
+                    </label>
+                    <label class="peak-checkbox-label" style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem;">
+                        <input type="checkbox" name="cors_method" value="PUT" data-policy="cors" checked class="peak-checkbox">
+                        <span>PUT</span>
+                    </label>
+                    <label class="peak-checkbox-label" style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem;">
+                        <input type="checkbox" name="cors_method" value="DELETE" data-policy="cors" checked class="peak-checkbox">
+                        <span>DELETE</span>
+                    </label>
+                    <label class="peak-checkbox-label" style="display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem;">
+                        <input type="checkbox" name="cors_method" value="OPTIONS" data-policy="cors" checked class="peak-checkbox">
+                        <span>OPTIONS</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Caché Preflight (Max Age) -->
+            <div class="phase8-style-105">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Caché de preflight (Max Age)</span>
+                    <span class="phase8-style-108">Tiempo durante el cual el navegador almacena en caché la respuesta OPTIONS sin repetir la verificación.</span>
+                </div>
+                <div class="phase8-style-109">
+                    <input type="number" min="0" max="86400" id="cors_max_age"
+                        data-policy="cors" value="{{ if .CorsPolicy.MaxAge }}{{ .CorsPolicy.MaxAge }}{{ else }}7200{{ end }}"
+                        class="phase8-style-114">
+                    <span class="phase8-style-111">seg</span>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>
+{{ end }}
+{{ end }}

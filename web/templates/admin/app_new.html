@@ -2,7 +2,7 @@
 <div class="app-form-shell">
     <div class="peak-card">
         <div class="app-form-header">
-            <a href="{{ if .IsEdit }}/admin/apps/{{ .App.AppID }}{{ else }}/admin{{ end }}" class="app-back-button" title="Volver" aria-label="Volver">
+            <a href="/admin" class="app-back-button" title="Volver al panel" aria-label="Volver al panel">
                 {{ template "icon-arrow-back" }}
             </a>
             <h2 class="app-form-title">{{ .Title }}</h2>
@@ -70,22 +70,17 @@
             </div>
 
             <div class="app-form-card-toggle">
-                <div class="app-form-toggle-label">
-                    <label class="peak-checkbox-label" for="app_is_active">
-                        <input type="checkbox" id="app_is_active" name="is_active" {{ if .IsActiveChecked }}checked{{ end }} class="peak-checkbox">
-                        <span class="app-form-checkbox-text">Estado de la Aplicación (Activa)</span>
-                    </label>
-                </div>
-                <div class="app-form-info-icon">
-                    {{ template "icon-lightning" }}
-                </div>
+                <label class="peak-checkbox-label" for="is_active">
+                    <input type="checkbox" id="is_active" name="is_active" {{ if .IsActiveChecked }}checked{{ end }} class="peak-checkbox">
+                    <span class="app-form-checkbox-text">Estado de la Aplicación (Activa)</span>
+                </label>
             </div>
             {{ else }}
             <input type="hidden" name="is_active" value="on">
             {{ end }}
 
             <div class="app-form-actions">
-                <a href="{{ if .IsEdit }}/admin/apps/{{ .App.AppID }}{{ else }}/admin{{ end }}" class="peak-btn peak-btn-secondary app-cancel-link">
+                <a href="/admin" class="peak-btn peak-btn-secondary app-cancel-link">
                     Cancelar
                 </a>
                 <button type="submit" id="submitBtn" {{ if .SubmitDisabled }}disabled{{ end }}

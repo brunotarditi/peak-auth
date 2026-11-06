@@ -210,6 +210,31 @@
     }
 
     /**
+     * Actualiza la política de CORS
+     */
+    function updateCors() {
+        const originsEl = document.getElementById('cors_allowed_origins');
+        const methodEls = document.querySelectorAll('input[name="cors_method"]:checked');
+        const maxAgeEl = document.getElementById('cors_max_age');
+
+        const rawOrigins = originsEl ? originsEl.value : '';
+        const origins = rawOrigins
+            .split(/[\n,]+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        const methods = Array.from(methodEls).map(el => el.value);
+        const maxAge = maxAgeEl ? parseInt(maxAgeEl.value, 10) || 7200 : 7200;
+
+        saveRule('CORS_POLICY', {
+            allowed_origins: origins.length > 0 ? origins : ['*'],
+            allowed_methods: methods.length > 0 ? methods : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowed_headers: ['Accept', 'Authorization', 'Content-Type', 'X-CSRF-Token', 'X-App-ID', 'X-Request-ID'],
+            max_age: maxAge
+        });
+    }
+
+    /**
      * Cambia la pestaña activa en la vista de configuración
      * @param {string} tabName 
      */
@@ -293,6 +318,9 @@
                 break;
             case 'mfa':
                 updateMfa();
+                break;
+            case 'cors':
+                updateCors();
                 break;
         }
     });

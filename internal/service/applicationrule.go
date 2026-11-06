@@ -18,6 +18,7 @@ type ApplicationRuleService interface {
 	CreateRule(appID uint, code string, value []byte) error
 	UpdateRuleValue(appID uint, code string, value []byte) error
 	DeleteRule(appID uint, code string) error
+	IsOriginAllowed(appID string, origin string) bool
 }
 
 type applicationRuleService struct {
@@ -132,6 +133,17 @@ func (s *applicationRuleService) CreateRule(appID uint, code string, value []byt
 			return fmt.Errorf("política de sesión inválida: %w", err)
 		}
 	}
+
+	if code == util.CORS_POLICY {
+		if _, err := util.ParseCorsPolicy(value); err != nil {
+			return fmt.Errorf("política de CORS inválida: %w", err)
+		}
+	}
+	if code == util.CORS_POLICY {
+		if _, err := util.ParseCorsPolicy(value); err != nil {
+			return fmt.Errorf("política de CORS inválida: %w", err)
+		}
+	}
 	return s.ruleRepo.CreateRule(appID, code, value)
 }
 
@@ -151,6 +163,12 @@ func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value 
 	if code == util.SESSION_POLICY {
 		if _, err := util.ValidateSessionPolicy(value); err != nil {
 			return fmt.Errorf("política de sesión inválida: %w", err)
+		}
+	}
+
+	if code == util.CORS_POLICY {
+		if _, err := util.ParseCorsPolicy(value); err != nil {
+			return fmt.Errorf("política de CORS inválida: %w", err)
 		}
 	}
 
@@ -195,4 +213,37 @@ func (s *applicationRuleService) isRootApp(appID uint) bool {
 		return false
 	}
 	return rootApp.ID == appID
+}
+
+// IsOriginAllowed verifica si un origen HTTP está autorizado por las reglas CORS de la aplicación.
+func (s *applicationRuleService) IsOriginAllowed(appID string, origin string) bool {
+	origin = strings.TrimRight(strings.TrimSpace(origin), "/")
+	if origin == "" {
+		return false
+	}
+
+	if appID != "" {
+		app, err := s.appRepo.FindByAppID(appID)
+		if err == nil && app.ID != 0 {
+			rules, err := s.ruleRepo.GetRulesByAppID(app.ID)
+			if err == nil {
+				for _, r := range rules {
+					if r.Code == util.CORS_POLICY {
+						policy, err := util.ParseCorsPolicy(r.Value)
+						if err == nil && policy != nil {
+							for _, allowed := range policy.AllowedOrigins {
+								allowed = strings.TrimRight(strings.TrimSpace(allowed), "/")
+								if allowed == "*" || strings.EqualFold(allowed, origin) {
+									return true
+								}
+							}
+							return false
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false
 }

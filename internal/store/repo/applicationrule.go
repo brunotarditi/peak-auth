@@ -37,6 +37,7 @@ func (r *applicationRuleRepository) CreateDefaultRules(appID uint) error {
 		{ApplicationID: appID, Code: util.SESSION_POLICY, Value: []byte(`{"token_expiration_minutes": 1440, "max_failed_logins": 5}`), IsActive: true},
 		{ApplicationID: appID, Code: util.AUTHZ_POLICY, Value: []byte(`{"enable_roles": true}`), IsActive: true},
 		{ApplicationID: appID, Code: util.MFA_POLICY, Value: []byte(`{"mode": "OPTIONAL"}`), IsActive: true},
+		{ApplicationID: appID, Code: util.CORS_POLICY, Value: []byte(`{"allowed_origins": ["*"], "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allowed_headers": ["Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-App-ID", "X-Request-ID"], "max_age": 7200}`), IsActive: true},
 	}
 	for _, d := range defs {
 		if err := r.db.Create(&d).Error; err != nil {

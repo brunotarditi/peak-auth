@@ -195,7 +195,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/admin/")
+	c.Redirect(http.StatusSeeOther, "/admin")
 }
 
 // PostDeleteApp maneja la eliminación real (lógica) de una aplicación
@@ -251,6 +251,7 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 	var sessionPolicy *util.SessionPolicy
 	var authzPolicy *util.AuthzPolicy
 	var mfaPolicy *util.MfaPolicy
+	var corsPolicy *util.CorsPolicy
 
 	for _, r := range rules {
 		switch r.Code {
@@ -267,11 +268,16 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 			authzPolicy, _ = util.ParseAuthzPolicy(r.Value)
 		case util.MFA_POLICY:
 			mfaPolicy, _ = util.ParseMfaPolicy(r.Value)
+		case util.CORS_POLICY:
+			corsPolicy, _ = util.ParseCorsPolicy(r.Value)
 		}
 	}
 
 	if mfaPolicy == nil {
 		mfaPolicy = &util.MfaPolicy{Mode: "OPTIONAL"}
+	}
+	if corsPolicy == nil {
+		corsPolicy = &util.CorsPolicy{AllowedOrigins: []string{"*"}, AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-App-ID", "X-Request-ID"}, MaxAge: 7200}
 	}
 
 	access, ok := getApplicationAccess(c, app)
@@ -288,6 +294,7 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 		"SessionPolicy": sessionPolicy,
 		"AuthzPolicy":   authzPolicy,
 		"MfaPolicy":     mfaPolicy,
+		"CorsPolicy":    corsPolicy,
 		"UserCount":     len(users),
 		"Users":         users,
 		"Roles":         roles,

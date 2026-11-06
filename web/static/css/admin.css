@@ -213,6 +213,7 @@
 .settings-section-divider { height: 1px; margin: 0.5rem 0 0.75rem; background: var(--border-color); opacity: 0.8; }
 .settings-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .settings-actions { display: flex; justify-content: flex-start; margin-top: 0.5rem; }
+.settings-actions.settings-actions-end { justify-content: flex-end; }
 .settings-panel-header { margin-bottom: 1.5rem; }
 .settings-mfa-card { margin-bottom: 2rem; padding: 0; overflow: hidden; border: 1px solid var(--border-color); border-radius: var(--radius-xl); background: var(--bg-surface); }
 .settings-mfa-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); background: var(--bg-surface-secondary); }
@@ -365,6 +366,7 @@
 .app-status-control { display: flex; align-items: center; }
 .app-status-label { margin-left: 0.75rem; color: var(--brand-500); font-size: 0.875rem; font-weight: 700; cursor: pointer; }
 .app-status-icon { color: var(--brand-500); }
+.app-form-card-toggle { display: flex; align-items: center; padding: 0.875rem 1rem; background: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); }
 .app-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light); }
 .app-cancel-link { text-decoration: none; }
 .dark .created-credential-label {

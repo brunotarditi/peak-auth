@@ -131,6 +131,12 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 				return
 			}
 		}
+	case util.CORS_POLICY:
+		var params util.CorsPolicy
+		if err := json.Unmarshal(body, &params); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Formato inválido para política de CORS"})
+			return
+		}
 	}
 
 	err = ctrl.RuleService.UpdateRuleValue(app.ID, code, body)
