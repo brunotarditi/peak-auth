@@ -366,7 +366,10 @@
 .app-status-control { display: flex; align-items: center; }
 .app-status-label { margin-left: 0.75rem; color: var(--brand-500); font-size: 0.875rem; font-weight: 700; cursor: pointer; }
 .app-status-icon { color: var(--brand-500); }
-.app-form-card-toggle { display: flex; align-items: center; padding: 0.875rem 1rem; background: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); }
+.app-form-card-toggle { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: var(--bg-surface-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); cursor: pointer; user-select: none; transition: border-color var(--transition-fast), background var(--transition-fast); }
+.app-form-card-toggle:hover { border-color: var(--border-focus); }
+.app-form-card-toggle .peak-checkbox { width: 1.125rem; height: 1.125rem; margin: 0; padding: 0; flex-shrink: 0; cursor: pointer; vertical-align: middle; accent-color: var(--brand-500); }
+.app-form-card-toggle .app-form-checkbox-label { margin: 0; padding: 0; cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--text-main); line-height: 1.125rem; display: flex; align-items: center; }
 .app-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light); }
 .app-cancel-link { text-decoration: none; }
 .dark .created-credential-label {

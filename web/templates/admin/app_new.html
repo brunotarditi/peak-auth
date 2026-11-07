@@ -70,10 +70,8 @@
             </div>
 
             <div class="app-form-card-toggle">
-                <label class="peak-checkbox-label" for="is_active">
-                    <input type="checkbox" id="is_active" name="is_active" {{ if .IsActiveChecked }}checked{{ end }} class="peak-checkbox">
-                    <span class="app-form-checkbox-text">Estado de la Aplicación (Activa)</span>
-                </label>
+                <input type="checkbox" id="is_active" name="is_active" {{ if .IsActive }}checked{{ end }} data-locked="{{ .IsLocked }}" class="peak-checkbox">
+                <label for="is_active" class="app-form-checkbox-label">{{ .StatusApp }}</label>
             </div>
             {{ else }}
             <input type="hidden" name="is_active" value="on">

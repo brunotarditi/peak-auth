@@ -443,6 +443,15 @@
                         : 'Estado de la Aplicación (Inactiva)';
                 });
             }
+
+            const card = checkbox.closest('.app-form-card-toggle');
+            if (card) {
+                card.addEventListener('click', (e) => {
+                    if (e.target !== checkbox && e.target !== label && (!label || !label.contains(e.target))) {
+                        checkbox.click();
+                    }
+                });
+            }
         }
 
         syncRegistrationModeUI();
