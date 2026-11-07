@@ -295,6 +295,8 @@ func (ctrl *ApplicationController) GetAppDetails(c *gin.Context) {
 		"AuthzPolicy":   authzPolicy,
 		"MfaPolicy":     mfaPolicy,
 		"CorsPolicy":    corsPolicy,
+		"HasCorsPolicy": corsPolicy != nil && len(corsPolicy.AllowedOrigins) > 0,
+		"CorsJsonRaw":  util.FormatCorsAsCloudflareJSON(corsPolicy),
 		"UserCount":     len(users),
 		"Users":         users,
 		"Roles":         roles,

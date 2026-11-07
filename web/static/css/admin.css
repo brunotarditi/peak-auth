@@ -2658,3 +2658,23 @@ html.dark .policy-nav-btn[aria-selected="true"],
     background-color: var(--amber-700);
     border-color: var(--amber-700);
 }
+/* --- CORS Policy Section (Cloudflare Style) --- */
+.cors-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.cors-title-wrapper { display: flex; align-items: center; gap: 0.5rem; }
+.cors-title { color: var(--text-main); font-size: 1.125rem; font-weight: 700; margin: 0; }
+.cors-info-icon { display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); }
+.cors-edit-btn { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.375rem 0.875rem; font-size: 0.8125rem; }
+.cors-empty-state { padding: 2.25rem 1.5rem; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--bg-surface-secondary); color: var(--text-muted); font-size: 0.875rem; }
+.cors-empty-state p { margin: 0; }
+.cors-configured-view { border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; background: #0b0f19; }
+.cors-code-viewer { padding: 1.25rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; color: #38bdf8; overflow-x: auto; }
+.cors-code-viewer pre { margin: 0; }
+.cors-code-viewer code { font-family: inherit; color: inherit; }
+.cors-modal-card { max-width: 620px; width: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 1.5rem; box-shadow: var(--shadow-2xl); }
+.cors-modal-header { margin-bottom: 1.25rem; }
+.cors-modal-title { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin: 0 0 0.5rem 0; }
+.cors-modal-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+.cors-editor-wrapper { border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; background: #0b0f19; margin-bottom: 1.25rem; }
+.cors-json-textarea { width: 100%; box-sizing: border-box; background: transparent; color: #38bdf8; border: none; outline: none; padding: 1rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; resize: vertical; min-height: 260px; }
+.cors-editor-error { margin-bottom: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgb(239 68 68 / 0.15); border: 1px solid rgb(239 68 68 / 0.3); color: var(--rose-500); font-size: 0.8125rem; }
+.cors-modal-actions { display: flex; justify-content: space-between; align-items: center; padding-top: 0.5rem; }

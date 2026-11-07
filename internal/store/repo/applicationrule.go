@@ -76,7 +76,13 @@ func (r *applicationRuleRepository) UpdateRuleValue(appID uint, code string, val
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		newRule := model.ApplicationRules{
+			ApplicationID: appID,
+			Code:          code,
+			Value:         value,
+			IsActive:      true,
+		}
+		return r.db.Create(&newRule).Error
 	}
 	return nil
 }

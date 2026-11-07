@@ -29,7 +29,7 @@ func TestCORS_AppSpecificAllowedOrigin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checker := &mockOriginChecker{
 		allowed: map[string][]string{
-			"libreria-mariela": {"https://mariela.pages.dev", "http://localhost:4200"},
+			"libreria-mariela": {"http://localhost:3000", "http://localhost:4200"},
 		},
 	}
 
@@ -40,14 +40,14 @@ func TestCORS_AppSpecificAllowedOrigin(t *testing.T) {
 	})
 
 	req, _ := http.NewRequest(http.MethodPost, "/api/test", nil)
-	req.Header.Set("Origin", "https://mariela.pages.dev")
+	req.Header.Set("Origin", "http://localhost:4200")
 	req.Header.Set("X-App-ID", "libreria-mariela")
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	if w.Header().Get("Access-Control-Allow-Origin") != "https://mariela.pages.dev" {
-		t.Errorf("expected Access-Control-Allow-Origin to be 'https://mariela.pages.dev', got '%s'", w.Header().Get("Access-Control-Allow-Origin"))
+	if w.Header().Get("Access-Control-Allow-Origin") != "http://localhost:4200" {
+		t.Errorf("expected Access-Control-Allow-Origin to be 'http://localhost:4200', got '%s'", w.Header().Get("Access-Control-Allow-Origin"))
 	}
 	if w.Header().Get("Access-Control-Allow-Credentials") != "true" {
 		t.Errorf("expected Access-Control-Allow-Credentials to be 'true'")
@@ -58,7 +58,7 @@ func TestCORS_AppSpecificDisallowedOrigin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checker := &mockOriginChecker{
 		allowed: map[string][]string{
-			"libreria-mariela": {"https://mariela.pages.dev"},
+			"libreria-mariela": {"http://localhost:4200"},
 		},
 	}
 
@@ -86,7 +86,7 @@ func TestCORS_PreflightOptions(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checker := &mockOriginChecker{
 		allowed: map[string][]string{
-			"libreria-mariela": {"https://mariela.pages.dev"},
+			"libreria-mariela": {"http://localhost:4200"},
 		},
 	}
 
@@ -97,7 +97,7 @@ func TestCORS_PreflightOptions(t *testing.T) {
 	})
 
 	req, _ := http.NewRequest(http.MethodOptions, "/api/test", nil)
-	req.Header.Set("Origin", "https://mariela.pages.dev")
+	req.Header.Set("Origin", "http://localhost:4200")
 	req.Header.Set("X-App-ID", "libreria-mariela")
 
 	w := httptest.NewRecorder()
@@ -106,7 +106,7 @@ func TestCORS_PreflightOptions(t *testing.T) {
 	if w.Code != http.StatusNoContent {
 		t.Errorf("expected HTTP 204 No Content for preflight OPTIONS, got %d", w.Code)
 	}
-	if w.Header().Get("Access-Control-Allow-Origin") != "https://mariela.pages.dev" {
+	if w.Header().Get("Access-Control-Allow-Origin") != "http://localhost:4200" {
 		t.Errorf("expected Access-Control-Allow-Origin to be reflected on preflight, got '%s'", w.Header().Get("Access-Control-Allow-Origin"))
 	}
 }

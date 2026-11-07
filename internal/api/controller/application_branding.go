@@ -67,7 +67,7 @@ func (ctrl *ApplicationBrandingController) GetAppBranding(c *gin.Context) {
 		"Breadcrumbs": []gin.H{
 			{"Label": "Apps", "URL": "/admin"},
 			{"Label": app.Name, "URL": "/admin/apps/" + id},
-			{"Label": "Personalización y Branding"},
+			{"Label": "Personalización"},
 		},
 		"Title": "Personalización - " + app.Name,
 	}

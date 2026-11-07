@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -45,7 +46,16 @@ type CorsPolicy struct {
 	AllowedOrigins []string `json:"allowed_origins"`
 	AllowedMethods []string `json:"allowed_methods"`
 	AllowedHeaders []string `json:"allowed_headers"`
+	ExposeHeaders  []string `json:"expose_headers,omitempty"`
 	MaxAge         int      `json:"max_age"`
+}
+
+type CloudflareCorsRule struct {
+	AllowedOrigins []string `json:"AllowedOrigins"`
+	AllowedMethods []string `json:"AllowedMethods"`
+	AllowedHeaders []string `json:"AllowedHeaders,omitempty"`
+	ExposeHeaders  []string `json:"ExposeHeaders,omitempty"`
+	MaxAgeSeconds  int      `json:"MaxAgeSeconds,omitempty"`
 }
 
 // ValidateRegistrationPolicy parses the policy and validates whether self register is allowed.
@@ -164,14 +174,102 @@ func ParseMfaPolicy(raw []byte) (*MfaPolicy, error) {
 	return &r, nil
 }
 
-// ParseCorsPolicy extracts CORS configuration
+// ParseCorsPolicy extrae la configuración de CORS, soportando tanto formato Cloudflare (PascalCase / array) como Peak Auth (snake_case)
 func ParseCorsPolicy(raw []byte) (*CorsPolicy, error) {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 || string(trimmed) == "null" || string(trimmed) == "[]" {
+		return nil, nil
+	}
+
+	// 1. Formato array de Cloudflare: [ { "AllowedOrigins": [...] } ]
+	var cfRules []CloudflareCorsRule
+	if err := json.Unmarshal(trimmed, &cfRules); err == nil && len(cfRules) > 0 {
+		p := &CorsPolicy{
+			AllowedOrigins: []string{},
+			AllowedMethods: []string{},
+			AllowedHeaders: []string{},
+			ExposeHeaders:  []string{},
+			MaxAge:         7200,
+		}
+		for _, r := range cfRules {
+			p.AllowedOrigins = append(p.AllowedOrigins, r.AllowedOrigins...)
+			p.AllowedMethods = append(p.AllowedMethods, r.AllowedMethods...)
+			p.AllowedHeaders = append(p.AllowedHeaders, r.AllowedHeaders...)
+			p.ExposeHeaders = append(p.ExposeHeaders, r.ExposeHeaders...)
+			if r.MaxAgeSeconds > 0 {
+				p.MaxAge = r.MaxAgeSeconds
+			}
+		}
+		if len(p.AllowedMethods) == 0 {
+			p.AllowedMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+		}
+		return p, nil
+	}
+
+	// 2. Formato objeto único de Cloudflare: { "AllowedOrigins": [...] }
+	var singleCf CloudflareCorsRule
+	if err := json.Unmarshal(trimmed, &singleCf); err == nil && len(singleCf.AllowedOrigins) > 0 {
+		p := &CorsPolicy{
+			AllowedOrigins: singleCf.AllowedOrigins,
+			AllowedMethods: singleCf.AllowedMethods,
+			AllowedHeaders: singleCf.AllowedHeaders,
+			ExposeHeaders:  singleCf.ExposeHeaders,
+			MaxAge:         singleCf.MaxAgeSeconds,
+		}
+		if len(p.AllowedMethods) == 0 {
+			p.AllowedMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+		}
+		if p.MaxAge <= 0 {
+			p.MaxAge = 7200
+		}
+		return p, nil
+	}
+
+	// 3. Formato estándar Peak Auth (snake_case)
 	var r CorsPolicy
-	if err := json.Unmarshal(raw, &r); err != nil {
+	if err := json.Unmarshal(trimmed, &r); err != nil {
 		return nil, fmt.Errorf("invalid %s rule: %w", CORS_POLICY, err)
+	}
+	if len(r.AllowedMethods) == 0 {
+		r.AllowedMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	}
+	if r.MaxAge <= 0 {
+		r.MaxAge = 7200
 	}
 	return &r, nil
 }
+
+// FormatCorsAsCloudflareJSON formatea una CorsPolicy con la estructura estándar de Cloudflare R2
+func FormatCorsAsCloudflareJSON(p *CorsPolicy) string {
+	if p == nil || len(p.AllowedOrigins) == 0 {
+		return "[]"
+	}
+	headers := p.AllowedHeaders
+	if len(headers) == 0 {
+		headers = []string{"*"}
+	}
+	methods := p.AllowedMethods
+	if len(methods) == 0 {
+		methods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	}
+	maxAge := p.MaxAge
+	if maxAge <= 0 {
+		maxAge = 7200
+	}
+	rule := CloudflareCorsRule{
+		AllowedOrigins: p.AllowedOrigins,
+		AllowedMethods: methods,
+		AllowedHeaders: headers,
+		ExposeHeaders:  p.ExposeHeaders,
+		MaxAgeSeconds:  maxAge,
+	}
+	b, err := json.MarshalIndent([]CloudflareCorsRule{rule}, "", "  ")
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
+}
+
 
 // ValidatePasswordStrength checks a password against hardcoded best practices (for root/setup)
 func ValidatePasswordStrength(password string) bool {

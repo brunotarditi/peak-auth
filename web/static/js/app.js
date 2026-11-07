@@ -209,30 +209,78 @@
         });
     }
 
-    /**
-     * Actualiza la política de CORS
-     */
-    function updateCors() {
-        const originsEl = document.getElementById('cors_allowed_origins');
-        const methodEls = document.querySelectorAll('input[name="cors_method"]:checked');
-        const maxAgeEl = document.getElementById('cors_max_age');
-
-        const rawOrigins = originsEl ? originsEl.value : '';
-        const origins = rawOrigins
-            .split(/[\n,]+/)
-            .map(s => s.trim())
-            .filter(Boolean);
-
-        const methods = Array.from(methodEls).map(el => el.value);
-        const maxAge = maxAgeEl ? parseInt(maxAgeEl.value, 10) || 7200 : 7200;
-
-        saveRule('CORS_POLICY', {
-            allowed_origins: origins.length > 0 ? origins : ['*'],
-            allowed_methods: methods.length > 0 ? methods : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            allowed_headers: ['Accept', 'Authorization', 'Content-Type', 'X-CSRF-Token', 'X-App-ID', 'X-Request-ID'],
-            max_age: maxAge
-        });
+    function openCorsModal() {
+        const modal = document.getElementById('corsModal');
+        const errEl = document.getElementById('corsEditorError');
+        if (errEl) errEl.classList.add('hidden');
+        if (modal) modal.classList.remove('hidden');
     }
+
+    function closeCorsModal() {
+        const modal = document.getElementById('corsModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveCorsPolicy() {
+        const textarea = document.getElementById('corsJsonEditor');
+        const errEl = document.getElementById('corsEditorError');
+        const currentAppID = getAppID();
+        if (!textarea || !currentAppID) return;
+
+        let parsed;
+        try {
+            parsed = JSON.parse(textarea.value);
+        } catch (e) {
+            if (errEl) {
+                errEl.innerText = 'El contenido no es un JSON válido: ' + e.message;
+                errEl.classList.remove('hidden');
+            }
+            return;
+        }
+
+        const saveBtn = document.getElementById('btn-save-cors');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerText = 'Guardando...';
+        }
+
+        try {
+            const response = await fetch('/admin/apps/' + currentAppID + '/rules/CORS_POLICY', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(parsed)
+            });
+
+            if (!response.ok) {
+                let errMsg = 'Error al guardar la política de CORS';
+                try {
+                    const errData = await response.json();
+                    errMsg = errData.error || errMsg;
+                } catch (e) { }
+                throw new Error(errMsg);
+            }
+
+            closeCorsModal();
+            showToast('Política CORS guardada exitosamente');
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        } catch (err) {
+            console.error(err);
+            if (errEl) {
+                errEl.innerText = err.message;
+                errEl.classList.remove('hidden');
+            } else {
+                peakAlert('Error', err.message, 'error');
+            }
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerText = 'Guardar';
+            }
+        }
+    }
+
 
     /**
      * Cambia la pestaña activa en la vista de configuración
@@ -270,6 +318,21 @@
 
     // Clicks: Acciones y pestañas
     document.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-open-cors-modal')) {
+            e.preventDefault();
+            openCorsModal();
+            return;
+        }
+        if (e.target.closest('#btn-cancel-cors') || e.target.closest('#corsModalBackdrop')) {
+            e.preventDefault();
+            closeCorsModal();
+            return;
+        }
+        if (e.target.closest('#btn-save-cors')) {
+            e.preventDefault();
+            saveCorsPolicy();
+            return;
+        }
         const actionBtn = e.target.closest('[data-action]');
         if (actionBtn) {
             const action = actionBtn.dataset.action;
