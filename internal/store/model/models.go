@@ -139,7 +139,7 @@ type UserMfaCredential struct {
 type UserRecoveryCode struct {
 	gorm.Model
 	UserID   uint   `gorm:"not null;index" json:"user_id"`
-	CodeHash string `gorm:"type:varchar(255);not null" json:"-"` // Bcrypt hash
+	CodeHash string `gorm:"type:varchar(255);not null" json:"-"` // SHA-256 hash (con prefijo sha256: o legacy bcrypt)
 	IsUsed   bool   `gorm:"default:false" json:"is_used"`
 	User     User   `gorm:"foreignKey:UserID" json:"-"`
 }

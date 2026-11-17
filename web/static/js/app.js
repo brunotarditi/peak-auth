@@ -210,9 +210,40 @@
     }
 
     /**
-     * Cambia la pestaña activa en la vista de configuración
-     * @param {string} tabName 
+     * Actualiza la política de CORS
      */
+    function updateCors() {
+        const originsEl = document.getElementById('cors_allowed_origins');
+        const allowAllEl = document.getElementById('cors_allow_all');
+        const methodEls = document.querySelectorAll('input[name="cors_method"]:checked');
+        const maxAgeEl = document.getElementById('cors_max_age');
+
+        let origins = [];
+        if (allowAllEl && allowAllEl.checked) {
+            origins = ['*'];
+            if (originsEl) {
+                originsEl.disabled = true;
+            }
+        } else {
+            if (originsEl) {
+                originsEl.disabled = false;
+                origins = originsEl.value
+                    .split(/[\n,]+/)
+                    .map(s => s.trim())
+                    .filter(Boolean);
+            }
+        }
+
+        const methods = Array.from(methodEls).map(el => el.value);
+        const maxAge = maxAgeEl ? parseInt(maxAgeEl.value, 10) || 7200 : 7200;
+
+        saveRule('CORS_POLICY', {
+            allowed_origins: origins.length > 0 ? origins : ['*'],
+            allowed_methods: methods.length > 0 ? methods : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            allowed_headers: ['*'],
+            max_age: maxAge
+        });
+    }
     function switchTab(tabName) {
         // Ocultar todos los contenidos de pestaña
         document.querySelectorAll('.tab-content').forEach(el => {
@@ -221,6 +252,8 @@
         // Quitar clases activas de todos los botones de pestaña
         document.querySelectorAll('.settings-tab-btn').forEach(el => {
             el.classList.remove('active-tab');
+            el.classList.remove('active');
+            el.setAttribute('aria-selected', 'false');
         });
         
         // Mostrar contenido de pestaña actual
@@ -232,6 +265,8 @@
         const btn = document.getElementById('tab_' + tabName);
         if (btn) {
             btn.classList.add('active-tab');
+            btn.classList.add('active');
+            btn.setAttribute('aria-selected', 'true');
         }
     }
 
@@ -290,6 +325,9 @@
             case 'mfa':
                 updateMfa();
                 break;
+            case 'cors':
+                updateCors();
+                break;
         }
     });
 
@@ -346,6 +384,15 @@
                     label.innerText = checkbox.checked
                         ? 'Estado de la Aplicación (Activa)'
                         : 'Estado de la Aplicación (Inactiva)';
+                });
+            }
+
+            const card = checkbox.closest('.app-form-card-toggle');
+            if (card) {
+                card.addEventListener('click', (e) => {
+                    if (e.target !== checkbox && e.target !== label && (!label || !label.contains(e.target))) {
+                        checkbox.click();
+                    }
                 });
             }
         }

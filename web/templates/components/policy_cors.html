@@ -1,0 +1,88 @@
+{{ define "components/policy_cors" }}
+<div id="content_cors" class="tab-content hidden phase8-style-97">
+    <div class="phase8-style-98">
+        <div>
+            <h3 class="phase8-style-99">Políticas de CORS</h3>
+            <p class="phase8-style-100">Controla qué orígenes web y métodos HTTP tienen permitido comunicarse con esta aplicación.</p>
+        </div>
+        {{ if ne .App.AppID "peak-auth" }}
+        <button type="button" data-action="toggle-edit" data-section="cors" id="btn_edit_cors" class="peak-btn peak-btn-secondary phase8-style-101">
+            <span>Editar</span>
+            <svg class="phase8-style-102" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+        </button>
+        {{ end }}
+    </div>
+
+    <fieldset id="fs_cors" disabled class="phase8-style-103">
+        <div class="phase8-style-104">
+            <!-- Orígenes web permitidos -->
+            <div class="phase8-style-105" style="align-items: flex-start;">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Orígenes web permitidos</span>
+                    <span class="phase8-style-108">URLs autorizadas desde el navegador (ej: <code>http://localhost:4200, http://localhost:3000</code>). Separa múltiples orígenes con comas o saltos de línea.</span>
+                </div>
+                <div class="phase8-style-109" style="flex: 1; max-width: 440px; display: flex; flex-direction: column; gap: 0.625rem; align-items: flex-start;">
+                    {{ $isWildcard := false }}
+                    {{ if .CorsPolicy }}
+                        {{ range .CorsPolicy.AllowedOrigins }}
+                            {{ if eq . "*" }}{{ $isWildcard = true }}{{ end }}
+                        {{ end }}
+                    {{ end }}
+                    <label class="peak-checkbox-label" style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; font-weight: 600; color: var(--text-main); cursor: pointer;">
+                        <input type="checkbox" id="cors_allow_all" data-policy="cors" {{ if $isWildcard }}checked{{ end }} class="peak-checkbox">
+                        <span>Permitir cualquier origen (<code>*</code> para desarrollo local)</span>
+                    </label>
+                    <textarea id="cors_allowed_origins" data-policy="cors" rows="3"
+                        placeholder="http://localhost:3000, http://localhost:4200"
+                        {{ if $isWildcard }}disabled{{ end }}
+                        class="peak-input peak-textarea" style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.8125rem;">{{ if and .CorsPolicy (not $isWildcard) }}{{ range $i, $origin := .CorsPolicy.AllowedOrigins }}{{ if $i }}, {{ end }}{{ $origin }}{{ end }}{{ end }}</textarea>
+                </div>
+            </div>
+
+            <!-- Métodos HTTP autorizados -->
+            <div class="phase8-style-105">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Métodos HTTP autorizados</span>
+                    <span class="phase8-style-108">Verbos HTTP habilitados durante la negociación CORS de solicitudes cruzadas.</span>
+                </div>
+                <div class="phase8-style-112">
+                    <div class="phase8-style-112">
+                        <input type="checkbox" name="cors_method" value="GET" id="cors_m_get" data-policy="cors" checked class="peak-checkbox">
+                        <label for="cors_m_get" class="phase8-style-113">GET</label>
+                    </div>
+                    <div class="phase8-style-112">
+                        <input type="checkbox" name="cors_method" value="POST" id="cors_m_post" data-policy="cors" checked class="peak-checkbox">
+                        <label for="cors_m_post" class="phase8-style-113">POST</label>
+                    </div>
+                    <div class="phase8-style-112">
+                        <input type="checkbox" name="cors_method" value="PUT" id="cors_m_put" data-policy="cors" checked class="peak-checkbox">
+                        <label for="cors_m_put" class="phase8-style-113">PUT</label>
+                    </div>
+                    <div class="phase8-style-112">
+                        <input type="checkbox" name="cors_method" value="DELETE" id="cors_m_delete" data-policy="cors" checked class="peak-checkbox">
+                        <label for="cors_m_delete" class="phase8-style-113">DELETE</label>
+                    </div>
+                    <div class="phase8-style-112">
+                        <input type="checkbox" name="cors_method" value="OPTIONS" id="cors_m_options" data-policy="cors" checked class="peak-checkbox">
+                        <label for="cors_m_options" class="phase8-style-113">OPTIONS</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Caché preflight (Max Age) -->
+            <div class="phase8-style-105">
+                <div class="phase8-style-106">
+                    <span class="phase8-style-107">Caché de preflight (Max Age)</span>
+                    <span class="phase8-style-108">Tiempo durante el cual el navegador almacena en caché la respuesta OPTIONS previa.</span>
+                </div>
+                <div class="phase8-style-109">
+                    <input type="number" min="0" max="86400" id="cors_max_age"
+                        data-policy="cors" value="{{ if and .CorsPolicy .CorsPolicy.MaxAge }}{{ .CorsPolicy.MaxAge }}{{ else }}7200{{ end }}"
+                        class="phase8-style-114">
+                    <span class="phase8-style-111">seg</span>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>
+{{ end }}

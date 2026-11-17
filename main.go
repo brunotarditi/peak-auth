@@ -45,6 +45,7 @@ func main() {
 	dbInstance := db.ConnectDB()
 	defer db.DisconnectDB()
 	db.AutoMigrate()
+	app.VerifySystemIntegrity(dbInstance)
 
 	jwtManager, err := auth.NewJWTManager()
 	if err != nil {

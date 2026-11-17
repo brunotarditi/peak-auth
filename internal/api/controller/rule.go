@@ -28,7 +28,7 @@ func (ctrl *RuleController) PostAppRule(c *gin.Context) {
 
 	// Decode into a generic map to avoid buffering the entire body as json.RawMessage.
 	// The body is already wrapped by http.MaxBytesReader via middleware.
-	var payload map[string]interface{}
+	var payload interface{}
 	decoder := json.NewDecoder(c.Request.Body)
 	if err := decoder.Decode(&payload); err != nil {
 		// Check if error is due to body size limit exceeded
@@ -75,7 +75,7 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 
 	// Decode into a generic map to avoid buffering the entire body as json.RawMessage.
 	// The body is already wrapped by http.MaxBytesReader via middleware.
-	var payload map[string]interface{}
+	var payload interface{}
 	decoder := json.NewDecoder(c.Request.Body)
 	if err := decoder.Decode(&payload); err != nil {
 		// Check if error is due to body size limit exceeded
@@ -130,6 +130,11 @@ func (ctrl *RuleController) PutAppRule(c *gin.Context) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Modo de MFA inválido. Debe ser OPTIONAL, REQUIRED o DISABLED"})
 				return
 			}
+		}
+	case util.CORS_POLICY:
+		if _, err := util.ParseCorsPolicy(body); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Formato inválido para política de CORS: " + err.Error()})
+			return
 		}
 	}
 

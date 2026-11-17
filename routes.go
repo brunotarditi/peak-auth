@@ -149,6 +149,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// ============================================================================
 	oauth := r.Group("/oauth")
 	oauth.Use(middleware.RequireHTTPSMiddleware())
+	oauth.Use(middleware.CORSMiddleware(app.RuleService))
 	{
 		oauth.GET("/authorize", oauthCtrl.AuthorizeEndpoint)
 		oauth.POST("/token", tokenLimiter, oauthCtrl.TokenEndpoint) // Token Exchange (S2S o SPA)
@@ -214,7 +215,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// ============================================================================
 	api := r.Group("/api/v1")
 	api.Use(middleware.RequireHTTPSMiddleware())
-	api.Use(middleware.CORSMiddleware())
+	api.Use(middleware.CORSMiddleware(app.RuleService))
 	{
 		api.POST("/login", loginLimiter, loginCtrl.Login)
 		api.POST("/login/mfa/totp", loginLimiter, loginCtrl.VerifyMfaTotp)
@@ -234,7 +235,7 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// ============================================================================
 	apiPrivate := r.Group("/api/v1")
 	apiPrivate.Use(middleware.RequestBodyLimitMiddleware(8 * 1024 * 1024))
-	apiPrivate.Use(middleware.CORSMiddleware())
+	apiPrivate.Use(middleware.CORSMiddleware(app.RuleService))
 	apiPrivate.Use(middleware.AuthMiddleware(app.TokenManager, app.UserRepo))
 	{
 		apiPrivate.POST("/mfa/totp/setup", userCtrl.SetupTOTP)

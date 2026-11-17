@@ -2,9 +2,9 @@
 <div id="appAuditContainer" data-app-id="{{ .App.AppID }}" class="audit-page">
     <!-- Top Bar -->
     <div class="audit-toolbar">
-        <a href="/admin/apps/{{ .App.AppID }}" class="peak-btn peak-btn-secondary audit-back-btn">
+        <a href="/admin/apps/{{ .App.AppID }}" class="app-back-link">
             {{ template "icon-arrow-back" }}
-            Volver a {{ .App.Name }}
+            <span>Volver a {{ .App.Name }}</span>
         </a>
         <div class="audit-app-pill">
             <span class="peak-badge peak-badge-brand">{{ .App.Name }}</span>
