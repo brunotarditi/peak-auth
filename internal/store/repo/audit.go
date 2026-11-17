@@ -46,7 +46,8 @@ func (r *auditRepository) FindAppAuditLogs(appID uint, filter model.AuditFilter)
 		query = query.Where("action = ?", strings.ToUpper(filter.Action))
 	}
 	if filter.ChangedBy != "" {
-		query = query.Where("changed_by ILIKE ?", "%"+filter.ChangedBy+"%")
+		escaped := strings.NewReplacer("%", "\\%", "_", "\\_").Replace(filter.ChangedBy)
+		query = query.Where("changed_by ILIKE ?", "%"+escaped+"%")
 	}
 	if filter.StartDate != nil {
 		query = query.Where("created_at >= ?", *filter.StartDate)

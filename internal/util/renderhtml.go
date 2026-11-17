@@ -38,20 +38,25 @@ func RenderVerificationEmail(path string, data any) (string, error) {
 
 // SanitizeSafeURL valida que una URL pertenezca a un esquema permitido antes de convertirla
 // a template.URL, previniendo inyecciones de esquemas peligrosos como javascript: o vbscript:.
+// Si la URL no coincide con esquemas seguros autorizados (http, https, data:image/, mailto o path relativo),
+// se neutraliza retornando "#".
 func SanitizeSafeURL(raw string) template.URL {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
 		return ""
 	}
 	if strings.HasPrefix(trimmed, "/") && !strings.HasPrefix(trimmed, "//") {
-		return template.URL(trimmed)
+		return template.URL(trimmed) // #nosec G203 -- Valida explícitamente que es ruta relativa segura que inicia con /
 	}
 	lower := strings.ToLower(trimmed)
 	if strings.HasPrefix(lower, "https://") ||
 		strings.HasPrefix(lower, "http://") ||
-		strings.HasPrefix(lower, "data:image/") ||
+		strings.HasPrefix(lower, "data:image/png;base64,") ||
+		strings.HasPrefix(lower, "data:image/jpeg;base64,") ||
+		strings.HasPrefix(lower, "data:image/svg+xml;base64,") ||
+		strings.HasPrefix(lower, "data:image/webp;base64,") ||
 		strings.HasPrefix(lower, "mailto:") {
-		return template.URL(trimmed)
+		return template.URL(trimmed) // #nosec G203 -- Esquema verificado contra allowlist estricta
 	}
 	return "#"
 }

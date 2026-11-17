@@ -1,0 +1,2 @@
+# Asigna a @brunotarditi como revisor requerido para cualquier cambio en migraciones SQL
+/internal/store/db/migrations/ @brunotarditi

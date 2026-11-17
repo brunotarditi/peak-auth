@@ -29,7 +29,7 @@ func TestCORS_AppSpecificAllowedOrigin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checker := &mockOriginChecker{
 		allowed: map[string][]string{
-			"libreria-mariela": {"http://localhost:3000", "http://localhost:4200"},
+			"app-prueba": {"http://localhost:3000", "http://localhost:4200"},
 		},
 	}
 
@@ -41,7 +41,7 @@ func TestCORS_AppSpecificAllowedOrigin(t *testing.T) {
 
 	req, _ := http.NewRequest(http.MethodPost, "/api/test", nil)
 	req.Header.Set("Origin", "http://localhost:4200")
-	req.Header.Set("X-App-ID", "libreria-mariela")
+	req.Header.Set("X-App-ID", "app-prueba")
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -58,7 +58,7 @@ func TestCORS_AppSpecificDisallowedOrigin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checker := &mockOriginChecker{
 		allowed: map[string][]string{
-			"libreria-mariela": {"http://localhost:4200"},
+			"app-prueba": {"http://localhost:4200"},
 		},
 	}
 
@@ -72,7 +72,7 @@ func TestCORS_AppSpecificDisallowedOrigin(t *testing.T) {
 
 	req, _ := http.NewRequest(http.MethodPost, "/api/test", nil)
 	req.Header.Set("Origin", "https://malicious-site.com")
-	req.Header.Set("X-App-ID", "libreria-mariela")
+	req.Header.Set("X-App-ID", "app-prueba")
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -86,7 +86,7 @@ func TestCORS_PreflightOptions(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checker := &mockOriginChecker{
 		allowed: map[string][]string{
-			"libreria-mariela": {"http://localhost:4200"},
+			"app-prueba": {"http://localhost:4200"},
 		},
 	}
 
@@ -98,7 +98,7 @@ func TestCORS_PreflightOptions(t *testing.T) {
 
 	req, _ := http.NewRequest(http.MethodOptions, "/api/test", nil)
 	req.Header.Set("Origin", "http://localhost:4200")
-	req.Header.Set("X-App-ID", "libreria-mariela")
+	req.Header.Set("X-App-ID", "app-prueba")
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)

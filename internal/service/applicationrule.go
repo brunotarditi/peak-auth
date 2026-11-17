@@ -183,6 +183,15 @@ func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value 
 				return fmt.Errorf("la autorización por roles es obligatoria para la aplicación raíz")
 			}
 		}
+		if code == util.MFA_POLICY {
+			policy, err := util.ParseMfaPolicy(value)
+			if err != nil {
+				return fmt.Errorf("política de MFA inválida: %w", err)
+			}
+			if policy.Mode != "REQUIRED" {
+				return fmt.Errorf("la política de MFA para la aplicación raíz debe ser REQUIRED")
+			}
+		}
 		if code == util.REGISTRATION_POLICY {
 			policy, err := util.ParseRegistrationPolicy(value)
 			if err != nil {
@@ -201,6 +210,9 @@ func (s *applicationRuleService) UpdateRuleValue(appID uint, code string, value 
 }
 
 func (s *applicationRuleService) DeleteRule(appID uint, code string) error {
+	if s.isRootApp(appID) {
+		return fmt.Errorf("no se pueden eliminar reglas maestras de la aplicación raíz")
+	}
 	return s.ruleRepo.DeleteRule(appID, code)
 }
 

@@ -153,9 +153,11 @@
                     <button type="button" role="tab" aria-selected="false" data-tab="mfa" id="tab_mfa" class="settings-tab-btn policy-nav-btn">
                         MFA
                     </button>
+                    {{ if ne .App.AppID "peak-auth" }}
                     <button type="button" role="tab" aria-selected="false" data-tab="cors" id="tab_cors" class="settings-tab-btn policy-nav-btn">
                         CORS
                     </button>
+                    {{ end }}
                 </nav>
             </aside>
 
@@ -166,7 +168,9 @@
                 {{ template "components/policy_sesiones" . }}
                 {{ template "components/policy_autorizacion" . }}
                 {{ template "components/policy_mfa" . }}
+                {{ if ne .App.AppID "peak-auth" }}
                 {{ template "components/policy_cors" . }}
+                {{ end }}
             </div>
         </div>
     </section>

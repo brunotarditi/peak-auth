@@ -8,7 +8,7 @@ func TestParseCorsPolicy_CloudflareFormat(t *testing.T) {
 	cfJson := []byte(`[
   {
     "AllowedOrigins": [
-      "https://mariela.pages.dev",
+      "http://localhost:4200",
       "http://localhost:3000"
     ],
     "AllowedMethods": [
@@ -37,8 +37,8 @@ func TestParseCorsPolicy_CloudflareFormat(t *testing.T) {
 	if len(policy.AllowedOrigins) != 2 {
 		t.Errorf("expected 2 allowed origins, got %d", len(policy.AllowedOrigins))
 	}
-	if policy.AllowedOrigins[0] != "https://mariela.pages.dev" {
-		t.Errorf("expected origin https://mariela.pages.dev, got %s", policy.AllowedOrigins[0])
+	if policy.AllowedOrigins[0] != "http://localhost:4200" {
+		t.Errorf("expected origin http://localhost:4200, got %s", policy.AllowedOrigins[0])
 	}
 	if policy.MaxAge != 86400 {
 		t.Errorf("expected MaxAge 86400, got %d", policy.MaxAge)

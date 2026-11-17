@@ -74,6 +74,7 @@ func CORSMiddleware(checker ...CorsOriginChecker) gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Headers",
 			"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, "+
 				"accept, origin, Cache-Control, X-Requested-With, X-App-Id, X-App-ID, X-App-Secret, X-Request-ID")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "X-Request-ID")
 		c.Writer.Header().Set("Access-Control-Max-Age", "7200") // 2 horas de cache preflight
 
 		if c.Request.Method == http.MethodOptions {
