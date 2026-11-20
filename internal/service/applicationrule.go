@@ -245,7 +245,7 @@ func (s *applicationRuleService) IsOriginAllowed(appID string, origin string) bo
 						if err == nil && policy != nil {
 							for _, allowed := range policy.AllowedOrigins {
 								allowed = strings.TrimRight(strings.TrimSpace(allowed), "/")
-								if allowed == "*" || strings.EqualFold(allowed, origin) {
+								if allowed != "*" && strings.EqualFold(allowed, origin) {
 									return true
 								}
 							}

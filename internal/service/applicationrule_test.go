@@ -3,13 +3,13 @@ package service
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"strings"
-	"testing"
-	"time"
+	"gorm.io/gorm"
 	"peak-auth/internal/api/request"
 	"peak-auth/internal/store/model"
 	"peak-auth/internal/util"
-	"gorm.io/gorm"
+	"strings"
+	"testing"
+	"time"
 )
 
 // --- Tests Application Rule Service ---
@@ -90,6 +90,22 @@ func TestCreateRule_ForbidsRootAndOwnerRole(t *testing.T) {
 	err = ruleSvc.CreateRule(1, util.REGISTRATION_POLICY, []byte("{\"mode\":\"public\",\"default_role\":\"ROOT\"}"))
 	if err == nil {
 		t.Fatalf("Esperaba que CreateRule rechazara default_role ROOT en registro público")
+	}
+}
+
+func TestIsOriginAllowed_DoesNotTreatWildcardAsCredentialedOrigin(t *testing.T) {
+	ruleRepo := &mockRuleRepo{
+		rules: []model.ApplicationRules{{
+			Code:  util.CORS_POLICY,
+			Value: []byte(`{"allowed_origins":["*"]}`),
+		}},
+	}
+	appRepo := newMockAppRepo()
+	appRepo.apps["test-app"] = &model.Application{ID: 1, AppID: "test-app"}
+	ruleSvc := NewApplicationRuleService(ruleRepo, nil, nil, appRepo)
+
+	if ruleSvc.IsOriginAllowed("test-app", "https://attacker.example") {
+		t.Fatal("wildcard CORS policy must not be treated as an explicit credentialed origin")
 	}
 }
 
@@ -418,5 +434,3 @@ func TestResetPassword_EnforcesBaselinePasswordWhenNoPwdPolicy(t *testing.T) {
 		t.Fatalf("se esperaba éxito al resetear contraseña con requisitos base, obtenido: %v", err)
 	}
 }
-
-

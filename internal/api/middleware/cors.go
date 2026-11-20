@@ -17,10 +17,11 @@ type CorsOriginChecker interface {
 //
 // Reglas de resolución:
 //  1. Si se provee un CorsOriginChecker y la petición contiene App ID o Client ID,
-//     se valida contra las políticas CORS de esa aplicación.
+//     se valida contra una coincidencia explícita de origen de esa aplicación.
 //  2. Si no coincide o no hay App ID, se consulta la variable global FRONTEND_URL.
 //  3. Si FRONTEND_URL está vacío y no hay app restringida, permite "*" (modo público sin cookies).
-//  4. Si el origen es validado explícitamente, se refleja el Origin y se habilitan credenciales.
+//  4. Solo un origen validado explícitamente se refleja y habilita credenciales.
+//     El wildcard de una política de aplicación nunca habilita credenciales.
 func CORSMiddleware(checker ...CorsOriginChecker) gin.HandlerFunc {
 	allowedOrigins := parseAllowedOrigins(os.Getenv("FRONTEND_URL"))
 
