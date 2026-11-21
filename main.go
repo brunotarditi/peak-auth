@@ -27,7 +27,9 @@ func main() {
 	}
 
 	// 1.1) Sincronizar secretos desde Infisical si están configuradas las credenciales de Machine Identity
-	util.LoadSecretsFromInfisical()
+	if err := util.LoadSecretsFromInfisical(); err != nil {
+		log.Fatal("Error cargando secretos desde Infisical:", err)
+	}
 
 	// Modo de Gin: release en producción para no exponer logs de debug.
 	if util.IsProduction() {
