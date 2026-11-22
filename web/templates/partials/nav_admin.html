@@ -48,6 +48,7 @@
                 </div>
                 {{ end }}
                 <form action="/admin/logout" method="POST" class="navbar-logout-form">
+                    <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
                     <button type="submit" class="icon-btn icon-btn-danger" title="Cerrar sesión" aria-label="Cerrar sesión">
                         {{ template "logout" }}
                     </button>
