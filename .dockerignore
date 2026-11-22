@@ -9,6 +9,11 @@
 *.pem
 jwt_private.pem
 jwt_public.pem
+bootstrap.env
+*.key
+*.crt
+*.p12
+*.pfx
 
 # Dependencias / artefactos de build
 node_modules
@@ -36,3 +41,10 @@ profile.cov
 AGENTS.md
 README.md
 LICENSE
+.agents
+.github
+.terraform
+terraform.tfvars
+*.tfvars
+*.tfstate
+*.tfstate.*
