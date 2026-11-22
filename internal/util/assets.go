@@ -19,7 +19,7 @@ var (
 func GetAssetHash(baseDir, relativePath string) string {
 	// Identificador único para el caché combinando ambos
 	cacheKey := filepath.Join(baseDir, relativePath)
-	
+
 	cacheMutex.RLock()
 	hash, exists := assetCache[cacheKey]
 	cacheMutex.RUnlock()
@@ -75,7 +75,12 @@ func JS(name string) string {
 	if isProd {
 		// En producción, buscamos la versión minificada si existe en static/js/dist/
 		minName := strings.Replace(cleanName, ".js", ".min.js", 1)
-		return Asset("/static/js/dist/" + minName)
+		minPath := "/static/js/dist/" + minName
+		baseDir := AssetsDir()
+		relativePath := strings.TrimPrefix(minPath, "/")
+		if _, err := os.Stat(filepath.Join(baseDir, relativePath)); err == nil {
+			return Asset(minPath)
+		}
 	}
 
 	return Asset("/static/js/" + cleanName)

@@ -46,9 +46,19 @@ func TestJS(t *testing.T) {
 
 	t.Run("production mode", func(t *testing.T) {
 		t.Setenv("ENV", "production")
+		t.Setenv("ASSETS_DIR", "../../web")
 		res := JS("app.js")
 		if !strings.HasPrefix(res, "/static/js/dist/app.min.js?v=") {
 			t.Errorf("unexpected JS path in prod mode: %s", res)
+		}
+	})
+
+	t.Run("production mode falls back to source", func(t *testing.T) {
+		t.Setenv("ENV", "production")
+		t.Setenv("ASSETS_DIR", "../../web")
+		res := JS("setup_auth.js")
+		if !strings.HasPrefix(res, "/static/js/setup_auth.js?v=") {
+			t.Errorf("missing minified JS should fall back to source: %s", res)
 		}
 	})
 }

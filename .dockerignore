@@ -19,7 +19,6 @@ bootstrap.env
 node_modules
 web/node_modules
 web/static/css/output.css
-web/static/js/dist
 peak-auth
 *.exe
 *.dll

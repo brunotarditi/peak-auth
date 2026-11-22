@@ -15,6 +15,9 @@ import (
 func SetRoutes(r *gin.Engine, app *app.App) {
 
 	r.Static("/static", "./web/static")
+	r.GET("/favicon.ico", func(c *gin.Context) {
+		c.Redirect(http.StatusTemporaryRedirect, "/static/img/favicon.png")
+	})
 
 	// Redirección amigable desde la raíz del servidor hacia el panel
 	r.GET("/", func(c *gin.Context) {
