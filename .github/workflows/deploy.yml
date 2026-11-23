@@ -119,6 +119,7 @@ jobs:
           sudo wg set wg0 private-key /etc/wireguard/wg.key
           sudo rm -f /etc/wireguard/wg.key
 
+          echo "Public key derivada del runner: $(sudo wg show wg0 public-key)"
           sudo wg set wg0 \
             peer "$WG_PEER_PUBLIC_KEY" \
             endpoint "$WG_ENDPOINT" \
@@ -131,7 +132,7 @@ jobs:
           PEER_COUNT=$(sudo wg show wg0 peers | wc -l)
           echo "=== Peers activos en wg0: $PEER_COUNT ==="
           if [ "$PEER_COUNT" -ne 1 ]; then
-            echo "ERROR: El peer no se registro. Verifica que WG_PEER_PUBLIC_KEY sea distinta a la clave publica derivada de WG_PRIVATE_KEY y que WG_ENDPOINT tenga formato host:puerto."
+            sudo wg show wg0
             exit 1
           fi
 
