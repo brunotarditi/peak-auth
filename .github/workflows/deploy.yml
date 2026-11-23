@@ -104,25 +104,36 @@ jobs:
           DEPLOY_PORT=$(printf '%s' "$DEPLOY_PORT" | tr -d '[:space:]')
           DEPLOY_USER=$(printf '%s' "$DEPLOY_USER" | tr -d '[:space:]')
 
+          echo "=== Validacion de longitudes ==="
+          echo "WG_PRIVATE_KEY len: ${#WG_PRIVATE_KEY}"
+          echo "WG_PEER_PUBLIC_KEY len: ${#WG_PEER_PUBLIC_KEY}"
+          echo "WG_ENDPOINT len: ${#WG_ENDPOINT}"
+          echo "WG_ADDRESS len: ${#WG_ADDRESS}"
+
           sudo mkdir -p /etc/wireguard
           sudo install -m 600 /dev/null /etc/wireguard/wg.key
           printf '%s' "$WG_PRIVATE_KEY" | sudo tee /etc/wireguard/wg.key >/dev/null
 
           sudo ip link add dev wg0 type wireguard
           sudo ip address add "$WG_ADDRESS" dev wg0
+          sudo wg set wg0 private-key /etc/wireguard/wg.key
+          sudo rm -f /etc/wireguard/wg.key
+
           sudo wg set wg0 \
-            private-key /etc/wireguard/wg.key \
             peer "$WG_PEER_PUBLIC_KEY" \
             endpoint "$WG_ENDPOINT" \
             allowed-ips "${DEPLOY_HOST}/32" \
             persistent-keepalive 25
-          sudo rm -f /etc/wireguard/wg.key
 
           sudo ip link set mtu 1420 up dev wg0
           sudo ip route replace "${DEPLOY_HOST}/32" dev wg0
 
-          echo "=== Peers activos en wg0 ==="
-          sudo wg show wg0 peers | wc -l
+          PEER_COUNT=$(sudo wg show wg0 peers | wc -l)
+          echo "=== Peers activos en wg0: $PEER_COUNT ==="
+          if [ "$PEER_COUNT" -ne 1 ]; then
+            echo "ERROR: El peer no se registro. Verifica que WG_PEER_PUBLIC_KEY sea distinta a la clave publica derivada de WG_PRIVATE_KEY y que WG_ENDPOINT tenga formato host:puerto."
+            exit 1
+          fi
 
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
