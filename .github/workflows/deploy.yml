@@ -81,18 +81,24 @@ jobs:
         uses: nickvdyck/wireguard-action@v1
         with:
           private-key: ${{ secrets.WG_PRIVATE_KEY }}
-          address: 10.0.0.50/32
+          address: ${{ secrets.WG_ADDRESS }}
           peer-public-key: ${{ secrets.WG_PEER_PUBLIC_KEY }}
           peer-endpoint: ${{ secrets.WG_ENDPOINT }}
-          allowed-ips: 192.168.1.110/32
+          allowed-ips: ${{ secrets.DEPLOY_HOST }}/32
 
-      - name: Trigger remote deploy on LXC 110
+      - name: Trigger remote deploy on proxmox
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
-          ssh -i ~/.ssh/deploy_key -o UserKnownHostsFile=~/.ssh/known_hosts deployer@192.168.1.110 "${{ github.sha }}"
+          ssh -i ~/.ssh/deploy_key \
+            -p "$DEPLOY_PORT" \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" "${{ github.sha }}"
