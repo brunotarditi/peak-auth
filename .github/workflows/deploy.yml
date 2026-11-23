@@ -96,19 +96,15 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq wireguard-tools
           sudo mkdir -p /etc/wireguard
-          sudo tee /etc/wireguard/wg0.conf >/dev/null <<EOF
-          [Interface]
-          PrivateKey = ${WG_PRIVATE_KEY}
-          Address = ${WG_ADDRESS}
-
-          [Peer]
-          PublicKey = ${WG_PEER_PUBLIC_KEY}
-          Endpoint = ${WG_ENDPOINT}
-          AllowedIPs = ${DEPLOY_HOST}/32
-          PersistentKeepalive = 25
-          EOF
+          printf '[Interface]\nPrivateKey = %s\nAddress = %s\nMTU = 1420\n\n[Peer]\nPublicKey = %s\nEndpoint = %s\nAllowedIPs = %s/32\nPersistentKeepalive = 25\n' \
+            "$WG_PRIVATE_KEY" \
+            "$WG_ADDRESS" \
+            "$WG_PEER_PUBLIC_KEY" \
+            "$WG_ENDPOINT" \
+            "$DEPLOY_HOST" | sudo tee /etc/wireguard/wg0.conf >/dev/null
           sudo chmod 600 /etc/wireguard/wg0.conf
           sudo wg-quick up wg0
+          ip route show dev wg0
 
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
