@@ -16,7 +16,6 @@ func TestUserApplicationRoleRepository_GetUsersWithRolesByApp_Deduplication(t *t
 	uRepo := NewUserRepositoryRepository(db)
 	uarRepo := NewUserApplicationRoleRepository(db)
 	appRepo := NewApplicationRepository(db)
-	roleRepo := NewRoleRepositoryRepository(db)
 
 	suffix := time.Now().UnixNano()
 	email := fmt.Sprintf("multi-role-%d@peak.local", suffix)
@@ -43,14 +42,14 @@ func TestUserApplicationRoleRepository_GetUsersWithRolesByApp_Deduplication(t *t
 		t.Fatalf("appRepo.Create failed: %v", err)
 	}
 
-	// Obtener o crear dos roles
-	ownerRole, err := roleRepo.FindGlobalByName("OWNER")
-	if err != nil {
-		t.Fatalf("FindGlobalByName OWNER failed: %v", err)
+	// Obtener o crear dos roles globales; CI no ejecuta los seeds de la app.
+	ownerRole := model.Role{Name: "OWNER", IsDefault: true}
+	if err := db.Where("name = ? AND application_id IS NULL", "OWNER").FirstOrCreate(&ownerRole).Error; err != nil {
+		t.Fatalf("seed OWNER failed: %v", err)
 	}
-	adminRole, err := roleRepo.FindGlobalByName("ADMIN")
-	if err != nil {
-		t.Fatalf("FindGlobalByName ADMIN failed: %v", err)
+	adminRole := model.Role{Name: "ADMIN", IsDefault: true}
+	if err := db.Where("name = ? AND application_id IS NULL", "ADMIN").FirstOrCreate(&adminRole).Error; err != nil {
+		t.Fatalf("seed ADMIN failed: %v", err)
 	}
 
 	// Asignar ambos roles al mismo usuario en la aplicación

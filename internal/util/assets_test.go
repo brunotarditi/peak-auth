@@ -46,7 +46,15 @@ func TestJS(t *testing.T) {
 
 	t.Run("production mode", func(t *testing.T) {
 		t.Setenv("ENV", "production")
-		t.Setenv("ASSETS_DIR", "../../web")
+		tempDir := t.TempDir()
+		distDir := filepath.Join(tempDir, "static", "js", "dist")
+		if err := os.MkdirAll(distDir, 0755); err != nil {
+			t.Fatalf("failed to create dist directory: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(distDir, "app.min.js"), []byte("console.log('app')"), 0644); err != nil {
+			t.Fatalf("failed to create minified JS: %v", err)
+		}
+		t.Setenv("ASSETS_DIR", tempDir)
 		res := JS("app.js")
 		if !strings.HasPrefix(res, "/static/js/dist/app.min.js?v=") {
 			t.Errorf("unexpected JS path in prod mode: %s", res)
