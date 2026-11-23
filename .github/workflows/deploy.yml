@@ -104,18 +104,19 @@ jobs:
           DEPLOY_PORT=$(printf '%s' "$DEPLOY_PORT" | tr -d '[:space:]')
           DEPLOY_USER=$(printf '%s' "$DEPLOY_USER" | tr -d '[:space:]')
 
-          sudo install -m 600 /dev/null /run/wg.key
-          printf '%s' "$WG_PRIVATE_KEY" | sudo tee /run/wg.key >/dev/null
+          sudo mkdir -p /etc/wireguard
+          sudo install -m 600 /dev/null /etc/wireguard/wg.key
+          printf '%s' "$WG_PRIVATE_KEY" | sudo tee /etc/wireguard/wg.key >/dev/null
 
           sudo ip link add dev wg0 type wireguard
           sudo ip address add "$WG_ADDRESS" dev wg0
           sudo wg set wg0 \
-            private-key /run/wg.key \
+            private-key /etc/wireguard/wg.key \
             peer "$WG_PEER_PUBLIC_KEY" \
             endpoint "$WG_ENDPOINT" \
             allowed-ips "${DEPLOY_HOST}/32" \
             persistent-keepalive 25
-          sudo rm -f /run/wg.key
+          sudo rm -f /etc/wireguard/wg.key
 
           sudo ip link set mtu 1420 up dev wg0
           sudo ip route replace "${DEPLOY_HOST}/32" dev wg0
