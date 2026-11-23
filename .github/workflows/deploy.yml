@@ -96,6 +96,15 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq wireguard-tools
           sudo mkdir -p /etc/wireguard
+
+          WG_PRIVATE_KEY=$(printf '%s' "$WG_PRIVATE_KEY" | tr -d '[:space:]')
+          WG_ADDRESS=$(printf '%s' "$WG_ADDRESS" | tr -d '[:space:]')
+          WG_PEER_PUBLIC_KEY=$(printf '%s' "$WG_PEER_PUBLIC_KEY" | tr -d '[:space:]')
+          WG_ENDPOINT=$(printf '%s' "$WG_ENDPOINT" | tr -d '[:space:]')
+          DEPLOY_HOST=$(printf '%s' "$DEPLOY_HOST" | tr -d '[:space:]')
+          DEPLOY_PORT=$(printf '%s' "$DEPLOY_PORT" | tr -d '[:space:]')
+          DEPLOY_USER=$(printf '%s' "$DEPLOY_USER" | tr -d '[:space:]')
+
           printf '[Interface]\nPrivateKey = %s\nAddress = %s\nMTU = 1420\n\n[Peer]\nPublicKey = %s\nEndpoint = %s\nAllowedIPs = %s/32\nPersistentKeepalive = 25\n' \
             "$WG_PRIVATE_KEY" \
             "$WG_ADDRESS" \
@@ -104,13 +113,18 @@ jobs:
             "$DEPLOY_HOST" | sudo tee /etc/wireguard/wg0.conf >/dev/null
           sudo chmod 600 /etc/wireguard/wg0.conf
           sudo wg-quick up wg0
-          ip route show dev wg0
+          sudo ip route replace "${DEPLOY_HOST}/32" dev wg0
+
+          echo "=== Diagnostico WireGuard ==="
+          sudo wg show wg0 endpoints
+          sudo wg show wg0 allowed-ips
+          ip route get "$DEPLOY_HOST"
 
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
-          ssh \
+          ssh -v \
             -o ConnectTimeout=15 \
             -o ConnectionAttempts=2 \
             -o BatchMode=yes \
