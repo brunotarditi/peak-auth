@@ -140,6 +140,12 @@ func GetTemplateFuncMap() template.FuncMap {
 		"js": func(name string) string {
 			return JS(name)
 		},
+		"turnstile_site_key": func() string {
+			if IsTurnstileEnabled() {
+				return TurnstileSiteKey()
+			}
+			return ""
+		},
 		"year": func() int {
 			return time.Now().Year()
 		},

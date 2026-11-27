@@ -484,6 +484,11 @@ func (c *OAuthController) PostPublicRegister(ctx *gin.Context) {
 		return
 	}
 
+	if ok, err := util.VerifyTurnstileToken(ctx.PostForm("cf-turnstile-response"), ctx.ClientIP()); err != nil || !ok {
+		renderRegisterError("Por favor, completá la verificación de seguridad e intentá nuevamente.")
+		return
+	}
+
 	if firstName == "" || lastName == "" || email == "" || password == "" {
 		renderRegisterError("Todos los campos marcados son obligatorios")
 		return
@@ -560,6 +565,26 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		return
 	}
 
+	redirectWithError := func(errMsg string) {
+		redirectURL := url.URL{Path: "/oauth/login"}
+		query := redirectURL.Query()
+		query.Set("client_id", clientID)
+		query.Set("redirect_uri", redirectURI)
+		query.Set("state", state)
+		query.Set("error", errMsg)
+		if codeChallenge != "" {
+			query.Set("code_challenge", codeChallenge)
+			query.Set("code_challenge_method", codeChallengeMethod)
+		}
+		redirectURL.RawQuery = query.Encode()
+		ctx.Redirect(http.StatusSeeOther, redirectURL.String())
+	}
+
+	if ok, err := util.VerifyTurnstileToken(ctx.PostForm("cf-turnstile-response"), ctx.ClientIP()); err != nil || !ok {
+		redirectWithError("Por favor, completá la verificación de seguridad e intentá nuevamente.")
+		return
+	}
+
 	// Usamos Login (para usuarios finales) en lugar de AdminLogin
 	response, err := c.UserService.Login(request.LoginRequest{
 		Email:     email,
@@ -573,18 +598,7 @@ func (c *OAuthController) PostPublicLogin(ctx *gin.Context) {
 		if strings.Contains(strings.ToLower(err.Error()), "inactiva") || strings.Contains(strings.ToLower(err.Error()), "bloqueada") {
 			userErrMsg = err.Error()
 		}
-		redirectURL := url.URL{Path: "/oauth/login"}
-		query := redirectURL.Query()
-		query.Set("client_id", clientID)
-		query.Set("redirect_uri", redirectURI)
-		query.Set("state", state)
-		query.Set("error", userErrMsg)
-		if codeChallenge != "" {
-			query.Set("code_challenge", codeChallenge)
-			query.Set("code_challenge_method", codeChallengeMethod)
-		}
-		redirectURL.RawQuery = query.Encode()
-		ctx.Redirect(http.StatusSeeOther, redirectURL.String())
+		redirectWithError(userErrMsg)
 		return
 	}
 

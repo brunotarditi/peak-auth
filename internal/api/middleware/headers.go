@@ -12,11 +12,12 @@ import (
 // default-src, object-src y frame-ancestors se restringen estrictamente para
 // mitigar clickjacking e inyección.
 const contentSecurityPolicy = "default-src 'self'; " +
-	"script-src 'self' 'unsafe-inline'; " +
+	"script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; " +
 	"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
 	"font-src 'self' https://fonts.gstatic.com data:; " +
 	"img-src 'self' data: https:; " +
-	"connect-src 'self'; " +
+	"connect-src 'self' https://challenges.cloudflare.com; " +
+	"frame-src https://challenges.cloudflare.com; " +
 	"form-action *; " +
 	"object-src 'none'; " +
 	"base-uri 'self'; " +

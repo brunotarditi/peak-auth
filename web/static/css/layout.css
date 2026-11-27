@@ -732,3 +732,10 @@ html:has(.layout-auth)::-webkit-scrollbar,
         display: block;
     }
 }
+
+/* Cloudflare Turnstile widget */
+.turnstile-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 0.25rem 0;
+}

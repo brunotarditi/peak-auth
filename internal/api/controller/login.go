@@ -84,6 +84,12 @@ func (ctrl *LoginController) PostLoginForm(c *gin.Context) {
 	// Sanitize email for audit logging to prevent log injection attacks
 	sanitizedEmail := sanitizeForLogging(email)
 
+	if ok, err := util.VerifyTurnstileToken(c.PostForm("cf-turnstile-response"), c.ClientIP()); err != nil || !ok {
+		audit.EventResult(c, "admin.login", "email="+sanitizedEmail, false, "Verificación CAPTCHA fallida")
+		c.Redirect(http.StatusSeeOther, "/admin/login?error="+url.QueryEscape("Por favor, completá la verificación de seguridad e intentá nuevamente."))
+		return
+	}
+
 	token, expireMinutes, mfaRequired, mfaSetupRequired, mfaToken, err := ctrl.UserService.AdminLogin(email, password)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "PASSWORD_EXPIRED:") {

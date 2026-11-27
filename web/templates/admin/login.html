@@ -10,6 +10,9 @@
     <script src="{{ js " modal.js" }}"></script>
     <script src="{{ js " common.js" }}"></script>
     <script src="{{ js " login.js" }}"></script>
+    {{ with turnstile_site_key }}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    {{ end }}
     <link rel="icon" type="image/png" href="{{ asset " /static/img/favicon.png" }}">
 </head>
 
@@ -43,6 +46,12 @@
                         </button>
                     </div>
                 </div>
+
+                {{ with turnstile_site_key }}
+                <div class="turnstile-wrapper">
+                    <div class="cf-turnstile" data-sitekey="{{ . }}" data-theme="auto"></div>
+                </div>
+                {{ end }}
 
                 <button type="submit" class="peak-btn peak-btn-primary peak-btn-block auth-form-button">
                     <span>Entrar al panel</span>
