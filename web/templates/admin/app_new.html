@@ -32,19 +32,26 @@
                 <label class="form-label" for="app_description">Descripción</label>
                 <textarea id="app_description" name="description" rows="3"
                     placeholder="Describe brevemente tu aplicación..."
-                    class="peak-input peak-textarea">{{ .DescValue }}</textarea>
+                    class="peak-input peak-textarea">{{ .DescriptionValue }}</textarea>
             </div>
 
             {{ if not .IsLocked }}
             <div class="form-group">
                 <label class="form-label" for="app_redirect_uri">URL de redirección (OAuth 2.0 Callback)</label>
-                <input type="url" id="app_redirect_uri" name="redirect_uri" value="{{ .RedirectValue }}"
+                <input type="url" id="app_redirect_uri" name="redirect_uri" value="{{ .RedirectURLValue }}"
                     placeholder="https://tudominio.com/callback" required {{ if .RedirectDisabled }}disabled{{ end }}
                     class="peak-input {{ .RedirectClass }}">
+                {{ if .RedirectError }}
+                <p class="app-form-message app-form-message-error">
+                    {{ template "icon-warning" }}
+                    {{ .RedirectError }}
+                </p>
+                {{ else }}
                 <p class="app-form-message app-form-message-help">
                     <span class="app-form-info-icon">{{ template "icon-info" }}</span>
                     Obligatorio para que la redirección tras iniciar sesión funcione (prevención Open Redirect).
                 </p>
+                {{ end }}
             </div>
 
             <div class="form-group">

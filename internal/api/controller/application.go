@@ -82,11 +82,19 @@ func (ctrl *ApplicationController) GetEditApp(c *gin.Context) {
 	})
 }
 
+// extractRedirectURL obtiene la URL de redirección aceptando tanto redirect_url como redirect_uri.
+func extractRedirectURL(c *gin.Context) string {
+	if val := strings.TrimSpace(c.PostForm("redirect_url")); val != "" {
+		return val
+	}
+	return strings.TrimSpace(c.PostForm("redirect_uri"))
+}
+
 // PostFormApp crea una nueva aplicación
 func (ctrl *ApplicationController) PostFormApp(c *gin.Context) {
 	name := strings.TrimSpace(c.PostForm("name"))
 	description := strings.TrimSpace(c.PostForm("description"))
-	redirectURL := strings.TrimSpace(c.PostForm("redirect_url"))
+	redirectURL := extractRedirectURL(c)
 	isActive := c.PostForm("is_active") == "on"
 
 	renderNewForm := func(status int, nameErr, redirectErr string) {
@@ -163,7 +171,7 @@ func (ctrl *ApplicationController) UpdateFormApp(c *gin.Context) {
 	id := c.Param("id")
 	_ = c.PostForm("name")
 	description := strings.TrimSpace(c.PostForm("description"))
-	redirectURL := strings.TrimSpace(c.PostForm("redirect_url"))
+	redirectURL := extractRedirectURL(c)
 	isActive := c.PostForm("is_active") == "on"
 
 	// La app raíz no puede desactivarse.

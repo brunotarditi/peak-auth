@@ -130,7 +130,9 @@ func SetRoutes(r *gin.Engine, app *app.App) {
 	// HEALTH & READINESS PROBES (Público, para Docker, Kubernetes y balanceadores)
 	// ============================================================================
 	r.GET("/health", healthLimiter, healthCtrl.Health)
+	r.HEAD("/health", healthLimiter, healthCtrl.Health)
 	r.GET("/ready", healthLimiter, healthCtrl.Ready)
+	r.HEAD("/ready", healthLimiter, healthCtrl.Ready)
 
 	// ============================================================================
 	// OIDC & JWKS DISCOVERY (Público, CORS abierto para SDKs y librerías cliente)

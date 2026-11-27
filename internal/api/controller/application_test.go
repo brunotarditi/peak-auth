@@ -78,6 +78,36 @@ func TestPostFormApp_Validation(t *testing.T) {
 		}
 	})
 
+	t.Run("Accepts redirect_uri field name from HTML form", func(t *testing.T) {
+		appSvc := &mockAppAdminService{}
+		ruleSvc := &mockRuleAdminService{}
+		ctrl := &ApplicationController{
+			AppService:  appSvc,
+			RuleService: ruleSvc,
+		}
+
+		r := gin.New()
+		r.SetHTMLTemplate(tmpl)
+		r.POST("/admin/apps", ctrl.PostFormApp)
+
+		form := url.Values{}
+		form.Set("name", "Libreria Mariela")
+		form.Set("redirect_uri", "https://mariela.example.com/callback")
+		form.Set("is_active", "on")
+
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/admin/apps", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("esperaba 200 OK usando redirect_uri, obtuvo %d: %s", w.Code, w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "app_created:Libreria Mariela") {
+			t.Errorf("esperaba confirmación de creación, obtuvo: %s", w.Body.String())
+		}
+	})
+
 	t.Run("Insecure redirect_url (HTTP non-loopback) returns 400", func(t *testing.T) {
 		appSvc := &mockAppAdminService{}
 		ruleSvc := &mockRuleAdminService{}
